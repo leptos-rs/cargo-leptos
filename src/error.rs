@@ -10,7 +10,7 @@ pub enum Reportable {
         source: Error,
     },
     #[error("Could not {action} because of {source}")]
-    StepError { action: &'static str, source: Error },
+    StepError { action: String, source: Error },
 }
 
 #[derive(Error, Debug)]
@@ -33,9 +33,9 @@ impl Error {
         }
     }
 
-    pub fn step_context(self, action: &'static str) -> Reportable {
+    pub fn step_context<S: ToString>(self, action: S) -> Reportable {
         Reportable::StepError {
-            action,
+            action: action.to_string(),
             source: self,
         }
     }

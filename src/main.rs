@@ -1,14 +1,14 @@
 mod cargo;
 mod config;
 mod error;
-mod projects;
+mod wasm_pack;
 
 use clap::{Parser, Subcommand};
 pub use config::Config;
 pub use error::{Error, Reportable};
 use log::LevelFilter;
 use simplelog::{ColorChoice, ConfigBuilder, TermLogger, TerminalMode};
-use std::env;
+use std::{env, fs, path::Path};
 
 #[derive(Debug, Parser)]
 pub struct Cli {
@@ -66,12 +66,31 @@ fn main() {
 }
 
 fn try_main(args: Cli) -> Result<(), Reportable> {
+    let projects = args.read_config()?.projects();
+    let release = args.release;
     match args.command {
         Commands::Init => Config::save_default_file(),
-        Commands::Build => cargo::run("build", args),
-        Commands::Test => cargo::run("test", args),
-        Commands::Clean => cargo::run("clean", args),
-        Commands::Update => cargo::run("update", args),
+        Commands::Build => {
+            wasm_pack::run("build", &projects.app, release)?;
+            wasm_pack::run("build", &projects.client, release)?;
+            cargo::run("build", &projects.server, release)
+        }
+        Commands::Test => {
+            cargo::run("test", &projects.app, release)?;
+            cargo::run("test", &projects.client, release)?;
+            cargo::run("test", &projects.server, release)
+        }
+        Commands::Clean => {
+            cargo::run("clean", &projects.app, release)?;
+            cargo::run("clean", &projects.client, release)?;
+            cargo::run("clean", &projects.server, release)?;
+            rm_dir("target")
+        }
+        Commands::Update => {
+            cargo::run("update", &projects.app, release)?;
+            cargo::run("update", &projects.client, release)?;
+            cargo::run("update", &projects.server, release)
+        }
     }
 }
 
@@ -88,4 +107,21 @@ fn setup_logging(verbose: u8) {
     TermLogger::init(log_level, config, TerminalMode::Stderr, ColorChoice::Auto)
         .expect("Failed to start logger");
     log::info!("Log level set to: {log_level}");
+}
+
+fn rm_dir(dir: &str) -> Result<(), Reportable> {
+    let path = Path::new(&dir);
+
+    if !path.exists() {
+        log::debug!("Not cleaning {dir} because it does not exist");
+        return Ok(());
+    }
+    if !path.is_dir() {
+        log::warn!("Not cleaning {dir} because it is not a directory");
+        return Ok(());
+    }
+
+    log::info!("Cleaning dir '{dir}'");
+    fs::remove_dir_all(path).map_err(|e| Into::<Error>::into(e).file_context("remove dir", dir))?;
+    Ok(())
 }

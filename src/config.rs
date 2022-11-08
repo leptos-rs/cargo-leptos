@@ -10,9 +10,9 @@ pub struct Config {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Leptos {
-    pub app_path: Option<String>,
-    pub client_path: Option<String>,
-    pub server_path: Option<String>,
+    app_path: Option<String>,
+    client_path: Option<String>,
+    server_path: Option<String>,
 }
 
 impl Config {
@@ -31,9 +31,9 @@ impl Config {
 
     pub fn projects(&self) -> Projects {
         Projects {
-            app: param_or_folder(&self.leptos.app_path, "./app"),
-            client: param_or_folder(&self.leptos.client_path, "./client"),
-            server: param_or_folder(&self.leptos.client_path, "./server"),
+            app: param_or_folder(&self.leptos.app_path, "app"),
+            client: param_or_folder(&self.leptos.client_path, "client"),
+            server: param_or_folder(&self.leptos.client_path, "server"),
         }
     }
 
