@@ -1,0 +1,9 @@
+[leptos]
+# # Optional. Defaults to 'app'
+# app_path = "my-app-path"
+
+# # Optional. Defaults to 'client'
+# client_path = "my-client-path"
+
+# # Optional. Defaults to 'server'
+# server_path = "my-server-path"
