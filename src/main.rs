@@ -30,8 +30,7 @@ pub struct Cli {
 
 impl Cli {
     pub fn read_config(&self) -> Result<Config, Reportable> {
-        let path = self.config.as_deref().unwrap_or("leptos.toml");
-        Config::read(path).map_err(|e| e.file_context("read config", path))
+        Config::read(&self.config)
     }
 }
 

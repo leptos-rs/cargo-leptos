@@ -16,7 +16,13 @@ pub struct Leptos {
 }
 
 impl Config {
-    pub fn read(path: &str) -> Result<Self, Error> {
+    /// read from path or default to 'leptos.toml'
+    pub fn read(path: &Option<String>) -> Result<Self, Reportable> {
+        let path = path.as_deref().unwrap_or("leptos.toml");
+        Config::try_read(path).map_err(|e| e.file_context("read config", path))
+    }
+
+    fn try_read(path: &str) -> Result<Self, Error> {
         log::debug!("Reading config file {path}");
         let toml = fs::read_to_string(path)?;
         log::trace!("Config file content:\n{toml}");
@@ -32,14 +38,14 @@ impl Config {
     }
 
     pub fn save_default_file() -> Result<(), Reportable> {
-        Self::try_save_default_to("leptos.toml").map_err(|e| e.file_context("", "leptos.toml"))
+        Self::try_save_default().map_err(|e| e.file_context("", "leptos.toml"))
     }
 
-    fn try_save_default_to(path: &str) -> Result<(), Error> {
+    fn try_save_default() -> Result<(), Error> {
         log::debug!("Adding default leptos.toml file");
         let toml = include_str!("leptos.toml");
         log::trace!("Content of leptos.toml:\n{toml}");
-        Ok(std::fs::write(path, toml.as_bytes())?)
+        Ok(std::fs::write("leptos.toml", toml.as_bytes())?)
     }
 }
 
