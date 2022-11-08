@@ -13,6 +13,29 @@ pub struct Leptos {
     app_path: Option<String>,
     client_path: Option<String>,
     server_path: Option<String>,
+    style: Style,
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug)]
+pub struct Style {
+    pub files: Option<Vec<String>>,
+    pub browserquery: Option<String>,
+}
+
+impl Style {
+    pub fn scss_files(&self) -> Vec<String> {
+        const STYLE_DEFAULT: &str = "app/style/main.scss";
+        if let Some(styles) = &self.files {
+            log::debug!("Styles in config: {:?}", &styles);
+            styles.clone()
+        } else if let Some(file) = existing_file(STYLE_DEFAULT) {
+            log::info!("Using default style: {STYLE_DEFAULT}");
+            vec![file]
+        } else {
+            log::warn!("No styles configued and none found in default dir: '{STYLE_DEFAULT}'");
+            Vec::new()
+        }
+    }
 }
 
 impl Config {
@@ -31,10 +54,14 @@ impl Config {
 
     pub fn projects(&self) -> Projects {
         Projects {
-            app: param_or_folder(&self.leptos.app_path, "app"),
-            client: param_or_folder(&self.leptos.client_path, "client"),
-            server: param_or_folder(&self.leptos.client_path, "server"),
+            app: param_or_dir(&self.leptos.app_path, "app"),
+            client: param_or_dir(&self.leptos.client_path, "client"),
+            server: param_or_dir(&self.leptos.client_path, "server"),
         }
+    }
+
+    pub fn style(&self) -> Style {
+        self.leptos.style.clone()
     }
 
     pub fn save_default_file() -> Result<(), Reportable> {
@@ -56,15 +83,28 @@ pub struct Projects {
     pub server: Option<String>,
 }
 
-fn param_or_folder(param: &Option<String>, folder: &str) -> Option<String> {
+fn param_or_dir(param: &Option<String>, folder: &str) -> Option<String> {
     if let Some(path) = param {
         Some(path.to_string())
     } else {
-        let path = PathBuf::from(folder);
-        if path.exists() && path.is_dir() {
-            Some(folder.to_string())
-        } else {
-            None
-        }
+        existing_dir(folder)
+    }
+}
+
+fn existing_dir(dir: &str) -> Option<String> {
+    let path = PathBuf::from(dir);
+    if path.exists() && path.is_dir() {
+        Some(dir.to_string())
+    } else {
+        None
+    }
+}
+
+fn existing_file(file: &str) -> Option<String> {
+    let path = PathBuf::from(file);
+    if path.exists() && path.is_file() {
+        Some(file.to_string())
+    } else {
+        None
     }
 }

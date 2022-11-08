@@ -1,6 +1,7 @@
 mod cargo;
 mod config;
 mod error;
+mod sass;
 mod wasm_pack;
 
 use clap::{Parser, Subcommand};
@@ -34,7 +35,7 @@ impl Cli {
     }
 }
 
-#[derive(Debug, Subcommand)]
+#[derive(Debug, Subcommand, PartialEq)]
 enum Commands {
     /// Adds a default leptos.toml file to current directory
     Init,
@@ -66,14 +67,20 @@ fn main() {
 }
 
 fn try_main(args: Cli) -> Result<(), Reportable> {
-    let projects = args.read_config()?.projects();
+    if args.command == Commands::Init {
+        return Config::save_default_file();
+    }
+    let config = args.read_config()?;
+    let projects = config.projects();
+    let style = config.style();
     let release = args.release;
     match args.command {
-        Commands::Init => Config::save_default_file(),
+        Commands::Init => panic!(),
         Commands::Build => {
             wasm_pack::run("build", &projects.app, release)?;
             wasm_pack::run("build", &projects.client, release)?;
-            cargo::run("build", &projects.server, release)
+            cargo::run("build", &projects.server, release)?;
+            sass::run(style, release)
         }
         Commands::Test => {
             cargo::run("test", &projects.app, release)?;
