@@ -7,7 +7,7 @@ Build tool for [Leptos](https://crates.io/crates/leptos)
 You need the following command line tools installed:
 
 - [sass](https://sass-lang.com/dart-sass)
-- [web-pack](https://rustwasm.github.io/wasm-pack/)
+- [wasm-pack](https://rustwasm.github.io/wasm-pack/)
 
 Install with: `cargo install --path .`
 
@@ -17,7 +17,7 @@ Help: `cargo leptos --help`
 
 Cargo leptos assumes that you have three cargo projects:
 
-- _app_: the app logic (feature: **csr**, target: **wasm** or **current**).
+- _app_: the app logic (feature: **csr**, target: **wasm** or **current**). The _app_ is assumed to have a _style_ subfolder that contains scss files.
 - _client_: the client packaging of _app_ (feature: **hydrate**, target: **wasm**)
 - _server_: the server packaging of _app_ (feature: **ssr**, target: **current**)
 
