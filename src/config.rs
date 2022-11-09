@@ -32,7 +32,7 @@ impl Style {
             log::info!("Using default style: {STYLE_DEFAULT}");
             vec![file]
         } else {
-            log::warn!("No styles configued and none found in default dir: '{STYLE_DEFAULT}'");
+            log::warn!("No styles configured and none found in default dir: '{STYLE_DEFAULT}'");
             Vec::new()
         }
     }
