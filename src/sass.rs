@@ -7,10 +7,10 @@ use xshell::{cmd, Shell};
 
 use crate::{config::Style, Error, Reportable};
 
-pub fn run(style: Style, release: bool) -> Result<(), Reportable> {
+pub fn run(style: &Style, release: bool) -> Result<(), Reportable> {
     let scss_files = style.scss_files();
     log::debug!("Styles found: {scss_files:?}");
-    for scss_file in &scss_files {
+    for scss_file in scss_files {
         let scss_file = Path::new(scss_file);
         if !scss_file.exists() || !scss_file.is_file() {
             return Err(Reportable::not_a_file("expected an scss file", scss_file));
@@ -39,8 +39,7 @@ fn compile_scss(file: &Path, release: bool) -> Result<PathBuf, Error> {
     Ok(PathBuf::from(dest))
 }
 
-fn browser_lists(query: &Option<String>) -> Result<Option<Browsers>, Error> {
-    let query = query.as_deref().unwrap_or("defaults");
+fn browser_lists(query: &str) -> Result<Option<Browsers>, Error> {
     Browsers::from_browserslist([query]).map_err(|e| Error::BrowserListError(e.to_string()))
 }
 

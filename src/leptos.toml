@@ -1,18 +1,10 @@
 [leptos]
-## Optional. Defaults to 'app'
-# app_path = "my-app-path"
-
-## Optional. Defaults to 'client'
-# client_path = "my-client-path"
-
-## Optional. Defaults to 'server'
-# server_path = "my-server-path"
+app_path = "app"
+client_path = "client"
+server_path = "server"
+index_path = "app/index.html"
 
 [leptos.style]
-
-## Optional. Defaults to 'app/style'
-# files = ["my-scss-path"]
-
-## A https://browsersl.ist query
-## defaults to 'default'
-# browserquery = ""
+files = ["app/style"]
+# A https://browsersl.ist query
+browserquery = "defaults"

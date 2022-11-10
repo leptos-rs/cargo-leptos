@@ -71,32 +71,32 @@ fn try_main(args: Cli) -> Result<(), Reportable> {
         return Config::save_default_file();
     }
     let config = args.read_config()?;
-    let projects = config.projects();
-    let style = config.style();
+    let projects = &config.leptos;
+    let style = &config.leptos.style;
     let release = args.release;
     match args.command {
         Commands::Init => panic!(),
         Commands::Build => {
-            wasm_pack::run("build", &projects.app, release)?;
-            wasm_pack::run("build", &projects.client, release)?;
-            cargo::run("build", &projects.server, release)?;
+            wasm_pack::run("build", &projects.app_path, release)?;
+            wasm_pack::run("build", &projects.client_path, release)?;
+            cargo::run("build", &projects.server_path, release)?;
             sass::run(style, release)
         }
         Commands::Test => {
-            cargo::run("test", &projects.app, release)?;
-            cargo::run("test", &projects.client, release)?;
-            cargo::run("test", &projects.server, release)
+            cargo::run("test", &projects.app_path, release)?;
+            cargo::run("test", &projects.client_path, release)?;
+            cargo::run("test", &projects.server_path, release)
         }
         Commands::Clean => {
-            cargo::run("clean", &projects.app, release)?;
-            cargo::run("clean", &projects.client, release)?;
-            cargo::run("clean", &projects.server, release)?;
+            cargo::run("clean", &projects.app_path, release)?;
+            cargo::run("clean", &projects.client_path, release)?;
+            cargo::run("clean", &projects.server_path, release)?;
             rm_dir("target")
         }
         Commands::Update => {
-            cargo::run("update", &projects.app, release)?;
-            cargo::run("update", &projects.client, release)?;
-            cargo::run("update", &projects.server, release)
+            cargo::run("update", &projects.app_path, release)?;
+            cargo::run("update", &projects.client_path, release)?;
+            cargo::run("update", &projects.server_path, release)
         }
     }
 }
