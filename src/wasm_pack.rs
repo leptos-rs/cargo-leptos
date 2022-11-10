@@ -6,7 +6,7 @@ use xshell::{cmd, Shell};
 
 pub fn run(command: &str, path: &str, release: bool) -> Result<(), Reportable> {
     Ok(try_build(command, &path, release)
-        .map_err(|e| e.step_context(format!("cargo {command} {path}")))?)
+        .map_err(|e| e.step_context(format!("wasm-pack {command} {path}")))?)
 }
 
 pub fn try_build(command: &str, path: &str, release: bool) -> Result<(), Error> {

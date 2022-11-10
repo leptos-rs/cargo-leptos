@@ -7,7 +7,7 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum Reportable {
-    #[error("Could not {action} on {file} because of: {source}")]
+    #[error("Could not {action} {file} because of: {source}")]
     FileError {
         action: &'static str,
         file: String,
@@ -46,6 +46,8 @@ pub enum Error {
     CSSPrintError(#[from] CssError<CssPrinterError>),
     #[error("{0}")]
     BrowserListError(String),
+    #[error("the html is missing the marker {0}")]
+    MissingHtmlMarker(&'static str),
 }
 
 impl Error {

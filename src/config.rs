@@ -12,6 +12,9 @@ pub struct Leptos {
     pub app_path: String,
     pub client_path: String,
     pub server_path: String,
+    pub index_path: String,
+    /// path to generated rust code
+    pub gen_path: String,
     pub style: Style,
 }
 
