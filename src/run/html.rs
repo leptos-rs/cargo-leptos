@@ -1,6 +1,7 @@
-use crate::{util, Error, Reportable};
+use crate::{config::Config, util, Error, Reportable};
 use simplelog as log;
 use std::fs;
+use util::StrAdditions;
 
 // markers used in the html template
 const HEAD_MARKER: &str = "<!-- INJECT HEAD -->\n";
@@ -12,8 +13,8 @@ const MIDDLE_MARKER: &str = "--- MIDDLE ---\n";
 const END_MARKER: &str = "--- END ---\n";
 
 const HTML_HEAD_INSERT: &str = r##"
-    <script type="module">import init from '/pkg/app.js';init('/pkg/app.wasm');</script>
-    <link rel="preload" href="/pkg/app.wasm" as="fetch" type="application/wasm" crossorigin="">
+    <script type="module">import init from '/pkg/app.js';init('/pkg/app_bg.wasm');</script>
+    <link rel="preload" href="/pkg/app_bg.wasm" as="fetch" type="application/wasm" crossorigin="">
     <link rel="stylesheet" href="/pkg/app.css">"
     <link rel="modulepreload" href="/pkg/app.js">"##;
 
@@ -42,7 +43,9 @@ impl Html {
     }
 
     /// generate html for client side rendering
-    pub fn generate_html(&self, file: &str) -> Result<(), Reportable> {
+    pub fn generate_html(&self) -> Result<(), Reportable> {
+        let file = util::mkdirs("target/site/")?.with("index.html");
+
         let text = self
             .text
             .replace(HEAD_MARKER, &self.head())
@@ -51,11 +54,13 @@ impl Html {
         log::debug!("Writing html to {file}");
         log::trace!("Html content\n{text}");
 
-        util::write(file, &text)
+        util::write(&file, &text)
     }
 
     /// generate rust for server side rendering
-    pub fn generate_rust(&self, file: &str) -> Result<(), Reportable> {
+    pub fn generate_rust(&self, config: &Config) -> Result<(), Reportable> {
+        let file = &config.gen_path;
+
         let rust = include_str!("generated.rs");
 
         let start_head = self.text.find(HEAD_MARKER).unwrap();
@@ -76,6 +81,6 @@ impl Html {
         log::debug!("Writing rust to {file}");
         log::trace!("Html content\n{rust}");
 
-        util::write(file, &rust)
+        util::write(&file, &rust)
     }
 }

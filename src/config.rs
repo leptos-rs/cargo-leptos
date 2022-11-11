@@ -34,9 +34,11 @@ pub struct Config {
     pub client_path: String,
     pub server_path: String,
     pub index_path: String,
-    /// path to generated rust code
+    /// where to generate rust code
     pub gen_path: String,
     pub style: Style,
+
+    // parameters from cmd-line args
     #[serde(skip_deserializing)]
     pub release: bool,
     #[serde(skip_deserializing)]
@@ -45,12 +47,6 @@ pub struct Config {
 
 #[derive(Clone, Deserialize, Debug)]
 pub struct Style {
-    pub files: Vec<String>,
+    pub file: String,
     pub browserquery: String,
-}
-
-impl Style {
-    pub fn scss_files(&self) -> &[String] {
-        &self.files
-    }
 }

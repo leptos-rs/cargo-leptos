@@ -9,6 +9,6 @@ gen_path = "app/src/generated.rs"
 [leptos.style]
 # only root style sheets should be listed
 # imported styles are automatically handled.
-files = ["app/style/main.scss"]
+file = "app/style/main.scss"
 # A https://browsersl.ist query
 browserquery = "defaults"

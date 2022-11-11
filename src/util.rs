@@ -35,7 +35,13 @@ pub fn rm_dir(dir: &str) -> Result<(), Reportable> {
     Ok(())
 }
 
-pub fn mkdirs(dir: String) -> Result<String, Reportable> {
+pub fn rm_file<S: AsRef<str>>(file: S) -> Result<(), Reportable> {
+    fs::remove_file(file.as_ref())
+        .map_err(|e| Into::<Error>::into(e).file_context("remove file", file.as_ref()))
+}
+
+pub fn mkdirs<S: ToString>(dir: S) -> Result<String, Reportable> {
+    let dir = dir.to_string();
     fs::create_dir_all(&dir)
         .map_err(|e| Into::<Error>::into(e).file_context("create dir", &dir))?;
     Ok(dir)

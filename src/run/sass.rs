@@ -5,36 +5,31 @@ use lightningcss::{
 use std::{fs, path::Path, path::PathBuf};
 use xshell::{cmd, Shell};
 
-use crate::{
-    config::{Config, Style},
-    Error, Reportable,
-};
+use crate::{config::Config, Error, Reportable};
 
-pub fn run(style: &Style, config: &Config) -> Result<(), Reportable> {
-    let scss_files = style.scss_files();
-    log::debug!("Styles found: {scss_files:?}");
-    for scss_file in scss_files {
-        let scss_file = Path::new(scss_file);
-        if !scss_file.exists() || !scss_file.is_file() {
-            return Err(Reportable::not_a_file("expected an scss file", scss_file));
-        }
-        let css_file = compile_scss(scss_file, config.release)
-            .map_err(|e| e.file_context("compile scss", scss_file))?;
+pub fn run(config: &Config) -> Result<(), Reportable> {
+    let style = &config.style;
+    let scss_file = &style.file;
 
-        let browsers = browser_lists(&style.browserquery)
-            .map_err(|e| e.config_context("leptos.style.browserquery"))?;
-
-        process_css(&css_file, browsers, config.release)
-            .map_err(|e| e.file_context("process css", scss_file))?;
+    log::debug!("Style found: {scss_file:?}");
+    let scss_file = Path::new(scss_file);
+    if !scss_file.exists() || !scss_file.is_file() {
+        return Err(Reportable::not_a_file("expected an scss file", scss_file));
     }
+    let css_file = compile_scss(scss_file, config.release)
+        .map_err(|e| e.file_context("compile scss", scss_file))?;
+
+    let browsers = browser_lists(&style.browserquery)
+        .map_err(|e| e.config_context("leptos.style.browserquery"))?;
+
+    process_css(&css_file, browsers, config.release)
+        .map_err(|e| e.file_context("process css", scss_file))?;
+
     Ok(())
 }
 
 fn compile_scss(file: &Path, release: bool) -> Result<PathBuf, Error> {
-    let mut filename: String = file.file_name().unwrap().to_string_lossy().to_string();
-    filename = filename.replace(".scss", ".css");
-
-    let dest = format!("target/static/{filename}");
+    let dest = format!("target/site/pkg/app.css");
     let sourcemap = release.then(|| "--no-source-map");
 
     let sh = Shell::new()?;

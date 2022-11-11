@@ -7,7 +7,6 @@ use clap::{Parser, Subcommand};
 pub use error::{Error, Reportable};
 use run::{cargo, sass, wasm_pack, Html};
 use std::env;
-use util::StrAdditions;
 
 #[derive(Debug, Parser)]
 pub struct Cli {
@@ -67,20 +66,19 @@ fn try_main(args: Cli) -> Result<(), Reportable> {
     match args.command {
         Commands::Init => panic!(),
         Commands::Build => {
+            util::rm_dir("target/site")?;
+
             cargo::run("build", &config.server_path, &config)?;
-            sass::run(&config.style, &config)?;
+            sass::run(&config)?;
 
             let html = Html::read(&config.index_path)?;
 
-            if args.csr {
+            if config.csr {
                 wasm_pack::run("build", &config.app_path, &config)?;
-                let profile = args.release.then_some("release").unwrap_or("debug");
-                let file = util::mkdirs(format!("target/site/{profile}/"))?.with("index.html");
-                html.generate_html(&file)?;
+                html.generate_html()?;
             } else {
                 wasm_pack::run("build", &config.client_path, &config)?;
-                let file = util::mkdirs(format!("{}/src/", config.app_path))?.with("generated.rs");
-                html.generate_rust(&file)?;
+                html.generate_rust(&config)?;
             }
             Ok(())
         }
