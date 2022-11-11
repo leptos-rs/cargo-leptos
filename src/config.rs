@@ -1,14 +1,37 @@
-use crate::{Error, Reportable};
-use serde::{Deserialize, Serialize};
+use crate::{util, Cli, Error, Reportable};
+use serde::Deserialize;
 use std::fs;
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Config {
-    pub leptos: Leptos,
+#[derive(Deserialize, Debug)]
+struct ConfigFile {
+    pub leptos: Config,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Leptos {
+/// read from path or default to 'leptos.toml'
+pub fn read(cli: &Cli) -> Result<Config, Reportable> {
+    let path = cli.config.as_deref().unwrap_or("leptos.toml");
+    log::debug!("Using config file {path}");
+    let mut conf = read_config(path)
+        .map_err(|e| e.file_context("read config", path))?
+        .leptos;
+    conf.release = cli.release;
+    conf.csr = cli.csr;
+    Ok(conf)
+}
+
+fn read_config(file: &str) -> Result<ConfigFile, Error> {
+    let text = fs::read_to_string(file)?;
+    log::trace!("Config file content:\n{text}");
+    Ok(toml::from_str(&text)?)
+}
+
+pub fn save_default_file() -> Result<(), Reportable> {
+    log::debug!("Adding default leptos.toml file");
+    util::write("leptos.toml", include_str!("leptos.toml"))
+}
+
+#[derive(Deserialize, Debug)]
+pub struct Config {
     pub app_path: String,
     pub client_path: String,
     pub server_path: String,
@@ -16,9 +39,13 @@ pub struct Leptos {
     /// path to generated rust code
     pub gen_path: String,
     pub style: Style,
+    #[serde(skip_deserializing)]
+    pub release: bool,
+    #[serde(skip_deserializing)]
+    pub csr: bool,
 }
 
-#[derive(Clone, Serialize, Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug)]
 pub struct Style {
     pub files: Vec<String>,
     pub browserquery: String,
@@ -27,31 +54,5 @@ pub struct Style {
 impl Style {
     pub fn scss_files(&self) -> &[String] {
         &self.files
-    }
-}
-
-impl Config {
-    /// read from path or default to 'leptos.toml'
-    pub fn read(path: &Option<String>) -> Result<Self, Reportable> {
-        let path = path.as_deref().unwrap_or("leptos.toml");
-        Config::try_read(path).map_err(|e| e.file_context("read config", path))
-    }
-
-    fn try_read(path: &str) -> Result<Self, Error> {
-        log::debug!("Reading config file {path}");
-        let toml = fs::read_to_string(path)?;
-        log::trace!("Config file content:\n{toml}");
-        Ok(toml::from_str(&toml)?)
-    }
-
-    pub fn save_default_file() -> Result<(), Reportable> {
-        Self::try_save_default().map_err(|e| e.file_context("save default", "leptos.toml"))
-    }
-
-    fn try_save_default() -> Result<(), Error> {
-        log::debug!("Adding default leptos.toml file");
-        let toml = include_str!("leptos.toml");
-        log::trace!("Content of leptos.toml:\n{toml}");
-        Ok(std::fs::write("leptos.toml", toml.as_bytes())?)
     }
 }

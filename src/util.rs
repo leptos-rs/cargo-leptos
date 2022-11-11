@@ -42,8 +42,10 @@ pub fn mkdirs(dir: String) -> Result<String, Reportable> {
 }
 
 pub fn write(file: &str, text: &str) -> Result<(), Reportable> {
+    log::trace!("Content of {file}:\n{text}");
     fs::write(&file, text).map_err(|e| Into::<Error>::into(e).file_context("write", file))
 }
+
 pub trait StrAdditions {
     fn with(&self, append: &str) -> String;
 }

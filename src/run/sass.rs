@@ -5,9 +5,12 @@ use lightningcss::{
 use std::{fs, path::Path, path::PathBuf};
 use xshell::{cmd, Shell};
 
-use crate::{config::Style, Error, Reportable};
+use crate::{
+    config::{Config, Style},
+    Error, Reportable,
+};
 
-pub fn run(style: &Style, release: bool) -> Result<(), Reportable> {
+pub fn run(style: &Style, config: &Config) -> Result<(), Reportable> {
     let scss_files = style.scss_files();
     log::debug!("Styles found: {scss_files:?}");
     for scss_file in scss_files {
@@ -15,13 +18,13 @@ pub fn run(style: &Style, release: bool) -> Result<(), Reportable> {
         if !scss_file.exists() || !scss_file.is_file() {
             return Err(Reportable::not_a_file("expected an scss file", scss_file));
         }
-        let css_file = compile_scss(scss_file, release)
+        let css_file = compile_scss(scss_file, config.release)
             .map_err(|e| e.file_context("compile scss", scss_file))?;
 
         let browsers = browser_lists(&style.browserquery)
             .map_err(|e| e.config_context("leptos.style.browserquery"))?;
 
-        process_css(&css_file, browsers, release)
+        process_css(&css_file, browsers, config.release)
             .map_err(|e| e.file_context("process css", scss_file))?;
     }
     Ok(())

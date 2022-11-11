@@ -1,8 +1,8 @@
-use crate::{Error, Reportable};
+use crate::{config::Config, Error, Reportable};
 use xshell::{cmd, Shell};
 
-pub fn run(command: &str, path: &str, release: bool) -> Result<(), Reportable> {
-    Ok(try_build(command, &path, release)
+pub fn run(command: &str, path: &str, config: &Config) -> Result<(), Reportable> {
+    Ok(try_build(command, &path, config.release)
         .map_err(|e| e.step_context(format!("wasm-pack {path}")))?)
 }
 
