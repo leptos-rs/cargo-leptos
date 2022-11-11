@@ -1,0 +1,12 @@
+[leptos]
+app_path = "examples/basic/app"
+client_path = "examples/basic/client"
+server_path = "examples/basic/server"
+index_path = "examples/basic/app/index.html"
+# path to generated rust code
+gen_path = "examples/basic/app/src/generated.rs"
+
+[leptos.style]
+files = ["examples/basic/app/style/main.scss"]
+# A https://browsersl.ist query
+browserquery = "defaults"

@@ -25,10 +25,6 @@ pub struct Cli {
     /// Verbosity (none: errors & warnings, -v: verbose, --vv: very verbose, --vvv: output everything)
     #[arg(short, long, action = clap::ArgAction::Count)]
     verbose: u8,
-
-    /// Path to configuration file (defaults to './leptos.toml')
-    #[arg(long)]
-    config: Option<String>,
 }
 
 #[derive(Debug, Subcommand, PartialEq)]

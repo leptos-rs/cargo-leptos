@@ -9,10 +9,8 @@ struct ConfigFile {
 
 /// read from path or default to 'leptos.toml'
 pub fn read(cli: &Cli) -> Result<Config, Reportable> {
-    let path = cli.config.as_deref().unwrap_or("leptos.toml");
-    log::debug!("Using config file {path}");
-    let mut conf = read_config(path)
-        .map_err(|e| e.file_context("read config", path))?
+    let mut conf = read_config("leptos.toml")
+        .map_err(|e| e.file_context("read config", "leptos.toml"))?
         .leptos;
     conf.release = cli.release;
     conf.csr = cli.csr;
