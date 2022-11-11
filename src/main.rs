@@ -1,15 +1,12 @@
-mod cargo;
 mod config;
 mod error;
-pub mod generated;
-mod html;
-mod sass;
+mod run;
 pub mod util;
-mod wasm_pack;
 
 use clap::{Parser, Subcommand};
 pub use config::Config;
 pub use error::{Error, Reportable};
+use run::{cargo, sass, wasm_pack, Html};
 use std::env;
 use util::StrAdditions;
 
@@ -88,7 +85,7 @@ fn try_main(args: Cli) -> Result<(), Reportable> {
             cargo::run("build", &config.server_path, release)?;
             sass::run(style, release)?;
 
-            let html = html::Html::read(&config.index_path)?;
+            let html = Html::read(&config.index_path)?;
             if args.csr {
                 let profile = args.release.then_some("release").unwrap_or("debug");
                 let file = util::mkdirs(format!("target/site/{profile}/"))?.with("index.html");
