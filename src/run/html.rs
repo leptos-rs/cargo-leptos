@@ -11,7 +11,8 @@ const START_MARKER: &str = "--- START ---\n";
 const MIDDLE_MARKER: &str = "--- MIDDLE ---\n";
 const END_MARKER: &str = "--- END ---\n";
 
-const HTML_HEAD_INSERT: &str = r##"<script type="module">import init from '/pkg/app.js';init('/pkg/app.wasm');</script>
+const HTML_HEAD_INSERT: &str = r##"
+    <script type="module">import init from '/pkg/app.js';init('/pkg/app.wasm');</script>
     <link rel="preload" href="/pkg/app.wasm" as="fetch" type="application/wasm" crossorigin="">
     <link rel="stylesheet" href="/pkg/app.css">"
     <link rel="modulepreload" href="/pkg/app.js">"##;
@@ -58,19 +59,19 @@ impl Html {
         let rust = include_str!("generated.rs");
 
         let start_head = self.text.find(HEAD_MARKER).unwrap();
-        let start = format!("{}", &self.text[0..start_head]);
+        let start = format!("{}{}", &self.text[0..start_head].trim(), self.head());
 
         let end_head = start_head + HEAD_MARKER.len(); // it's ASCII so only 1 byte per char
         let start_body = self.text.find(BODY_MARKER).unwrap();
-        let middle = &self.text[end_head..start_body];
+        let middle = format!("  {}", &self.text[end_head..start_body].trim());
 
         let end_body = start_body + BODY_MARKER.len();
-        let end = &self.text[end_body..];
+        let end = format!("  {}", &self.text[end_body..].trim());
 
         let rust = rust
             .replace(START_MARKER, &start)
-            .replace(MIDDLE_MARKER, middle)
-            .replace(END_MARKER, end);
+            .replace(MIDDLE_MARKER, &middle)
+            .replace(END_MARKER, &end);
 
         log::debug!("Writing rust to {file}");
         log::trace!("Html content\n{rust}");
