@@ -1,8 +1,8 @@
 mod generated;
 
+use crate::app::*;
 use actix_files::Files;
 use actix_web::*;
-use example_app::*;
 use futures::StreamExt;
 use generated::{HTML_END, HTML_MIDDLE, HTML_START};
 use leptos::*;
@@ -66,8 +66,7 @@ async fn render_app(req: HttpRequest) -> impl Responder {
     )
 }
 
-#[actix_web::main]
-async fn main() -> std::io::Result<()> {
+pub async fn run() -> std::io::Result<()> {
     let host = std::env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
     let port = std::env::var("PORT")
         .unwrap_or_else(|_| "3000".to_string())
