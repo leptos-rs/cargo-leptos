@@ -8,8 +8,7 @@ pub fn App(cx: Scope) -> Element {
     view! {
         cx,
         <div>
-            <Stylesheet href="/static/style.css".into()/>
-            <div>"Hello world"</div>
+            <h1>"Hello world!"</h1>
         </div>
     }
 }

@@ -19,12 +19,3 @@ pub const HTML_MIDDLE: &str = r##"
 pub const HTML_END: &str = r##"
 --- END ---
 "##;
-
-///
-pub fn build_html(head_fn: impl Fn() -> String, body_fn: impl Fn() -> String) -> String {
-    format!(
-        "{HTML_START}{}{HTML_MIDDLE}{}{HTML_END}",
-        head_fn(),
-        body_fn()
-    )
-}

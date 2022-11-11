@@ -1,7 +1,10 @@
-use actix_files::{Files, NamedFile};
+mod generated;
+
+use actix_files::Files;
 use actix_web::*;
 use example_app::*;
 use futures::StreamExt;
+use generated::{HTML_END, HTML_MIDDLE, HTML_START};
 use leptos::*;
 use leptos_meta::*;
 use leptos_router::*;
@@ -28,11 +31,6 @@ impl History for ActixIntegration {
     fn navigate(&self, _loc: &LocationChange) {}
 }
 
-#[get("/static/style.css")]
-async fn css() -> impl Responder {
-    NamedFile::open_async("../lib/style.css").await
-}
-
 // match every path — our router will handle actual dispatch
 #[get("{tail:.*}")]
 async fn render_app(req: HttpRequest) -> impl Responder {
@@ -54,24 +52,16 @@ async fn render_app(req: HttpRequest) -> impl Responder {
         view! { cx, <App /> }
     };
 
-    let head = r#"<!DOCTYPE html>
-            <html lang="en">
-                <head>
-                    <meta charset="utf-8"/>
-                    <meta name="viewport" content="width=device-width, initial-scale=1"/>
-                    <script type="module">import init, { main } from '/pkg/polyglot_client.js'; init().then(main);</script>"#;
-    let tail = "</body></html>";
-
     HttpResponse::Ok().content_type("text/html").streaming(
-        futures::stream::once(async { head.to_string() })
+        futures::stream::once(async { HTML_START.to_string() })
             .chain(render_to_stream(move |cx| {
-                let app = app(cx);
-                let head = use_context::<MetaContext>(cx)
+                use_context::<MetaContext>(cx)
                     .map(|meta| meta.dehydrate())
-                    .unwrap_or_default();
-                format!("{head}</head><body>{app}")
+                    .unwrap_or_default()
             }))
-            .chain(futures::stream::once(async { tail.to_string() }))
+            .chain(futures::stream::once(async { HTML_MIDDLE.to_string() }))
+            .chain(render_to_stream(move |cx| app(cx).to_string()))
+            .chain(futures::stream::once(async { HTML_END.to_string() }))
             .map(|html| Ok(web::Bytes::from(html)) as Result<web::Bytes>),
     )
 }
@@ -83,16 +73,16 @@ async fn main() -> std::io::Result<()> {
         .unwrap_or_else(|_| "3000".to_string())
         .parse::<u16>()
         .unwrap();
-    log::debug!("serving at {host}:{port}");
 
     simple_logger::init_with_level(log::Level::Debug).expect("couldn't initialize logging");
 
+    log::info!("serving at {host}:{port}");
+
     HttpServer::new(|| {
         App::new()
-            .service(css)
             .service(
                 web::scope("/pkg")
-                    .service(Files::new("", "../client/pkg"))
+                    .service(Files::new("", "target/site/pkg"))
                     .wrap(middleware::Compress::default()),
             )
             .service(render_app)

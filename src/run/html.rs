@@ -15,7 +15,7 @@ const END_MARKER: &str = "--- END ---\n";
 const HTML_HEAD_INSERT: &str = r##"
     <script type="module">import init from '/pkg/app.js';init('/pkg/app_bg.wasm');</script>
     <link rel="preload" href="/pkg/app_bg.wasm" as="fetch" type="application/wasm" crossorigin="">
-    <link rel="stylesheet" href="/pkg/app.css">"
+    <link rel="stylesheet" href="/pkg/app.css">
     <link rel="modulepreload" href="/pkg/app.js">"##;
 
 pub struct Html {

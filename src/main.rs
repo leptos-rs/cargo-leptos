@@ -4,6 +4,7 @@ mod run;
 pub mod util;
 
 use clap::{Parser, Subcommand};
+use config::Config;
 pub use error::{Error, Reportable};
 use run::{cargo, sass, wasm_pack, Html};
 use std::env;
@@ -38,6 +39,8 @@ enum Commands {
     Test,
     /// Run the cargo update for app, client and server
     Update,
+    /// Run the `ssr` packaged server
+    Run,
 }
 
 fn main() {
@@ -65,21 +68,10 @@ fn try_main(args: Cli) -> Result<(), Reportable> {
 
     match args.command {
         Commands::Init => panic!(),
-        Commands::Build => {
-            util::rm_dir("target/site")?;
-
-            cargo::run("build", &config.server_path, &config)?;
-            sass::run(&config)?;
-
-            let html = Html::read(&config.index_path)?;
-
-            if config.csr {
-                wasm_pack::run("build", &config.app_path, &config)?;
-                html.generate_html()?;
-            } else {
-                wasm_pack::run("build", &config.client_path, &config)?;
-                html.generate_rust(&config)?;
-            }
+        Commands::Build => build(&config),
+        Commands::Run => {
+            build(&config)?;
+            cargo::run("run", &config.server_path, &config)?;
             Ok(())
         }
         Commands::Test => {
@@ -99,4 +91,22 @@ fn try_main(args: Cli) -> Result<(), Reportable> {
             cargo::run("update", &config.server_path, &config)
         }
     }
+}
+
+fn build(config: &Config) -> Result<(), Reportable> {
+    util::rm_dir("target/site")?;
+
+    cargo::run("build", &config.server_path, &config)?;
+    sass::run(&config)?;
+
+    let html = Html::read(&config.index_path)?;
+
+    if config.csr {
+        wasm_pack::run("build", &config.app_path, &config)?;
+        html.generate_html()?;
+    } else {
+        wasm_pack::run("build", &config.client_path, &config)?;
+        html.generate_rust(&config)?;
+    }
+    Ok(())
 }

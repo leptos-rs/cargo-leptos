@@ -14,7 +14,7 @@ pub const HTML_START: &str = r##"
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <script type="module">import init from '/pkg/app.js';init('/pkg/app_bg.wasm');</script>
     <link rel="preload" href="/pkg/app_bg.wasm" as="fetch" type="application/wasm" crossorigin="">
-    <link rel="stylesheet" href="/pkg/app.css">"
+    <link rel="stylesheet" href="/pkg/app.css">
     <link rel="modulepreload" href="/pkg/app.js">"##;
 
 /// index.html content from `<!-- INJECT HEAD -->` up to `<!-- INJECT BODY -->`
@@ -26,12 +26,3 @@ pub const HTML_MIDDLE: &str = r##"
 pub const HTML_END: &str = r##"
   </body>
 </html>"##;
-
-///
-pub fn build_html(head_fn: impl Fn() -> String, body_fn: impl Fn() -> String) -> String {
-    format!(
-        "{HTML_START}{}{HTML_MIDDLE}{}{HTML_END}",
-        head_fn(),
-        body_fn()
-    )
-}
