@@ -1,14 +1,12 @@
 [leptos]
-app_path = "app"
-client_path = "client"
-server_path = "server"
-index_path = "app/index.html"
-# path to generated rust code
-gen_path = "app/src/generated.rs"
+# root path, all following paths are relative to this
+root = "./"
+# path to generate rust code to
+gen_path = "src/server/generated.rs"
+# path to the index.html file
+index_path = "index.html"
 
 [leptos.style]
-# only root style sheets should be listed
-# imported styles are automatically handled.
-file = "app/style/main.scss"
+file = "style/main.scss"
 # A https://browsersl.ist query
 browserquery = "defaults"

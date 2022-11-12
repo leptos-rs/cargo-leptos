@@ -13,7 +13,7 @@ pub fn try_build(command: &str, path: &str, release: bool) -> Result<(), Error> 
 
     cmd!(
         sh,
-        "cargo {command} {release...} --manifest-path {path}/Cargo.toml"
+        "cargo {command} {release...} --no-default-features --features=ssr --manifest-path {path}/Cargo.toml"
     )
     .run()?;
     Ok(())

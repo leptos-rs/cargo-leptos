@@ -1,12 +1,11 @@
 [leptos]
-app_path = "examples/basic/app"
-client_path = "examples/basic/client"
-server_path = "examples/basic/server"
-index_path = "examples/basic/app/index.html"
-# path to generated rust code
-gen_path = "examples/basic/server/src/generated.rs"
+root = "example/"
+# path, relative to root, to generat rust code to
+gen_path = "src/server/generated.rs"
+# path, relative to root, to the index.html file
+index_path = "index.html"
 
 [leptos.style]
-file = "examples/basic/app/style/main.scss"
+file = "style/main.scss"
 # A https://browsersl.ist query
 browserquery = "defaults"

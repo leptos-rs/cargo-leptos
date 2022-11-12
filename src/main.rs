@@ -33,12 +33,8 @@ enum Commands {
     Init,
     /// Compile the client and server
     Build,
-    /// Remove the target directories (in app, client and server)
-    Clean,
     /// Run the cargo tests for app, client and server
     Test,
-    /// Run the cargo update for app, client and server
-    Update,
     /// Run the `ssr` packaged server
     Run,
 }
@@ -71,41 +67,26 @@ fn try_main(args: Cli) -> Result<(), Reportable> {
         Commands::Build => build(&config),
         Commands::Run => {
             build(&config)?;
-            cargo::run("run", &config.server_path, &config)?;
+            cargo::run("run", &config.root, &config)?;
             Ok(())
         }
-        Commands::Test => {
-            cargo::run("test", &config.app_path, &config)?;
-            cargo::run("test", &config.client_path, &config)?;
-            cargo::run("test", &config.server_path, &config)
-        }
-        Commands::Clean => {
-            cargo::run("clean", &config.app_path, &config)?;
-            cargo::run("clean", &config.client_path, &config)?;
-            cargo::run("clean", &config.server_path, &config)?;
-            util::rm_dir("target")
-        }
-        Commands::Update => {
-            cargo::run("update", &config.app_path, &config)?;
-            cargo::run("update", &config.client_path, &config)?;
-            cargo::run("update", &config.server_path, &config)
-        }
+        Commands::Test => cargo::run("test", &config.root, &config),
     }
 }
 
 fn build(config: &Config) -> Result<(), Reportable> {
     util::rm_dir("target/site")?;
 
-    cargo::run("build", &config.server_path, &config)?;
+    cargo::run("build", &config.root, &config)?;
     sass::run(&config)?;
 
     let html = Html::read(&config.index_path)?;
 
     if config.csr {
-        wasm_pack::run("build", &config.app_path, &config)?;
+        wasm_pack::run("build", &config.root, &config)?;
         html.generate_html()?;
     } else {
-        wasm_pack::run("build", &config.client_path, &config)?;
+        wasm_pack::run("build", &config.root, &config)?;
         html.generate_rust(&config)?;
     }
     Ok(())

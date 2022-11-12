@@ -14,6 +14,9 @@ pub fn read(cli: &Cli) -> Result<Config, Reportable> {
         .leptos;
     conf.release = cli.release;
     conf.csr = cli.csr;
+    conf.index_path = format!("{}/{}", conf.root, conf.index_path);
+    conf.gen_path = format!("{}/{}", conf.root, conf.gen_path);
+    conf.style.file = format!("{}/{}", conf.root, conf.style.file);
     Ok(conf)
 }
 
@@ -30,9 +33,7 @@ pub fn save_default_file() -> Result<(), Reportable> {
 
 #[derive(Deserialize, Debug)]
 pub struct Config {
-    pub app_path: String,
-    pub client_path: String,
-    pub server_path: String,
+    pub root: String,
     pub index_path: String,
     /// where to generate rust code
     pub gen_path: String,
