@@ -2,11 +2,13 @@ mod config;
 mod run;
 pub mod util;
 
-use anyhow::Result;
+use anyhow::{Error, Result};
 use clap::{Parser, Subcommand};
 use config::Config;
-use run::{cargo, sass, serve, wasm_pack, Html};
+use run::{cargo, sass, serve, wasm_pack, watch, Html};
 use std::env;
+use std::sync::mpsc::channel;
+use tokio::task::JoinHandle;
 
 #[derive(Debug, Parser)]
 pub struct Cli {
@@ -34,8 +36,10 @@ enum Commands {
     Build,
     /// Run the cargo tests for app, client and server
     Test,
-    /// Run the `ssr` packaged server
-    Run,
+    /// Serve. In `csr` mode an internal server is used
+    Serve,
+    /// Serve and automatically reload when files change
+    Watch,
 }
 
 #[tokio::main]
@@ -59,23 +63,25 @@ async fn main() -> Result<()> {
     match args.command {
         Commands::Init => panic!(),
         Commands::Build => build_all(&config),
-        Commands::Run => {
-            util::rm_dir("target/site")?;
-            build_client(&config)?;
-
-            if config.csr {
-                serve::run(&config).await;
-            } else {
-                // build server
-                cargo::run("build", &config.root, &config)?;
-                cargo::run("run", &config.root, &config)?;
-            }
-            Ok(())
-        }
+        Commands::Serve => serve(config).await,
         Commands::Test => cargo::run("test", &config.root, &config),
+        Commands::Watch => watch(&config).await,
     }
 }
 
+async fn serve(config: Config) -> Result<()> {
+    util::rm_dir("target/site")?;
+    build_client(&config)?;
+
+    if config.csr {
+        serve::run(&config).await;
+    } else {
+        // build server
+        cargo::run("build", &config.root, &config)?;
+        cargo::run("run", &config.root, &config)?;
+    }
+    Ok(())
+}
 fn build_client(config: &Config) -> Result<()> {
     sass::run(&config)?;
 
@@ -108,5 +114,22 @@ fn build_all(config: &Config) -> Result<()> {
     wasm_pack::run("build", &config.root, &config)?;
     config.csr = false;
     wasm_pack::run("build", &config.root, &config)?;
+    Ok(())
+}
+
+async fn watch(config: &Config) -> Result<()> {
+    let (tx, rx) = channel::<bool>();
+    // load it with one so that it will start the loop
+    tx.send(true).unwrap();
+    let cfg = config.clone();
+    let _ = tokio::spawn(async move { watch::run(cfg, tx).await });
+
+    let mut serve_handle: Option<JoinHandle<Result<(), Error>>> = None;
+
+    while rx.recv().is_ok() {
+        serve_handle.map(|h| h.abort());
+        let cfg = config.clone();
+        serve_handle = Some(tokio::spawn(async move { serve(cfg).await }));
+    }
     Ok(())
 }
