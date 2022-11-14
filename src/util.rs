@@ -1,4 +1,4 @@
-use crate::{Error, Reportable};
+use anyhow::{Context, Result};
 use log::LevelFilter;
 use simplelog::{ColorChoice, ConfigBuilder, TermLogger, TerminalMode};
 use std::{fs, path::Path};
@@ -18,7 +18,7 @@ pub fn setup_logging(verbose: u8) {
     log::info!("Log level set to: {log_level}");
 }
 
-pub fn rm_dir(dir: &str) -> Result<(), Reportable> {
+pub fn rm_dir(dir: &str) -> Result<()> {
     let path = Path::new(&dir);
 
     if !path.exists() {
@@ -31,25 +31,23 @@ pub fn rm_dir(dir: &str) -> Result<(), Reportable> {
     }
 
     log::info!("Cleaning dir '{dir}'");
-    fs::remove_dir_all(path).map_err(|e| Into::<Error>::into(e).file_context("remove dir", dir))?;
+    fs::remove_dir_all(path).context(format!("remove dir {dir}"))?;
     Ok(())
 }
 
-pub fn rm_file<S: AsRef<str>>(file: S) -> Result<(), Reportable> {
-    fs::remove_file(file.as_ref())
-        .map_err(|e| Into::<Error>::into(e).file_context("remove file", file.as_ref()))
+pub fn rm_file<S: AsRef<str>>(file: S) -> Result<()> {
+    fs::remove_file(file.as_ref()).context(format!("remove file {}", file.as_ref()))
 }
 
-pub fn mkdirs<S: ToString>(dir: S) -> Result<String, Reportable> {
+pub fn mkdirs<S: ToString>(dir: S) -> Result<String> {
     let dir = dir.to_string();
-    fs::create_dir_all(&dir)
-        .map_err(|e| Into::<Error>::into(e).file_context("create dir", &dir))?;
+    fs::create_dir_all(&dir).context(format!("create dir {dir}"))?;
     Ok(dir)
 }
 
-pub fn write(file: &str, text: &str) -> Result<(), Reportable> {
+pub fn write(file: &str, text: &str) -> Result<()> {
     log::trace!("Content of {file}:\n{text}");
-    fs::write(&file, text).map_err(|e| Into::<Error>::into(e).file_context("write", file))
+    fs::write(&file, text).context(format!("write {file}"))
 }
 
 pub trait StrAdditions {

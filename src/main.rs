@@ -1,11 +1,10 @@
 mod config;
-mod error;
 mod run;
 pub mod util;
 
+use anyhow::Result;
 use clap::{Parser, Subcommand};
 use config::Config;
-pub use error::{Error, Reportable};
 use run::{cargo, sass, wasm_pack, Html};
 use std::env;
 
@@ -56,7 +55,7 @@ fn main() {
     }
 }
 
-fn try_main(args: Cli) -> Result<(), Reportable> {
+fn try_main(args: Cli) -> Result<()> {
     if args.command == Commands::Init {
         return config::save_default_file();
     }
@@ -74,7 +73,7 @@ fn try_main(args: Cli) -> Result<(), Reportable> {
     }
 }
 
-fn build(config: &Config) -> Result<(), Reportable> {
+fn build(config: &Config) -> Result<()> {
     util::rm_dir("target/site")?;
 
     cargo::run("build", &config.root, &config)?;

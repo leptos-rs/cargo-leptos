@@ -1,12 +1,12 @@
-use crate::{config::Config, Error, Reportable};
+use crate::config::Config;
+use anyhow::{Context, Result};
 use xshell::{cmd, Shell};
 
-pub fn run(command: &str, path: &str, config: &Config) -> Result<(), Reportable> {
-    Ok(try_build(command, &path, config.release)
-        .map_err(|e| e.step_context(format!("wasm-pack {path}")))?)
+pub fn run(command: &str, path: &str, config: &Config) -> Result<()> {
+    try_build(command, &path, config.release).context(format!("wasm-pack {path}"))
 }
 
-pub fn try_build(command: &str, path: &str, release: bool) -> Result<(), Error> {
+pub fn try_build(command: &str, path: &str, release: bool) -> Result<()> {
     let sh = Shell::new()?;
 
     let release = release.then(|| "--release");

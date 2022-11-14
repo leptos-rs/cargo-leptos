@@ -146,13 +146,13 @@ checksum = "14c189c53d098945499cdfa7ecc63567cf3886b3332b312a5b4585d8d3a6a610"
 name = "cargo-leptos"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "browserslist-rs 0.12.1",
  "clap",
  "lightningcss",
  "log",
  "serde",
  "simplelog",
- "thiserror",
  "toml",
  "xshell",
 ]

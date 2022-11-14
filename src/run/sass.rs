@@ -1,3 +1,5 @@
+use crate::config::Config;
+use anyhow::{anyhow, ensure, Context, Result};
 use lightningcss::{
     stylesheet::{MinifyOptions, ParserOptions, PrinterOptions, StyleSheet},
     targets::Browsers,
@@ -5,30 +7,29 @@ use lightningcss::{
 use std::{fs, path::Path, path::PathBuf};
 use xshell::{cmd, Shell};
 
-use crate::{config::Config, Error, Reportable};
-
-pub fn run(config: &Config) -> Result<(), Reportable> {
+pub fn run(config: &Config) -> Result<()> {
     let style = &config.style;
     let scss_file = &style.file;
 
     log::debug!("Style found: {scss_file:?}");
     let scss_file = Path::new(scss_file);
-    if !scss_file.exists() || !scss_file.is_file() {
-        return Err(Reportable::not_a_file("expected an scss file", scss_file));
-    }
-    let css_file = compile_scss(scss_file, config.release)
-        .map_err(|e| e.file_context("compile scss", scss_file))?;
+    ensure!(scss_file.exists(), "no scss file found at: {scss_file:?}",);
+    ensure!(
+        scss_file.is_file(),
+        "expected an scss file, not a dir: {scss_file:?}",
+    );
+    let css_file =
+        compile_scss(scss_file, config.release).context(format!("compile scss: {scss_file:?}"))?;
 
-    let browsers = browser_lists(&style.browserquery)
-        .map_err(|e| e.config_context("leptos.style.browserquery"))?;
+    let browsers = browser_lists(&style.browserquery).context("leptos.style.browserquery")?;
 
     process_css(&css_file, browsers, config.release)
-        .map_err(|e| e.file_context("process css", scss_file))?;
+        .context(format!("process css {}", scss_file.to_string_lossy()))?;
 
     Ok(())
 }
 
-fn compile_scss(file: &Path, release: bool) -> Result<PathBuf, Error> {
+fn compile_scss(file: &Path, release: bool) -> Result<PathBuf> {
     let dest = format!("target/site/pkg/app.css");
     let sourcemap = release.then(|| "--no-source-map");
 
@@ -37,13 +38,15 @@ fn compile_scss(file: &Path, release: bool) -> Result<PathBuf, Error> {
     Ok(PathBuf::from(dest))
 }
 
-fn browser_lists(query: &str) -> Result<Option<Browsers>, Error> {
-    Browsers::from_browserslist([query]).map_err(|e| Error::BrowserListError(e.to_string()))
+fn browser_lists(query: &str) -> Result<Option<Browsers>> {
+    Browsers::from_browserslist([query]).context(format!("Error in browserlist query: {query}"))
 }
 
-fn process_css(file: &Path, browsers: Option<Browsers>, release: bool) -> Result<(), Error> {
+fn process_css(file: &Path, browsers: Option<Browsers>, release: bool) -> Result<()> {
     let css = fs::read_to_string(&file)?;
-    let mut style = StyleSheet::parse(&css, ParserOptions::default())?;
+
+    let mut style =
+        StyleSheet::parse(&css, ParserOptions::default()).map_err(|e| anyhow!("{e}"))?;
 
     if release {
         style.minify(MinifyOptions::default())?;
@@ -58,5 +61,6 @@ fn process_css(file: &Path, browsers: Option<Browsers>, release: bool) -> Result
     let style_output = style.to_css(options)?;
 
     fs::write(&file, style_output.code.as_bytes())?;
+
     Ok(())
 }

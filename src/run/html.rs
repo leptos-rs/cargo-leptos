@@ -1,4 +1,5 @@
-use crate::{config::Config, util, Error, Reportable};
+use crate::{config::Config, util};
+use anyhow::{ensure, Context, Result};
 use simplelog as log;
 use std::fs;
 use util::StrAdditions;
@@ -22,18 +23,20 @@ pub struct Html {
     text: String,
 }
 impl Html {
-    pub fn read(path: &str) -> Result<Self, Reportable> {
-        Self::try_read(path).map_err(|e| e.file_context("read", path))
+    pub fn read(path: &str) -> Result<Self> {
+        Self::try_read(path).context(format!("read {path}"))
     }
 
-    fn try_read(path: &str) -> Result<Self, Error> {
+    fn try_read(path: &str) -> Result<Self> {
         let text = fs::read_to_string(path)?;
-        if !text.find(HEAD_MARKER).is_some() {
-            return Err(Error::MissingHtmlMarker(HEAD_MARKER));
-        }
-        if !text.find(BODY_MARKER).is_some() {
-            return Err(Error::MissingHtmlMarker(BODY_MARKER));
-        }
+        ensure!(
+            text.find(HEAD_MARKER).is_some(),
+            format!("Missing Html marker {HEAD_MARKER}")
+        );
+        ensure!(
+            text.find(BODY_MARKER).is_some(),
+            format!("Missing Html marker {BODY_MARKER}")
+        );
         log::trace!("Content of {path}:\n{text}");
         Ok(Self { text })
     }
@@ -43,7 +46,7 @@ impl Html {
     }
 
     /// generate html for client side rendering
-    pub fn generate_html(&self) -> Result<(), Reportable> {
+    pub fn generate_html(&self) -> Result<()> {
         let file = util::mkdirs("target/site/")?.with("index.html");
 
         let text = self
@@ -58,7 +61,7 @@ impl Html {
     }
 
     /// generate rust for server side rendering
-    pub fn generate_rust(&self, config: &Config) -> Result<(), Reportable> {
+    pub fn generate_rust(&self, config: &Config) -> Result<()> {
         let file = &config.gen_path;
 
         let rust = include_str!("generated.rs");

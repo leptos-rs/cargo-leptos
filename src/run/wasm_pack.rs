@@ -1,19 +1,18 @@
-use std::path::Path;
-
-use crate::{config::Config, util, Error, Reportable};
+use crate::{config::Config, util};
+use anyhow::{Context, Result};
 use simplelog as log;
+use std::path::Path;
 use xshell::{cmd, Shell};
 
-pub fn run(command: &str, path: &str, config: &Config) -> Result<(), Reportable> {
-    try_build(command, &path, config.release)
-        .map_err(|e| e.step_context(format!("wasm-pack {command} {path}")))?;
+pub fn run(command: &str, path: &str, config: &Config) -> Result<()> {
+    try_build(command, &path, config.release).context(format!("wasm-pack {command} {path}"))?;
 
     util::rm_file(format!("target/site/pkg/.gitignore"))?;
     util::rm_file(format!("target/site/pkg/package.json"))?;
     Ok(())
 }
 
-pub fn try_build(command: &str, path: &str, release: bool) -> Result<(), Error> {
+pub fn try_build(command: &str, path: &str, release: bool) -> Result<()> {
     let path_depth = Path::new(path).components().count();
     let to_root = (0..path_depth).map(|_| "..").collect::<Vec<_>>().join("/");
 

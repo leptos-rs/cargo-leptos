@@ -9,7 +9,7 @@ edition = "2021"
 clap = { version = "4.0.19", features = ["derive"] }
 serde = { version = "1.0", features = ["derive"] }
 toml = "0.5.9"
-thiserror = "1.0"
+anyhow = "1.0"
 log = "0.4"
 simplelog = { version = "0.12", features = ["paris"] }
 xshell = "0.2"

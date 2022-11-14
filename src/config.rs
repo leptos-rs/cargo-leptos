@@ -1,4 +1,5 @@
-use crate::{util, Cli, Error, Reportable};
+use crate::{util, Cli};
+use anyhow::{Context, Result};
 use serde::Deserialize;
 use std::fs;
 
@@ -8,9 +9,9 @@ struct ConfigFile {
 }
 
 /// read from path or default to 'leptos.toml'
-pub fn read(cli: &Cli) -> Result<Config, Reportable> {
+pub fn read(cli: &Cli) -> Result<Config> {
     let mut conf = read_config("leptos.toml")
-        .map_err(|e| e.file_context("read config", "leptos.toml"))?
+        .context("read config: leptos.toml")?
         .leptos;
     conf.release = cli.release;
     conf.csr = cli.csr;
@@ -20,13 +21,13 @@ pub fn read(cli: &Cli) -> Result<Config, Reportable> {
     Ok(conf)
 }
 
-fn read_config(file: &str) -> Result<ConfigFile, Error> {
+fn read_config(file: &str) -> Result<ConfigFile> {
     let text = fs::read_to_string(file)?;
     log::trace!("Config file content:\n{text}");
     Ok(toml::from_str(&text)?)
 }
 
-pub fn save_default_file() -> Result<(), Reportable> {
+pub fn save_default_file() -> Result<()> {
     log::debug!("Adding default leptos.toml file");
     util::write("leptos.toml", include_str!("leptos.toml"))
 }
