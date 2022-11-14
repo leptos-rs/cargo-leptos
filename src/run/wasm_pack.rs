@@ -1,6 +1,8 @@
 use crate::{config::Config, util};
 use anyhow::{Context, Result};
+use glob::glob;
 use simplelog as log;
+use std::fs;
 use std::path::Path;
 use xshell::{cmd, Shell};
 
@@ -9,6 +11,8 @@ pub fn run(command: &str, path: &str, config: &Config) -> Result<()> {
 
     util::rm_file(format!("target/site/pkg/.gitignore"))?;
     util::rm_file(format!("target/site/pkg/package.json"))?;
+    prepend_snippets()?;
+    util::rm_dir("target/site/pkg/snippets")?;
     Ok(())
 }
 
@@ -31,5 +35,25 @@ pub fn try_build(command: &str, path: &str, config: &Config) -> Result<()> {
         "wasm-pack {command} --target web --out-dir {dest} --out-name app --no-typescript {release} -- --no-default-features --features={features}"
     )
     .run()?;
+    Ok(())
+}
+
+/// wasm-pack generate snippets for each wasm_bindgen found including in dependencies.
+/// these should be prepended to the target/site/app.js file
+pub fn prepend_snippets() -> Result<()> {
+    let mut found: Vec<String> = Vec::new();
+
+    let pattern = "target/site/pkg/snippets/**/*.js";
+    for entry in glob(pattern).context("Failed to read glob pattern")? {
+        let path = entry?;
+        found.push(fs::read_to_string(path)?);
+    }
+    if found.len() == 0 {
+        return Ok(());
+    }
+
+    let app_js = "target/site/pkg/app.js";
+    found.push(fs::read_to_string(app_js)?);
+    fs::write(app_js, found.join("\n"))?;
     Ok(())
 }
