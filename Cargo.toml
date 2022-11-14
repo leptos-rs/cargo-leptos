@@ -15,3 +15,7 @@ simplelog = { version = "0.12", features = ["paris"] }
 xshell = "0.2"
 lightningcss = { version = "1.0.0-alpha.36", features = ["browserslist"] }
 browserslist-rs = "0.12"
+tokio = { version = "1", default-features = false, features = ["full"] }
+axum = "0.5"
+tower = { version = "0.4", features = ["util"] }
+tower-http = { version = "0.3", features = ["fs"] }

@@ -1,9 +1,12 @@
 [leptos]
+# root path, all following paths are relative to this
 root = "example/"
 # path, relative to root, to generat rust code to
 gen_path = "src/server/generated.rs"
 # path, relative to root, to the index.html file
 index_path = "index.html"
+# on which port to serve the client side rendered site (when using --csr option)
+csr_port = 3000
 
 [leptos.style]
 file = "style/main.scss"

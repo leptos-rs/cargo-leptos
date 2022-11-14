@@ -32,12 +32,14 @@ pub fn save_default_file() -> Result<()> {
     util::write("leptos.toml", include_str!("leptos.toml"))
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct Config {
     pub root: String,
     pub index_path: String,
     /// where to generate rust code
     pub gen_path: String,
+    /// on which port to serve the client side rendered site
+    pub csr_port: Option<u16>,
     pub style: Style,
 
     // parameters from cmd-line args
