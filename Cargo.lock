@@ -215,6 +215,7 @@ dependencies = [
  "browserslist-rs 0.12.1",
  "clap",
  "glob",
+ "lazy_static",
  "lightningcss",
  "log",
  "notify",

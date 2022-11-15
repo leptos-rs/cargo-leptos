@@ -1,4 +1,5 @@
 use crate::config::Config;
+use crate::INTERRUPT;
 use anyhow::{Context, Result};
 use tokio::process::Command;
 
@@ -27,13 +28,18 @@ async fn cmd(command: &str, config: &Config) -> Result<()> {
         args.push("--release");
     }
 
-    try_cmd(&args)
-        .await
-        .context(format!("cargo {}", args.join(" ")))
-}
+    let mut interrupt = INTERRUPT.subscribe();
 
-pub async fn try_cmd(args: &[&str]) -> Result<()> {
-    let mut cmd = Command::new("cargo").args(args).spawn()?;
-    cmd.wait().await?;
+    let mut cmd = Command::new("cargo").args(&args).spawn()?;
+    (tokio::select! {
+        res = cmd.wait() => res.map(|s|s.success()),
+        _ = interrupt.recv() => {
+            log::debug!("Stopping server...");
+            let v = cmd.kill().await.map(|_| true);
+            log::debug!("Server stopped");
+            v
+        }
+    })
+    .context(format!("cargo {}", &args.join(" ")))?;
     Ok(())
 }

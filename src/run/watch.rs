@@ -1,12 +1,14 @@
-use crate::config::Config;
+use crate::{config::Config, InterruptType, INTERRUPT};
 use anyhow::{Context, Result};
 use notify::{event::ModifyKind, Event, EventKind, RecursiveMode, Watcher};
-use std::{path::PathBuf, sync::mpsc::Sender};
+use std::path::PathBuf;
 
-pub async fn run(config: Config, tx: Sender<bool>) -> Result<()> {
+pub async fn run(config: Config) -> Result<()> {
     let cfg = config.clone();
     let mut watcher = notify::recommended_watcher(move |res| match res {
-        Ok(event) if is_watched(&event, &cfg) => tx.send(true).unwrap(),
+        Ok(event) if is_watched(&event, &cfg) => {
+            drop(INTERRUPT.send(InterruptType::FileChange).unwrap())
+        }
         Err(e) => log::error!("watch error: {:?}", e),
         _ => {}
     })?;

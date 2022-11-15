@@ -2,13 +2,25 @@ mod config;
 mod run;
 pub mod util;
 
-use anyhow::{Error, Result};
+use anyhow::Result;
 use clap::{Parser, Subcommand};
 use config::Config;
 use run::{cargo, sass, serve, wasm_pack, watch, Html};
 use std::env;
-use std::sync::mpsc::channel;
-use tokio::task::JoinHandle;
+use tokio::{signal, sync::broadcast};
+
+#[derive(Debug, Clone, Copy)]
+pub enum InterruptType {
+    CtrlC,
+    FileChange,
+}
+
+lazy_static::lazy_static! {
+    /// Interrupts current serve or cargo operation. Used for watch
+    pub static ref INTERRUPT: broadcast::Sender<InterruptType> = {
+        broadcast::channel(1).0
+    };
+}
 
 #[derive(Debug, Parser)]
 pub struct Cli {
@@ -59,6 +71,11 @@ async fn main() -> Result<()> {
         return config::save_default_file();
     }
     let config = config::read(&args)?;
+
+    tokio::spawn(async {
+        signal::ctrl_c().await.expect("failed to listen for event");
+        INTERRUPT.send(InterruptType::CtrlC).unwrap();
+    });
 
     match args.command {
         Commands::Init => panic!(),
@@ -118,18 +135,24 @@ async fn build_all(config: &Config) -> Result<()> {
 }
 
 async fn watch(config: &Config) -> Result<()> {
-    let (tx, rx) = channel::<bool>();
-    // load it with one so that it will start the loop
-    tx.send(true).unwrap();
     let cfg = config.clone();
-    let _ = tokio::spawn(async move { watch::run(cfg, tx).await });
+    let _ = tokio::spawn(async move { watch::run(cfg).await });
 
-    let mut serve_handle: Option<JoinHandle<Result<(), Error>>> = None;
-
-    while rx.recv().is_ok() {
-        serve_handle.map(|h| h.abort());
+    let mut interrupt = INTERRUPT.subscribe();
+    loop {
         let cfg = config.clone();
-        serve_handle = Some(tokio::spawn(async move { serve(cfg).await }));
+        let serve_handle = tokio::spawn(async move { serve(cfg).await });
+        let stop = match interrupt.recv().await {
+            Ok(InterruptType::CtrlC) => true,
+            Ok(InterruptType::FileChange) => false,
+            Err(e) => {
+                log::error!("{e}");
+                true
+            }
+        };
+        serve_handle.await??;
+        if stop {
+            return Ok(());
+        }
     }
-    Ok(())
 }

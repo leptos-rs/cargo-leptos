@@ -1,4 +1,5 @@
 use crate::config::Config;
+use crate::INTERRUPT;
 use axum::{http::StatusCode, response::IntoResponse, routing::get_service, Router};
 use std::{io, net::SocketAddr};
 use tower_http::services::ServeDir;
@@ -11,8 +12,17 @@ pub async fn run(config: &Config) {
 
     let addr = SocketAddr::from(([127, 0, 0, 1], port));
 
+    let mut interrupt = INTERRUPT.subscribe();
+
     axum::Server::bind(&addr)
         .serve(route.into_make_service())
+        .with_graceful_shutdown(async {
+            if let Err(e) = interrupt.recv().await {
+                log::error!("Server interrupt error: {e}");
+            } else {
+                log::debug!("Server interrupted");
+            }
+        })
         .await
         .unwrap();
 }
