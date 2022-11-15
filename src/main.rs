@@ -62,46 +62,46 @@ async fn main() -> Result<()> {
 
     match args.command {
         Commands::Init => panic!(),
-        Commands::Build => build_all(&config),
+        Commands::Build => build_all(&config).await,
         Commands::Serve => serve(config).await,
-        Commands::Test => cargo::run("test", &config.root, &config),
+        Commands::Test => cargo::test(&config).await,
         Commands::Watch => watch(&config).await,
     }
 }
 
 async fn serve(config: Config) -> Result<()> {
     util::rm_dir("target/site")?;
-    build_client(&config)?;
+    build_client(&config).await?;
 
     if config.csr {
         serve::run(&config).await;
     } else {
         // build server
-        cargo::run("build", &config.root, &config)?;
-        cargo::run("run", &config.root, &config)?;
+        cargo::build(&config).await?;
+        cargo::run(&config).await?;
     }
     Ok(())
 }
-fn build_client(config: &Config) -> Result<()> {
-    sass::run(&config)?;
+async fn build_client(config: &Config) -> Result<()> {
+    sass::run(&config).await?;
 
     let html = Html::read(&config.index_path)?;
 
     if config.csr {
-        wasm_pack::run("build", &config.root, &config)?;
+        wasm_pack::build(&config).await?;
         html.generate_html()?;
     } else {
-        wasm_pack::run("build", &config.root, &config)?;
+        wasm_pack::build(&config).await?;
         html.generate_rust(&config)?;
     }
     Ok(())
 }
 
-fn build_all(config: &Config) -> Result<()> {
+async fn build_all(config: &Config) -> Result<()> {
     util::rm_dir("target/site")?;
 
-    cargo::run("build", &config.root, &config)?;
-    sass::run(&config)?;
+    cargo::build(&config).await?;
+    sass::run(&config).await?;
 
     let html = Html::read(&config.index_path)?;
 
@@ -111,9 +111,9 @@ fn build_all(config: &Config) -> Result<()> {
     let mut config = config.clone();
 
     config.csr = true;
-    wasm_pack::run("build", &config.root, &config)?;
+    wasm_pack::build(&config).await?;
     config.csr = false;
-    wasm_pack::run("build", &config.root, &config)?;
+    wasm_pack::build(&config).await?;
     Ok(())
 }
 

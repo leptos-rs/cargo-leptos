@@ -4,8 +4,12 @@ use notify::{event::ModifyKind, Event, EventKind, RecursiveMode, Watcher};
 use std::{path::PathBuf, sync::mpsc::Sender};
 
 pub async fn run(config: Config, tx: Sender<bool>) -> Result<()> {
-    // Automatically select the best implementation for your platform.
-    let mut watcher = notify::recommended_watcher(move |res| event_handler(res, &tx))?;
+    let cfg = config.clone();
+    let mut watcher = notify::recommended_watcher(move |res| match res {
+        Ok(event) if is_watched(&event, &cfg) => tx.send(true).unwrap(),
+        Err(e) => log::error!("watch error: {:?}", e),
+        _ => {}
+    })?;
 
     // Add a path to be watched. All files and directories at that path and
     // below will be monitored for changes.
@@ -24,15 +28,7 @@ pub async fn run(config: Config, tx: Sender<bool>) -> Result<()> {
     Ok(())
 }
 
-fn event_handler(res: notify::Result<Event>, tx: &Sender<bool>) {
-    match res {
-        Ok(event) if is_watched(&event) => tx.send(true).unwrap(),
-        Err(e) => println!("watch error: {:?}", e),
-        _ => {}
-    }
-}
-
-fn is_watched(event: &Event) -> bool {
+fn is_watched(event: &Event, cfg: &Config) -> bool {
     match &event.kind {
         EventKind::Modify(ModifyKind::Data(_)) => {}
         _ => return false,
@@ -40,7 +36,8 @@ fn is_watched(event: &Event) -> bool {
 
     for path in &event.paths {
         match path.extension().map(|ext| ext.to_str()).flatten() {
-            Some("rs") | Some("css") | Some("scss") => return true,
+            Some("rs") if !path.ends_with(&cfg.gen_path) => return true,
+            Some("css") | Some("scss") => return true,
             _ => {}
         }
     }

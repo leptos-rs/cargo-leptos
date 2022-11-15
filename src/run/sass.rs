@@ -5,36 +5,38 @@ use lightningcss::{
     targets::Browsers,
 };
 use std::{fs, path::Path, path::PathBuf};
-use xshell::{cmd, Shell};
+use tokio::process::Command;
 
-pub fn run(config: &Config) -> Result<()> {
+pub async fn run(config: &Config) -> Result<()> {
     let style = &config.style;
     let scss_file = &style.file;
 
-    log::debug!("Style found: {scss_file:?}");
-    let scss_file = Path::new(scss_file);
-    ensure!(scss_file.exists(), "no scss file found at: {scss_file:?}",);
-    ensure!(
-        scss_file.is_file(),
-        "expected an scss file, not a dir: {scss_file:?}",
-    );
-    let css_file =
-        compile_scss(scss_file, config.release).context(format!("compile scss: {scss_file:?}"))?;
+    log::debug!("Style found: {scss_file}");
+    let scss = Path::new(scss_file);
+    ensure!(scss.exists(), "no scss file found at: {scss_file}",);
+    ensure!(scss.is_file(), "expected a file, not a dir: {scss_file}",);
+
+    let css_file = compile_scss(scss_file, config.release)
+        .await
+        .context(format!("compile scss: {scss_file}"))?;
 
     let browsers = browser_lists(&style.browserquery).context("leptos.style.browserquery")?;
 
-    process_css(&css_file, browsers, config.release)
-        .context(format!("process css {}", scss_file.to_string_lossy()))?;
+    process_css(&css_file, browsers, config.release).context(format!("process css {scss_file}"))?;
 
     Ok(())
 }
 
-fn compile_scss(file: &Path, release: bool) -> Result<PathBuf> {
-    let dest = format!("target/site/pkg/app.css");
-    let sourcemap = release.then(|| "--no-source-map");
+async fn compile_scss(scss_file: &str, release: bool) -> Result<PathBuf> {
+    let dest = "target/site/pkg/app.css";
+    let mut args = vec![scss_file, dest];
+    release.then(|| args.push("--no-source-map"));
 
-    let sh = Shell::new()?;
-    cmd!(sh, "sass {file} {dest} {sourcemap...}").run()?;
+    let mut cmd = Command::new("sass").args(&args).spawn()?;
+
+    cmd.wait()
+        .await
+        .context(format!("sass {}", args.join(" ")))?;
     Ok(PathBuf::from(dest))
 }
 
