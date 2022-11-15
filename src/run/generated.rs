@@ -5,6 +5,14 @@
 //! This file can be commited to version control. It only
 //! changes when the configuration changes
 
+#[cfg(feature = "leptos_autoreload")]
+/// index.html content up to `<!-- INJECT HEAD -->` plus `cargo leptos` injected css and js content.
+pub const HTML_START: &str = r##"
+--- START ---
+--- AUTORELOAD ---
+"##;
+
+#[cfg(not(feature = "leptos_autoreload"))]
 /// index.html content up to `<!-- INJECT HEAD -->` plus `cargo leptos` injected css and js content.
 pub const HTML_START: &str = r##"
 --- START ---

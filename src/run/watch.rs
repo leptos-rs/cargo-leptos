@@ -1,13 +1,17 @@
-use crate::{config::Config, InterruptType, INTERRUPT};
-use anyhow::{Context, Result};
+use crate::{config::Config, Msg, MSG_BUS};
+use anyhow::Result;
 use notify::{event::ModifyKind, Event, EventKind, RecursiveMode, Watcher};
 use std::path::PathBuf;
+
+use super::oneshot_when;
 
 pub async fn run(config: Config) -> Result<()> {
     let cfg = config.clone();
     let mut watcher = notify::recommended_watcher(move |res| match res {
         Ok(event) if is_watched(&event, &cfg) => {
-            drop(INTERRUPT.send(InterruptType::FileChange).unwrap())
+            if let Err(e) = MSG_BUS.send(Msg::SrcChanged) {
+                log::error!("watch error: {e}");
+            }
         }
         Err(e) => log::error!("watch error: {:?}", e),
         _ => {}
@@ -23,10 +27,8 @@ pub async fn run(config: Config) -> Result<()> {
         watcher.watch(&path, RecursiveMode::Recursive)?;
     }
 
-    tokio::signal::ctrl_c()
-        .await
-        .context("error awaiting shutdown signal")?;
-
+    oneshot_when(&[Msg::ShutDown], "watch").await?;
+    log::debug!("watch closed");
     Ok(())
 }
 

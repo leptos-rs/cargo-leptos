@@ -10,6 +10,7 @@ const BODY_MARKER: &str = "<!-- INJECT BODY -->";
 
 // markers used in the rust template
 const START_MARKER: &str = "--- START ---\n";
+const AUTORELOAD_MARKER: &str = "--- AUTORELOAD ---\n";
 const MIDDLE_MARKER: &str = "--- MIDDLE ---\n";
 const END_MARKER: &str = "--- END ---\n";
 
@@ -18,6 +19,17 @@ const HTML_HEAD_INSERT: &str = r##"
     <link rel="preload" href="/pkg/app_bg.wasm" as="fetch" type="application/wasm" crossorigin="">
     <link rel="stylesheet" href="/pkg/app.css">
     <link rel="modulepreload" href="/pkg/app.js">"##;
+
+const HTML_HEAD_RELOAD: &str = r##"
+    <script crossorigin="">(function () {
+        var ws = new WebSocket('SOCKET_URL');
+        ws.onmessage = (ev) => {
+            console.log(`Reload message: ${ev.data}`);
+            if (ev.data === 'reload') window.location.reload();
+        };
+        ws.onclose = () => console.warn('Autoreload stopped. Manual reload necessary.');
+    })()
+    </script>"##;
 
 pub struct Html {
     text: String,
@@ -41,17 +53,28 @@ impl Html {
         Ok(Self { text })
     }
 
-    fn head(&self) -> &str {
-        HTML_HEAD_INSERT
+    fn autoreload(&self, config: &Config) -> String {
+        HTML_HEAD_RELOAD.replace(
+            "SOCKET_URL",
+            &format!("ws://127.0.0.1:{}/ws", config.reload_port),
+        )
+    }
+
+    fn head(&self, config: &Config) -> String {
+        if config.watch {
+            HTML_HEAD_INSERT.to_string() + &self.autoreload(config)
+        } else {
+            HTML_HEAD_INSERT.to_string()
+        }
     }
 
     /// generate html for client side rendering
-    pub fn generate_html(&self) -> Result<()> {
+    pub fn generate_html(&self, config: &Config) -> Result<()> {
         let file = util::mkdirs("target/site/")?.with("index.html");
 
         let text = self
             .text
-            .replace(HEAD_MARKER, &self.head())
+            .replace(HEAD_MARKER, &self.head(config))
             .replace(BODY_MARKER, "");
 
         log::debug!("Writing html to {file}");
@@ -67,7 +90,7 @@ impl Html {
         let rust = include_str!("generated.rs");
 
         let start_head = self.text.find(HEAD_MARKER).unwrap();
-        let start = format!("{}{}", &self.text[0..start_head].trim(), self.head());
+        let start = format!("{}{}", &self.text[0..start_head].trim(), HTML_HEAD_INSERT);
 
         let end_head = start_head + HEAD_MARKER.len(); // it's ASCII so only 1 byte per char
         let start_body = self.text.find(BODY_MARKER).unwrap();
@@ -77,7 +100,8 @@ impl Html {
         let end = format!("  {}", &self.text[end_body..].trim());
 
         let rust = rust
-            .replace(START_MARKER, &start)
+            .replacen(START_MARKER, &start, 2)
+            .replace(AUTORELOAD_MARKER, &self.autoreload(config))
             .replace(MIDDLE_MARKER, &middle)
             .replace(END_MARKER, &end);
 

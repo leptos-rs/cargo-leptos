@@ -5,21 +5,29 @@ pub mod util;
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use config::Config;
-use run::{cargo, sass, serve, wasm_pack, watch, Html};
+use run::{cargo, reload, sass, serve, wasm_pack, watch, Html};
 use std::env;
-use tokio::{signal, sync::broadcast};
+use tokio::{
+    signal,
+    sync::{broadcast, RwLock},
+};
 
-#[derive(Debug, Clone, Copy)]
-pub enum InterruptType {
-    CtrlC,
-    FileChange,
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Msg {
+    /// sent by ctrl-c
+    ShutDown,
+    /// sent by fs watcher
+    SrcChanged,
+    /// messages sent to reload server (forwarded to browser)
+    Reload(String),
 }
 
 lazy_static::lazy_static! {
     /// Interrupts current serve or cargo operation. Used for watch
-    pub static ref INTERRUPT: broadcast::Sender<InterruptType> = {
-        broadcast::channel(1).0
+    pub static ref MSG_BUS: broadcast::Sender<Msg> = {
+        broadcast::channel(10).0
     };
+    pub static ref SHUTDOWN: RwLock<bool> = RwLock::new(false);
 }
 
 #[derive(Debug, Parser)]
@@ -74,28 +82,33 @@ async fn main() -> Result<()> {
 
     tokio::spawn(async {
         signal::ctrl_c().await.expect("failed to listen for event");
-        INTERRUPT.send(InterruptType::CtrlC).unwrap();
+        log::info!("Ctrl-c received");
+        *SHUTDOWN.write().await = true;
+        MSG_BUS.send(Msg::ShutDown).unwrap();
     });
 
     match args.command {
         Commands::Init => panic!(),
         Commands::Build => build_all(&config).await,
-        Commands::Serve => serve(config).await,
+        Commands::Serve => serve(&config).await,
         Commands::Test => cargo::test(&config).await,
         Commands::Watch => watch(&config).await,
     }
 }
 
-async fn serve(config: Config) -> Result<()> {
-    util::rm_dir("target/site")?;
+async fn send_reload() {
+    if !*SHUTDOWN.read().await {
+        if let Err(e) = MSG_BUS.send(Msg::Reload("reload".to_string())) {
+            log::error!("Failed to send reload: {e}");
+        }
+    }
+}
+async fn build_csr_or_ssr(config: &Config) -> Result<()> {
+    util::rm_dir_content("target/site")?;
     build_client(&config).await?;
 
-    if config.csr {
-        serve::run(&config).await;
-    } else {
-        // build server
+    if !config.csr {
         cargo::build(&config).await?;
-        cargo::run(&config).await?;
     }
     Ok(())
 }
@@ -106,7 +119,7 @@ async fn build_client(config: &Config) -> Result<()> {
 
     if config.csr {
         wasm_pack::build(&config).await?;
-        html.generate_html()?;
+        html.generate_html(&config)?;
     } else {
         wasm_pack::build(&config).await?;
         html.generate_rust(&config)?;
@@ -115,14 +128,14 @@ async fn build_client(config: &Config) -> Result<()> {
 }
 
 async fn build_all(config: &Config) -> Result<()> {
-    util::rm_dir("target/site")?;
+    util::rm_dir_content("target/site")?;
 
     cargo::build(&config).await?;
     sass::run(&config).await?;
 
     let html = Html::read(&config.index_path)?;
 
-    html.generate_html()?;
+    html.generate_html(&config)?;
     html.generate_rust(&config)?;
 
     let mut config = config.clone();
@@ -134,25 +147,38 @@ async fn build_all(config: &Config) -> Result<()> {
     Ok(())
 }
 
+async fn serve(config: &Config) -> Result<()> {
+    build_csr_or_ssr(&config).await?;
+    if config.csr {
+        serve::run(&config).await
+    } else {
+        cargo::run(&config).await
+    }
+}
+
 async fn watch(config: &Config) -> Result<()> {
     let cfg = config.clone();
     let _ = tokio::spawn(async move { watch::run(cfg).await });
 
-    let mut interrupt = INTERRUPT.subscribe();
-    loop {
+    if config.csr {
         let cfg = config.clone();
-        let serve_handle = tokio::spawn(async move { serve(cfg).await });
-        let stop = match interrupt.recv().await {
-            Ok(InterruptType::CtrlC) => true,
-            Ok(InterruptType::FileChange) => false,
-            Err(e) => {
-                log::error!("{e}");
-                true
-            }
-        };
-        serve_handle.await??;
-        if stop {
-            return Ok(());
+        let _ = tokio::spawn(async move { serve::run(&cfg).await });
+    }
+
+    reload::run(&config).await?;
+
+    loop {
+        build_csr_or_ssr(config).await?;
+
+        send_reload().await;
+        if config.csr {
+            MSG_BUS.subscribe().recv().await?;
+        } else {
+            cargo::run(&config).await?;
+        }
+        if *SHUTDOWN.read().await {
+            break;
         }
     }
+    Ok(())
 }

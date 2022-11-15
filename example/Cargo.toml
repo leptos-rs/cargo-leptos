@@ -41,6 +41,7 @@ lto = true
 opt-level = 'z'
 
 [features]
+leptos_autoreload = []
 default = ["csr"]
 hydrate = [
   "leptos/hydrate",

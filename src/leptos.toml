@@ -7,6 +7,8 @@ gen_path = "src/server/generated.rs"
 index_path = "index.html"
 # on which port to serve the client side rendered site (when using --csr option)
 csr_port = 3000
+# the port to use for automatic reload monitoring
+reload_port = 3001
 
 [leptos.style]
 file = "style/main.scss"

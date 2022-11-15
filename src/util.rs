@@ -18,15 +18,34 @@ pub fn setup_logging(verbose: u8) {
     log::info!("Log level set to: {log_level}");
 }
 
+pub fn rm_dir_content<P: AsRef<Path>>(dir: P) -> Result<()> {
+    let dir = dir.as_ref();
+    log::info!("Cleaning contents of '{dir:?}'");
+
+    if !dir.exists() {
+        log::debug!("Not cleaning {dir:?} because it does not exist");
+        return Ok(());
+    }
+
+    for entry in fs::read_dir(dir)? {
+        let entry = entry?;
+        let path = entry.path();
+
+        if entry.file_type()?.is_dir() {
+            rm_dir_content(&path)?;
+            fs::remove_dir(path)?;
+        } else {
+            fs::remove_file(path)?;
+        }
+    }
+    Ok(())
+}
+
 pub fn rm_dir(dir: &str) -> Result<()> {
     let path = Path::new(&dir);
 
     if !path.exists() {
         log::debug!("Not cleaning {dir} because it does not exist");
-        return Ok(());
-    }
-    if !path.is_dir() {
-        log::warn!("Not cleaning {dir} because it is not a directory");
         return Ok(());
     }
 
@@ -36,7 +55,11 @@ pub fn rm_dir(dir: &str) -> Result<()> {
 }
 
 pub fn rm_file<S: AsRef<str>>(file: S) -> Result<()> {
-    fs::remove_file(file.as_ref()).context(format!("remove file {}", file.as_ref()))
+    let path = Path::new(file.as_ref());
+    if path.exists() {
+        fs::remove_file(path).context(format!("remove file {}", file.as_ref()))?;
+    }
+    Ok(())
 }
 
 pub fn mkdirs<S: ToString>(dir: S) -> Result<String> {
