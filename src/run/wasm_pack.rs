@@ -21,11 +21,11 @@ pub async fn build(config: &Config) -> Result<()> {
         "--out-name",
         "app",
         "--no-typescript",
-        config.release.then(|| "--release").unwrap_or("--dev"),
+        config.cli.release.then(|| "--release").unwrap_or("--dev"),
         "--",
         "--no-default-features",
         "--features",
-        config.csr.then(|| "csr").unwrap_or("hydrate"),
+        config.cli.csr.then(|| "csr").unwrap_or("hydrate"),
     ];
 
     try_build(&args, config)

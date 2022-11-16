@@ -1,4 +1,4 @@
-use crate::{util, Cli, Commands};
+use crate::{util, Cli, Commands, Opts};
 use anyhow::{Context, Result};
 use serde::Deserialize;
 use std::fs;
@@ -9,13 +9,15 @@ struct ConfigFile {
 }
 
 /// read from path or default to 'leptos.toml'
-pub fn read(cli: &Cli) -> Result<Config> {
+pub fn read(cli: &Cli, opts: Opts) -> Result<Config> {
     let mut conf = read_config("leptos.toml")
         .context("read config: leptos.toml")?
         .leptos;
-    conf.release = cli.release;
-    conf.csr = cli.csr;
-    conf.watch = cli.command == Commands::Watch;
+    conf.cli = opts;
+    conf.watch = match cli.command {
+        Commands::Watch(_) => true,
+        _ => false,
+    };
     conf.index_path = format!("{}/{}", conf.root, conf.index_path);
     conf.gen_path = format!("{}/{}", conf.root, conf.gen_path);
     conf.style.file = format!("{}/{}", conf.root, conf.style.file);
@@ -47,9 +49,7 @@ pub struct Config {
 
     // parameters from cmd-line args
     #[serde(skip_deserializing)]
-    pub release: bool,
-    #[serde(skip_deserializing)]
-    pub csr: bool,
+    pub cli: Opts,
     #[serde(skip_deserializing)]
     pub watch: bool,
 }

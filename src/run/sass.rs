@@ -16,13 +16,14 @@ pub async fn run(config: &Config) -> Result<()> {
     ensure!(scss.exists(), "no scss file found at: {scss_file}",);
     ensure!(scss.is_file(), "expected a file, not a dir: {scss_file}",);
 
-    let css_file = compile_scss(scss_file, config.release)
+    let css_file = compile_scss(scss_file, config.cli.release)
         .await
         .context(format!("compile scss: {scss_file}"))?;
 
     let browsers = browser_lists(&style.browserquery).context("leptos.style.browserquery")?;
 
-    process_css(&css_file, browsers, config.release).context(format!("process css {scss_file}"))?;
+    process_css(&css_file, browsers, config.cli.release)
+        .context(format!("process css {scss_file}"))?;
 
     Ok(())
 }

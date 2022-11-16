@@ -13,7 +13,6 @@ anyhow = "1.0"
 log = "0.4"
 simplelog = { version = "0.12", features = ["paris"] }
 lightningcss = { version = "1.0.0-alpha.36", features = ["browserslist"] }
-browserslist-rs = "0.12"
 tokio = { version = "1", default-features = false, features = ["full"] }
 axum = { version = "0.5", features = ["ws"] }
 tower = { version = "0.4", features = ["util"] }

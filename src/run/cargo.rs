@@ -28,7 +28,7 @@ async fn cmd(command: &str, config: &Config) -> Result<()> {
         "--manifest-path",
         &manifest_path,
     ];
-    if config.release {
+    if config.cli.release {
         args.push("--release");
     }
 

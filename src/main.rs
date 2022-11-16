@@ -30,11 +30,8 @@ lazy_static::lazy_static! {
     pub static ref SHUTDOWN: RwLock<bool> = RwLock::new(false);
 }
 
-#[derive(Debug, Parser)]
-pub struct Cli {
-    #[command(subcommand)]
-    command: Commands,
-
+#[derive(Debug, Clone, Parser, PartialEq, Default)]
+pub struct Opts {
     /// Build artifacts in release mode, with optimizations
     #[arg(short, long)]
     release: bool,
@@ -44,8 +41,14 @@ pub struct Cli {
     csr: bool,
 
     /// Verbosity (none: errors & warnings, -v: verbose, --vv: very verbose, --vvv: output everything)
-    #[arg(short, long, action = clap::ArgAction::Count)]
+    #[arg(short, action = clap::ArgAction::Count)]
     verbose: u8,
+}
+
+#[derive(Debug, Parser)]
+pub struct Cli {
+    #[command(subcommand)]
+    command: Commands,
 }
 
 #[derive(Debug, Subcommand, PartialEq)]
@@ -53,13 +56,13 @@ enum Commands {
     /// Adds a default leptos.toml file to current directory
     Init,
     /// Compile the client (csr and hydrate) and server
-    Build,
+    Build(Opts),
     /// Run the cargo tests for app, client and server
-    Test,
+    Test(Opts),
     /// Serve. In `csr` mode an internal server is used
-    Serve,
+    Serve(Opts),
     /// Serve and automatically reload when files change
-    Watch,
+    Watch(Opts),
 }
 
 #[tokio::main]
@@ -73,12 +76,16 @@ async fn main() -> Result<()> {
 
     let args = Cli::parse_from(&args);
 
-    util::setup_logging(args.verbose);
+    let opts = match &args.command {
+        Commands::Init => return config::save_default_file(),
+        Commands::Build(opts)
+        | Commands::Serve(opts)
+        | Commands::Test(opts)
+        | Commands::Watch(opts) => opts,
+    };
+    util::setup_logging(opts.verbose);
 
-    if args.command == Commands::Init {
-        return config::save_default_file();
-    }
-    let config = config::read(&args)?;
+    let config = config::read(&args, opts.clone())?;
 
     tokio::spawn(async {
         signal::ctrl_c().await.expect("failed to listen for event");
@@ -89,10 +96,10 @@ async fn main() -> Result<()> {
 
     match args.command {
         Commands::Init => panic!(),
-        Commands::Build => build_all(&config).await,
-        Commands::Serve => serve(&config).await,
-        Commands::Test => cargo::test(&config).await,
-        Commands::Watch => watch(&config).await,
+        Commands::Build(_) => build_all(&config).await,
+        Commands::Serve(_) => serve(&config).await,
+        Commands::Test(_) => cargo::test(&config).await,
+        Commands::Watch(_) => watch(&config).await,
     }
 }
 
@@ -107,7 +114,7 @@ async fn build_csr_or_ssr(config: &Config) -> Result<()> {
     util::rm_dir_content("target/site")?;
     build_client(&config).await?;
 
-    if !config.csr {
+    if !config.cli.csr {
         cargo::build(&config).await?;
     }
     Ok(())
@@ -117,7 +124,7 @@ async fn build_client(config: &Config) -> Result<()> {
 
     let html = Html::read(&config.index_path)?;
 
-    if config.csr {
+    if config.cli.csr {
         wasm_pack::build(&config).await?;
         html.generate_html(&config)?;
     } else {
@@ -140,16 +147,16 @@ async fn build_all(config: &Config) -> Result<()> {
 
     let mut config = config.clone();
 
-    config.csr = true;
+    config.cli.csr = true;
     wasm_pack::build(&config).await?;
-    config.csr = false;
+    config.cli.csr = false;
     wasm_pack::build(&config).await?;
     Ok(())
 }
 
 async fn serve(config: &Config) -> Result<()> {
     build_csr_or_ssr(&config).await?;
-    if config.csr {
+    if config.cli.csr {
         serve::run(&config).await
     } else {
         cargo::run(&config).await
@@ -160,7 +167,7 @@ async fn watch(config: &Config) -> Result<()> {
     let cfg = config.clone();
     let _ = tokio::spawn(async move { watch::run(cfg).await });
 
-    if config.csr {
+    if config.cli.csr {
         let cfg = config.clone();
         let _ = tokio::spawn(async move { serve::run(&cfg).await });
     }
@@ -171,7 +178,7 @@ async fn watch(config: &Config) -> Result<()> {
         build_csr_or_ssr(config).await?;
 
         send_reload().await;
-        if config.csr {
+        if config.cli.csr {
             MSG_BUS.subscribe().recv().await?;
         } else {
             cargo::run(&config).await?;
