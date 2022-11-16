@@ -1,18 +1,16 @@
 use crate::{config::Config, util};
 use anyhow::{Context, Result};
 use glob::glob;
+use regex::Regex;
 use std::fs;
 use tokio::process::Command;
 
 pub async fn build(config: &Config) -> Result<()> {
     let args = vec![
         "build",
-        "--target",
-        "web",
-        "--out-dir",
-        "target/site/pkg",
-        "--out-name",
-        "app",
+        "--target=web",
+        "--out-dir=target/site/pkg",
+        "--out-name=app",
         "--no-typescript",
         config.cli.release.then(|| "--release").unwrap_or("--dev"),
         "--",
@@ -51,7 +49,13 @@ pub fn prepend_snippets() -> Result<()> {
     }
 
     let app_js = "target/site/pkg/app.js";
-    found.push(fs::read_to_string(app_js)?);
+    let js = fs::read_to_string(app_js)?;
+    let js = SNIPPET_IMPORT.replace_all(&js, "");
+    found.push(js.to_string());
     fs::write(app_js, found.join("\n"))?;
     Ok(())
+}
+
+lazy_static::lazy_static! {
+    static ref SNIPPET_IMPORT: Regex = Regex::new(r"(?m)^import.*from.*snippets.*$").unwrap();
 }
