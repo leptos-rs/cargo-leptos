@@ -1,7 +1,5 @@
-[leptos]
-# root path, all following paths are relative to this
-root = "./"
-# path to generate rust code to
+[package.metadata.leptos]
+# path, relative to root, to generat rust code to
 gen_path = "src/server/generated.rs"
 # path to the index.html file
 index_path = "index.html"
@@ -10,7 +8,7 @@ csr_port = 3000
 # the port to use for automatic reload monitoring
 reload_port = 3001
 
-[leptos.style]
+[package.metadata.leptos.style]
 file = "style/main.scss"
 # A https://browsersl.ist query
 browserquery = "defaults"

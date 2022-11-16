@@ -1,7 +1,10 @@
 use anyhow::{Context, Result};
 use log::LevelFilter;
 use simplelog::{ColorChoice, ConfigBuilder, TermLogger, TerminalMode};
-use std::{fs, path::Path};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
 pub fn setup_logging(verbose: u8) {
     let log_level = match verbose {
@@ -90,5 +93,17 @@ impl StrAdditions for String {
         let mut s = self.clone();
         s.push_str(append);
         s
+    }
+}
+
+pub trait PathBufAdditions {
+    /// drops the last path component
+    fn without_last(self) -> Self;
+}
+
+impl PathBufAdditions for PathBuf {
+    fn without_last(mut self) -> Self {
+        self.pop();
+        self
     }
 }

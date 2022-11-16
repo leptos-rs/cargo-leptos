@@ -1,7 +1,7 @@
 use crate::{config::Config, Msg, MSG_BUS};
 use anyhow::Result;
 use notify::{event::ModifyKind, Event, EventKind, RecursiveMode, Watcher};
-use std::path::PathBuf;
+use std::path::Path;
 
 use super::oneshot_when;
 
@@ -17,12 +17,9 @@ pub async fn run(config: Config) -> Result<()> {
         _ => {}
     })?;
 
-    // Add a path to be watched. All files and directories at that path and
-    // below will be monitored for changes.
-    let path = PathBuf::from(format!("{}/src", config.root));
-    watcher.watch(&path, RecursiveMode::Recursive)?;
+    watcher.watch(&Path::new("src"), RecursiveMode::Recursive)?;
 
-    let path = PathBuf::from(format!("{}/style", config.root));
+    let path = Path::new("style");
     if path.exists() {
         watcher.watch(&path, RecursiveMode::Recursive)?;
     }

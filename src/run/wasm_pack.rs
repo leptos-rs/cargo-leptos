@@ -1,23 +1,16 @@
 use crate::{config::Config, util};
 use anyhow::{Context, Result};
 use glob::glob;
-use simplelog as log;
 use std::fs;
-use std::path::Path;
 use tokio::process::Command;
 
 pub async fn build(config: &Config) -> Result<()> {
-    let path_depth = Path::new(&config.root).components().count();
-    let to_root = (0..path_depth).map(|_| "..").collect::<Vec<_>>().join("/");
-
-    let dest = format!("{to_root}/target/site/pkg");
-
     let args = vec![
         "build",
         "--target",
         "web",
         "--out-dir",
-        &dest,
+        "target/site/pkg",
         "--out-name",
         "app",
         "--no-typescript",
@@ -28,7 +21,11 @@ pub async fn build(config: &Config) -> Result<()> {
         config.cli.csr.then(|| "csr").unwrap_or("hydrate"),
     ];
 
-    try_build(&args, config)
+    Command::new("wasm-pack")
+        .args(&args)
+        .spawn()
+        .context("Could not spawn child command")?
+        .wait()
         .await
         .context(format!("wasm-pack build {}", args.join(" ")))?;
 
@@ -36,17 +33,6 @@ pub async fn build(config: &Config) -> Result<()> {
     util::rm_file(format!("target/site/pkg/package.json"))?;
     prepend_snippets()?;
     util::rm_dir("target/site/pkg/snippets")?;
-    Ok(())
-}
-
-async fn try_build(args: &[&str], config: &Config) -> Result<()> {
-    log::debug!("Running sh in path: <bold>{}</>", config.root);
-
-    let mut cmd = Command::new("wasm-pack")
-        .args(args)
-        .current_dir(&config.root)
-        .spawn()?;
-    cmd.wait().await?;
     Ok(())
 }
 

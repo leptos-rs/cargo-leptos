@@ -16,18 +16,11 @@ pub async fn test(config: &Config) -> Result<()> {
 }
 
 async fn cmd(command: &str, config: &Config) -> Result<()> {
-    let manifest_path = format!("{}/Cargo.toml", config.root);
     let features = match config.watch {
         true => "--features=ssr,leptos_autoreload",
         false => "--features=ssr",
     };
-    let mut args = vec![
-        command,
-        "--no-default-features",
-        features,
-        "--manifest-path",
-        &manifest_path,
-    ];
+    let mut args = vec![command, "--no-default-features", features];
     if config.cli.release {
         args.push("--release");
     }

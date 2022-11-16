@@ -6,11 +6,12 @@ use anyhow::Result;
 use clap::{Parser, Subcommand};
 use config::Config;
 use run::{cargo, reload, sass, serve, wasm_pack, watch, Html};
-use std::env;
+use std::{env, path::PathBuf};
 use tokio::{
     signal,
     sync::{broadcast, RwLock},
 };
+use util::PathBufAdditions;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Msg {
@@ -47,13 +48,17 @@ pub struct Opts {
 
 #[derive(Debug, Parser)]
 pub struct Cli {
+    ///Path to Cargo.toml
+    #[arg(long)]
+    manifest_path: Option<String>,
+
     #[command(subcommand)]
     command: Commands,
 }
 
 #[derive(Debug, Subcommand, PartialEq)]
 enum Commands {
-    /// Adds a default leptos.toml file to current directory
+    /// Output toml that needs to be added to the Cargo.toml file
     Init,
     /// Compile the client (csr and hydrate) and server
     Build(Opts),
@@ -77,7 +82,7 @@ async fn main() -> Result<()> {
     let args = Cli::parse_from(&args);
 
     let opts = match &args.command {
-        Commands::Init => return config::save_default_file(),
+        Commands::Init => return Ok(println!(include_str!("leptos.toml"))),
         Commands::Build(opts)
         | Commands::Serve(opts)
         | Commands::Test(opts)
@@ -86,6 +91,10 @@ async fn main() -> Result<()> {
     util::setup_logging(opts.verbose);
 
     let config = config::read(&args, opts.clone())?;
+    if let Some(path) = &args.manifest_path {
+        let path = PathBuf::from(path).without_last();
+        std::env::set_current_dir(path)?;
+    }
 
     tokio::spawn(async {
         signal::ctrl_c().await.expect("failed to listen for event");
