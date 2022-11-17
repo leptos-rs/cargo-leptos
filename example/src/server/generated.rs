@@ -7,8 +7,7 @@
 
 #[cfg(feature = "leptos_autoreload")]
 /// index.html content up to `<!-- INJECT HEAD -->` plus `cargo leptos` injected css and js content.
-pub const HTML_START: &str = r##"
-<!DOCTYPE html>
+pub const HTML_START: &str = r##"<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -20,7 +19,7 @@ pub const HTML_START: &str = r##"
     <script crossorigin="">(function () {
         var ws = new WebSocket('ws://127.0.0.1:3001/ws');
         ws.onmessage = (ev) => {
-            console.log(`Reload message: ${ev.data}`);
+            console.log(`Reload message: `);
             if (ev.data === 'reload') window.location.reload();
         };
         ws.onclose = () => console.warn('Autoreload stopped. Manual reload necessary.');
@@ -29,8 +28,7 @@ pub const HTML_START: &str = r##"
 
 #[cfg(not(feature = "leptos_autoreload"))]
 /// index.html content up to `<!-- INJECT HEAD -->` plus `cargo leptos` injected css and js content.
-pub const HTML_START: &str = r##"
-<!DOCTYPE html>
+pub const HTML_START: &str = r##"<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -41,11 +39,9 @@ pub const HTML_START: &str = r##"
     <link rel="modulepreload" href="/pkg/app.js">"##;
 
 /// index.html content from `<!-- INJECT HEAD -->` up to `<!-- INJECT BODY -->`
-pub const HTML_MIDDLE: &str = r##"
-  </head>
+pub const HTML_MIDDLE: &str = r##"  </head>
   <body>"##;
 
 /// index.html content from `<!-- INJECT BODY -->` until the end
-pub const HTML_END: &str = r##"
-  </body>
+pub const HTML_END: &str = r##"  </body>
 </html>"##;

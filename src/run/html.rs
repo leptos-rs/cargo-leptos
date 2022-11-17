@@ -1,18 +1,28 @@
 use crate::{config::Config, util};
 use anyhow::{ensure, Context, Result};
+use regex::Regex;
 use simplelog as log;
 use std::fs;
 use util::StrAdditions;
 
+lazy_static::lazy_static! {
+    static ref HEAD_RE: Regex = Regex::new(&format!(r"\s*{HEAD_MARKER}\s*?")).unwrap();
+    static ref BODY_RE: Regex = Regex::new(&format!(r"\s*{BODY_MARKER}\s*")).unwrap();
+    static ref START_RE: Regex = Regex::new(&format!(r"\s*{START_MARKER}\s*\n?")).unwrap();
+    static ref RELOAD_RE: Regex = Regex::new(&format!(r"\s*{RELOAD_MARKER}\s*\n?")).unwrap();
+    static ref MIDDLE_RE: Regex = Regex::new(&format!(r"\s*{MIDDLE_MARKER}\s*\n?")).unwrap();
+    static ref END_RE: Regex = Regex::new(&format!(r"\s*{END_MARKER}\s*\n?")).unwrap();
+}
+
 // markers used in the html template
-const HEAD_MARKER: &str = "<!-- INJECT HEAD -->\n";
+const HEAD_MARKER: &str = "<!-- INJECT HEAD -->";
 const BODY_MARKER: &str = "<!-- INJECT BODY -->";
 
 // markers used in the rust template
-const START_MARKER: &str = "--- START ---\n";
-const AUTORELOAD_MARKER: &str = "--- AUTORELOAD ---\n";
-const MIDDLE_MARKER: &str = "--- MIDDLE ---\n";
-const END_MARKER: &str = "--- END ---\n";
+const START_MARKER: &str = "--- START ---";
+const RELOAD_MARKER: &str = "--- AUTORELOAD ---";
+const MIDDLE_MARKER: &str = "--- MIDDLE ---";
+const END_MARKER: &str = "--- END ---";
 
 const HTML_HEAD_INSERT: &str = r##"
     <script type="module">import init from '/pkg/app.js';init('/pkg/app_bg.wasm');</script>
@@ -43,11 +53,11 @@ impl Html {
         let text = fs::read_to_string(path)?;
         log::trace!("Content of {path}:\n{text}");
         ensure!(
-            text.find(HEAD_MARKER).is_some(),
+            HEAD_RE.find(&text).is_some(),
             format!("Missing Html marker {HEAD_MARKER}")
         );
         ensure!(
-            text.find(BODY_MARKER).is_some(),
+            BODY_RE.find(&text).is_some(),
             format!("Missing Html marker {BODY_MARKER}")
         );
         log::trace!("Content of {path}:\n{text}");
@@ -73,10 +83,8 @@ impl Html {
     pub fn generate_html(&self, config: &Config) -> Result<()> {
         let file = util::mkdirs("target/site/")?.with("index.html");
 
-        let text = self
-            .text
-            .replace(HEAD_MARKER, &self.head(config))
-            .replace(BODY_MARKER, "");
+        let text = HEAD_RE.replace(&self.text, &self.head(config));
+        let text = BODY_RE.replace(&text, "");
 
         log::debug!("Writing html to {file}");
         log::trace!("Html content\n{text}");
@@ -90,21 +98,18 @@ impl Html {
 
         let rust = include_str!("generated.rs");
 
-        let start_head = self.text.find(HEAD_MARKER).unwrap();
-        let start = format!("{}{}", &self.text[0..start_head].trim(), HTML_HEAD_INSERT);
+        let head = HEAD_RE.find(&self.text).unwrap();
+        let start = format!("{}{}", &self.text[0..head.start()].trim(), HTML_HEAD_INSERT);
 
-        let end_head = start_head + HEAD_MARKER.len(); // it's ASCII so only 1 byte per char
-        let start_body = self.text.find(BODY_MARKER).unwrap();
-        let middle = format!("  {}", &self.text[end_head..start_body].trim());
+        let body = BODY_RE.find(&self.text).unwrap();
+        let middle = format!("  {}", &self.text[head.end()..body.start()].trim());
 
-        let end_body = start_body + BODY_MARKER.len();
-        let end = format!("  {}", &self.text[end_body..].trim());
+        let end = format!("  {}", &self.text[body.end()..].trim());
 
-        let rust = rust
-            .replacen(START_MARKER, &start, 2)
-            .replace(AUTORELOAD_MARKER, &self.autoreload(config))
-            .replace(MIDDLE_MARKER, &middle)
-            .replace(END_MARKER, &end);
+        let rust = START_RE.replacen(rust, 2, &start);
+        let rust = RELOAD_RE.replace(&rust, &self.autoreload(config));
+        let rust = MIDDLE_RE.replace(&rust, &middle);
+        let rust = END_RE.replace(&rust, &end);
 
         log::debug!("Writing rust to {file}");
         log::trace!("Html content\n{rust}");
