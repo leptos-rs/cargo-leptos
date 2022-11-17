@@ -1,37 +1,37 @@
 use crate::{Cli, Commands, Opts};
 use anyhow::{Context, Result};
+use cargo_metadata::{Metadata as Manifest, MetadataCommand};
 use serde::Deserialize;
 use std::fs;
 
-#[derive(Deserialize, Debug)]
-struct ConfigFile {
-    pub package: Package,
-}
-
-#[derive(Deserialize, Debug)]
-struct Package {
-    metadata: Metadata,
-}
-
-#[derive(Deserialize, Debug)]
-struct Metadata {
-    leptos: Config,
+#[derive(Debug, Clone)]
+pub struct Config {
+    pub cli: Opts,
+    pub cargo: Manifest,
+    pub leptos: LeptosManifest,
+    pub watch: bool,
 }
 
 /// read from path or default to 'leptos.toml'
 pub fn read(cli: &Cli, opts: Opts) -> Result<Config> {
     let file = cli.manifest_path.as_deref().unwrap_or("Cargo.toml");
-    let mut conf = read_config(file)
+    let leptos = read_config(file)
         .context(format!("read config: {file}"))?
         .package
         .metadata
         .leptos;
-    conf.cli = opts;
-    conf.watch = match cli.command {
+
+    let watch = match cli.command {
         Commands::Watch(_) => true,
         _ => false,
     };
-    Ok(conf)
+    let cargo = MetadataCommand::new().manifest_path(file).exec()?;
+    Ok(Config {
+        cli: opts,
+        cargo,
+        leptos,
+        watch,
+    })
 }
 
 fn read_config(file: &str) -> Result<ConfigFile> {
@@ -45,8 +45,23 @@ fn read_config(file: &str) -> Result<ConfigFile> {
     Ok(toml::from_str(&toml)?)
 }
 
+#[derive(Deserialize, Debug)]
+struct ConfigFile {
+    pub package: Package,
+}
+
+#[derive(Deserialize, Debug)]
+struct Package {
+    metadata: Metadata,
+}
+
+#[derive(Deserialize, Debug)]
+struct Metadata {
+    leptos: LeptosManifest,
+}
+
 #[derive(Deserialize, Debug, Clone)]
-pub struct Config {
+pub struct LeptosManifest {
     pub index_path: String,
     /// where to generate rust code
     pub gen_path: String,
@@ -55,12 +70,6 @@ pub struct Config {
     /// the port to use for automatic reload monitoring
     pub reload_port: u16,
     pub style: Style,
-
-    // parameters from cmd-line args
-    #[serde(skip_deserializing)]
-    pub cli: Opts,
-    #[serde(skip_deserializing)]
-    pub watch: bool,
 }
 
 #[derive(Clone, Deserialize, Debug)]

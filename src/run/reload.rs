@@ -13,7 +13,7 @@ use std::net::SocketAddr;
 pub async fn run(config: &Config) -> Result<()> {
     let route = Router::new().route("/ws", get(websocket_handler));
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], config.reload_port));
+    let addr = SocketAddr::from(([127, 0, 0, 1], config.leptos.reload_port));
 
     let shutdown_rx = oneshot_when(&[Msg::ShutDown], "reload shutdown");
 

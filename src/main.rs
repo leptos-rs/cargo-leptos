@@ -6,7 +6,7 @@ use anyhow::Result;
 use binary_install::Cache;
 use clap::{Parser, Subcommand};
 use config::Config;
-use run::{cargo, reload, sass, serve, wasm_pack, watch, Html};
+use run::{cargo, reload, sass, serve, wasm, watch, Html};
 use std::{env, path::PathBuf};
 use tokio::{
     signal,
@@ -133,13 +133,13 @@ async fn build_csr_or_ssr(config: &Config) -> Result<()> {
 async fn build_client(config: &Config) -> Result<()> {
     sass::run(&config).await?;
 
-    let html = Html::read(&config.index_path)?;
+    let html = Html::read(&config.leptos.index_path)?;
 
     if config.cli.csr {
-        wasm_pack::build(&config).await?;
+        wasm::build(&config).await?;
         html.generate_html(&config)?;
     } else {
-        wasm_pack::build(&config).await?;
+        wasm::build(&config).await?;
         html.generate_rust(&config)?;
     }
     Ok(())
@@ -151,7 +151,7 @@ async fn build_all(config: &Config) -> Result<()> {
     cargo::build(&config).await?;
     sass::run(&config).await?;
 
-    let html = Html::read(&config.index_path)?;
+    let html = Html::read(&config.leptos.index_path)?;
 
     html.generate_html(&config)?;
     html.generate_rust(&config)?;
@@ -159,9 +159,9 @@ async fn build_all(config: &Config) -> Result<()> {
     let mut config = config.clone();
 
     config.cli.csr = true;
-    wasm_pack::build(&config).await?;
+    wasm::build(&config).await?;
     config.cli.csr = false;
-    wasm_pack::build(&config).await?;
+    wasm::build(&config).await?;
     Ok(())
 }
 

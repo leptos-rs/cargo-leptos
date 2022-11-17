@@ -67,7 +67,7 @@ impl Html {
     fn autoreload(&self, config: &Config) -> String {
         HTML_HEAD_RELOAD.replace(
             "SOCKET_URL",
-            &format!("ws://127.0.0.1:{}/ws", config.reload_port),
+            &format!("ws://127.0.0.1:{}/ws", config.leptos.reload_port),
         )
     }
 
@@ -94,7 +94,7 @@ impl Html {
 
     /// generate rust for server side rendering
     pub fn generate_rust(&self, config: &Config) -> Result<()> {
-        let file = &config.gen_path;
+        let file = &config.leptos.gen_path;
 
         let rust = include_str!("generated.rs");
 

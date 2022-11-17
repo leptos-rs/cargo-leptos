@@ -12,7 +12,7 @@ use std::{fs, path::Path, path::PathBuf};
 use tokio::process::Command;
 
 pub async fn run(config: &Config) -> Result<()> {
-    let style = &config.style;
+    let style = &config.leptos.style;
     let scss_file = &style.file;
 
     log::debug!("Style found: {scss_file}");

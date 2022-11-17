@@ -10,7 +10,7 @@ pub async fn run(config: &Config) -> Result<()> {
 
     let route = Router::new().nest("/", serve_dir.clone());
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], config.csr_port));
+    let addr = SocketAddr::from(([127, 0, 0, 1], config.leptos.csr_port));
 
     let shutdown_rx = oneshot_when(&[Msg::ShutDown], "serve shutdown");
 
