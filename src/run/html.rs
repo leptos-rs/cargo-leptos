@@ -41,6 +41,7 @@ impl Html {
 
     fn try_read(path: &str) -> Result<Self> {
         let text = fs::read_to_string(path)?;
+        log::trace!("Content of {path}:\n{text}");
         ensure!(
             text.find(HEAD_MARKER).is_some(),
             format!("Missing Html marker {HEAD_MARKER}")
