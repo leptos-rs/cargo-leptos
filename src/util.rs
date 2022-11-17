@@ -1,9 +1,17 @@
 use anyhow::{bail, Context, Result};
+use cargo_metadata::{Artifact, Message};
 use log::LevelFilter;
+use serde::Deserialize;
 use simplelog::{ColorChoice, ConfigBuilder, TermLogger, TerminalMode};
 use std::{
     fs,
     path::{Path, PathBuf},
+    process::Stdio,
+};
+use tokio::{
+    io::{AsyncBufReadExt, BufReader},
+    process::{Child, Command},
+    task::JoinHandle,
 };
 
 pub fn setup_logging(verbose: u8) {
@@ -132,5 +140,51 @@ impl PathBufAdditions for PathBuf {
     fn with<P: AsRef<Path>>(mut self, append: P) -> Self {
         self.push(append);
         self
+    }
+}
+
+pub trait CommandAdditions {
+    /// Sets up the command so that stdout is redirected and parsed by cargo_metadata.
+    /// It returns a handle and a child process. Waiting on the handle returns
+    /// a vector of cargo_metadata Artifacts.
+    fn spawn_cargo_parsed(&mut self) -> Result<(JoinHandle<Vec<Artifact>>, Child)>;
+}
+
+impl CommandAdditions for Command {
+    fn spawn_cargo_parsed(&mut self) -> Result<(JoinHandle<Vec<Artifact>>, Child)> {
+        let mut process = self
+            .stdout(Stdio::piped())
+            .arg("--message-format=json-render-diagnostics")
+            .spawn()?;
+
+        let mut stdout = BufReader::new(process.stdout.take().unwrap());
+
+        let handle = tokio::spawn(async move {
+            let mut line = String::new();
+            let mut artifacts: Vec<Artifact> = Vec::new();
+            while stdout.read_line(&mut line).await.is_ok() {
+                let mut deserializer = serde_json::Deserializer::from_str(&line);
+                deserializer.disable_recursion_limit();
+                match Message::deserialize(&mut deserializer) {
+                    Ok(Message::BuildFinished(v)) => {
+                        if v.success {
+                            log::info!("Build finished")
+                        } else {
+                            log::warn!("Build failed")
+                        }
+                        break;
+                    }
+                    Ok(Message::BuildScriptExecuted(_script)) => {}
+                    Ok(Message::CompilerArtifact(art)) => artifacts.push(art),
+                    Ok(Message::CompilerMessage(msg)) => log::info!("MESSAGE {msg:?}"),
+                    Ok(Message::TextLine(txt)) => log::info!("TEXT {txt:?}"),
+                    Err(_e) => break,
+                    Ok(_) => log::info!("OTHER {line}"),
+                };
+                line.clear();
+            }
+            artifacts
+        });
+        Ok((handle, process))
     }
 }
