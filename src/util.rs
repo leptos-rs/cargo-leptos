@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use log::LevelFilter;
 use simplelog::{ColorChoice, ConfigBuilder, TermLogger, TerminalMode};
 use std::{
@@ -76,6 +76,27 @@ pub fn write(file: &str, text: &str) -> Result<()> {
     fs::write(&file, text).context(format!("write {file}"))
 }
 
+pub fn os_arch() -> Result<(&'static str, &'static str)> {
+    let target_os = if cfg!(target_os = "windows") {
+        "windows"
+    } else if cfg!(target_os = "macos") {
+        "macos"
+    } else if cfg!(target_os = "linux") {
+        "linux"
+    } else {
+        bail!("unsupported OS")
+    };
+
+    let target_arch = if cfg!(target_arch = "x86_64") {
+        "x86_64"
+    } else if cfg!(target_arch = "aarch64") {
+        "aarch64"
+    } else {
+        bail!("unsupported target architecture")
+    };
+    Ok((target_os, target_arch))
+}
+
 pub trait StrAdditions {
     fn with(&self, append: &str) -> String;
 }
@@ -99,11 +120,17 @@ impl StrAdditions for String {
 pub trait PathBufAdditions {
     /// drops the last path component
     fn without_last(self) -> Self;
+    /// drops the last path component
+    fn with<P: AsRef<Path>>(self, append: P) -> Self;
 }
 
 impl PathBufAdditions for PathBuf {
     fn without_last(mut self) -> Self {
         self.pop();
+        self
+    }
+    fn with<P: AsRef<Path>>(mut self, append: P) -> Self {
+        self.push(append);
         self
     }
 }

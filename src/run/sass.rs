@@ -1,5 +1,9 @@
-use crate::config::Config;
-use anyhow::{anyhow, ensure, Context, Result};
+use crate::{
+    config::Config,
+    util::{os_arch, PathBufAdditions},
+    INSTALL_CACHE,
+};
+use anyhow::{anyhow, bail, ensure, Context, Result};
 use lightningcss::{
     stylesheet::{MinifyOptions, ParserOptions, PrinterOptions, StyleSheet},
     targets::Browsers,
@@ -33,7 +37,10 @@ async fn compile_scss(scss_file: &str, release: bool) -> Result<PathBuf> {
     let mut args = vec![scss_file, dest];
     release.then(|| args.push("--no-source-map"));
 
-    let mut cmd = Command::new("sass").args(&args).spawn()?;
+    let exe = sass_exe().context("Try manually installing sass: https://sass-lang.com/install")?;
+    log::debug!("Using sass executable at: {exe:?}");
+
+    let mut cmd = Command::new(exe).args(&args).spawn()?;
 
     cmd.wait()
         .await
@@ -66,4 +73,49 @@ fn process_css(file: &Path, browsers: Option<Browsers>, release: bool) -> Result
     fs::write(&file, style_output.code.as_bytes())?;
 
     Ok(())
+}
+
+fn sass_exe() -> Result<PathBuf> {
+    // manually installed sass
+    if let Ok(p) = which::which("sass") {
+        return Ok(p);
+    }
+
+    // cargo-leptos installed sass
+    let (target_os, target_arch) = os_arch()?;
+
+    let dir = INSTALL_CACHE.join(Path::new("sass"));
+    let exe_name = match target_os {
+        "windows" => "sass.bat",
+        _ => "sass",
+    };
+
+    let file = dir.with(exe_name);
+
+    if file.exists() {
+        return Ok(file);
+    }
+
+    // install cargo-leptos sass
+
+    let version = "1.56.1";
+    let url = match (target_os, target_arch) {
+        ("windows", "x86_64") => format!("https://github.com/sass/dart-sass/releases/download/{version}/dart-sass-{version}-windows-x64.zip"),
+        ("macos" | "linux", "x86_64") => format!("https://github.com/sass/dart-sass/releases/download/{version}/dart-sass-{version}-{target_os}-x64.tar.gz"),
+        ("macos" | "linux", "aarch64") => format!("https://github.com/sass/dart-sass/releases/download/{version}/dart-sass-{version}-{target_os}-arm64.tar.gz"),
+        _ => bail!("Unable to download Sass for {target_os} {target_arch}")
+      };
+
+    let binaries = match target_os {
+        "windows" => vec![exe_name, "src/dart.exe", "src/sass.snapshot"],
+        "macos" => vec![exe_name, "src/dart", "src/sass.snapshot"],
+        _ => vec![exe_name],
+    };
+    match INSTALL_CACHE.download(true, "sass", &binaries, &url) {
+        Ok(None) => bail!("Unable to download Sass for {target_os} {target_arch}"),
+        Err(e) => bail!("Unable to download Sass for {target_os} {target_arch} due to: {e}"),
+        Ok(Some(d)) => Ok(d
+            .binary(exe_name)
+            .map_err(|e| anyhow!("Could not find {exe_name} in downloaded sass: {e}"))?),
+    }
 }

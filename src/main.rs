@@ -3,6 +3,7 @@ mod run;
 pub mod util;
 
 use anyhow::Result;
+use binary_install::Cache;
 use clap::{Parser, Subcommand};
 use config::Config;
 use run::{cargo, reload, sass, serve, wasm_pack, watch, Html};
@@ -29,6 +30,7 @@ lazy_static::lazy_static! {
         broadcast::channel(10).0
     };
     pub static ref SHUTDOWN: RwLock<bool> = RwLock::new(false);
+    pub static ref INSTALL_CACHE: Cache = Cache::new("cargo-leptos").unwrap();
 }
 
 #[derive(Debug, Clone, Parser, PartialEq, Default)]
