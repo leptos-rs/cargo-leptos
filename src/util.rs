@@ -1,3 +1,4 @@
+use crate::{Msg, MSG_BUS};
 use anyhow::{bail, Context, Result};
 use cargo_metadata::{Artifact, Message};
 use log::LevelFilter;
@@ -11,6 +12,7 @@ use std::{
 use tokio::{
     io::{AsyncBufReadExt, BufReader},
     process::{Child, Command},
+    sync::oneshot,
     task::JoinHandle,
 };
 
@@ -31,7 +33,7 @@ pub fn setup_logging(verbose: u8) {
 
 pub fn rm_dir_content<P: AsRef<Path>>(dir: P) -> Result<()> {
     let dir = dir.as_ref();
-    log::info!("Cleaning contents of '{dir:?}'");
+    log::info!("Cleaning contents of {dir:?}");
 
     if !dir.exists() {
         log::debug!("Not cleaning {dir:?} because it does not exist");
@@ -187,4 +189,49 @@ impl CommandAdditions for Command {
         });
         Ok((handle, process))
     }
+}
+
+pub fn oneshot_when<S: ToString>(msgs: &'static [Msg], to: S) -> oneshot::Receiver<()> {
+    let (tx, rx) = oneshot::channel::<()>();
+
+    let mut interrupt = MSG_BUS.subscribe();
+
+    let to = to.to_string();
+    tokio::spawn(async move {
+        loop {
+            match interrupt.recv().await {
+                Ok(Msg::ShutDown) => break,
+                Ok(msg) if msgs.contains(&msg) => {
+                    if let Err(_) = tx.send(()) {
+                        log::debug!("Could not send {msg:?} to {to}");
+                    }
+                    return;
+                }
+                Err(e) => {
+                    log::debug!("Error recieving from MSG_BUS: {e}");
+                    return;
+                }
+                Ok(_) => {}
+            }
+        }
+    });
+
+    rx
+}
+
+pub async fn run_interruptible<S: AsRef<str>>(name: S, mut process: Child) -> Result<()> {
+    let stop_rx = oneshot_when(
+        &[Msg::SrcChanged, Msg::ShutDown],
+        format!("cargo {}", name.as_ref()),
+    );
+    (tokio::select! {
+        res = process.wait() => res.map(|s|s.success()),
+        _ = stop_rx => {
+            log::debug!("Stopping {}...", name.as_ref());
+            let v = process.kill().await.map(|_| true);
+            log::debug!("{} stopped", name.as_ref());
+            v
+        }
+    })?;
+    Ok(())
 }

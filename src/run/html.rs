@@ -25,8 +25,8 @@ const MIDDLE_MARKER: &str = "--- MIDDLE ---";
 const END_MARKER: &str = "--- END ---";
 
 const HTML_HEAD_INSERT: &str = r##"
-    <script type="module">import init from '/pkg/app.js';init('/pkg/app_bg.wasm');</script>
-    <link rel="preload" href="/pkg/app_bg.wasm" as="fetch" type="application/wasm" crossorigin="">
+    <script type="module">import init from '/pkg/app.js';init('/pkg/app.wasm');</script>
+    <link rel="preload" href="/pkg/app.wasm" as="fetch" type="application/wasm" crossorigin="">
     <link rel="stylesheet" href="/pkg/app.css">
     <link rel="modulepreload" href="/pkg/app.js">"##;
 

@@ -1,4 +1,4 @@
-use crate::run::oneshot_when;
+use crate::util::oneshot_when;
 use crate::MSG_BUS;
 use crate::{config::Config, Msg};
 use anyhow::Result;

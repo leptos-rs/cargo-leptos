@@ -1,17 +1,32 @@
 use crate::{Cli, Commands, Opts};
-use anyhow::{Context, Result};
-use cargo_metadata::{Metadata as Manifest, MetadataCommand};
+use anyhow::{anyhow, Context, Result};
+use cargo_metadata::{MetadataCommand, Package as CargoPackage};
 use serde::Deserialize;
 use std::fs;
 
 #[derive(Debug, Clone)]
 pub struct Config {
     pub cli: Opts,
-    pub cargo: Manifest,
+    pub cargo: CargoPackage,
     pub leptos: LeptosManifest,
     pub watch: bool,
+    pub target_directory: String,
 }
 
+impl Config {
+    /// Get the crate name for the crate at the given path.
+    pub fn lib_crate_name(&self) -> String {
+        match self
+            .cargo
+            .targets
+            .iter()
+            .find(|t| t.kind.iter().any(|k| k == "cdylib"))
+        {
+            Some(lib) => lib.name.replace("-", "_"),
+            None => self.cargo.name.replace("-", "_"),
+        }
+    }
+}
 /// read from path or default to 'leptos.toml'
 pub fn read(cli: &Cli, opts: Opts) -> Result<Config> {
     let file = cli.manifest_path.as_deref().unwrap_or("Cargo.toml");
@@ -25,12 +40,19 @@ pub fn read(cli: &Cli, opts: Opts) -> Result<Config> {
         Commands::Watch(_) => true,
         _ => false,
     };
-    let cargo = MetadataCommand::new().manifest_path(file).exec()?;
+    let workspace = MetadataCommand::new().manifest_path(file).exec()?;
+    let target_directory = workspace.target_directory.to_string();
+    let cargo = workspace
+        .root_package()
+        .ok_or_else(|| anyhow!("Could not find root package in Cargo.toml"))?
+        .clone();
+
     Ok(Config {
         cli: opts,
         cargo,
         leptos,
         watch,
+        target_directory,
     })
 }
 

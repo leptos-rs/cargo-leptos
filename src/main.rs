@@ -126,7 +126,7 @@ async fn build_csr_or_ssr(config: &Config) -> Result<()> {
     build_client(&config).await?;
 
     if !config.cli.csr {
-        cargo::build(&config).await?;
+        cargo::build(&config, false).await?;
     }
     Ok(())
 }
@@ -148,7 +148,7 @@ async fn build_client(config: &Config) -> Result<()> {
 async fn build_all(config: &Config) -> Result<()> {
     util::rm_dir_content("target/site")?;
 
-    cargo::build(&config).await?;
+    cargo::build(&config, false).await?;
     sass::run(&config).await?;
 
     let html = Html::read(&config.leptos.index_path)?;

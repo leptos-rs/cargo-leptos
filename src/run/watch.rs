@@ -1,9 +1,7 @@
-use crate::{config::Config, Msg, MSG_BUS};
+use crate::{config::Config, util::oneshot_when, Msg, MSG_BUS};
 use anyhow::Result;
 use notify::{event::ModifyKind, Event, EventKind, RecursiveMode, Watcher};
 use std::path::Path;
-
-use super::oneshot_when;
 
 pub async fn run(config: Config) -> Result<()> {
     let cfg = config.clone();

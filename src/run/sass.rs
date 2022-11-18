@@ -1,8 +1,4 @@
-use crate::{
-    config::Config,
-    util::{os_arch, PathBufAdditions},
-    INSTALL_CACHE,
-};
+use crate::{config::Config, util::os_arch, INSTALL_CACHE};
 use anyhow::{anyhow, bail, ensure, Context, Result};
 use lightningcss::{
     stylesheet::{MinifyOptions, ParserOptions, PrinterOptions, StyleSheet},
@@ -84,17 +80,10 @@ fn sass_exe() -> Result<PathBuf> {
     // cargo-leptos installed sass
     let (target_os, target_arch) = os_arch()?;
 
-    let dir = INSTALL_CACHE.join(Path::new("sass"));
     let exe_name = match target_os {
         "windows" => "sass.bat",
         _ => "sass",
     };
-
-    let file = dir.with(exe_name);
-
-    if file.exists() {
-        return Ok(file);
-    }
 
     // install cargo-leptos sass
 
@@ -103,7 +92,7 @@ fn sass_exe() -> Result<PathBuf> {
         ("windows", "x86_64") => format!("https://github.com/sass/dart-sass/releases/download/{version}/dart-sass-{version}-windows-x64.zip"),
         ("macos" | "linux", "x86_64") => format!("https://github.com/sass/dart-sass/releases/download/{version}/dart-sass-{version}-{target_os}-x64.tar.gz"),
         ("macos" | "linux", "aarch64") => format!("https://github.com/sass/dart-sass/releases/download/{version}/dart-sass-{version}-{target_os}-arm64.tar.gz"),
-        _ => bail!("Unable to download Sass for {target_os} {target_arch}")
+        _ => bail!("No sass binary found for {target_os} {target_arch}")
       };
 
     let binaries = match target_os {

@@ -1,5 +1,4 @@
-use super::oneshot_when;
-use crate::{config::Config, Msg};
+use crate::{config::Config, util::oneshot_when, Msg};
 use anyhow::Result;
 use axum::{http::StatusCode, response::IntoResponse, routing::get_service, Router};
 use std::{io, net::SocketAddr};
