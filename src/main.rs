@@ -62,7 +62,7 @@ pub struct Cli {
 enum Commands {
     /// Output toml that needs to be added to the Cargo.toml file
     Init,
-    /// Compile the client (csr and hydrate) and server
+    /// Compile the project
     Build(Opts),
     /// Run the cargo tests for app, client and server
     Test(Opts),
@@ -107,7 +107,7 @@ async fn main() -> Result<()> {
 
     match args.command {
         Commands::Init => panic!(),
-        Commands::Build(_) => build_all(&config).await,
+        Commands::Build(_) => build(&config).await,
         Commands::Serve(_) => serve(&config).await,
         Commands::Test(_) => cargo::test(&config).await,
         Commands::Watch(_) => watch(&config).await,
@@ -121,7 +121,7 @@ async fn send_reload() {
         }
     }
 }
-async fn build_csr_or_ssr(config: &Config) -> Result<()> {
+async fn build(config: &Config) -> Result<()> {
     util::rm_dir_content("target/site")?;
     build_client(&config).await?;
 
@@ -145,28 +145,8 @@ async fn build_client(config: &Config) -> Result<()> {
     Ok(())
 }
 
-async fn build_all(config: &Config) -> Result<()> {
-    util::rm_dir_content("target/site")?;
-
-    cargo::build(&config, false).await?;
-    sass::run(&config).await?;
-
-    let html = Html::read(&config.leptos.index_path)?;
-
-    html.generate_html(&config)?;
-    html.generate_rust(&config)?;
-
-    let mut config = config.clone();
-
-    config.cli.csr = true;
-    wasm::build(&config).await?;
-    config.cli.csr = false;
-    wasm::build(&config).await?;
-    Ok(())
-}
-
 async fn serve(config: &Config) -> Result<()> {
-    build_csr_or_ssr(&config).await?;
+    build(&config).await?;
     if config.cli.csr {
         serve::run(&config).await
     } else {
@@ -186,16 +166,24 @@ async fn watch(config: &Config) -> Result<()> {
     reload::run(&config).await?;
 
     loop {
-        build_csr_or_ssr(config).await?;
-
-        send_reload().await;
-        if config.cli.csr {
-            MSG_BUS.subscribe().recv().await?;
-        } else {
-            cargo::run(&config).await?;
-        }
-        if *SHUTDOWN.read().await {
-            break;
+        match build(config).await {
+            Ok(_) => {
+                send_reload().await;
+                if config.cli.csr {
+                    MSG_BUS.subscribe().recv().await?;
+                } else {
+                    cargo::run(&config).await?;
+                }
+                if *SHUTDOWN.read().await {
+                    break;
+                } else {
+                    log::info!("Rebuilding...");
+                }
+            }
+            Err(e) => {
+                log::warn!("Rebuild stopped due to error: {e}");
+                while MSG_BUS.subscribe().recv().await? != Msg::SrcChanged {}
+            }
         }
     }
     Ok(())

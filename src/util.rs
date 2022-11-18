@@ -1,5 +1,5 @@
 use crate::{Msg, MSG_BUS};
-use anyhow::{bail, Context, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use cargo_metadata::{Artifact, Message};
 use log::LevelFilter;
 use serde::Deserialize;
@@ -164,26 +164,35 @@ impl CommandAdditions for Command {
         let handle = tokio::spawn(async move {
             let mut line = String::new();
             let mut artifacts: Vec<Artifact> = Vec::new();
-            while stdout.read_line(&mut line).await.is_ok() {
-                let mut deserializer = serde_json::Deserializer::from_str(&line);
-                deserializer.disable_recursion_limit();
-                match Message::deserialize(&mut deserializer) {
-                    Ok(Message::BuildFinished(v)) => {
-                        if v.success {
-                            log::info!("Build finished")
-                        } else {
-                            log::warn!("Build failed")
-                        }
+            loop {
+                match stdout.read_line(&mut line).await {
+                    Ok(_) => {
+                        let mut deserializer = serde_json::Deserializer::from_str(&line);
+                        deserializer.disable_recursion_limit();
+                        match Message::deserialize(&mut deserializer) {
+                            Ok(Message::BuildFinished(v)) => {
+                                if !v.success {
+                                    log::warn!("Build failed")
+                                }
+                                break;
+                            }
+                            Ok(Message::BuildScriptExecuted(_script)) => {}
+                            Ok(Message::CompilerArtifact(art)) => artifacts.push(art),
+                            Ok(Message::CompilerMessage(msg)) => log::info!("MESSAGE {msg:?}"),
+                            Ok(Message::TextLine(txt)) => log::info!("TEXT {txt:?}"),
+                            Err(e) => {
+                                log::error!("cargo stdout: {e}");
+                                break;
+                            }
+                            Ok(_) => log::info!("UNPARSEABLE: {line}"),
+                        };
+                        line.clear();
+                    }
+                    Err(e) => {
+                        log::error!("cargo stdout: {e}");
                         break;
                     }
-                    Ok(Message::BuildScriptExecuted(_script)) => {}
-                    Ok(Message::CompilerArtifact(art)) => artifacts.push(art),
-                    Ok(Message::CompilerMessage(msg)) => log::info!("MESSAGE {msg:?}"),
-                    Ok(Message::TextLine(txt)) => log::info!("TEXT {txt:?}"),
-                    Err(_e) => break,
-                    Ok(_) => log::info!("OTHER {line}"),
-                };
-                line.clear();
+                }
             }
             artifacts
         });
@@ -224,14 +233,15 @@ pub async fn run_interruptible<S: AsRef<str>>(name: S, mut process: Child) -> Re
         &[Msg::SrcChanged, Msg::ShutDown],
         format!("cargo {}", name.as_ref()),
     );
-    (tokio::select! {
-        res = process.wait() => res.map(|s|s.success()),
+    tokio::select! {
+        res = process.wait() => match res?.success() {
+                true => return Ok(()),
+                false => return Err(anyhow!("{} failed", name.as_ref())),
+        },
         _ = stop_rx => {
-            log::debug!("Stopping {}...", name.as_ref());
-            let v = process.kill().await.map(|_| true);
+            process.kill().await.map(|_| true).expect("Could not kill process");
             log::debug!("{} stopped", name.as_ref());
-            v
+            Ok(())
         }
-    })?;
-    Ok(())
+    }
 }

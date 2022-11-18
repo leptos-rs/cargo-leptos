@@ -1,11 +1,25 @@
-use crate::{config::Config, util::run_interruptible};
+use crate::{
+    config::Config,
+    util::{run_interruptible, CommandAdditions},
+};
 use anyhow::{Context, Result};
 use tokio::process::Command;
 
 // for capturing the cargo output see util::CommandAdditions
 
 pub async fn build(config: &Config, lib: bool) -> Result<()> {
-    cmd("build", config, lib).await
+    let args = args("build", config, lib);
+
+    let (handle, process) = Command::new("cargo")
+        .args(&args)
+        .spawn_cargo_parsed()
+        .context("Could not spawn command")?;
+    run_interruptible(format!("cargo build"), process)
+        .await
+        .context(format!("cargo {}", &args.join(" ")))?;
+    handle.await?;
+    log::info!("Finshed: cargo {}", args.join(" "));
+    Ok(())
 }
 
 pub async fn run(config: &Config) -> Result<()> {
@@ -25,7 +39,9 @@ async fn cmd(command: &str, config: &Config, lib: bool) -> Result<()> {
         .context("Could not spawn command")?;
     run_interruptible(format!("cargo {command}"), process)
         .await
-        .context(format!("cargo {}", &args.join(" ")))
+        .context(format!("cargo {}", &args.join(" ")))?;
+    log::info!("Finshed: cargo {}", args.join(" "));
+    Ok(())
 }
 
 fn args<'a>(command: &'a str, config: &Config, lib: bool) -> Vec<&'a str> {
