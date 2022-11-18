@@ -69,9 +69,9 @@ async fn optimize(src: &str, dest: &str) -> Result<()> {
 
 fn wasm_opt_exe() -> Result<PathBuf> {
     // manually installed sass
-    // if let Ok(p) = which::which("wasm-opt") {
-    //     return Ok(p);
-    // }
+    if let Ok(p) = which::which("wasm-opt") {
+        return Ok(p);
+    }
 
     // cargo-leptos installed sass
     let (target_os, target_arch) = os_arch()?;
