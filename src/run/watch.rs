@@ -30,6 +30,7 @@ pub async fn run(config: Config) -> Result<()> {
 fn is_watched(event: &Event, cfg: &Config) -> bool {
     match &event.kind {
         EventKind::Modify(ModifyKind::Data(_)) => {}
+        EventKind::Modify(ModifyKind::Any) => {} // windows throws duplicate Any events
         _ => return false,
     };
 
