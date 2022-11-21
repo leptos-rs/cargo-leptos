@@ -4,3 +4,13 @@ h1 {
   text-align:center;
   font-size: xx-large;
 }
+
+html {
+  background-color: rgb(225, 225, 225);
+}
+@media (prefers-color-scheme: dark) {
+  html {
+    background-color: rgb(25, 25, 25);
+    color: rgb(220, 220, 220);
+  }
+}

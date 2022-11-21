@@ -1,5 +1,5 @@
 use crate::{config::Config, util::os_arch, INSTALL_CACHE};
-use anyhow::{anyhow, bail, ensure, Context, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use lightningcss::{
     stylesheet::{MinifyOptions, ParserOptions, PrinterOptions, StyleSheet},
     targets::Browsers,
@@ -17,8 +17,6 @@ pub async fn run(config: &Config) -> Result<()> {
 
     log::debug!("Style found: {style_file}");
     let file = PathBuf::from(style_file);
-    ensure!(file.exists(), "no scss file found at: {style_file}",);
-    ensure!(file.is_file(), "expected a file, not a dir: {style_file}",);
 
     let css_file = match file.extension().map(|ext| ext.to_str()).flatten() {
         Some("sass") | Some("scss") => compile_sass(style_file, config.cli.release)

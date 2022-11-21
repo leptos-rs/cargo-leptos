@@ -1,7 +1,11 @@
-use crate::{config::Config, util::oneshot_when, Msg, MSG_BUS};
+use crate::{
+    config::Config,
+    util::{oneshot_when, PathBufAdditions},
+    Msg, MSG_BUS,
+};
 use anyhow::Result;
 use notify::{event::ModifyKind, Event, EventKind, RecursiveMode, Watcher};
-use std::path::Path;
+use std::path::PathBuf;
 
 pub async fn run(config: Config) -> Result<()> {
     let cfg = config.clone();
@@ -15,11 +19,15 @@ pub async fn run(config: Config) -> Result<()> {
         _ => {}
     })?;
 
-    watcher.watch(&Path::new("src"), RecursiveMode::Recursive)?;
+    let src_dir = PathBuf::from("src");
+    watcher.watch(&src_dir, RecursiveMode::Recursive)?;
+    log::info!("Watching {src_dir:?} recursively");
 
-    let path = Path::new("style");
-    if path.exists() {
-        watcher.watch(&path, RecursiveMode::Recursive)?;
+    let style_dir = PathBuf::from(&config.leptos.style.file).without_last();
+    // add if not nested
+    if !style_dir.starts_with(src_dir) {
+        watcher.watch(&style_dir, RecursiveMode::Recursive)?;
+        log::info!("Watching {style_dir:?} recursively");
     }
 
     oneshot_when(&[Msg::ShutDown], "watch").await?;

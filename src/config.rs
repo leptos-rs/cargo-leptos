@@ -1,8 +1,8 @@
 use crate::{Cli, Commands, Opts};
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, ensure, Context, Result};
 use cargo_metadata::{MetadataCommand, Package as CargoPackage};
 use serde::Deserialize;
-use std::fs;
+use std::{fs, path::Path};
 
 #[derive(Debug, Clone)]
 pub struct Config {
@@ -29,18 +29,21 @@ impl Config {
 }
 /// read from path or default to 'leptos.toml'
 pub fn read(cli: &Cli, opts: Opts) -> Result<Config> {
-    let file = cli.manifest_path.as_deref().unwrap_or("Cargo.toml");
-    let leptos = read_config(file)
-        .context(format!("read config: {file}"))?
+    let leptos = read_config("Cargo.toml")
+        .context(format!("read config: Cargo.toml"))?
         .package
         .metadata
         .leptos;
+
+    let style = Path::new(&leptos.style.file);
+    ensure!(style.exists(), "no css/sass/scss file found at: {style:?}",);
+    ensure!(style.is_file(), "expected a file, not a dir: {style:?}",);
 
     let watch = match cli.command {
         Commands::Watch(_) => true,
         _ => false,
     };
-    let workspace = MetadataCommand::new().manifest_path(file).exec()?;
+    let workspace = MetadataCommand::new().manifest_path("Cargo.toml").exec()?;
     let target_directory = workspace.target_directory.to_string();
     let cargo = workspace
         .root_package()

@@ -82,6 +82,10 @@ async fn main() -> Result<()> {
     }
 
     let args = Cli::parse_from(&args);
+    if let Some(path) = &args.manifest_path {
+        let path = PathBuf::from(path).without_last();
+        std::env::set_current_dir(path)?;
+    }
 
     let opts = match &args.command {
         Commands::Init => return Ok(println!(include_str!("leptos.toml"))),
@@ -93,10 +97,6 @@ async fn main() -> Result<()> {
     util::setup_logging(opts.verbose);
 
     let config = config::read(&args, opts.clone())?;
-    if let Some(path) = &args.manifest_path {
-        let path = PathBuf::from(path).without_last();
-        std::env::set_current_dir(path)?;
-    }
 
     tokio::spawn(async {
         signal::ctrl_c().await.expect("failed to listen for event");
