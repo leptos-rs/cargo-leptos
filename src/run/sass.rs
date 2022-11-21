@@ -80,12 +80,10 @@ fn sass_exe() -> Result<PathBuf> {
     // cargo-leptos installed sass
     let (target_os, target_arch) = os_arch()?;
 
-    let exe_name = match target_os {
+    let binary = match target_os {
         "windows" => "sass.bat",
         _ => "sass",
     };
-
-    // install cargo-leptos sass
 
     let version = "1.56.1";
     let url = match (target_os, target_arch) {
@@ -95,16 +93,17 @@ fn sass_exe() -> Result<PathBuf> {
         _ => bail!("No sass binary found for {target_os} {target_arch}")
       };
 
+    let name = format!("sass-{version}");
     let binaries = match target_os {
-        "windows" => vec![exe_name, "src/dart.exe", "src/sass.snapshot"],
-        "macos" => vec![exe_name, "src/dart", "src/sass.snapshot"],
-        _ => vec![exe_name],
+        "windows" => vec![binary, "src/dart.exe", "src/sass.snapshot"],
+        "macos" => vec![binary, "src/dart", "src/sass.snapshot"],
+        _ => vec![binary],
     };
-    match INSTALL_CACHE.download(true, "sass", &binaries, &url) {
-        Ok(None) => bail!("Unable to download Sass for {target_os} {target_arch}"),
-        Err(e) => bail!("Unable to download Sass for {target_os} {target_arch} due to: {e}"),
+    match INSTALL_CACHE.download(true, &name, &binaries, &url) {
+        Ok(None) => bail!("Unable to download sass for {target_os} {target_arch}"),
+        Err(e) => bail!("Unable to download sass for {target_os} {target_arch} due to: {e}"),
         Ok(Some(d)) => Ok(d
-            .binary(exe_name)
-            .map_err(|e| anyhow!("Could not find {exe_name} in downloaded sass: {e}"))?),
+            .binary(binary)
+            .map_err(|e| anyhow!("Could not find {binary} in downloaded sass: {e}"))?),
     }
 }

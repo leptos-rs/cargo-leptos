@@ -76,12 +76,10 @@ fn wasm_opt_exe() -> Result<PathBuf> {
     // cargo-leptos installed sass
     let (target_os, target_arch) = os_arch()?;
 
-    let exe_name = match target_os {
+    let binary = match target_os {
         "windows" => "bin/wasm-opt.exe",
         _ => "bin/wasm-opt",
     };
-
-    // install cargo-leptos sass
 
     let version = "version_110";
     let target = match (target_os, target_arch) {
@@ -93,17 +91,18 @@ fn wasm_opt_exe() -> Result<PathBuf> {
     };
     let url = format!("https://github.com/WebAssembly/binaryen/releases/download/{version}/binaryen-{version}-{target}.tar.gz");
 
+    let name = format!("wasm-opt-{version}");
     let binaries = match target_os {
         "windows" => vec!["bin/wasm-opt.exe", "lib/binaryen.lib"],
         "macos" => vec!["bin/wasm-opt", "lib/libbinaryen.dylib"],
         "linux" => vec!["bin/wasm-opt", "lib/libbinaryen.a"],
         _ => bail!("No wasm-opt binary found for {target_os}"),
     };
-    match INSTALL_CACHE.download(true, "wasm-opt", &binaries, &url) {
-        Ok(None) => bail!("Unable to download Sass for {target_os} {target_arch}"),
-        Err(e) => bail!("Unable to download Sass for {target_os} {target_arch} due to: {e}"),
+    match INSTALL_CACHE.download(true, &name, &binaries, &url) {
+        Ok(None) => bail!("Unable to download wasm-opt for {target_os} {target_arch}"),
+        Err(e) => bail!("Unable to download wasm-opt for {target_os} {target_arch} due to: {e}"),
         Ok(Some(d)) => d
-            .binary(exe_name)
-            .map_err(|e| anyhow!("Could not find {exe_name} in downloaded wasm-opt: {e}")),
+            .binary(binary)
+            .map_err(|e| anyhow!("Could not find {binary} in downloaded wasm-opt: {e}")),
     }
 }
