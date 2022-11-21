@@ -148,7 +148,7 @@ async fn build(config: &Config) -> Result<()> {
 async fn build_client(config: &Config) -> Result<()> {
     sass::run(&config).await?;
 
-    let html = Html::read(&config.leptos.index_path)?;
+    let html = Html::read(&config.leptos.index_file)?;
 
     if config.cli.csr {
         wasm::build(&config).await?;

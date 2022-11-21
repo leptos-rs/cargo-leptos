@@ -93,7 +93,7 @@ impl Html {
 
     /// generate rust for server side rendering
     pub fn generate_rust(&self, config: &Config) -> Result<()> {
-        let file = &config.leptos.gen_path;
+        let file = &config.leptos.gen_file;
 
         let rust = include_str!("generated.rs");
 

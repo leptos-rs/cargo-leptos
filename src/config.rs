@@ -87,9 +87,10 @@ struct Metadata {
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct LeptosManifest {
-    pub index_path: String,
+    /// source index file
+    pub index_file: String,
     /// where to generate rust code
-    pub gen_path: String,
+    pub gen_file: String,
     /// on which port to serve the client side rendered site
     pub csr_port: u16,
     /// the port to use for automatic reload monitoring

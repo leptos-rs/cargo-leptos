@@ -72,16 +72,18 @@ ssr = [
 ]
 
 [package.metadata.leptos]
-# path, relative to root, to generat rust code to
-gen_path = "src/server/generated.rs"
-# path to the index.html file
-index_path = "index.html"
-# on which port to serve the client side rendered site (when using --csr option)
+# Path, relative to root, to generat rust code to
+gen_file = "src/server/generated.rs"
+# Path to the source index.html file
+index_file = "index.html"
+# On which port to serve the client side rendered site (when using --csr option)
 csr_port = 3000
-# the port to use for automatic reload monitoring
+# The port to use for automatic reload monitoring
 reload_port = 3001
 
 [package.metadata.leptos.style]
+# Main style file. If scss or sass then it will be compiled to css.
+# the parent folder will be watched for changes
 file = "style/main.scss"
 # A https://browsersl.ist query
 browserquery = "defaults"

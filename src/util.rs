@@ -11,7 +11,7 @@ use std::{
 use tokio::{
     io::{AsyncBufReadExt, BufReader},
     process::{Child, Command},
-    sync::oneshot,
+    sync::{broadcast::Sender, oneshot},
     task::JoinHandle,
 };
 
@@ -139,6 +139,19 @@ impl PathBufAdditions for PathBuf {
     fn with<P: AsRef<Path>>(mut self, append: P) -> Self {
         self.push(append);
         self
+    }
+}
+
+pub trait SenderAdditions {
+    fn send_logged(&self, me: &str, msg: Msg, log: String);
+}
+
+impl SenderAdditions for Sender<Msg> {
+    fn send_logged(&self, me: &str, msg: Msg, log: String) {
+        match self.send(msg) {
+            Err(e) => log::error!("{me} {e}"),
+            Ok(_) => log::debug!("{me} {log}"),
+        }
     }
 }
 
