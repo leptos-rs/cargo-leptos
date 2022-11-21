@@ -7,30 +7,40 @@ use lightningcss::{
 use std::{fs, path::Path, path::PathBuf};
 use tokio::process::Command;
 
+const DEST: &str = "target/site/pkg/app.css";
+
 pub async fn run(config: &Config) -> Result<()> {
+    fs::create_dir_all("target/site/pkg")?;
+
     let style = &config.leptos.style;
-    let scss_file = &style.file;
+    let style_file = &style.file;
 
-    log::debug!("Style found: {scss_file}");
-    let scss = Path::new(scss_file);
-    ensure!(scss.exists(), "no scss file found at: {scss_file}",);
-    ensure!(scss.is_file(), "expected a file, not a dir: {scss_file}",);
+    log::debug!("Style found: {style_file}");
+    let file = PathBuf::from(style_file);
+    ensure!(file.exists(), "no scss file found at: {style_file}",);
+    ensure!(file.is_file(), "expected a file, not a dir: {style_file}",);
 
-    let css_file = compile_scss(scss_file, config.cli.release)
-        .await
-        .context(format!("compile scss: {scss_file}"))?;
+    let css_file = match file.extension().map(|ext| ext.to_str()).flatten() {
+        Some("sass") | Some("scss") => compile_sass(style_file, config.cli.release)
+            .await
+            .context(format!("compile sass/scss: {style_file}"))?,
+        Some("css") => {
+            fs::copy(style_file, DEST)?;
+            PathBuf::from(DEST)
+        }
+        _ => bail!("Not a css/sass/scss style file: {style_file}"),
+    };
 
     let browsers = browser_lists(&style.browserquery).context("leptos.style.browserquery")?;
 
     process_css(&css_file, browsers, config.cli.release)
-        .context(format!("process css {scss_file}"))?;
+        .context(format!("process css {style_file}"))?;
 
     Ok(())
 }
 
-async fn compile_scss(scss_file: &str, release: bool) -> Result<PathBuf> {
-    let dest = "target/site/pkg/app.css";
-    let mut args = vec![scss_file, dest];
+async fn compile_sass(scss_file: &str, release: bool) -> Result<PathBuf> {
+    let mut args = vec![scss_file, DEST];
     release.then(|| args.push("--no-source-map"));
 
     let exe = sass_exe().context("Try manually installing sass: https://sass-lang.com/install")?;
@@ -41,7 +51,7 @@ async fn compile_scss(scss_file: &str, release: bool) -> Result<PathBuf> {
     cmd.wait()
         .await
         .context(format!("sass {}", args.join(" ")))?;
-    Ok(PathBuf::from(dest))
+    Ok(PathBuf::from(DEST))
 }
 
 fn browser_lists(query: &str) -> Result<Option<Browsers>> {

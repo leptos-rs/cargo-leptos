@@ -37,7 +37,7 @@ fn is_watched(event: &Event, cfg: &Config) -> bool {
     for path in &event.paths {
         match path.extension().map(|ext| ext.to_str()).flatten() {
             Some("rs") if !path.ends_with(&cfg.leptos.gen_path) => return true,
-            Some("css") | Some("scss") => return true,
+            Some("css") | Some("scss") | Some("sass") => return true,
             _ => {}
         }
     }
