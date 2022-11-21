@@ -44,26 +44,26 @@ pub enum Log {
 
 #[derive(Debug, Clone, Parser, PartialEq, Default)]
 pub struct Opts {
-    /// Build artifacts in release mode, with optimizations
+    /// Build artifacts in release mode, with optimizations.
     #[arg(short, long)]
     release: bool,
 
-    /// Build for client side rendering. Useful during development due to faster compile times.
+    /// Build for client side rendering instead of the default hydrate mode. Useful during development due to faster compile times.
     #[arg(long)]
     csr: bool,
 
-    /// Verbosity (none: errors & warnings, -v: verbose, --vv: very verbose, --vvv: output everything)
+    /// Verbosity (none: errors & warnings, -v: verbose, --vv: very verbose, --vvv: output everything).
     #[arg(short, action = clap::ArgAction::Count)]
     verbose: u8,
 }
 
 #[derive(Debug, Parser)]
 pub struct Cli {
-    /// Path to Cargo.toml
+    /// Path to Cargo.toml.
     #[arg(long)]
     manifest_path: Option<String>,
 
-    /// Output logs from dependencies (multiple --log accepted)
+    /// Output logs from dependencies (multiple --log accepted).
     #[arg(long)]
     log: Vec<Log>,
 
@@ -73,15 +73,15 @@ pub struct Cli {
 
 #[derive(Debug, Subcommand, PartialEq)]
 enum Commands {
-    /// Output toml that needs to be added to the Cargo.toml file
+    /// Output toml that needs to be added to the Cargo.toml file.
     Init,
-    /// Compile the project
+    /// Compile the project. Defaults to hydrate mode.
     Build(Opts),
-    /// Run the cargo tests for app, client and server
+    /// Run the cargo tests for app, client and server.
     Test(Opts),
-    /// Serve. In `csr` mode an internal server is used
+    /// Serve. Defaults to hydrate mode.
     Serve(Opts),
-    /// Serve and automatically reload when files change
+    /// Serve and automatically reload when files change. Defaults to hydrate mode.
     Watch(Opts),
 }
 

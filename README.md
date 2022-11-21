@@ -26,7 +26,7 @@ Build tool for [Leptos](https://crates.io/crates/leptos).
 
 Install:
 
-> `cargo install --locked leptos`
+> `cargo install --locked cargo-leptos`
 
 Help:
 
