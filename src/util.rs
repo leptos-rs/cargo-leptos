@@ -1,10 +1,9 @@
 use crate::{Msg, MSG_BUS};
 use anyhow::{anyhow, bail, Context, Result};
 use cargo_metadata::{Artifact, Message};
-use log::LevelFilter;
 use serde::Deserialize;
-use simplelog::{ColorChoice, ConfigBuilder, TermLogger, TerminalMode};
 use std::{
+    borrow::Cow,
     fs,
     path::{Path, PathBuf},
     process::Stdio,
@@ -16,27 +15,11 @@ use tokio::{
     task::JoinHandle,
 };
 
-pub fn setup_logging(verbose: u8) {
-    let log_level = match verbose {
-        0 => LevelFilter::Warn,
-        1 => LevelFilter::Info,
-        2 => LevelFilter::Debug,
-        _ => LevelFilter::Trace,
-    };
-    let config = ConfigBuilder::default()
-        .set_time_level(LevelFilter::Off)
-        .build();
-    TermLogger::init(log_level, config, TerminalMode::Stderr, ColorChoice::Auto)
-        .expect("Failed to start logger");
-    log::info!("Log level set to: {log_level}");
-}
-
 pub fn rm_dir_content<P: AsRef<Path>>(dir: P) -> Result<()> {
     let dir = dir.as_ref();
-    log::info!("Cleaning contents of {dir:?}");
 
     if !dir.exists() {
-        log::debug!("Not cleaning {dir:?} because it does not exist");
+        log::debug!("Leptos not cleaning {dir:?} because it does not exist");
         return Ok(());
     }
 
@@ -58,11 +41,11 @@ pub fn rm_dir(dir: &str) -> Result<()> {
     let path = Path::new(&dir);
 
     if !path.exists() {
-        log::debug!("Not cleaning {dir} because it does not exist");
+        log::debug!("Leptos not cleaning {dir} because it does not exist");
         return Ok(());
     }
 
-    log::info!("Cleaning dir '{dir}'");
+    log::info!("Leptos cleaning dir '{dir}'");
     fs::remove_dir_all(path).context(format!("remove dir {dir}"))?;
     Ok(())
 }
@@ -82,7 +65,7 @@ pub fn mkdirs<S: ToString>(dir: S) -> Result<String> {
 }
 
 pub fn write(file: &str, text: &str) -> Result<()> {
-    log::trace!("Content of {file}:\n{text}");
+    log::trace!("Leptos content of {file}:\n{text}");
     fs::write(&file, text).context(format!("write {file}"))
 }
 
@@ -109,6 +92,7 @@ pub fn os_arch() -> Result<(&'static str, &'static str)> {
 
 pub trait StrAdditions {
     fn with(&self, append: &str) -> String;
+    fn pad_left_to<'a>(&'a self, len: usize) -> Cow<'a, str>;
 }
 
 impl StrAdditions for str {
@@ -117,6 +101,15 @@ impl StrAdditions for str {
         s.push_str(append);
         s
     }
+
+    fn pad_left_to<'a>(&'a self, len: usize) -> Cow<'a, str> {
+        let chars = self.chars().count();
+        if chars < len {
+            Cow::Owned(format!("{}{self}", " ".repeat(len - chars)))
+        } else {
+            Cow::Borrowed(self)
+        }
+    }
 }
 
 impl StrAdditions for String {
@@ -124,6 +117,10 @@ impl StrAdditions for String {
         let mut s = self.clone();
         s.push_str(append);
         s
+    }
+
+    fn pad_left_to<'a>(&'a self, len: usize) -> Cow<'a, str> {
+        self.as_str().pad_left_to(len)
     }
 }
 
@@ -172,7 +169,7 @@ impl CommandAdditions for Command {
                         match Message::deserialize(&mut deserializer) {
                             Ok(Message::BuildFinished(v)) => {
                                 if !v.success {
-                                    log::warn!("Build failed")
+                                    log::warn!("Cargo build failed")
                                 }
                                 break;
                             }
@@ -181,7 +178,7 @@ impl CommandAdditions for Command {
                             Ok(Message::CompilerMessage(msg)) => log::info!("MESSAGE {msg:?}"),
                             Ok(Message::TextLine(txt)) => log::info!("TEXT {txt:?}"),
                             Err(e) => {
-                                log::error!("cargo stdout: {e}");
+                                log::error!("Cargo stdout: {e}");
                                 break;
                             }
                             Ok(_) => log::info!("UNPARSEABLE: {line}"),
@@ -189,7 +186,7 @@ impl CommandAdditions for Command {
                         line.clear();
                     }
                     Err(e) => {
-                        log::error!("cargo stdout: {e}");
+                        log::error!("Cargo stdout: {e}");
                         break;
                     }
                 }
@@ -200,7 +197,7 @@ impl CommandAdditions for Command {
     }
 }
 
-pub fn oneshot_when<S: ToString>(msgs: &'static [Msg], to: S) -> oneshot::Receiver<()> {
+pub fn oneshot_when(msgs: &'static [Msg], to: &str) -> oneshot::Receiver<()> {
     let (tx, rx) = oneshot::channel::<()>();
 
     let mut interrupt = MSG_BUS.subscribe();
@@ -212,12 +209,12 @@ pub fn oneshot_when<S: ToString>(msgs: &'static [Msg], to: S) -> oneshot::Receiv
                 Ok(Msg::ShutDown) => break,
                 Ok(msg) if msgs.contains(&msg) => {
                     if let Err(_) = tx.send(()) {
-                        log::debug!("Could not send {msg:?} to {to}");
+                        log::trace!("{to} could not send {msg:?}");
                     }
                     return;
                 }
                 Err(e) => {
-                    log::debug!("Error recieving from MSG_BUS: {e}");
+                    log::trace!("{to } error recieving from MSG_BUS: {e}");
                     return;
                 }
                 Ok(_) => {}
@@ -228,19 +225,16 @@ pub fn oneshot_when<S: ToString>(msgs: &'static [Msg], to: S) -> oneshot::Receiv
     rx
 }
 
-pub async fn run_interruptible<S: AsRef<str>>(name: S, mut process: Child) -> Result<()> {
-    let stop_rx = oneshot_when(
-        &[Msg::SrcChanged, Msg::ShutDown],
-        format!("cargo {}", name.as_ref()),
-    );
+pub async fn run_interruptible(name: &str, mut process: Child) -> Result<()> {
+    let stop_rx = oneshot_when(&[Msg::SrcChanged, Msg::ShutDown], name);
     tokio::select! {
         res = process.wait() => match res?.success() {
                 true => return Ok(()),
-                false => return Err(anyhow!("{} failed", name.as_ref())),
+                false => return Err(anyhow!("{} failed", name)),
         },
         _ = stop_rx => {
             process.kill().await.map(|_| true).expect("Could not kill process");
-            log::debug!("{} stopped", name.as_ref());
+            log::debug!("{} stopped", name);
             Ok(())
         }
     }

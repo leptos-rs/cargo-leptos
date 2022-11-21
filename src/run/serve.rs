@@ -11,8 +11,9 @@ pub async fn run(config: &Config) -> Result<()> {
 
     let addr = SocketAddr::from(([127, 0, 0, 1], config.leptos.csr_port));
 
-    let shutdown_rx = oneshot_when(&[Msg::ShutDown], "serve shutdown");
+    let shutdown_rx = oneshot_when(&[Msg::ShutDown], "Server");
 
+    log::info!("Serving client on {addr}");
     if let Err(e) = axum::Server::bind(&addr)
         .serve(route.into_make_service())
         .with_graceful_shutdown(async {
@@ -21,7 +22,7 @@ pub async fn run(config: &Config) -> Result<()> {
         })
         .await
     {
-        log::error!("serve: {e}");
+        log::error!("Server {e}");
     }
     Ok(())
 }

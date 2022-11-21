@@ -1,7 +1,6 @@
 use crate::{config::Config, util};
 use anyhow::{ensure, Context, Result};
 use regex::Regex;
-use simplelog as log;
 use std::fs;
 use util::StrAdditions;
 
@@ -51,14 +50,14 @@ impl Html {
 
     fn try_read(path: &str) -> Result<Self> {
         let text = fs::read_to_string(path)?;
-        log::trace!("Content of {path}:\n{text}");
+        log::trace!("Html content of {path}:\n{text}");
         ensure!(
             HEAD_RE.find(&text).is_some(),
             format!("Missing Html marker {HEAD_MARKER}")
         );
         ensure!(
             BODY_RE.find(&text).is_some(),
-            format!("Missing Html marker {BODY_MARKER}")
+            format!("Html missing marker {BODY_MARKER}")
         );
         log::trace!("Content of {path}:\n{text}");
         Ok(Self { text })
@@ -86,7 +85,7 @@ impl Html {
         let text = HEAD_RE.replace(&self.text, &self.head(config));
         let text = BODY_RE.replace(&text, "");
 
-        log::debug!("Writing html to {file}");
+        log::debug!("Html writing to {file}");
         log::trace!("Html content\n{text}");
 
         util::write(&file, &text)
@@ -111,7 +110,7 @@ impl Html {
         let rust = MIDDLE_RE.replace(&rust, &middle);
         let rust = END_RE.replace(&rust, &end);
 
-        log::debug!("Writing rust to {file}");
+        log::debug!("Rust writing to {file}");
         log::trace!("Html content\n{rust}");
 
         util::write(&file, &rust)

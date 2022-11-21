@@ -42,7 +42,7 @@ async fn compile_sass(scss_file: &str, release: bool) -> Result<PathBuf> {
     release.then(|| args.push("--no-source-map"));
 
     let exe = sass_exe().context("Try manually installing sass: https://sass-lang.com/install")?;
-    log::debug!("Using sass executable at: {exe:?}");
+    log::debug!("Sass using executable at: {exe:?}");
 
     let mut cmd = Command::new(exe).args(&args).spawn()?;
 

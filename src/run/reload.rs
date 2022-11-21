@@ -1,3 +1,4 @@
+use crate::logger::GRAY;
 use crate::util::oneshot_when;
 use crate::MSG_BUS;
 use crate::{config::Config, Msg};
@@ -15,22 +16,22 @@ pub async fn run(config: &Config) -> Result<()> {
 
     let addr = SocketAddr::from(([127, 0, 0, 1], config.leptos.reload_port));
 
-    let shutdown_rx = oneshot_when(&[Msg::ShutDown], "reload shutdown");
+    let shutdown_rx = oneshot_when(&[Msg::ShutDown], "Autoreload");
 
     tokio::spawn(async move {
         match axum::Server::bind(&addr)
             .serve(route.into_make_service())
             .with_graceful_shutdown(async move {
                 shutdown_rx.await.ok();
-                log::debug!("autoreload server shutting down");
+                log::debug!("Autoreload server shutting down");
             })
             .await
         {
-            Ok(_) => log::debug!("autoreload server shut down"),
-            Err(e) => log::error!("autoreload error: {e}"),
+            Ok(_) => log::debug!("Autoreload server shut down"),
+            Err(e) => log::error!("Autoreload {e}"),
         }
     });
-    log::debug!("autoreload server started");
+    log::debug!("Autoreload server started {}", GRAY.paint(addr.to_string()));
     Ok(())
 }
 
@@ -41,18 +42,18 @@ async fn websocket_handler(ws: WebSocketUpgrade) -> impl IntoResponse {
 async fn websocket(mut stream: WebSocket) {
     let mut rx = MSG_BUS.subscribe();
 
-    log::debug!("autoreload websocket opened");
+    log::debug!("Autoreload websocket opened");
     tokio::spawn(async move {
         loop {
             match rx.recv().await {
                 Ok(Msg::Reload(msg)) => {
                     if let Err(e) = stream.send(Message::Text(msg)).await {
-                        log::debug!("autoreload: {e}");
+                        log::debug!("Autoreload {e}");
                         break;
                     }
                 }
                 Err(e) => {
-                    log::debug!("autoreload: {e}");
+                    log::debug!("Autoreload {e}");
                     break;
                 }
                 _ => {}

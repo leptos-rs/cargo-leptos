@@ -1,5 +1,6 @@
 use crate::{
     config::Config,
+    logger::GRAY,
     util::{run_interruptible, CommandAdditions},
 };
 use anyhow::{Context, Result};
@@ -14,11 +15,14 @@ pub async fn build(config: &Config, lib: bool) -> Result<()> {
         .args(&args)
         .spawn_cargo_parsed()
         .context("Could not spawn command")?;
-    run_interruptible(format!("cargo build"), process)
+    run_interruptible("Cargo", process)
         .await
         .context(format!("cargo {}", &args.join(" ")))?;
     handle.await?;
-    log::info!("Finshed: cargo {}", args.join(" "));
+    log::info!(
+        "Cargo finished {}",
+        GRAY.paint(format!("cargo {}", args.join(" ")))
+    );
     Ok(())
 }
 
@@ -37,10 +41,13 @@ async fn cmd(command: &str, config: &Config, lib: bool) -> Result<()> {
         .args(&args)
         .spawn()
         .context("Could not spawn command")?;
-    run_interruptible(format!("cargo {command}"), process)
+    run_interruptible("Cargo", process)
         .await
         .context(format!("cargo {}", &args.join(" ")))?;
-    log::info!("Finshed: cargo {}", args.join(" "));
+    log::info!(
+        "Cargo finished {}",
+        GRAY.paint(format!("cargo {}", args.join(" ")))
+    );
     Ok(())
 }
 

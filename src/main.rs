@@ -1,10 +1,11 @@
 mod config;
+mod logger;
 mod run;
 pub mod util;
 
 use anyhow::Result;
 use binary_install::Cache;
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueEnum};
 use config::Config;
 use run::{cargo, reload, sass, serve, wasm, watch, Html};
 use std::{env, path::PathBuf};
@@ -33,6 +34,14 @@ lazy_static::lazy_static! {
     pub static ref INSTALL_CACHE: Cache = Cache::new("cargo-leptos").unwrap();
 }
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+pub enum Log {
+    /// WASM build (wasm, wasm-opt, walrus)
+    Wasm,
+    /// Internal reload and csr server (hyper, axum)
+    Server,
+}
+
 #[derive(Debug, Clone, Parser, PartialEq, Default)]
 pub struct Opts {
     /// Build artifacts in release mode, with optimizations
@@ -50,9 +59,13 @@ pub struct Opts {
 
 #[derive(Debug, Parser)]
 pub struct Cli {
-    ///Path to Cargo.toml
+    /// Path to Cargo.toml
     #[arg(long)]
     manifest_path: Option<String>,
+
+    /// Output logs from dependencies (multiple --log accepted)
+    #[arg(long)]
+    log: Vec<Log>,
 
     #[command(subcommand)]
     command: Commands,
@@ -82,6 +95,7 @@ async fn main() -> Result<()> {
     }
 
     let args = Cli::parse_from(&args);
+
     if let Some(path) = &args.manifest_path {
         let path = PathBuf::from(path).without_last();
         std::env::set_current_dir(path)?;
@@ -94,13 +108,13 @@ async fn main() -> Result<()> {
         | Commands::Test(opts)
         | Commands::Watch(opts) => opts,
     };
-    util::setup_logging(opts.verbose);
+    logger::setup(opts.verbose, &args.log);
 
     let config = config::read(&args, opts.clone())?;
 
     tokio::spawn(async {
         signal::ctrl_c().await.expect("failed to listen for event");
-        log::info!("Ctrl-c received");
+        log::info!("Leptos ctrl-c received");
         *SHUTDOWN.write().await = true;
         MSG_BUS.send(Msg::ShutDown).unwrap();
     });
@@ -117,11 +131,12 @@ async fn main() -> Result<()> {
 async fn send_reload() {
     if !*SHUTDOWN.read().await {
         if let Err(e) = MSG_BUS.send(Msg::Reload("reload".to_string())) {
-            log::error!("Failed to send reload: {e}");
+            log::error!("Leptos failed to send reload: {e}");
         }
     }
 }
 async fn build(config: &Config) -> Result<()> {
+    log::info!(r#"Leptos cleaning contents of "target/site""#);
     util::rm_dir_content("target/site")?;
     build_client(&config).await?;
 
@@ -177,11 +192,11 @@ async fn watch(config: &Config) -> Result<()> {
                 if *SHUTDOWN.read().await {
                     break;
                 } else {
-                    log::info!("Rebuilding...");
+                    log::info!("Leptos ===================== rebuilding =====================");
                 }
             }
             Err(e) => {
-                log::warn!("Rebuild stopped due to error: {e}");
+                log::warn!("Leptos rebuild stopped due to error: {e}");
                 while MSG_BUS.subscribe().recv().await? != Msg::SrcChanged {}
             }
         }
