@@ -91,6 +91,8 @@ pub struct LeptosManifest {
     pub index_file: String,
     /// where to generate rust code
     pub gen_file: String,
+    /// assets dir. content will be copied to the target/site dir
+    pub assets_dir: Option<String>,
     /// on which port to serve the client side rendered site
     pub csr_port: u16,
     /// the port to use for automatic reload monitoring
