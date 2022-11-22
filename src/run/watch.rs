@@ -1,53 +1,57 @@
 use crate::{
     config::Config,
     logger::GRAY,
-    util::{oneshot_when, PathBufAdditions, SenderAdditions},
+    util::{oneshot_when, remove_nested, PathBufAdditions, SenderAdditions},
     Msg, MSG_BUS,
 };
 use anyhow::Result;
 use notify::{DebouncedEvent, RecursiveMode, Watcher};
-use std::{path::PathBuf, time::Duration};
+use std::{fmt::Display, path::PathBuf, time::Duration};
 use tokio::task::JoinHandle;
 
 pub async fn spawn(config: &Config) -> Result<JoinHandle<()>> {
-    let src_dir = PathBuf::from("src").canonicalize()?;
-    let style_dir = PathBuf::from(&config.leptos.style.file)
-        .without_last()
-        .canonicalize()?;
-    let paths = if !style_dir.starts_with(&src_dir) {
-        log::info!("Watching folders {src_dir:?} and {style_dir:?} recursively");
-        vec![src_dir, style_dir]
+    let mut paths = vec![PathBuf::from("src").canonicalize()?];
+    paths.push(
+        PathBuf::from(&config.leptos.style.file)
+            .without_last()
+            .canonicalize()?,
+    );
+
+    let assets_dir = if let Some(dir) = &config.leptos.assets_dir {
+        let assets_root = PathBuf::from(dir).canonicalize()?;
+        paths.push(assets_root.clone());
+        Some(assets_root)
     } else {
-        log::info!("Watching folder {src_dir:?} recursively");
-        vec![src_dir]
+        None
     };
+
+    let paths = remove_nested(paths);
+
+    log::info!(
+        "Watching folders {}",
+        GRAY.paint(
+            paths
+                .iter()
+                .map(|p| p.to_string_lossy())
+                .collect::<Vec<_>>()
+                .join(", ")
+        )
+    );
 
     let exclude = vec![PathBuf::from(&config.leptos.gen_file).canonicalize()?];
 
-    Ok(tokio::spawn(async move { run(&paths, exclude).await }))
+    Ok(tokio::spawn(async move {
+        run(&paths, exclude, assets_dir).await
+    }))
 }
 
-async fn run(paths: &[PathBuf], exclude: Vec<PathBuf>) {
+async fn run(paths: &[PathBuf], exclude: Vec<PathBuf>, assets_dir: Option<PathBuf>) {
     let (sync_tx, sync_rx) = std::sync::mpsc::channel::<DebouncedEvent>();
 
-    use DebouncedEvent::{
-        Chmod, Create, Error, NoticeRemove, NoticeWrite, Remove, Rename, Rescan, Write,
-    };
     std::thread::spawn(move || {
         while let Ok(event) = sync_rx.recv() {
-            match event {
-                NoticeWrite(_) | NoticeRemove(_) | Chmod(_) => {}
-                Remove(f) | Rename(f, _) | Write(f) | Create(f) => {
-                    if is_watched(&f, &exclude) {
-                        log::debug!("Watcher file changed {}", GRAY.paint(f.to_string_lossy()));
-                        MSG_BUS.send_logged("Watcher", Msg::SrcChanged)
-                    }
-                }
-                Error(e, p) => log::error!("Watcher {e} {p:?}"),
-                Rescan => {
-                    log::debug!("Watcher rescan");
-                    MSG_BUS.send_logged("Watcher", Msg::SrcChanged)
-                }
+            if let Some(watched) = Watched::try_new(event) {
+                handle(watched, &exclude, &assets_dir)
             }
         }
         log::debug!("Watching stopped");
@@ -67,10 +71,98 @@ async fn run(paths: &[PathBuf], exclude: Vec<PathBuf>) {
     }
 }
 
-fn is_watched(path: &PathBuf, exclude: &[PathBuf]) -> bool {
-    match path.extension().map(|ext| ext.to_str()).flatten() {
-        Some("rs") if !exclude.contains(path) => true,
-        Some("css") | Some("scss") | Some("sass") => true,
-        _ => false,
+fn handle(watched: Watched, exclude: &[PathBuf], assets_dir: &Option<PathBuf>) {
+    if let Some(path) = watched.path() {
+        if exclude.contains(path) {
+            return;
+        }
+    }
+
+    if let Some(assets_dir) = assets_dir {
+        if watched.path_starts_with(assets_dir) {
+            log::debug!("Watcher asset change {}", GRAY.paint(watched.to_string()));
+            MSG_BUS.send_logged("Watcher", Msg::AssetsChanged(watched));
+            return;
+        }
+    }
+
+    match watched.path_ext() {
+        Some("rs") => {
+            log::debug!("Watcher source change {}", GRAY.paint(watched.to_string()));
+            MSG_BUS.send_logged("Watcher", Msg::SrcChanged)
+        }
+        Some(ext) if ["scss", "sass", "css"].contains(&ext.to_lowercase().as_str()) => {
+            log::debug!("Watcher style change {}", GRAY.paint(watched.to_string()));
+            MSG_BUS.send_logged("Watcher", Msg::StyleChanged)
+        }
+        _ => {}
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Watched {
+    Remove(PathBuf),
+    Rename(PathBuf, PathBuf),
+    Write(PathBuf),
+    Create(PathBuf),
+    Rescan,
+}
+
+impl Watched {
+    fn try_new(event: DebouncedEvent) -> Option<Self> {
+        use DebouncedEvent::{
+            Chmod, Create, Error, NoticeRemove, NoticeWrite, Remove, Rename, Rescan, Write,
+        };
+
+        match event {
+            Chmod(_) | NoticeRemove(_) | NoticeWrite(_) => None,
+            Create(f) => Some(Self::Create(f)),
+            Remove(f) => Some(Self::Remove(f)),
+            Rename(f, t) => Some(Self::Rename(f, t)),
+            Write(f) => Some(Self::Write(f)),
+            Rescan => Some(Self::Rescan),
+            Error(e, Some(p)) => {
+                log::error!("Watcher error watching {p:?}: {e}");
+                None
+            }
+            Error(e, None) => {
+                log::error!("Watcher error: {e}");
+                None
+            }
+        }
+    }
+
+    fn path_ext(&self) -> Option<&str> {
+        self.path()
+            .map(|p| p.extension().map(|e| e.to_str()))
+            .flatten()
+            .flatten()
+    }
+
+    fn path(&self) -> Option<&PathBuf> {
+        match self {
+            Self::Remove(p) | Self::Rename(p, _) | Self::Write(p) | Self::Create(p) => Some(&p),
+            Self::Rescan => None,
+        }
+    }
+
+    fn path_starts_with(&self, path: &PathBuf) -> bool {
+        match self {
+            Self::Write(p) | Self::Create(p) | Self::Remove(p) => p.starts_with(path),
+            Self::Rename(fr, to) => fr.starts_with(path) || to.starts_with(path),
+            Self::Rescan => false,
+        }
+    }
+}
+
+impl Display for Watched {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Create(p) => write!(f, "create {p:?}"),
+            Self::Remove(p) => write!(f, "remove {p:?}"),
+            Self::Write(p) => write!(f, "write {p:?}"),
+            Self::Rename(fr, to) => write!(f, "rename {fr:?} -> {to:?}"),
+            Self::Rescan => write!(f, "rescan"),
+        }
     }
 }

@@ -64,6 +64,38 @@ pub fn mkdirs<S: ToString>(dir: S) -> Result<String> {
     Ok(dir)
 }
 
+pub fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> Result<()> {
+    fs::create_dir_all(&dst)?;
+    for entry in fs::read_dir(src)? {
+        let entry = entry?;
+        let ty = entry.file_type()?;
+        if ty.is_dir() {
+            copy_dir_all(entry.path(), dst.as_ref().join(entry.file_name()))?;
+        } else {
+            fs::copy(entry.path(), dst.as_ref().join(entry.file_name()))?;
+        }
+    }
+    Ok(())
+}
+
+pub fn remove_nested(paths: Vec<PathBuf>) -> Vec<PathBuf> {
+    paths.into_iter().fold(vec![], |mut vec, path| {
+        for added in vec.iter_mut() {
+            // path is a parent folder of added
+            if added.starts_with(&path) {
+                *added = path;
+                return vec;
+            }
+            // path is a sub folder of added
+            if path.starts_with(added) {
+                return vec;
+            }
+        }
+        vec.push(path);
+        vec
+    })
+}
+
 pub fn write(file: &str, text: &str) -> Result<()> {
     log::trace!("Leptos content of {file}:\n{text}");
     fs::write(&file, text).context(format!("write {file}"))
@@ -206,6 +238,20 @@ impl CommandAdditions for Command {
             artifacts
         });
         Ok((handle, process))
+    }
+}
+
+pub async fn wait_for(msgs: &[Msg]) {
+    let mut rx = MSG_BUS.subscribe();
+    loop {
+        match rx.recv().await {
+            Ok(msg) if msgs.contains(&msg) => break,
+            Err(e) => {
+                log::error!("Leptos error recieving {e}");
+                break;
+            }
+            _ => {}
+        }
     }
 }
 

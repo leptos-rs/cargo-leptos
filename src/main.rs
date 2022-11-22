@@ -7,20 +7,28 @@ use anyhow::Result;
 use binary_install::Cache;
 use clap::{Parser, Subcommand, ValueEnum};
 use config::Config;
-use run::{cargo, reload, sass, serve, wasm, watch, Html};
+use run::{
+    cargo, reload, sass, serve, wasm,
+    watch::{self, Watched},
+    Html,
+};
 use std::{env, path::PathBuf};
 use tokio::{
     signal,
     sync::{broadcast, RwLock},
 };
-use util::PathBufAdditions;
+use util::{wait_for, PathBufAdditions};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Msg {
     /// sent by ctrl-c
     ShutDown,
-    /// sent by fs watcher
+    /// sent when a source file is changed
     SrcChanged,
+    /// sent when an asset file changed
+    AssetsChanged(Watched),
+    /// sent when a style file changed
+    StyleChanged,
     /// messages sent to reload server (forwarded to browser)
     Reload(String),
 }
@@ -184,7 +192,7 @@ async fn watch(config: &Config) -> Result<()> {
             Ok(_) => {
                 send_reload().await;
                 if config.cli.csr {
-                    MSG_BUS.subscribe().recv().await?;
+                    wait_for(&[Msg::SrcChanged, Msg::ShutDown]).await;
                 } else {
                     cargo::run(&config).await?;
                 }
