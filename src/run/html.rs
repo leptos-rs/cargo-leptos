@@ -66,7 +66,7 @@ impl Html {
     fn autoreload(&self, config: &Config) -> String {
         HTML_HEAD_RELOAD.replace(
             "SOCKET_URL",
-            &format!("ws://127.0.0.1:{}/ws", config.leptos.reload_port),
+            &format!("ws://127.0.0.1:{}/autoreload", config.leptos.reload_port),
         )
     }
 

@@ -12,7 +12,7 @@ use std::net::SocketAddr;
 use tokio::task::JoinHandle;
 
 pub async fn spawn(config: &Config) -> JoinHandle<()> {
-    let route = Router::new().route("/ws", get(websocket_handler));
+    let route = Router::new().route("/autoreload", get(websocket_handler));
 
     let addr = SocketAddr::from(([127, 0, 0, 1], config.leptos.reload_port));
 

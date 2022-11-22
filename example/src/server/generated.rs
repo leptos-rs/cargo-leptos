@@ -17,7 +17,7 @@ pub const HTML_START: &str = r##"<!DOCTYPE html>
     <link rel="stylesheet" href="/pkg/app.css">
     <link rel="modulepreload" href="/pkg/app.js">
     <script crossorigin="">(function () {
-        var ws = new WebSocket('ws://127.0.0.1:3001/ws');
+        var ws = new WebSocket('ws://127.0.0.1:3001/autoreload');
         ws.onmessage = (ev) => {
             console.log(`Reload message: `);
             if (ev.data === 'reload') window.location.reload();
