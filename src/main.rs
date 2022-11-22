@@ -8,7 +8,9 @@ use binary_install::Cache;
 use clap::{Parser, Subcommand, ValueEnum};
 use config::Config;
 use run::{
-    assets, cargo, reload, sass, serve, wasm,
+    assets, cargo,
+    new::NewCommand,
+    reload, sass, serve, wasm,
     watch::{self, Watched},
     Html,
 };
@@ -60,12 +62,13 @@ pub struct Opts {
     #[arg(long)]
     csr: bool,
 
-    /// Verbosity (none: errors & warnings, -v: verbose, --vv: very verbose).
+    /// Verbosity (none: info, errors & warnings, -v: verbose, --vv: very verbose).
     #[arg(short, action = clap::ArgAction::Count)]
     verbose: u8,
 }
 
 #[derive(Debug, Parser)]
+#[clap(version)]
 pub struct Cli {
     /// Path to Cargo.toml.
     #[arg(long)]
@@ -82,7 +85,7 @@ pub struct Cli {
 #[derive(Debug, Subcommand, PartialEq)]
 enum Commands {
     /// Output toml that needs to be added to the Cargo.toml file.
-    Init,
+    Config,
     /// Compile the project. Defaults to hydrate mode.
     Build(Opts),
     /// Run the cargo tests for app, client and server.
@@ -91,6 +94,8 @@ enum Commands {
     Serve(Opts),
     /// Serve and automatically reload when files change. Defaults to hydrate mode.
     Watch(Opts),
+    /// Start wizard for creating a new project (using cargo-generate)
+    New(NewCommand),
 }
 
 #[tokio::main]
@@ -104,13 +109,18 @@ async fn main() -> Result<()> {
 
     let args = Cli::parse_from(&args);
 
+    if let Commands::New(new) = &args.command {
+        return new.run().await;
+    }
+
     if let Some(path) = &args.manifest_path {
         let path = PathBuf::from(path).without_last();
         std::env::set_current_dir(path)?;
     }
 
     let opts = match &args.command {
-        Commands::Init => return Ok(println!(include_str!("leptos.toml"))),
+        Commands::New(_) => panic!(""),
+        Commands::Config => return Ok(println!(include_str!("leptos.toml"))),
         Commands::Build(opts)
         | Commands::Serve(opts)
         | Commands::Test(opts)
@@ -128,7 +138,7 @@ async fn main() -> Result<()> {
     });
 
     match args.command {
-        Commands::Init => panic!(),
+        Commands::Config | Commands::New(_) => panic!(),
         Commands::Build(_) => build(&config, true).await,
         Commands::Serve(_) => serve(&config).await,
         Commands::Test(_) => cargo::test(&config).await,

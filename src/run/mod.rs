@@ -3,6 +3,7 @@ pub mod cargo;
 mod html;
 #[allow(dead_code)]
 mod html_gen;
+pub mod new;
 pub mod reload;
 pub mod sass;
 pub mod serve;

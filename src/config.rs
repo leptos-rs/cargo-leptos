@@ -71,7 +71,7 @@ fn read_config(file: &str) -> Result<ConfigFile> {
                 "Missing Cargo.toml configuration section {}.\n\
             Append the output of {} to your Cargo.toml",
                 GRAY.paint("[package.metadata.leptos]"),
-                GRAY.paint("cargo leptos init")
+                GRAY.paint("cargo leptos config")
             )
         }
     };

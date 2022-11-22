@@ -18,7 +18,7 @@ Build tool for [Leptos](https://crates.io/crates/leptos).
 - `test` command for running tests. Note that this runs `cargo test` for the three different modes (`csr`, `hydrate` and `ssr`).
 - `build` command for building (normal mode or `--csr`).
 - `end2end` command (WIP!) for building, running the server and calling a bash shell hook. The hook would typically launch Playwright or similar.
-- `init` command (WIP!) for creating a new project based on templates, using [cargo-generate](https://cargo-generate.github.io/cargo-generate/index.html).
+- `new` command for creating a new project based on templates, using [cargo-generate](https://cargo-generate.github.io/cargo-generate/index.html). WIP: You'll need to ask on the Leptos [discord](https://discord.gg/YdRAhS7eQB) for the url of a template.
 
   <br/>
 
