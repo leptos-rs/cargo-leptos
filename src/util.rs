@@ -37,6 +37,11 @@ pub fn rm_dir_content<P: AsRef<Path>>(dir: P) -> Result<()> {
     Ok(())
 }
 
+pub fn copy(from: &PathBuf, to: &PathBuf) -> Result<()> {
+    fs::copy(from, to).context(format!("copy {from:?} to {to:?}"))?;
+    Ok(())
+}
+
 pub fn rm_dir(dir: &str) -> Result<()> {
     let path = Path::new(&dir);
 
@@ -65,6 +70,14 @@ pub fn mkdirs<S: ToString>(dir: S) -> Result<String> {
 }
 
 pub fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> Result<()> {
+    cp_dir_all(&src, &dst).context(format!(
+        "copy dir recursively from {:?} to {:?}",
+        src.as_ref(),
+        dst.as_ref()
+    ))
+}
+
+fn cp_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> Result<()> {
     fs::create_dir_all(&dst)?;
     for entry in fs::read_dir(src)? {
         let entry = entry?;
@@ -159,8 +172,17 @@ impl StrAdditions for String {
 pub trait PathBufAdditions {
     /// drops the last path component
     fn without_last(self) -> Self;
-    /// drops the last path component
-    fn with<P: AsRef<Path>>(self, append: P) -> Self;
+
+    /// appends to path
+    fn with<P: AsRef<Path>>(&self, append: P) -> Self;
+
+    /// converts this absolute path to relative if the start matches
+    fn relative_to(&self, to: impl AsRef<Path>) -> Option<PathBuf>;
+
+    /// removes the src_root from the path and adds the dest_root
+    fn rebase(&self, src_root: &PathBuf, dest_root: &PathBuf) -> Result<Self>
+    where
+        Self: Sized;
 }
 
 impl PathBufAdditions for PathBuf {
@@ -168,9 +190,29 @@ impl PathBufAdditions for PathBuf {
         self.pop();
         self
     }
-    fn with<P: AsRef<Path>>(mut self, append: P) -> Self {
-        self.push(append);
-        self
+    fn with<P: AsRef<Path>>(&self, append: P) -> Self {
+        let mut new = self.clone();
+        new.push(append);
+        new
+    }
+    fn relative_to(&self, to: impl AsRef<Path>) -> Option<PathBuf> {
+        let root = to.as_ref();
+        if self.is_absolute() && self.starts_with(root) {
+            let len = root.components().count();
+            Some(self.components().skip(len).collect())
+        } else {
+            None
+        }
+    }
+    fn rebase(&self, src_root: &PathBuf, dest_root: &PathBuf) -> Result<Self>
+    where
+        Self: Sized,
+    {
+        if let Some(rel) = self.relative_to(src_root) {
+            Ok(dest_root.with(rel))
+        } else {
+            bail!("Could not rebase {self:?} from {src_root:?} to {dest_root:?}")
+        }
     }
 }
 

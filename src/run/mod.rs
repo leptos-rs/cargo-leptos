@@ -1,3 +1,4 @@
+pub mod assets;
 pub mod cargo;
 #[allow(dead_code)]
 mod generated;

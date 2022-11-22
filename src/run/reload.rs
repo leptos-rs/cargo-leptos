@@ -60,6 +60,7 @@ async fn websocket(mut stream: WebSocket) {
                     log::debug!("Autoreload recive error {e}");
                     break;
                 }
+                Ok(Msg::ShutDown) => break,
                 _ => {}
             }
         }

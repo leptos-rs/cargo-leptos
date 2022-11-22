@@ -8,7 +8,7 @@ use binary_install::Cache;
 use clap::{Parser, Subcommand, ValueEnum};
 use config::Config;
 use run::{
-    cargo, reload, sass, serve, wasm,
+    assets, cargo, reload, sass, serve, wasm,
     watch::{self, Watched},
     Html,
 };
@@ -129,7 +129,7 @@ async fn main() -> Result<()> {
 
     match args.command {
         Commands::Init => panic!(),
-        Commands::Build(_) => build(&config).await,
+        Commands::Build(_) => build(&config, true).await,
         Commands::Serve(_) => serve(&config).await,
         Commands::Test(_) => cargo::test(&config).await,
         Commands::Watch(_) => watch(&config).await,
@@ -143,9 +143,12 @@ async fn send_reload() {
         }
     }
 }
-async fn build(config: &Config) -> Result<()> {
-    log::info!(r#"Leptos cleaning contents of "target/site""#);
-    util::rm_dir_content("target/site")?;
+async fn build(config: &Config, copy_assets: bool) -> Result<()> {
+    log::info!(r#"Leptos cleaning contents of "target/site/pkg""#);
+    util::rm_dir_content("target/site/pkg")?;
+    if copy_assets {
+        assets::update(config)?;
+    }
     build_client(&config).await?;
 
     if !config.cli.csr {
@@ -169,7 +172,7 @@ async fn build_client(config: &Config) -> Result<()> {
 }
 
 async fn serve(config: &Config) -> Result<()> {
-    build(&config).await?;
+    build(&config, true).await?;
     if config.cli.csr {
         serve::spawn(&config).await.await?;
         Ok(())
@@ -181,6 +184,9 @@ async fn serve(config: &Config) -> Result<()> {
 async fn watch(config: &Config) -> Result<()> {
     let _ = watch::spawn(config).await?;
 
+    if let Some(assets_dir) = &config.leptos.assets_dir {
+        let _ = assets::spawn(assets_dir).await?;
+    }
     if config.cli.csr {
         serve::spawn(&config).await;
     }
@@ -188,7 +194,7 @@ async fn watch(config: &Config) -> Result<()> {
     reload::spawn(&config).await;
 
     loop {
-        match build(config).await {
+        match build(config, false).await {
             Ok(_) => {
                 send_reload().await;
                 if config.cli.csr {

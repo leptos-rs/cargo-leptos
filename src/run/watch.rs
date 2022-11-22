@@ -132,21 +132,21 @@ impl Watched {
         }
     }
 
-    fn path_ext(&self) -> Option<&str> {
+    pub fn path_ext(&self) -> Option<&str> {
         self.path()
             .map(|p| p.extension().map(|e| e.to_str()))
             .flatten()
             .flatten()
     }
 
-    fn path(&self) -> Option<&PathBuf> {
+    pub fn path(&self) -> Option<&PathBuf> {
         match self {
             Self::Remove(p) | Self::Rename(p, _) | Self::Write(p) | Self::Create(p) => Some(&p),
             Self::Rescan => None,
         }
     }
 
-    fn path_starts_with(&self, path: &PathBuf) -> bool {
+    pub fn path_starts_with(&self, path: &PathBuf) -> bool {
         match self {
             Self::Write(p) | Self::Create(p) | Self::Remove(p) => p.starts_with(path),
             Self::Rename(fr, to) => fr.starts_with(path) || to.starts_with(path),
