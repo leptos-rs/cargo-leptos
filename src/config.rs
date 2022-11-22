@@ -1,6 +1,7 @@
-use crate::{Cli, Commands, Opts};
-use anyhow::{anyhow, ensure, Context, Result};
+use crate::{logger::GRAY, Cli, Commands, Opts};
+use anyhow::{anyhow, bail, ensure, Context, Result};
 use cargo_metadata::{MetadataCommand, Package as CargoPackage};
+use regex::Regex;
 use serde::Deserialize;
 use std::{fs, path::Path};
 
@@ -44,6 +45,7 @@ pub fn read(cli: &Cli, opts: Opts) -> Result<Config> {
         _ => false,
     };
     let workspace = MetadataCommand::new().manifest_path("Cargo.toml").exec()?;
+
     let target_directory = workspace.target_directory.to_string();
     let cargo = workspace
         .root_package()
@@ -61,7 +63,18 @@ pub fn read(cli: &Cli, opts: Opts) -> Result<Config> {
 
 fn read_config(file: &str) -> Result<ConfigFile> {
     let text = fs::read_to_string(file)?;
-    let start = text.find("[leptos").unwrap_or(0);
+    let re: Regex = Regex::new(r#"(?m)^\[package.metadata.leptos\]"#).unwrap();
+    let start = match re.find(&text) {
+        Some(found) => found.start(),
+        None => {
+            bail!(
+                "Missing Cargo.toml configuration section {}.\n\
+            Append the output of {} to your Cargo.toml",
+                GRAY.paint("[package.metadata.leptos]"),
+                GRAY.paint("cargo leptos init")
+            )
+        }
+    };
     log::trace!("Config file content:\n{text}");
 
     // so that serde error messages have right line number
