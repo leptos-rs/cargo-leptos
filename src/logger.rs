@@ -23,9 +23,8 @@ lazy_static::lazy_static! {
 
 pub fn setup(verbose: u8, logs: &[Log]) {
     let log_level = match verbose {
-        0 => "warn",
-        1 => "info",
-        2 => "debug",
+        0 => "info",
+        1 => "debug",
         _ => "trace",
     };
 

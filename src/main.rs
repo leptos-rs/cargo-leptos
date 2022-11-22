@@ -60,7 +60,7 @@ pub struct Opts {
     #[arg(long)]
     csr: bool,
 
-    /// Verbosity (none: errors & warnings, -v: verbose, --vv: very verbose, --vvv: output everything).
+    /// Verbosity (none: errors & warnings, -v: verbose, --vv: very verbose).
     #[arg(short, action = clap::ArgAction::Count)]
     verbose: u8,
 }
@@ -144,7 +144,7 @@ async fn send_reload() {
     }
 }
 async fn build(config: &Config, copy_assets: bool) -> Result<()> {
-    log::info!(r#"Leptos cleaning contents of "target/site/pkg""#);
+    log::debug!(r#"Leptos cleaning contents of "target/site/pkg""#);
     util::rm_dir_content("target/site/pkg")?;
     if copy_assets {
         assets::update(config)?;
