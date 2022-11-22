@@ -97,7 +97,7 @@ impl Html {
     pub fn generate_rust(&self, config: &Config) -> Result<()> {
         let file = &config.leptos.gen_file;
 
-        let rust = include_str!("generated.rs");
+        let rust = include_str!("html_gen.rs");
 
         let head = HEAD_RE.find(&self.text).unwrap();
         let start = format!("{}{}", &self.text[0..head.start()].trim(), HTML_HEAD_INSERT);
