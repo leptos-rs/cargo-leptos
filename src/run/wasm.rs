@@ -1,7 +1,7 @@
 use crate::{
     config::Config,
-    util::{os_arch, run_interruptible},
-    INSTALL_CACHE,
+    util::{os_arch, run_interruptible, wait_for},
+    Msg, INSTALL_CACHE,
 };
 use anyhow::{anyhow, bail, Context, Result};
 use std::{
@@ -12,8 +12,21 @@ use tokio::process::Command;
 use wasm_bindgen_cli_support::Bindgen;
 
 use super::cargo;
-
 pub async fn build(config: &Config) -> Result<()> {
+    let config = config.clone();
+    let handle = tokio::spawn(async move { run_build(&config).await });
+
+    tokio::select! {
+        val = handle => match val {
+            Err(e) => Err(anyhow!(e)),
+            Ok(Err(e)) => Err(e),
+            Ok(_) => Ok(())
+        },
+        _ = wait_for(&[Msg::ShutDown, Msg::SrcChanged]) => Ok(())
+    }
+}
+
+async fn run_build(config: &Config) -> Result<()> {
     let rel_dbg = config.cli.release.then(|| "release").unwrap_or("debug");
 
     cargo::build(config, true).await?;
