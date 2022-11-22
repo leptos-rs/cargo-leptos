@@ -163,22 +163,21 @@ async fn build_client(config: &Config) -> Result<()> {
 async fn serve(config: &Config) -> Result<()> {
     build(&config).await?;
     if config.cli.csr {
-        serve::run(&config).await
+        serve::spawn(&config).await.await?;
+        Ok(())
     } else {
         cargo::run(&config).await
     }
 }
 
 async fn watch(config: &Config) -> Result<()> {
-    let cfg = config.clone();
-    let _ = tokio::spawn(async move { watch::run(cfg).await });
+    let _ = watch::spawn(config).await?;
 
     if config.cli.csr {
-        let cfg = config.clone();
-        let _ = tokio::spawn(async move { serve::run(&cfg).await });
+        serve::spawn(&config).await;
     }
 
-    reload::run(&config).await?;
+    reload::spawn(&config).await;
 
     loop {
         match build(config).await {

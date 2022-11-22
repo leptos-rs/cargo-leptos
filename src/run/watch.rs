@@ -5,68 +5,72 @@ use crate::{
     Msg, MSG_BUS,
 };
 use anyhow::Result;
-use notify::{event::ModifyKind, Event, EventKind, RecursiveMode, Watcher};
-use std::path::PathBuf;
+use notify::{DebouncedEvent, RecursiveMode, Watcher};
+use std::{path::PathBuf, time::Duration};
+use tokio::task::JoinHandle;
 
-pub async fn run(config: Config) -> Result<()> {
-    let cfg = config.clone();
-    let mut watcher = notify::recommended_watcher(move |res| match res {
-        Ok(event) if is_watched(&event, &cfg) => {
-            MSG_BUS.send_logged("Watcher", Msg::SrcChanged, event.change_msg())
-        }
-        Err(e) => log::error!("Watch {:?}", e),
-        _ => {}
-    })?;
-
-    let src_dir = PathBuf::from("src");
-    watcher.watch(&src_dir, RecursiveMode::Recursive)?;
-
-    let style_dir = PathBuf::from(&config.leptos.style.file).without_last();
-    // add if not nested
-    if !style_dir.starts_with(&src_dir) {
-        watcher.watch(&style_dir, RecursiveMode::Recursive)?;
+pub async fn spawn(config: &Config) -> Result<JoinHandle<()>> {
+    let src_dir = PathBuf::from("src").canonicalize()?;
+    let style_dir = PathBuf::from(&config.leptos.style.file)
+        .without_last()
+        .canonicalize()?;
+    let paths = if !style_dir.starts_with(&src_dir) {
         log::info!("Watching folders {src_dir:?} and {style_dir:?} recursively");
+        vec![src_dir, style_dir]
     } else {
         log::info!("Watching folder {src_dir:?} recursively");
-    }
-
-    oneshot_when(&[Msg::ShutDown], "Watch").await?;
-    log::debug!("Watch closed");
-    Ok(())
-}
-
-fn is_watched(event: &Event, cfg: &Config) -> bool {
-    match &event.kind {
-        EventKind::Modify(ModifyKind::Data(_)) => {}
-        EventKind::Modify(ModifyKind::Any) => {} // windows throws duplicate Any events
-        _ => return false,
+        vec![src_dir]
     };
 
-    for path in &event.paths {
-        match path.extension().map(|ext| ext.to_str()).flatten() {
-            Some("rs") if !path.ends_with(&cfg.leptos.gen_file) => return true,
-            Some("css") | Some("scss") | Some("sass") => return true,
-            _ => {}
+    let exclude = vec![PathBuf::from(&config.leptos.gen_file).canonicalize()?];
+
+    Ok(tokio::spawn(async move { run(&paths, exclude).await }))
+}
+
+async fn run(paths: &[PathBuf], exclude: Vec<PathBuf>) {
+    let (sync_tx, sync_rx) = std::sync::mpsc::channel::<DebouncedEvent>();
+
+    use DebouncedEvent::{
+        Chmod, Create, Error, NoticeRemove, NoticeWrite, Remove, Rename, Rescan, Write,
+    };
+    std::thread::spawn(move || {
+        while let Ok(event) = sync_rx.recv() {
+            match event {
+                NoticeWrite(_) | NoticeRemove(_) | Chmod(_) => {}
+                Remove(f) | Rename(f, _) | Write(f) | Create(f) => {
+                    if is_watched(&f, &exclude) {
+                        log::debug!("Watcher file changed {}", GRAY.paint(f.to_string_lossy()));
+                        MSG_BUS.send_logged("Watcher", Msg::SrcChanged)
+                    }
+                }
+                Error(e, p) => log::error!("Watcher {e} {p:?}"),
+                Rescan => {
+                    log::debug!("Watcher rescan");
+                    MSG_BUS.send_logged("Watcher", Msg::SrcChanged)
+                }
+            }
+        }
+        log::debug!("Watching stopped");
+    });
+
+    let mut watcher = notify::watcher(sync_tx, Duration::from_millis(200))
+        .expect("failed to build file system watcher");
+
+    for path in paths {
+        if let Err(e) = watcher.watch(&path, RecursiveMode::Recursive) {
+            log::error!("Watcher could not watch {path:?} due to {e}");
         }
     }
-    false
+
+    if let Err(e) = oneshot_when(&[Msg::ShutDown], "Watch").await {
+        log::trace!("Watcher stopped due to: {e}");
+    }
 }
 
-trait EventExt {
-    fn change_msg(&self) -> String;
-}
-
-impl EventExt for Event {
-    fn change_msg(&self) -> String {
-        format!(
-            " change detected {}",
-            GRAY.paint(
-                self.paths
-                    .iter()
-                    .map(|f| format!("\"{}\"", f.to_string_lossy()))
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            )
-        )
+fn is_watched(path: &PathBuf, exclude: &[PathBuf]) -> bool {
+    match path.extension().map(|ext| ext.to_str()).flatten() {
+        Some("rs") if !exclude.contains(path) => true,
+        Some("css") | Some("scss") | Some("sass") => true,
+        _ => false,
     }
 }

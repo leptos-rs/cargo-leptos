@@ -1,10 +1,10 @@
 use crate::{config::Config, util::oneshot_when, Msg};
-use anyhow::Result;
 use axum::{http::StatusCode, response::IntoResponse, routing::get_service, Router};
 use std::{io, net::SocketAddr};
+use tokio::task::JoinHandle;
 use tower_http::services::ServeDir;
 
-pub async fn run(config: &Config) -> Result<()> {
+pub async fn spawn(config: &Config) -> JoinHandle<()> {
     let serve_dir = get_service(ServeDir::new("target/site")).handle_error(handle_error);
 
     let route = Router::new().nest("/", serve_dir.clone());
@@ -14,17 +14,17 @@ pub async fn run(config: &Config) -> Result<()> {
     let shutdown_rx = oneshot_when(&[Msg::ShutDown], "Server");
 
     log::info!("Serving client on {addr}");
-    if let Err(e) = axum::Server::bind(&addr)
-        .serve(route.into_make_service())
-        .with_graceful_shutdown(async {
-            shutdown_rx.await.ok();
-            log::debug!("Server stopped");
-        })
-        .await
-    {
-        log::error!("Server {e}");
-    }
-    Ok(())
+
+    tokio::spawn(async move {
+        match axum::Server::bind(&addr)
+            .serve(route.into_make_service())
+            .with_graceful_shutdown(async { drop(shutdown_rx.await.ok()) })
+            .await
+        {
+            Ok(_) => log::debug!("Server stopped"),
+            Err(e) => log::error!("Server {e}"),
+        }
+    })
 }
 
 async fn handle_error(_err: io::Error) -> impl IntoResponse {

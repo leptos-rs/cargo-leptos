@@ -143,14 +143,13 @@ impl PathBufAdditions for PathBuf {
 }
 
 pub trait SenderAdditions {
-    fn send_logged(&self, me: &str, msg: Msg, log: String);
+    fn send_logged(&self, me: &str, msg: Msg);
 }
 
 impl SenderAdditions for Sender<Msg> {
-    fn send_logged(&self, me: &str, msg: Msg, log: String) {
-        match self.send(msg) {
-            Err(e) => log::error!("{me} {e}"),
-            Ok(_) => log::debug!("{me} {log}"),
+    fn send_logged(&self, me: &str, msg: Msg) {
+        if let Err(e) = self.send(msg) {
+            log::error!("{me} {e}");
         }
     }
 }
