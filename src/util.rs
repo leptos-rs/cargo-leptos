@@ -109,6 +109,18 @@ pub fn remove_nested(paths: Vec<PathBuf>) -> Vec<PathBuf> {
     })
 }
 
+pub fn write_if_changed(file: &str, text: &str) -> Result<bool> {
+    let current = fs::read_to_string(file)?;
+    let current_hash = seahash::hash(current.as_bytes());
+    let new_hash = seahash::hash(text.as_bytes());
+    if current_hash != new_hash {
+        fs::write(&file, text).context(format!("write {file}"))?;
+        Ok(true)
+    } else {
+        Ok(false)
+    }
+}
+
 pub fn write(file: &str, text: &str) -> Result<()> {
     log::trace!("Leptos content of {file}:\n{text}");
     fs::write(&file, text).context(format!("write {file}"))

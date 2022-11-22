@@ -345,6 +345,7 @@ dependencies = [
  "notify",
  "once_cell",
  "regex",
+ "seahash",
  "serde",
  "serde_json",
  "tokio",

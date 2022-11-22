@@ -85,10 +85,12 @@ impl Html {
         let text = HEAD_RE.replace(&self.text, &self.head(config));
         let text = BODY_RE.replace(&text, "");
 
-        log::debug!("Html writing to {file}");
-        log::trace!("Html content\n{text}");
-
-        util::write(&file, &text)
+        if util::write_if_changed(&file, &text)? {
+            log::debug!("Html writing html to {file}");
+        } else {
+            log::trace!("Html already up-to-date {file}");
+        }
+        Ok(())
     }
 
     /// generate rust for server side rendering
@@ -110,9 +112,11 @@ impl Html {
         let rust = MIDDLE_RE.replace(&rust, &middle);
         let rust = END_RE.replace(&rust, &end);
 
-        log::debug!("Rust writing to {file}");
-        log::trace!("Html content\n{rust}");
-
-        util::write(&file, &rust)
+        if util::write_if_changed(&file, &rust)? {
+            log::debug!("Html writing rust to {file}");
+        } else {
+            log::trace!("Html already up-to-date {file}");
+        }
+        Ok(())
     }
 }
