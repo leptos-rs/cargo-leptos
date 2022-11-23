@@ -11,7 +11,7 @@ use clap::{Parser, Subcommand, ValueEnum};
 use config::Config;
 use fs::PathBufAdditions;
 use run::{
-    assets, cargo,
+    assets, cargo, end2end,
     new::NewCommand,
     reload, sass, serve, wasm,
     watch::{self},
@@ -71,11 +71,13 @@ enum Commands {
     Build(Opts),
     /// Run the cargo tests for app, client and server.
     Test(Opts),
+    /// Start the server and end-2-end tests.
+    EndToEnd(Opts),
     /// Serve. Defaults to hydrate mode.
     Serve(Opts),
     /// Serve and automatically reload when files change. Defaults to hydrate mode.
     Watch(Opts),
-    /// Start wizard for creating a new project (using cargo-generate)
+    /// WIP: Start wizard for creating a new project (using cargo-generate). Ask at Leptos discord before using.
     New(NewCommand),
 }
 
@@ -105,6 +107,7 @@ async fn main() -> Result<()> {
         Commands::Build(opts)
         | Commands::Serve(opts)
         | Commands::Test(opts)
+        | Commands::EndToEnd(opts)
         | Commands::Watch(opts) => opts,
     };
     logger::setup(opts.verbose, &args.log);
@@ -123,8 +126,22 @@ async fn main() -> Result<()> {
         Commands::Build(_) => build(&config, true).await,
         Commands::Serve(_) => serve(&config).await,
         Commands::Test(_) => cargo::test(&config).await,
+        Commands::EndToEnd(_) => e2e_test(&config).await,
         Commands::Watch(_) => watch(&config).await,
     }
+}
+
+async fn e2e_test(config: &Config) -> Result<()> {
+    build(config, true).await.dot()?;
+    let handle = if config.cli.csr {
+        serve::spawn(&config).await.dot()?
+    } else {
+        cargo::spawn_run(&config).await
+    };
+    end2end::run(config).await.dot()?;
+    MSG_BUS.send(Msg::ShutDown).dot()?;
+    handle.await.dot()?;
+    Ok(())
 }
 
 async fn build(config: &Config, copy_assets: bool) -> Result<()> {
@@ -158,8 +175,7 @@ async fn build_client(config: &Config) -> Result<()> {
 async fn serve(config: &Config) -> Result<()> {
     build(&config, true).await.dot()?;
     if config.cli.csr {
-        serve::spawn(&config).await?.await.dot()?;
-        Ok(())
+        serve::spawn(&config).await?.await.dot()
     } else {
         cargo::run(&config).await
     }

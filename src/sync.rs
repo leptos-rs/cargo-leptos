@@ -1,8 +1,12 @@
+use std::{net::SocketAddr, time::Duration};
+
 use crate::run::watch::Watched;
 use anyhow_ext::{bail, Result};
 use tokio::{
+    net::TcpStream,
     process::Child,
     sync::{broadcast, oneshot, RwLock},
+    time::sleep,
 };
 
 lazy_static::lazy_static! {
@@ -115,4 +119,19 @@ where
             Ok(())
         }
     }
+}
+
+pub async fn wait_for_localhost(port: u16) -> bool {
+    let duration = Duration::from_millis(500);
+    let addr = SocketAddr::from(([127, 0, 0, 1], port));
+
+    for _ in 0..20 {
+        if let Ok(_) = TcpStream::connect(&addr).await {
+            log::trace!("Autoreload server port {port} open");
+            return true;
+        }
+        sleep(duration).await;
+    }
+    log::warn!("Autoreload timed out waiting for port {port}");
+    false
 }

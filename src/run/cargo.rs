@@ -5,7 +5,7 @@ use crate::{
     util::CommandAdditions,
 };
 use anyhow_ext::{Context, Result};
-use tokio::process::Command;
+use tokio::{process::Command, task::JoinHandle};
 
 // for capturing the cargo output see util::CommandAdditions
 
@@ -25,6 +25,15 @@ pub async fn build(config: &Config, lib: bool) -> Result<()> {
         GRAY.paint(format!("cargo {}", args.join(" ")))
     );
     Ok(())
+}
+
+pub async fn spawn_run(config: &Config) -> JoinHandle<()> {
+    let config = config.clone();
+    tokio::spawn(async move {
+        if let Err(e) = self::run(&config).await {
+            log::error!("Cargo error: {e}")
+        }
+    })
 }
 
 pub async fn run(config: &Config) -> Result<()> {

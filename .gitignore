@@ -8,3 +8,8 @@ target/
 examples/**/Cargo.lock
 
 /TODO.md
+
+/example/end2end/node_modules/
+/example/end2end/test-results/
+/example/end2end/playwright-report/
+/example/end2end/playwright/.cache/

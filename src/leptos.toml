@@ -5,6 +5,8 @@ gen_file = "src/server/generated.rs"
 index_file = "index.html"
 # [Optional] Files in the asset_dir will be copied to the target/site directory
 assets_dir = "assets"
+# [Optional] Command to use when running end2end tests. It will run in the end2end dir.
+end2end_test_cmd = "npx playwright test"
 # On which port to serve the client side rendered site (when using --csr option)
 csr_port = 3000
 # The port to use for automatic reload monitoring

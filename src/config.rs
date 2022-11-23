@@ -106,6 +106,8 @@ pub struct LeptosManifest {
     pub gen_file: String,
     /// assets dir. content will be copied to the target/site dir
     pub assets_dir: Option<String>,
+    /// command for launching end-2-end tests
+    pub end2end_test_cmd: Option<String>,
     /// on which port to serve the client side rendered site
     pub csr_port: u16,
     /// the port to use for automatic reload monitoring

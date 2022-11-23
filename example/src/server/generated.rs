@@ -10,6 +10,7 @@
 pub const HTML_START: &str = r##"<!DOCTYPE html>
 <html lang="en">
   <head>
+    <title>Cargo Leptos</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <script type="module">import init from '/pkg/app.js';init('/pkg/app.wasm');</script>
@@ -31,6 +32,7 @@ pub const HTML_START: &str = r##"<!DOCTYPE html>
 pub const HTML_START: &str = r##"<!DOCTYPE html>
 <html lang="en">
   <head>
+    <title>Cargo Leptos</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <script type="module">import init from '/pkg/app.js';init('/pkg/app.wasm');</script>

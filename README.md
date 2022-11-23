@@ -3,9 +3,9 @@
 
 # cargo-leptos
 
-Build tool for [Leptos](https://crates.io/crates/leptos).
+Build tool for [Leptos](https://crates.io/crates/leptos):
 
-[<img src="https://raw.githubusercontent.com/gbj/leptos/main/docs/logos/logo.svg" alt="Leptos Logo" style="width: 40%; height: auto; display: block; margin: auto;">](http://)
+[<img src="https://raw.githubusercontent.com/gbj/leptos/main/docs/logos/logo.svg" alt="Leptos Logo" style="width: 40%; height: auto; display: block; margin: auto;">](http://https://crates.io/crates/leptos)
 
 <br/>
 
@@ -22,7 +22,7 @@ Build tool for [Leptos](https://crates.io/crates/leptos).
 - `watch` command for automatic rebuilds with browser autoreload. Works both for `--csr` and standard mode.
 - `test` command for running tests. Note that this runs `cargo test` for the three different modes (`csr`, `hydrate` and `ssr`).
 - `build` command for building (normal mode or `--csr`).
-- `end2end` command (WIP!) for building, running the server and calling a bash shell hook. The hook would typically launch Playwright or similar.
+- `end2end` command for building, running the server and calling a bash shell hook. The hook would typically launch Playwright or similar.
 - `new` command for creating a new project based on templates, using [cargo-generate](https://cargo-generate.github.io/cargo-generate/index.html). WIP: You'll need to ask on the Leptos [discord](https://discord.gg/YdRAhS7eQB) for the url of a template.
 
   <br/>

@@ -1,5 +1,5 @@
 use crate::logger::GRAY;
-use crate::sync::{oneshot_when, shutdown_msg};
+use crate::sync::{oneshot_when, shutdown_msg, wait_for_localhost};
 use crate::{config::Config, Msg, MSG_BUS};
 use ansi_term::Style;
 use anyhow_ext::{bail, Result};
@@ -9,8 +9,8 @@ use axum::{
     routing::get,
     Router,
 };
-use std::{net::SocketAddr, time::Duration};
-use tokio::{net::TcpStream, task::JoinHandle, time::sleep};
+use std::net::SocketAddr;
+use tokio::{net::TcpStream, task::JoinHandle};
 
 pub async fn spawn(config: &Config) -> Result<JoinHandle<()>> {
     let port = config.leptos.csr_port;
@@ -57,7 +57,7 @@ async fn websocket(stream: WebSocket, port: u16) {
         loop {
             match rx.recv().await {
                 Ok(Msg::Reload(msg)) => {
-                    if wait_for_port(port).await {
+                    if wait_for_localhost(port).await {
                         send_and_close(stream, &msg).await;
                     } else {
                         log::warn!(r#"Autoreload could not send "reload" to websocket"#);
@@ -74,21 +74,6 @@ async fn websocket(stream: WebSocket, port: u16) {
         }
         log::trace!("Autoreload websocket closed")
     });
-}
-
-async fn wait_for_port(port: u16) -> bool {
-    let duration = Duration::from_millis(500);
-    let addr = SocketAddr::from(([127, 0, 0, 1], port));
-
-    for _ in 0..20 {
-        if let Ok(_) = TcpStream::connect(&addr).await {
-            log::trace!("Autoreload server port {port} open");
-            return true;
-        }
-        sleep(duration).await;
-    }
-    log::warn!("Autoreload timed out waiting for port {port}");
-    false
 }
 
 async fn send_and_close(mut stream: WebSocket, msg: &str) {

@@ -1,5 +1,6 @@
 pub mod assets;
 pub mod cargo;
+pub mod end2end;
 mod html;
 #[allow(dead_code)]
 mod html_gen;
