@@ -1,5 +1,5 @@
 use crate::{fs, Msg, MSG_BUS};
-use anyhow_ext::{anyhow, bail, Context, Result};
+use anyhow_ext::{bail, Context, Result};
 use cargo_metadata::{Artifact, Message};
 use serde::Deserialize;
 use std::{borrow::Cow, path::PathBuf, process::Stdio};
@@ -149,11 +149,14 @@ impl CommandAdditions for Command {
     }
 }
 
-pub async fn wait_for(msgs: &[Msg]) {
+pub async fn wait_for<F>(cond: F)
+where
+    F: Fn(&Msg) -> bool + Send + 'static,
+{
     let mut rx = MSG_BUS.subscribe();
     loop {
         match rx.recv().await {
-            Ok(msg) if msgs.contains(&msg) => break,
+            Ok(msg) if cond(&msg) => break,
             Err(e) => {
                 log::error!("Leptos error recieving {e}");
                 break;
@@ -163,7 +166,24 @@ pub async fn wait_for(msgs: &[Msg]) {
     }
 }
 
-pub fn oneshot_when(msgs: &'static [Msg], to: &str) -> oneshot::Receiver<()> {
+pub fn src_or_style_change(msg: &Msg) -> bool {
+    match msg {
+        Msg::ShutDown | Msg::SrcChanged | Msg::StyleChanged => true,
+        _ => false,
+    }
+}
+
+pub fn shutdown_msg(msg: &Msg) -> bool {
+    match msg {
+        Msg::ShutDown => true,
+        _ => false,
+    }
+}
+
+pub fn oneshot_when<F>(cond: F, to: &str) -> oneshot::Receiver<()>
+where
+    F: Fn(&Msg) -> bool + Send + 'static,
+{
     let (tx, rx) = oneshot::channel::<()>();
 
     let mut interrupt = MSG_BUS.subscribe();
@@ -173,7 +193,7 @@ pub fn oneshot_when(msgs: &'static [Msg], to: &str) -> oneshot::Receiver<()> {
         loop {
             match interrupt.recv().await {
                 Ok(Msg::ShutDown) => break,
-                Ok(msg) if msgs.contains(&msg) => {
+                Ok(msg) if cond(&msg) => {
                     if let Err(_) = tx.send(()) {
                         log::trace!("{to} could not send {msg:?}");
                     }
@@ -191,16 +211,21 @@ pub fn oneshot_when(msgs: &'static [Msg], to: &str) -> oneshot::Receiver<()> {
     rx
 }
 
-pub async fn run_interruptible(name: &str, mut process: Child) -> Result<()> {
-    let stop_rx = oneshot_when(&[Msg::SrcChanged, Msg::ShutDown], name);
+pub async fn run_interruptible<F>(stop_on: F, name: &str, mut process: Child) -> Result<()>
+where
+    F: Fn(&Msg) -> bool + Send + 'static,
+{
+    let stop_rx = oneshot_when(stop_on, name);
     tokio::select! {
-        res = process.wait() => match res?.success() {
-                true => return Ok(()),
-                false => return Err(anyhow!("{} failed", name)),
+        res = process.wait() => match res {
+                Ok(exit) => match exit.success() {
+                    true => Ok(()),
+                    false => bail!("Process exited with code {exit}")
+                },
+                Err(e) => bail!("Command failed due to: {e}"),
         },
         _ = stop_rx => {
             process.kill().await.map(|_| true).expect("Could not kill process");
-            log::debug!("{} stopped", name);
             Ok(())
         }
     }

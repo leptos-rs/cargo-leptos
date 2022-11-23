@@ -1,5 +1,5 @@
 use crate::logger::GRAY;
-use crate::util::oneshot_when;
+use crate::util::{oneshot_when, shutdown_msg};
 use crate::MSG_BUS;
 use crate::{config::Config, Msg};
 use axum::{
@@ -19,7 +19,7 @@ pub async fn spawn(config: &Config) -> JoinHandle<()> {
 
     let addr = SocketAddr::from(([127, 0, 0, 1], config.leptos.reload_port));
 
-    let shutdown_rx = oneshot_when(&[Msg::ShutDown], "Autoreload");
+    let shutdown_rx = oneshot_when(shutdown_msg, "Autoreload");
 
     log::debug!("Autoreload server started {}", GRAY.paint(addr.to_string()));
 

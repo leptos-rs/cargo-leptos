@@ -2,7 +2,7 @@ use crate::{
     config::Config,
     fs::{remove_nested, PathBufAdditions},
     logger::GRAY,
-    util::{oneshot_when, SenderAdditions, StrAdditions},
+    util::{oneshot_when, shutdown_msg, SenderAdditions, StrAdditions},
     Msg, MSG_BUS,
 };
 use anyhow_ext::{Context, Result};
@@ -68,7 +68,7 @@ async fn run(paths: &[PathBuf], exclude: Vec<PathBuf>, assets_dir: Option<PathBu
         }
     }
 
-    if let Err(e) = oneshot_when(&[Msg::ShutDown], "Watch").await {
+    if let Err(e) = oneshot_when(shutdown_msg, "Watch").await {
         log::trace!("Watcher stopped due to: {e}");
     }
 }

@@ -21,7 +21,7 @@ use tokio::{
     signal,
     sync::{broadcast, RwLock},
 };
-use util::wait_for;
+use util::{src_or_style_change, wait_for};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Msg {
@@ -194,10 +194,10 @@ async fn serve(config: &Config) -> Result<()> {
 }
 
 async fn watch(config: &Config) -> Result<()> {
-    let _ = watch::spawn(config).await?;
+    let _ = watch::spawn(config).await.dot()?;
 
     if let Some(assets_dir) = &config.leptos.assets_dir {
-        let _ = assets::spawn(assets_dir).await?;
+        let _ = assets::spawn(assets_dir).await.dot()?;
     }
     if config.cli.csr {
         serve::spawn(&config).await;
@@ -210,20 +210,20 @@ async fn watch(config: &Config) -> Result<()> {
             Ok(_) => {
                 send_reload().await;
                 if config.cli.csr {
-                    wait_for(&[Msg::SrcChanged, Msg::ShutDown]).await;
+                    wait_for(src_or_style_change).await;
                 } else {
-                    cargo::run(&config).await?;
-                }
-                if *SHUTDOWN.read().await {
-                    break;
-                } else {
-                    log::info!("Leptos ===================== rebuilding =====================");
+                    cargo::run(&config).await.dot()?;
                 }
             }
             Err(e) => {
                 log::warn!("Leptos rebuild stopped due to error: {e}");
-                while MSG_BUS.subscribe().recv().await? != Msg::SrcChanged {}
+                wait_for(src_or_style_change).await;
             }
+        }
+        if *SHUTDOWN.read().await {
+            break;
+        } else {
+            log::info!("Leptos ===================== rebuilding =====================");
         }
     }
     Ok(())

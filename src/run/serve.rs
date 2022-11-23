@@ -1,4 +1,7 @@
-use crate::{config::Config, util::oneshot_when, Msg};
+use crate::{
+    config::Config,
+    util::{oneshot_when, shutdown_msg},
+};
 use axum::{http::StatusCode, response::IntoResponse, routing::get_service, Router};
 use std::{io, net::SocketAddr};
 use tokio::task::JoinHandle;
@@ -11,7 +14,7 @@ pub async fn spawn(config: &Config) -> JoinHandle<()> {
 
     let addr = SocketAddr::from(([127, 0, 0, 1], config.leptos.csr_port));
 
-    let shutdown_rx = oneshot_when(&[Msg::ShutDown], "Server");
+    let shutdown_rx = oneshot_when(shutdown_msg, "Server");
 
     log::info!("Serving client on {addr}");
 

@@ -1,8 +1,8 @@
 use crate::{
     config::Config,
     fs,
-    util::{os_arch, run_interruptible, wait_for},
-    Msg, INSTALL_CACHE,
+    util::{os_arch, run_interruptible, src_or_style_change, wait_for},
+    INSTALL_CACHE,
 };
 use anyhow_ext::{anyhow, bail, Context, Result};
 use std::path::{Path, PathBuf};
@@ -20,7 +20,7 @@ pub async fn build(config: &Config) -> Result<()> {
             Ok(Err(e)) => Err(e).dot(),
             Ok(_) => Ok(())
         },
-        _ = wait_for(&[Msg::ShutDown, Msg::SrcChanged]) => Ok(())
+        _ = wait_for(src_or_style_change) => Ok(())
     }
 }
 
@@ -73,7 +73,7 @@ async fn optimize(src: &str, dest: &str) -> Result<()> {
         .args(&args)
         .spawn()
         .context("Could not spawn command")?;
-    run_interruptible("wasm-opt", process)
+    run_interruptible(src_or_style_change, "wasm-opt", process)
         .await
         .context(format!("wasm-opt {}", &args.join(" ")))?;
     std::fs::remove_file(&src).dot()?;

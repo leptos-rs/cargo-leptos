@@ -1,7 +1,7 @@
 use crate::{
     config::Config,
     logger::GRAY,
-    util::{run_interruptible, CommandAdditions},
+    util::{run_interruptible, src_or_style_change, CommandAdditions},
 };
 use anyhow_ext::{Context, Result};
 use tokio::process::Command;
@@ -15,7 +15,7 @@ pub async fn build(config: &Config, lib: bool) -> Result<()> {
         .args(&args)
         .spawn_cargo_parsed()
         .context("Could not spawn command")?;
-    run_interruptible("Cargo", process)
+    run_interruptible(src_or_style_change, "Cargo", process)
         .await
         .context(format!("cargo {}", &args.join(" ")))?;
     handle.await?;
@@ -41,7 +41,7 @@ async fn cmd(command: &str, config: &Config, lib: bool) -> Result<()> {
         .args(&args)
         .spawn()
         .context("Could not spawn command")?;
-    run_interruptible("Cargo", process)
+    run_interruptible(src_or_style_change, "Cargo", process)
         .await
         .context(format!("cargo {}", &args.join(" ")))?;
     log::info!(
