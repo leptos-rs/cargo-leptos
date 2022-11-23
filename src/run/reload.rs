@@ -9,10 +9,13 @@ use axum::{
     Router,
 };
 use std::net::SocketAddr;
-use tokio::task::JoinHandle;
+use std::time::Duration;
+use tokio::time::sleep;
+use tokio::{net::TcpStream, task::JoinHandle};
 
 pub async fn spawn(config: &Config) -> JoinHandle<()> {
-    let route = Router::new().route("/autoreload", get(websocket_handler));
+    let port = config.leptos.csr_port;
+    let route = Router::new().route("/autoreload", get(move |ws| websocket_handler(ws, port)));
 
     let addr = SocketAddr::from(([127, 0, 0, 1], config.leptos.reload_port));
 
@@ -32,30 +35,25 @@ pub async fn spawn(config: &Config) -> JoinHandle<()> {
     })
 }
 
-async fn websocket_handler(ws: WebSocketUpgrade) -> impl IntoResponse {
-    ws.on_upgrade(websocket)
+async fn websocket_handler(ws: WebSocketUpgrade, port: u16) -> impl IntoResponse {
+    ws.on_upgrade(move |stream| websocket(stream, port))
 }
 
-async fn websocket(mut stream: WebSocket) {
+async fn websocket(stream: WebSocket, port: u16) {
     let mut rx = MSG_BUS.subscribe();
 
     log::trace!("Autoreload websocket connected");
     tokio::spawn(async move {
         loop {
             match rx.recv().await {
-                Ok(Msg::Reload(msg)) => match stream.send(Message::Text(msg.clone())).await {
-                    Err(e) => {
-                        log::debug!("Autoreload could not send {msg} due to {e}");
-                        break;
+                Ok(Msg::Reload(msg)) => {
+                    if wait_for_port(port).await {
+                        send_and_close(stream, &msg).await;
+                    } else {
+                        log::warn!(r#"Autoreload could not send "reload" to websocket"#);
                     }
-                    Ok(_) => {
-                        log::debug!("Autoreload sent \"{msg}\" to browser");
-                        if let Err(e) = stream.close().await {
-                            log::error!("Autoreload socket close error {e}");
-                        }
-                        break;
-                    }
-                },
+                    break;
+                }
                 Err(e) => {
                     log::debug!("Autoreload recive error {e}");
                     break;
@@ -66,4 +64,33 @@ async fn websocket(mut stream: WebSocket) {
         }
         log::trace!("Autoreload websocket closed")
     });
+}
+
+async fn wait_for_port(port: u16) -> bool {
+    let duration = Duration::from_millis(500);
+    let addr = SocketAddr::from(([127, 0, 0, 1], port));
+
+    for _ in 0..20 {
+        if let Ok(_) = TcpStream::connect(&addr).await {
+            log::trace!("Autoreload server port {port} open");
+            return true;
+        }
+        sleep(duration).await;
+    }
+    log::warn!("Autoreload timed out waiting for port {port}");
+    false
+}
+
+async fn send_and_close(mut stream: WebSocket, msg: &str) {
+    match stream.send(Message::Text(msg.to_string())).await {
+        Err(e) => {
+            log::debug!("Autoreload could not send {msg} due to {e}");
+        }
+        Ok(_) => {
+            log::debug!("Autoreload sent \"{msg}\" to browser");
+        }
+    }
+    if let Err(e) = stream.close().await {
+        log::error!("Autoreload socket close error {e}");
+    }
 }
