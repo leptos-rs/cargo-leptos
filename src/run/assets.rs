@@ -3,7 +3,7 @@ use std::{fs, path::PathBuf};
 use crate::{
     config::Config,
     logger::GRAY,
-    util::{self, PathBufAdditions},
+    util::{self, PathBufAdditions, StrAdditions},
     Msg, MSG_BUS,
 };
 use anyhow::{Context, Result};
@@ -16,12 +16,9 @@ const DEST: &str = "target/site";
 pub async fn spawn(assets_dir: &str) -> Result<JoinHandle<()>> {
     let mut rx = MSG_BUS.subscribe();
 
-    let dest = PathBuf::from(DEST).canonicalize()?;
-    if !dest.exists() {
-        fs::create_dir_all(&dest)?;
-    }
-    let src = PathBuf::from(assets_dir).canonicalize()?;
-    resync(&src, &dest)?;
+    let dest = DEST.to_canoncial_dir()?;
+    let src = assets_dir.to_canoncial_dir()?;
+    resync(&src, &dest).context(format!("Could not synchronize {src:?} with {dest:?}"))?;
 
     let reserved = reserved(&src);
 
@@ -100,10 +97,10 @@ pub fn reserved(src: &PathBuf) -> Vec<PathBuf> {
 
 pub fn update(config: &Config) -> Result<()> {
     if let Some(src) = &config.leptos.assets_dir {
-        let dest = PathBuf::from(DEST).canonicalize()?;
-        let src = PathBuf::from(src).canonicalize()?;
+        let dest = DEST.to_canoncial_dir()?;
+        let src = src.to_canoncial_dir()?;
 
-        resync(&src, &dest)?;
+        resync(&src, &dest).context(format!("Could not synchronize {src:?} with {dest:?}"))?;
     }
     Ok(())
 }

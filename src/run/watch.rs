@@ -1,7 +1,7 @@
 use crate::{
     config::Config,
     logger::GRAY,
-    util::{oneshot_when, remove_nested, PathBufAdditions, SenderAdditions},
+    util::{oneshot_when, remove_nested, PathBufAdditions, SenderAdditions, StrAdditions},
     Msg, MSG_BUS,
 };
 use anyhow::Result;
@@ -10,7 +10,7 @@ use std::{fmt::Display, path::PathBuf, time::Duration};
 use tokio::task::JoinHandle;
 
 pub async fn spawn(config: &Config) -> Result<JoinHandle<()>> {
-    let mut paths = vec![PathBuf::from("src").canonicalize()?];
+    let mut paths = vec!["src".to_canoncial_dir()?];
     paths.push(
         PathBuf::from(&config.leptos.style.file)
             .without_last()
@@ -18,7 +18,7 @@ pub async fn spawn(config: &Config) -> Result<JoinHandle<()>> {
     );
 
     let assets_dir = if let Some(dir) = &config.leptos.assets_dir {
-        let assets_root = PathBuf::from(dir).canonicalize()?;
+        let assets_root = dir.to_canoncial_dir()?;
         paths.push(assets_root.clone());
         Some(assets_root)
     } else {

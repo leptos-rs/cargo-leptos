@@ -150,6 +150,8 @@ pub fn os_arch() -> Result<(&'static str, &'static str)> {
 pub trait StrAdditions {
     fn with(&self, append: &str) -> String;
     fn pad_left_to<'a>(&'a self, len: usize) -> Cow<'a, str>;
+    /// returns the string as a canonical path (creates the dir if necessary)
+    fn to_canoncial_dir(&self) -> Result<PathBuf>;
 }
 
 impl StrAdditions for str {
@@ -167,6 +169,17 @@ impl StrAdditions for str {
             Cow::Borrowed(self)
         }
     }
+
+    fn to_canoncial_dir(&self) -> Result<PathBuf> {
+        let path = PathBuf::from(self);
+        if !path.exists() {
+            fs::create_dir_all(&path).context(format!("Could not create dir {self:?}"))?;
+        }
+        let path = path
+            .canonicalize()
+            .context(format!("Could not canonicalize {path:?}"))?;
+        Ok(path)
+    }
 }
 
 impl StrAdditions for String {
@@ -178,6 +191,10 @@ impl StrAdditions for String {
 
     fn pad_left_to<'a>(&'a self, len: usize) -> Cow<'a, str> {
         self.as_str().pad_left_to(len)
+    }
+
+    fn to_canoncial_dir(&self) -> Result<PathBuf> {
+        self.as_str().to_canoncial_dir()
     }
 }
 
