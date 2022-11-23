@@ -37,6 +37,8 @@ Help:
 
 > `cargo leptos --help`
 
+For setting up your project, base yourself on the [example](https://github.com/akesson/cargo-leptos/tree/main/example)
+
 <br/>
 
 ## Folder structure
