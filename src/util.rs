@@ -1,130 +1,14 @@
-use crate::{Msg, MSG_BUS};
-use anyhow::{anyhow, bail, Context, Result};
+use crate::{fs, Msg, MSG_BUS};
+use anyhow_ext::{anyhow, bail, Context, Result};
 use cargo_metadata::{Artifact, Message};
 use serde::Deserialize;
-use std::{
-    borrow::Cow,
-    fs,
-    path::{Path, PathBuf},
-    process::Stdio,
-};
+use std::{borrow::Cow, path::PathBuf, process::Stdio};
 use tokio::{
     io::{AsyncBufReadExt, BufReader},
     process::{Child, Command},
     sync::{broadcast::Sender, oneshot},
     task::JoinHandle,
 };
-
-pub fn rm_dir_content<P: AsRef<Path>>(dir: P) -> Result<()> {
-    let dir = dir.as_ref();
-
-    if !dir.exists() {
-        log::debug!("Leptos not cleaning {dir:?} because it does not exist");
-        return Ok(());
-    }
-
-    for entry in fs::read_dir(dir)? {
-        let entry = entry?;
-        let path = entry.path();
-
-        if entry.file_type()?.is_dir() {
-            rm_dir_content(&path)?;
-            fs::remove_dir(path)?;
-        } else {
-            fs::remove_file(path)?;
-        }
-    }
-    Ok(())
-}
-
-pub fn copy(from: &PathBuf, to: &PathBuf) -> Result<()> {
-    fs::copy(from, to).context(format!("copy {from:?} to {to:?}"))?;
-    Ok(())
-}
-
-pub fn rm_dir(dir: &str) -> Result<()> {
-    let path = Path::new(&dir);
-
-    if !path.exists() {
-        log::debug!("Leptos not cleaning {dir} because it does not exist");
-        return Ok(());
-    }
-
-    log::info!("Leptos cleaning dir '{dir}'");
-    fs::remove_dir_all(path).context(format!("remove dir {dir}"))?;
-    Ok(())
-}
-
-pub fn rm_file<S: AsRef<str>>(file: S) -> Result<()> {
-    let path = Path::new(file.as_ref());
-    if path.exists() {
-        fs::remove_file(path).context(format!("remove file {}", file.as_ref()))?;
-    }
-    Ok(())
-}
-
-pub fn mkdirs<S: ToString>(dir: S) -> Result<String> {
-    let dir = dir.to_string();
-    fs::create_dir_all(&dir).context(format!("create dir {dir}"))?;
-    Ok(dir)
-}
-
-pub fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> Result<()> {
-    cp_dir_all(&src, &dst).context(format!(
-        "copy dir recursively from {:?} to {:?}",
-        src.as_ref(),
-        dst.as_ref()
-    ))
-}
-
-fn cp_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> Result<()> {
-    fs::create_dir_all(&dst)?;
-    for entry in fs::read_dir(src)? {
-        let entry = entry?;
-        let ty = entry.file_type()?;
-        if ty.is_dir() {
-            copy_dir_all(entry.path(), dst.as_ref().join(entry.file_name()))?;
-        } else {
-            fs::copy(entry.path(), dst.as_ref().join(entry.file_name()))?;
-        }
-    }
-    Ok(())
-}
-
-pub fn remove_nested(paths: Vec<PathBuf>) -> Vec<PathBuf> {
-    paths.into_iter().fold(vec![], |mut vec, path| {
-        for added in vec.iter_mut() {
-            // path is a parent folder of added
-            if added.starts_with(&path) {
-                *added = path;
-                return vec;
-            }
-            // path is a sub folder of added
-            if path.starts_with(added) {
-                return vec;
-            }
-        }
-        vec.push(path);
-        vec
-    })
-}
-
-pub fn write_if_changed(file: &str, text: &str) -> Result<bool> {
-    let current = fs::read_to_string(file)?;
-    let current_hash = seahash::hash(current.as_bytes());
-    let new_hash = seahash::hash(text.as_bytes());
-    if current_hash != new_hash {
-        fs::write(&file, text).context(format!("write {file}"))?;
-        Ok(true)
-    } else {
-        Ok(false)
-    }
-}
-
-pub fn write(file: &str, text: &str) -> Result<()> {
-    log::trace!("Leptos content of {file}:\n{text}");
-    fs::write(&file, text).context(format!("write {file}"))
-}
 
 pub fn os_arch() -> Result<(&'static str, &'static str)> {
     let target_os = if cfg!(target_os = "windows") {
@@ -195,53 +79,6 @@ impl StrAdditions for String {
 
     fn to_canoncial_dir(&self) -> Result<PathBuf> {
         self.as_str().to_canoncial_dir()
-    }
-}
-
-pub trait PathBufAdditions {
-    /// drops the last path component
-    fn without_last(self) -> Self;
-
-    /// appends to path
-    fn with<P: AsRef<Path>>(&self, append: P) -> Self;
-
-    /// converts this absolute path to relative if the start matches
-    fn relative_to(&self, to: impl AsRef<Path>) -> Option<PathBuf>;
-
-    /// removes the src_root from the path and adds the dest_root
-    fn rebase(&self, src_root: &PathBuf, dest_root: &PathBuf) -> Result<Self>
-    where
-        Self: Sized;
-}
-
-impl PathBufAdditions for PathBuf {
-    fn without_last(mut self) -> Self {
-        self.pop();
-        self
-    }
-    fn with<P: AsRef<Path>>(&self, append: P) -> Self {
-        let mut new = self.clone();
-        new.push(append);
-        new
-    }
-    fn relative_to(&self, to: impl AsRef<Path>) -> Option<PathBuf> {
-        let root = to.as_ref();
-        if self.is_absolute() && self.starts_with(root) {
-            let len = root.components().count();
-            Some(self.components().skip(len).collect())
-        } else {
-            None
-        }
-    }
-    fn rebase(&self, src_root: &PathBuf, dest_root: &PathBuf) -> Result<Self>
-    where
-        Self: Sized,
-    {
-        if let Some(rel) = self.relative_to(src_root) {
-            Ok(dest_root.with(rel))
-        } else {
-            bail!("Could not rebase {self:?} from {src_root:?} to {dest_root:?}")
-        }
     }
 }
 

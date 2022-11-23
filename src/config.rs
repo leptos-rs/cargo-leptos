@@ -1,9 +1,9 @@
-use crate::{logger::GRAY, Cli, Commands, Opts};
-use anyhow::{anyhow, bail, ensure, Context, Result};
+use crate::{fs, logger::GRAY, Cli, Commands, Opts};
+use anyhow_ext::{anyhow, bail, ensure, Context, Result};
 use cargo_metadata::{MetadataCommand, Package as CargoPackage};
 use regex::Regex;
 use serde::Deserialize;
-use std::{fs, path::Path};
+use std::path::Path;
 
 #[derive(Debug, Clone)]
 pub struct Config {

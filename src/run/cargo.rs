@@ -3,7 +3,7 @@ use crate::{
     logger::GRAY,
     util::{run_interruptible, CommandAdditions},
 };
-use anyhow::{Context, Result};
+use anyhow_ext::{Context, Result};
 use tokio::process::Command;
 
 // for capturing the cargo output see util::CommandAdditions
@@ -27,11 +27,11 @@ pub async fn build(config: &Config, lib: bool) -> Result<()> {
 }
 
 pub async fn run(config: &Config) -> Result<()> {
-    cmd("run", config, false).await
+    cmd("run", config, false).await.dot()
 }
 
 pub async fn test(config: &Config) -> Result<()> {
-    cmd("test", config, false).await
+    cmd("test", config, false).await.dot()
 }
 
 async fn cmd(command: &str, config: &Config, lib: bool) -> Result<()> {

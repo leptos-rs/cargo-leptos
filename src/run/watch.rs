@@ -1,10 +1,11 @@
 use crate::{
     config::Config,
+    fs::{remove_nested, PathBufAdditions},
     logger::GRAY,
-    util::{oneshot_when, remove_nested, PathBufAdditions, SenderAdditions, StrAdditions},
+    util::{oneshot_when, SenderAdditions, StrAdditions},
     Msg, MSG_BUS,
 };
-use anyhow::Result;
+use anyhow_ext::{Context, Result};
 use notify::{DebouncedEvent, RecursiveMode, Watcher};
 use std::{fmt::Display, path::PathBuf, time::Duration};
 use tokio::task::JoinHandle;
@@ -14,11 +15,12 @@ pub async fn spawn(config: &Config) -> Result<JoinHandle<()>> {
     paths.push(
         PathBuf::from(&config.leptos.style.file)
             .without_last()
-            .canonicalize()?,
+            .canonicalize()
+            .dot()?,
     );
 
     let assets_dir = if let Some(dir) = &config.leptos.assets_dir {
-        let assets_root = dir.to_canoncial_dir()?;
+        let assets_root = dir.to_canoncial_dir().dot()?;
         paths.push(assets_root.clone());
         Some(assets_root)
     } else {

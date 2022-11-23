@@ -1,8 +1,7 @@
-use crate::{config::Config, util};
-use anyhow::{ensure, Context, Result};
+use crate::{config::Config, fs, fs::PathBufAdditions};
+use anyhow_ext::{ensure, Context, Result};
 use regex::Regex;
-use std::fs;
-use util::StrAdditions;
+use std::path::PathBuf;
 
 lazy_static::lazy_static! {
     static ref HEAD_RE: Regex = Regex::new(&format!(r"\s*{HEAD_MARKER}\s*?")).unwrap();
@@ -50,7 +49,6 @@ impl Html {
 
     fn try_read(path: &str) -> Result<Self> {
         let text = fs::read_to_string(path)?;
-        log::trace!("Html content of {path}:\n{text}");
         ensure!(
             HEAD_RE.find(&text).is_some(),
             format!("Missing Html marker {HEAD_MARKER}")
@@ -59,7 +57,6 @@ impl Html {
             BODY_RE.find(&text).is_some(),
             format!("Html missing marker {BODY_MARKER}")
         );
-        log::trace!("Content of {path}:\n{text}");
         Ok(Self { text })
     }
 
@@ -80,15 +77,16 @@ impl Html {
 
     /// generate html for client side rendering
     pub fn generate_html(&self, config: &Config) -> Result<()> {
-        let file = util::mkdirs("target/site/")?.with("index.html");
+        fs::create_dir_all("target/site/").dot()?;
+        let file = PathBuf::from("target/site/").with("index.html");
 
         let text = HEAD_RE.replace(&self.text, &self.head(config));
         let text = BODY_RE.replace(&text, "");
 
-        if util::write_if_changed(&file, &text)? {
-            log::debug!("Html writing html to {file}");
+        if fs::write_if_changed(&file, &text.as_bytes())? {
+            log::debug!("Html wrote html to {file:?}");
         } else {
-            log::trace!("Html already up-to-date {file}");
+            log::trace!("Html already up-to-date {file:?}");
         }
         Ok(())
     }
@@ -112,10 +110,10 @@ impl Html {
         let rust = MIDDLE_RE.replace(&rust, &middle);
         let rust = END_RE.replace(&rust, &end);
 
-        if util::write_if_changed(&file, &rust)? {
-            log::debug!("Html writing rust to {file}");
+        if fs::write_if_changed(&file, &rust.as_bytes()).dot()? {
+            log::debug!("Html wrote rust to {file}");
         } else {
-            log::trace!("Html already up-to-date {file}");
+            log::trace!("Html generated rust already up-to-date {file}");
         }
         Ok(())
     }

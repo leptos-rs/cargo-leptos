@@ -1,13 +1,11 @@
 use crate::{
     config::Config,
+    fs,
     util::{os_arch, run_interruptible, wait_for},
     Msg, INSTALL_CACHE,
 };
-use anyhow::{anyhow, bail, Context, Result};
-use std::{
-    fs,
-    path::{Path, PathBuf},
-};
+use anyhow_ext::{anyhow, bail, Context, Result};
+use std::path::{Path, PathBuf};
 use tokio::process::Command;
 use wasm_bindgen_cli_support::Bindgen;
 
@@ -18,8 +16,8 @@ pub async fn build(config: &Config) -> Result<()> {
 
     tokio::select! {
         val = handle => match val {
-            Err(e) => Err(anyhow!(e)),
-            Ok(Err(e)) => Err(e),
+            Err(e) => Err(anyhow!(e)).dot(),
+            Ok(Err(e)) => Err(e).dot(),
             Ok(_) => Ok(())
         },
         _ = wait_for(&[Msg::ShutDown, Msg::SrcChanged]) => Ok(())
@@ -41,17 +39,19 @@ async fn run_build(config: &Config) -> Result<()> {
     // https://github.com/rustwasm/wasm-bindgen/blob/main/crates/cli/src/bin/wasm-bindgen.rs#L13
     let mut bindgen = Bindgen::new()
         .input_path(wasm_path)
-        .web(true)?
+        .web(true)
+        .dot()?
         .omit_imports(true)
-        .generate_output()?;
+        .generate_output()
+        .dot()?;
 
     let wasm_path = "target/site/pkg/app.wasm";
     if config.cli.release {
         let path = "target/site/pkg/app.no-optimisation.wasm";
-        bindgen.wasm_mut().emit_wasm_file(path)?;
-        optimize(path, wasm_path).await?;
+        bindgen.wasm_mut().emit_wasm_file(path).dot()?;
+        optimize(path, wasm_path).await.dot()?;
     } else {
-        bindgen.wasm_mut().emit_wasm_file(wasm_path)?;
+        bindgen.wasm_mut().emit_wasm_file(wasm_path).dot()?;
     }
 
     let snippets = bindgen
@@ -62,12 +62,12 @@ async fn run_build(config: &Config) -> Result<()> {
         .join("\n");
 
     let js = snippets + bindgen.js();
-    fs::write("target/site/pkg/app.js", js)?;
+    fs::write("target/site/pkg/app.js", js).dot()?;
     Ok(())
 }
 
 async fn optimize(src: &str, dest: &str) -> Result<()> {
-    let wasm_opt = wasm_opt_exe()?;
+    let wasm_opt = wasm_opt_exe().dot()?;
     let args = [src, "-Os", "-o", dest];
     let process = Command::new(wasm_opt)
         .args(&args)
@@ -76,7 +76,7 @@ async fn optimize(src: &str, dest: &str) -> Result<()> {
     run_interruptible("wasm-opt", process)
         .await
         .context(format!("wasm-opt {}", &args.join(" ")))?;
-    std::fs::remove_file(&src)?;
+    std::fs::remove_file(&src).dot()?;
     Ok(())
 }
 

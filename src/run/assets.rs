@@ -1,15 +1,10 @@
-use std::{fs, path::PathBuf};
-
-use crate::{
-    config::Config,
-    logger::GRAY,
-    util::{self, PathBufAdditions, StrAdditions},
-    Msg, MSG_BUS,
-};
-use anyhow::{Context, Result};
-use tokio::task::JoinHandle;
-
 use super::watch::Watched;
+use crate::{
+    config::Config, fs, fs::PathBufAdditions, logger::GRAY, util::StrAdditions, Msg, MSG_BUS,
+};
+use anyhow_ext::{Context, Result};
+use std::path::PathBuf;
+use tokio::task::JoinHandle;
 
 const DEST: &str = "target/site";
 
@@ -63,9 +58,9 @@ fn update_asset(
         Watched::Create(f) => {
             let to = f.rebase(src_root, dest_root)?;
             if f.is_dir() {
-                util::copy_dir_all(f, to)?;
+                fs::copy_dir_all(f, to)?;
             } else {
-                util::copy(&f, &to)?;
+                fs::copy(&f, &to)?;
             }
         }
         Watched::Remove(f) => {
@@ -83,7 +78,7 @@ fn update_asset(
         }
         Watched::Write(f) => {
             let to = f.rebase(src_root, dest_root)?;
-            util::copy(&f, &to)?;
+            fs::copy(&f, &to)?;
         }
         Watched::Rescan => resync(src_root, dest_root)?,
     }
@@ -97,8 +92,8 @@ pub fn reserved(src: &PathBuf) -> Vec<PathBuf> {
 
 pub fn update(config: &Config) -> Result<()> {
     if let Some(src) = &config.leptos.assets_dir {
-        let dest = DEST.to_canoncial_dir()?;
-        let src = src.to_canoncial_dir()?;
+        let dest = DEST.to_canoncial_dir().dot()?;
+        let src = src.to_canoncial_dir().dot()?;
 
         resync(&src, &dest).context(format!("Could not synchronize {src:?} with {dest:?}"))?;
     }

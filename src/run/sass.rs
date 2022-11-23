@@ -1,16 +1,16 @@
-use crate::{config::Config, util::os_arch, INSTALL_CACHE};
-use anyhow::{anyhow, bail, Context, Result};
+use crate::{config::Config, fs, util::os_arch, INSTALL_CACHE};
+use anyhow_ext::{anyhow, bail, Context, Result};
 use lightningcss::{
     stylesheet::{MinifyOptions, ParserOptions, PrinterOptions, StyleSheet},
     targets::Browsers,
 };
-use std::{fs, path::Path, path::PathBuf};
+use std::{path::Path, path::PathBuf};
 use tokio::process::Command;
 
 const DEST: &str = "target/site/pkg/app.css";
 
 pub async fn run(config: &Config) -> Result<()> {
-    fs::create_dir_all("target/site/pkg")?;
+    fs::create_dir_all("target/site/pkg").dot()?;
 
     let style = &config.leptos.style;
     let style_file = &style.file;
@@ -23,7 +23,7 @@ pub async fn run(config: &Config) -> Result<()> {
             .await
             .context(format!("compile sass/scss: {style_file}"))?,
         Some("css") => {
-            fs::copy(style_file, DEST)?;
+            fs::copy(style_file, DEST).dot().dot()?;
             PathBuf::from(DEST)
         }
         _ => bail!("Not a css/sass/scss style file: {style_file}"),

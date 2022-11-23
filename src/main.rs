@@ -1,12 +1,14 @@
 mod config;
+mod fs;
 mod logger;
 mod run;
-pub mod util;
+mod util;
 
-use anyhow::Result;
+use anyhow_ext::{Context, Result};
 use binary_install::Cache;
 use clap::{Parser, Subcommand, ValueEnum};
 use config::Config;
+use fs::PathBufAdditions;
 use run::{
     assets, cargo,
     new::NewCommand,
@@ -19,7 +21,7 @@ use tokio::{
     signal,
     sync::{broadcast, RwLock},
 };
-use util::{wait_for, PathBufAdditions};
+use util::wait_for;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Msg {
@@ -115,7 +117,7 @@ async fn main() -> Result<()> {
 
     if let Some(path) = &args.manifest_path {
         let path = PathBuf::from(path).without_last();
-        std::env::set_current_dir(path)?;
+        std::env::set_current_dir(path).dot()?;
     }
 
     let opts = match &args.command {
@@ -128,7 +130,7 @@ async fn main() -> Result<()> {
     };
     logger::setup(opts.verbose, &args.log);
 
-    let config = config::read(&args, opts.clone())?;
+    let config = config::read(&args, opts.clone()).dot()?;
 
     tokio::spawn(async {
         signal::ctrl_c().await.expect("failed to listen for event");
@@ -155,36 +157,36 @@ async fn send_reload() {
 }
 async fn build(config: &Config, copy_assets: bool) -> Result<()> {
     log::debug!(r#"Leptos cleaning contents of "target/site/pkg""#);
-    util::rm_dir_content("target/site/pkg")?;
+    fs::rm_dir_content("target/site/pkg").dot()?;
     if copy_assets {
-        assets::update(config)?;
+        assets::update(config).dot()?;
     }
-    build_client(&config).await?;
+    build_client(&config).await.dot()?;
 
     if !config.cli.csr {
-        cargo::build(&config, false).await?;
+        cargo::build(&config, false).await.dot()?;
     }
     Ok(())
 }
 async fn build_client(config: &Config) -> Result<()> {
-    sass::run(&config).await?;
+    sass::run(&config).await.dot()?;
 
-    let html = Html::read(&config.leptos.index_file)?;
+    let html = Html::read(&config.leptos.index_file).dot()?;
 
     if config.cli.csr {
-        wasm::build(&config).await?;
-        html.generate_html(&config)?;
+        wasm::build(&config).await.dot()?;
+        html.generate_html(&config).dot()?;
     } else {
-        wasm::build(&config).await?;
-        html.generate_rust(&config)?;
+        wasm::build(&config).await.dot()?;
+        html.generate_rust(&config).dot()?;
     }
     Ok(())
 }
 
 async fn serve(config: &Config) -> Result<()> {
-    build(&config, true).await?;
+    build(&config, true).await.dot()?;
     if config.cli.csr {
-        serve::spawn(&config).await.await?;
+        serve::spawn(&config).await.await.dot()?;
         Ok(())
     } else {
         cargo::run(&config).await

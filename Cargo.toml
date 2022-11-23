@@ -14,7 +14,7 @@ edition = "2021"
 clap = { version = "4.0.19", features = ["derive"] }
 serde = { version = "1.0", features = ["derive"] }
 toml = "0.5.9"
-anyhow = "1.0"
+anyhow_ext = "0.2.0"
 log = "0.4"
 flexi_logger = "0.24.1"
 lightningcss = { version = "1.0.0-alpha.36", features = ["browserslist"] }

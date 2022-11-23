@@ -1,7 +1,6 @@
-use std::path::PathBuf;
-
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow_ext::{anyhow, bail, Context, Result};
 use clap::Args;
+use std::path::PathBuf;
 use tokio::process::Command;
 
 use crate::{util::os_arch, INSTALL_CACHE};
@@ -58,7 +57,7 @@ impl NewCommand {
             .args(&args)
             .spawn()
             .context("Could not spawn command")?;
-        process.wait().await?;
+        process.wait().await.dot()?;
         Ok(())
     }
 
