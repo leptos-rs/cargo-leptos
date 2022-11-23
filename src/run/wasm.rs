@@ -1,7 +1,8 @@
 use crate::{
     config::Config,
     fs,
-    util::{os_arch, run_interruptible, src_or_style_change, wait_for},
+    sync::{run_interruptible, src_or_style_change, wait_for},
+    util::os_arch,
     INSTALL_CACHE,
 };
 use anyhow_ext::{anyhow, bail, Context, Result};

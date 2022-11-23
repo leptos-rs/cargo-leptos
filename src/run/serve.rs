@@ -1,6 +1,6 @@
 use crate::{
     config::Config,
-    util::{oneshot_when, shutdown_msg},
+    sync::{oneshot_when, shutdown_msg},
 };
 use ansi_term::Style;
 use anyhow_ext::{bail, Result};

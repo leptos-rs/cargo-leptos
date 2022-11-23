@@ -1,5 +1,5 @@
 use crate::logger::GRAY;
-use crate::util::{oneshot_when, shutdown_msg};
+use crate::sync::{oneshot_when, shutdown_msg};
 use crate::{config::Config, Msg, MSG_BUS};
 use ansi_term::Style;
 use anyhow_ext::{bail, Result};

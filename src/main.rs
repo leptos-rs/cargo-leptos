@@ -2,6 +2,7 @@ mod config;
 mod fs;
 mod logger;
 mod run;
+mod sync;
 mod util;
 
 use anyhow_ext::{Context, Result};
@@ -13,36 +14,14 @@ use run::{
     assets, cargo,
     new::NewCommand,
     reload, sass, serve, wasm,
-    watch::{self, Watched},
+    watch::{self},
     Html,
 };
 use std::{env, path::PathBuf};
-use tokio::{
-    signal,
-    sync::{broadcast, RwLock},
-};
-use util::{src_or_style_change, wait_for};
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Msg {
-    /// sent by ctrl-c
-    ShutDown,
-    /// sent when a source file is changed
-    SrcChanged,
-    /// sent when an asset file changed
-    AssetsChanged(Watched),
-    /// sent when a style file changed
-    StyleChanged,
-    /// messages sent to reload server (forwarded to browser)
-    Reload(String),
-}
+use sync::{send_reload, src_or_style_change, wait_for, Msg, MSG_BUS, SHUTDOWN};
+use tokio::signal;
 
 lazy_static::lazy_static! {
-    /// Interrupts current serve or cargo operation. Used for watch
-    pub static ref MSG_BUS: broadcast::Sender<Msg> = {
-        broadcast::channel(10).0
-    };
-    pub static ref SHUTDOWN: RwLock<bool> = RwLock::new(false);
     pub static ref INSTALL_CACHE: Cache = Cache::new("cargo-leptos").unwrap();
 }
 
@@ -148,13 +127,6 @@ async fn main() -> Result<()> {
     }
 }
 
-async fn send_reload() {
-    if !*SHUTDOWN.read().await {
-        if let Err(e) = MSG_BUS.send(Msg::Reload("reload".to_string())) {
-            log::error!("Leptos failed to send reload: {e}");
-        }
-    }
-}
 async fn build(config: &Config, copy_assets: bool) -> Result<()> {
     log::debug!(r#"Leptos cleaning contents of "target/site/pkg""#);
     fs::rm_dir_content("target/site/pkg").dot()?;

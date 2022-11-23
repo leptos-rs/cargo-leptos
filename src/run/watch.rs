@@ -2,7 +2,8 @@ use crate::{
     config::Config,
     fs::{remove_nested, PathBufAdditions},
     logger::GRAY,
-    util::{oneshot_when, shutdown_msg, SenderAdditions, StrAdditions},
+    sync::{oneshot_when, shutdown_msg},
+    util::{SenderAdditions, StrAdditions},
     Msg, MSG_BUS,
 };
 use anyhow_ext::{Context, Result};
