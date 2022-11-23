@@ -186,7 +186,7 @@ async fn build_client(config: &Config) -> Result<()> {
 async fn serve(config: &Config) -> Result<()> {
     build(&config, true).await.dot()?;
     if config.cli.csr {
-        serve::spawn(&config).await.await.dot()?;
+        serve::spawn(&config).await?.await.dot()?;
         Ok(())
     } else {
         cargo::run(&config).await
@@ -200,10 +200,10 @@ async fn watch(config: &Config) -> Result<()> {
         let _ = assets::spawn(assets_dir).await.dot()?;
     }
     if config.cli.csr {
-        serve::spawn(&config).await;
+        serve::spawn(&config).await?;
     }
 
-    reload::spawn(&config).await;
+    reload::spawn(&config).await?;
 
     loop {
         match build(config, false).await {
