@@ -94,7 +94,7 @@ fn wasm_opt_exe() -> Result<PathBuf> {
         _ => "bin/wasm-opt",
     };
 
-    let version = "version_110";
+    let version = "version_111";
     let target = match (target_os, target_arch) {
         ("linux", _) => "x86_64-linux",
         ("windows", _) => "x86_64-windows",
