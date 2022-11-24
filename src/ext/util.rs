@@ -1,4 +1,3 @@
-use super::fs;
 use crate::Msg;
 use anyhow_ext::{bail, Context, Result};
 use cargo_metadata::{Artifact, Message};
@@ -10,6 +9,8 @@ use tokio::{
     sync::broadcast::Sender,
     task::JoinHandle,
 };
+
+use super::path::PathExt;
 
 pub fn os_arch() -> Result<(&'static str, &'static str)> {
     let target_os = if cfg!(target_os = "windows") {
@@ -58,12 +59,9 @@ impl StrAdditions for str {
     fn to_canoncial_dir(&self) -> Result<PathBuf> {
         let path = PathBuf::from(self);
         if !path.exists() {
-            fs::create_dir_all(&path).context(format!("Could not create dir {self:?}"))?;
+            std::fs::create_dir_all(&path).context(format!("Could not create dir {self:?}"))?;
         }
-        let path = path
-            .canonicalize()
-            .context(format!("Could not canonicalize {path:?}"))?;
-        Ok(path)
+        path.to_canonicalized()
     }
 }
 

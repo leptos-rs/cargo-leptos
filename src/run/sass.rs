@@ -10,7 +10,7 @@ use tokio::process::Command;
 const DEST: &str = "target/site/pkg/app.css";
 
 pub async fn run(config: &Config) -> Result<()> {
-    fs::create_dir_all("target/site/pkg").dot()?;
+    fs::create_dir_all("target/site/pkg").await.dot()?;
 
     let style = &config.leptos.style;
     let style_file = &style.file;
@@ -23,7 +23,7 @@ pub async fn run(config: &Config) -> Result<()> {
             .await
             .context(format!("compile sass/scss: {style_file}"))?,
         Some("css") => {
-            fs::copy(style_file, DEST).dot().dot()?;
+            fs::copy(style_file, DEST).await.dot().dot()?;
             PathBuf::from(DEST)
         }
         _ => bail!("Not a css/sass/scss style file: {style_file}"),
@@ -32,6 +32,7 @@ pub async fn run(config: &Config) -> Result<()> {
     let browsers = browser_lists(&style.browserquery).context("leptos.style.browserquery")?;
 
     process_css(&css_file, browsers, config.cli.release)
+        .await
         .context(format!("process css {style_file}"))?;
 
     Ok(())
@@ -56,8 +57,8 @@ fn browser_lists(query: &str) -> Result<Option<Browsers>> {
     Browsers::from_browserslist([query]).context(format!("Error in browserlist query: {query}"))
 }
 
-fn process_css(file: &Path, browsers: Option<Browsers>, release: bool) -> Result<()> {
-    let css = fs::read_to_string(&file)?;
+async fn process_css(file: &Path, browsers: Option<Browsers>, release: bool) -> Result<()> {
+    let css = fs::read_to_string(&file).await?;
 
     let mut style =
         StyleSheet::parse(&css, ParserOptions::default()).map_err(|e| anyhow!("{e}"))?;
@@ -74,7 +75,7 @@ fn process_css(file: &Path, browsers: Option<Browsers>, release: bool) -> Result
     }
     let style_output = style.to_css(options)?;
 
-    fs::write(&file, style_output.code.as_bytes())?;
+    fs::write(&file, style_output.code.as_bytes()).await?;
 
     Ok(())
 }

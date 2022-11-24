@@ -1,6 +1,7 @@
 use crate::{
-    fs::{remove_nested, PathBufAdditions},
+    fs::remove_nested,
     logger::GRAY,
+    path::{PathBufExt, PathExt},
     sync::{oneshot_when, shutdown_msg},
     util::{SenderAdditions, StrAdditions},
     Config, Msg, MSG_BUS,
@@ -15,7 +16,7 @@ pub async fn spawn(config: &Config) -> Result<JoinHandle<()>> {
     paths.push(
         PathBuf::from(&config.leptos.style.file)
             .without_last()
-            .canonicalize()
+            .to_canonicalized()
             .dot()?,
     );
 
@@ -40,7 +41,7 @@ pub async fn spawn(config: &Config) -> Result<JoinHandle<()>> {
         )
     );
 
-    let exclude = vec![PathBuf::from(&config.leptos.gen_file).canonicalize()?];
+    let exclude = vec![PathBuf::from(&config.leptos.gen_file).to_canonicalized()?];
 
     Ok(tokio::spawn(async move {
         run(&paths, exclude, assets_dir).await

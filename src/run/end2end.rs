@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use crate::{
+    ext::path::PathExt,
     logger::BOLD,
     sync::{run_interruptible, shutdown_msg},
     Config,
@@ -31,9 +32,7 @@ async fn try_run(cmd: &str) -> Result<()> {
 
     let args = parts.collect::<Vec<_>>();
 
-    let dir = PathBuf::from("end2end")
-        .canonicalize()
-        .context(r#"Iusse with sub dir "end2end""#)?;
+    let dir = PathBuf::from("end2end").to_canonicalized()?;
 
     log::trace!("End2End Running {cmd:?}");
     let process = Command::new(exe)

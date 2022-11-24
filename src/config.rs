@@ -29,8 +29,9 @@ impl Config {
     }
 }
 /// read from path or default to 'leptos.toml'
-pub fn read(cli: &Cli, opts: Opts) -> Result<Config> {
+pub async fn read(cli: &Cli, opts: Opts) -> Result<Config> {
     let leptos = read_config("Cargo.toml")
+        .await
         .context(format!("read config: Cargo.toml"))?
         .package
         .metadata
@@ -61,8 +62,8 @@ pub fn read(cli: &Cli, opts: Opts) -> Result<Config> {
     })
 }
 
-fn read_config(file: &str) -> Result<ConfigFile> {
-    let text = fs::read_to_string(file)?;
+async fn read_config(file: &str) -> Result<ConfigFile> {
+    let text = fs::read_to_string(file).await?;
     let re: Regex = Regex::new(r#"(?m)^\[package.metadata.leptos\]"#).unwrap();
     let start = match re.find(&text) {
         Some(found) => found.start(),

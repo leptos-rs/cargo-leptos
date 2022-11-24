@@ -3,13 +3,13 @@ mod ext;
 mod logger;
 mod run;
 
-use ext::{fs, sync, util};
+use ext::{fs, path, sync, util};
 
 use anyhow_ext::{Context, Result};
 use binary_install::Cache;
 use clap::{Parser, Subcommand, ValueEnum};
 use config::Config;
-use ext::fs::PathBufAdditions;
+use ext::path::PathBufExt;
 use ext::sync::{send_reload, src_or_style_change, wait_for, Msg, MSG_BUS, SHUTDOWN};
 use run::{assets, cargo, end2end, new, reload, sass, serve, wasm, watch, Html};
 use std::{env, path::PathBuf};
@@ -106,7 +106,7 @@ async fn main() -> Result<()> {
     };
     logger::setup(opts.verbose, &args.log);
 
-    let config = config::read(&args, opts.clone()).dot()?;
+    let config = config::read(&args, opts.clone()).await.dot()?;
 
     tokio::spawn(async {
         signal::ctrl_c().await.expect("failed to listen for event");
@@ -140,9 +140,9 @@ async fn e2e_test(config: &Config) -> Result<()> {
 
 async fn build(config: &Config, copy_assets: bool) -> Result<()> {
     log::debug!(r#"Leptos cleaning contents of "target/site/pkg""#);
-    fs::rm_dir_content("target/site/pkg").dot()?;
+    fs::rm_dir_content("target/site/pkg").await.dot()?;
     if copy_assets {
-        assets::update(config).dot()?;
+        assets::update(config).await.dot()?;
     }
     build_client(&config).await.dot()?;
 
@@ -154,14 +154,14 @@ async fn build(config: &Config, copy_assets: bool) -> Result<()> {
 async fn build_client(config: &Config) -> Result<()> {
     sass::run(&config).await.dot()?;
 
-    let html = Html::read(&config.leptos.index_file).dot()?;
+    let html = Html::read(&config.leptos.index_file).await.dot()?;
 
     if config.cli.csr {
         wasm::build(&config).await.dot()?;
-        html.generate_html(&config).dot()?;
+        html.generate_html(&config).await.dot()?;
     } else {
         wasm::build(&config).await.dot()?;
-        html.generate_rust(&config).dot()?;
+        html.generate_rust(&config).await.dot()?;
     }
     Ok(())
 }

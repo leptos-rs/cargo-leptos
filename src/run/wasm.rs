@@ -62,7 +62,7 @@ async fn run_build(config: &Config) -> Result<()> {
         .join("\n");
 
     let js = snippets + bindgen.js();
-    fs::write("target/site/pkg/app.js", js).dot()?;
+    fs::write("target/site/pkg/app.js", js).await.dot()?;
     Ok(())
 }
 
