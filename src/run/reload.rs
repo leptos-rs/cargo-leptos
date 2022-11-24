@@ -1,7 +1,6 @@
-use crate::logger::GRAY;
+use crate::logger::{BOLD, GRAY};
 use crate::sync::{oneshot_when, shutdown_msg, wait_for_localhost};
-use crate::{config::Config, Msg, MSG_BUS};
-use ansi_term::Style;
+use crate::{Config, Msg, MSG_BUS};
 use anyhow_ext::{bail, Result};
 use axum::{
     extract::ws::{Message, WebSocket, WebSocketUpgrade},
@@ -19,13 +18,12 @@ pub async fn spawn(config: &Config) -> Result<JoinHandle<()>> {
     let addr = SocketAddr::from(([127, 0, 0, 1], config.leptos.reload_port));
 
     if let Ok(_) = TcpStream::connect(&addr).await {
-        let bold = Style::new().bold();
         bail!(
             "Server port {} already in use. You can set which port to use with {} in {} section {}",
             config.leptos.reload_port,
-            bold.paint("reload_port"),
-            bold.paint("Cargo.toml"),
-            bold.paint("[package.metadata.leptos]"),
+            BOLD.paint("reload_port"),
+            BOLD.paint("Cargo.toml"),
+            BOLD.paint("[package.metadata.leptos]"),
         );
     }
 

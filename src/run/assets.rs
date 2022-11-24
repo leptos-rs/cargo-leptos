@@ -1,7 +1,5 @@
 use super::watch::Watched;
-use crate::{
-    config::Config, fs, fs::PathBufAdditions, logger::GRAY, util::StrAdditions, Msg, MSG_BUS,
-};
+use crate::{fs, fs::PathBufAdditions, logger::GRAY, util::StrAdditions, Config, Msg, MSG_BUS};
 use anyhow_ext::{Context, Result};
 use std::path::PathBuf;
 use tokio::task::JoinHandle;

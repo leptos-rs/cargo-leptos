@@ -1,8 +1,8 @@
 use crate::{
-    config::Config,
+    logger::BOLD,
     sync::{oneshot_when, shutdown_msg},
+    Config,
 };
-use ansi_term::Style;
 use anyhow_ext::{bail, Result};
 use axum::{http::StatusCode, response::IntoResponse, routing::get_service, Router};
 use std::{io, net::SocketAddr};
@@ -17,13 +17,12 @@ pub async fn spawn(config: &Config) -> Result<JoinHandle<()>> {
     let addr = SocketAddr::from(([127, 0, 0, 1], config.leptos.csr_port));
 
     if let Ok(_) = TcpStream::connect(&addr).await {
-        let bold = Style::new().bold();
         bail!(
             "Server port {} already in use. You can set which port to use with {} in {} section {}",
             config.leptos.csr_port,
-            bold.paint("csr_port"),
-            bold.paint("Cargo.toml"),
-            bold.paint("[package.metadata.leptos]"),
+            BOLD.paint("csr_port"),
+            BOLD.paint("Cargo.toml"),
+            BOLD.paint("[package.metadata.leptos]"),
         );
     }
 

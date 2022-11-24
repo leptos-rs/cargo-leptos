@@ -1,8 +1,8 @@
 use crate::{
-    config::Config,
     logger::GRAY,
     sync::{run_interruptible, src_or_style_change},
     util::CommandAdditions,
+    Config,
 };
 use anyhow_ext::{Context, Result};
 use tokio::{process::Command, task::JoinHandle};

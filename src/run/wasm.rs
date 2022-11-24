@@ -1,9 +1,8 @@
 use crate::{
-    config::Config,
     fs,
     sync::{run_interruptible, src_or_style_change, wait_for},
     util::os_arch,
-    INSTALL_CACHE,
+    Config, INSTALL_CACHE,
 };
 use anyhow_ext::{anyhow, bail, Context, Result};
 use std::path::{Path, PathBuf};

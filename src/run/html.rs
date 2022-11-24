@@ -1,4 +1,4 @@
-use crate::{config::Config, fs, fs::PathBufAdditions};
+use crate::{fs, fs::PathBufAdditions, Config};
 use anyhow_ext::{ensure, Context, Result};
 use regex::Regex;
 use std::path::PathBuf;

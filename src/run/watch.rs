@@ -1,10 +1,9 @@
 use crate::{
-    config::Config,
     fs::{remove_nested, PathBufAdditions},
     logger::GRAY,
     sync::{oneshot_when, shutdown_msg},
     util::{SenderAdditions, StrAdditions},
-    Msg, MSG_BUS,
+    Config, Msg, MSG_BUS,
 };
 use anyhow_ext::{Context, Result};
 use notify::{DebouncedEvent, RecursiveMode, Watcher};

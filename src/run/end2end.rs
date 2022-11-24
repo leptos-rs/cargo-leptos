@@ -1,10 +1,10 @@
 use std::path::PathBuf;
 
 use crate::{
-    config::Config,
+    logger::BOLD,
     sync::{run_interruptible, shutdown_msg},
+    Config,
 };
-use ansi_term::Style;
 use anyhow_ext::{anyhow, bail, Context, Result};
 use tokio::process::Command;
 
@@ -14,12 +14,11 @@ pub async fn run(config: &Config) -> Result<()> {
             .await
             .context(format!("Could not run command {e2e:?}"))
     } else {
-        let bold = Style::new().bold();
         bail!(
             "Missing setting {} in {} section {}",
-            bold.paint("end2end_test_cmd"),
-            bold.paint("Cargo.toml"),
-            bold.paint("[package.metadata.leptos]"),
+            BOLD.paint("end2end_test_cmd"),
+            BOLD.paint("Cargo.toml"),
+            BOLD.paint("[package.metadata.leptos]"),
         )
     }
 }

@@ -17,7 +17,7 @@ lazy_static::lazy_static! {
    static ref TRACE_VIOLET: ansi_term::Color = Fixed(98);
 
    pub static ref GRAY: ansi_term::Color = Fixed(241);
-   pub static ref EMPHASIS_2: ansi_term::Style = Style::new().underline().bold();
+   pub static ref BOLD: ansi_term::Style = Style::new().bold();
    static ref LOG_SELECT: OnceCell<LogFlag> = OnceCell::new();
 }
 

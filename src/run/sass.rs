@@ -1,4 +1,4 @@
-use crate::{config::Config, fs, util::os_arch, INSTALL_CACHE};
+use crate::{fs, util::os_arch, Config, INSTALL_CACHE};
 use anyhow_ext::{anyhow, bail, Context, Result};
 use lightningcss::{
     stylesheet::{MinifyOptions, ParserOptions, PrinterOptions, StyleSheet},
