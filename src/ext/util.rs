@@ -1,4 +1,5 @@
-use crate::{fs, Msg};
+use super::fs;
+use crate::Msg;
 use anyhow_ext::{bail, Context, Result};
 use cargo_metadata::{Artifact, Message};
 use serde::Deserialize;

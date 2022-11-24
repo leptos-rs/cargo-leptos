@@ -1,24 +1,18 @@
 mod config;
-mod fs;
+mod ext;
 mod logger;
 mod run;
-mod sync;
-mod util;
+
+use ext::{fs, sync, util};
 
 use anyhow_ext::{Context, Result};
 use binary_install::Cache;
 use clap::{Parser, Subcommand, ValueEnum};
 use config::Config;
-use fs::PathBufAdditions;
-use run::{
-    assets, cargo, end2end,
-    new::NewCommand,
-    reload, sass, serve, wasm,
-    watch::{self},
-    Html,
-};
+use ext::fs::PathBufAdditions;
+use ext::sync::{send_reload, src_or_style_change, wait_for, Msg, MSG_BUS, SHUTDOWN};
+use run::{assets, cargo, end2end, new, reload, sass, serve, wasm, watch, Html};
 use std::{env, path::PathBuf};
-use sync::{send_reload, src_or_style_change, wait_for, Msg, MSG_BUS, SHUTDOWN};
 use tokio::signal;
 
 lazy_static::lazy_static! {
@@ -78,7 +72,7 @@ enum Commands {
     /// Serve and automatically reload when files change. Defaults to hydrate mode.
     Watch(Opts),
     /// WIP: Start wizard for creating a new project (using cargo-generate). Ask at Leptos discord before using.
-    New(NewCommand),
+    New(new::NewCommand),
 }
 
 #[tokio::main]
