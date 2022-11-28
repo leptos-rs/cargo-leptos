@@ -109,9 +109,9 @@ fn cargo_generate_exe() -> Result<PathBuf> {
         ("linux", "x86_64") => "x86_64-unknown-linux-gnu",
         _ => bail!("No cargo-generate tar binary found for {target_os} {target_arch}"),
     };
-    let url = format!("https://github.com/cargo-generate/cargo-generate/releases/download/{version}/cargo-generate-{version}-{target}.tar.gz");
+    let url = format!("https://github.com/cargo-generate/cargo-generate/releases/download/v{version}/cargo-generate-v{version}-{target}.tar.gz");
 
-    let name = format!("cargo-generate-{version}");
+    let name = format!("cargo-generate-v{version}");
 
     match INSTALL_CACHE.download(true, &name, &[], &url) {
         Ok(None) => bail!("Unable to download cargo-generate for {target_os} {target_arch}"),
