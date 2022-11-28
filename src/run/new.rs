@@ -54,6 +54,7 @@ impl NewCommand {
         let args = self.to_args();
         let exe = cargo_generate_exe()?;
         let mut process = Command::new(exe)
+            .arg("generate")
             .args(&args)
             .spawn()
             .context("Could not spawn command")?;
@@ -80,9 +81,11 @@ fn bool_push(args: &mut Vec<String>, name: &str, set: bool) {
         args.push(format!("--{name}"))
     }
 }
+
 fn opt_push(args: &mut Vec<String>, name: &str, arg: &Option<String>) {
     if let Some(arg) = arg {
-        args.push(format!("--{name} {arg}"));
+        args.push(format!("--{name}"));
+        args.push(arg.clone());
     }
 }
 
