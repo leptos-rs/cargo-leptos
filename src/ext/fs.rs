@@ -125,7 +125,7 @@ pub async fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> Resul
 
 async fn cp_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> Result<()> {
     let src = src.as_ref().to_canonicalized()?;
-    let dst = dst.as_ref().to_canonicalized()?;
+    let dst = dst.as_ref().to_path_buf();
 
     self::create_dir_all(&dst).await?;
 

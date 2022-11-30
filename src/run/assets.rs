@@ -158,7 +158,7 @@ async fn mirror(src_root: &PathBuf, dest_root: &PathBuf, reserved: &[PathBuf]) -
                 GRAY.paint(from.to_string_lossy()),
                 GRAY.paint(to.to_string_lossy())
             );
-            fs::copy(from, to).await?;
+            fs::copy_dir_all(from, to).await?;
         } else {
             log::debug!(
                 "Assets copy file {} -> {}",
