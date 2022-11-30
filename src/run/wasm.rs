@@ -54,6 +54,13 @@ async fn run_build(config: &Config) -> Result<()> {
         bindgen.wasm_mut().emit_wasm_file(wasm_path).dot()?;
     }
 
+    let module_js = bindgen
+        .local_modules()
+        .values()
+        .map(|v| v.to_owned())
+        .collect::<Vec<_>>()
+        .join("\n");
+
     let snippets = bindgen
         .snippets()
         .values()
@@ -61,7 +68,7 @@ async fn run_build(config: &Config) -> Result<()> {
         .collect::<Vec<_>>()
         .join("\n");
 
-    let js = snippets + bindgen.js();
+    let js = snippets + &module_js + bindgen.js();
     fs::write("target/site/pkg/app.js", js).await.dot()?;
     Ok(())
 }
