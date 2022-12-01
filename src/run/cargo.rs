@@ -4,7 +4,7 @@ use crate::{
     util::CommandAdditions,
     Config,
 };
-use anyhow_ext::{Context, Result};
+use anyhow_ext::{anyhow, Context, Result};
 use tokio::{process::Command, task::JoinHandle};
 
 // for capturing the cargo output see util::CommandAdditions
@@ -19,7 +19,9 @@ pub async fn build(config: &Config, lib: bool) -> Result<()> {
     run_interruptible(src_or_style_change, "Cargo", process)
         .await
         .context(format!("cargo {}", &args.join(" ")))?;
-    handle.await?;
+    handle
+        .await
+        .map_err(|e| anyhow!("cargo: could not join handle: {e}"))?;
     log::info!(
         "Cargo finished {}",
         GRAY.paint(format!("cargo {}", args.join(" ")))
