@@ -198,7 +198,7 @@ async fn watch(config: &Config) -> Result<()> {
                 }
             }
             Err(e) => {
-                log::warn!("Leptos rebuild stopped due to error: {e}");
+                log::warn!("Leptos rebuild stopped due to error: {e:?}");
                 wait_for(src_or_style_change).await;
             }
         }

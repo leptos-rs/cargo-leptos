@@ -65,12 +65,12 @@ async fn run(paths: &[PathBuf], exclude: Vec<PathBuf>, assets_dir: Option<PathBu
 
     for path in paths {
         if let Err(e) = watcher.watch(&path, RecursiveMode::Recursive) {
-            log::error!("Watcher could not watch {path:?} due to {e}");
+            log::error!("Watcher could not watch {path:?} due to {e:?}");
         }
     }
 
     if let Err(e) = oneshot_when(shutdown_msg, "Watch").await {
-        log::trace!("Watcher stopped due to: {e}");
+        log::trace!("Watcher stopped due to: {e:?}");
     }
 }
 
@@ -125,11 +125,11 @@ impl Watched {
             Write(f) => Some(Self::Write(f)),
             Rescan => Some(Self::Rescan),
             Error(e, Some(p)) => {
-                log::error!("Watcher error watching {p:?}: {e}");
+                log::error!("Watcher error watching {p:?}: {e:?}");
                 None
             }
             Error(e, None) => {
-                log::error!("Watcher error: {e}");
+                log::error!("Watcher error: {e:?}");
                 None
             }
         }
