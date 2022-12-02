@@ -84,8 +84,8 @@ where
             match interrupt.recv().await {
                 Ok(Msg::ShutDown) => break,
                 Ok(msg) if cond(&msg) => {
-                    if let Err(_) = tx.send(()) {
-                        log::trace!("{to} could not send {msg:?}");
+                    if let Err(e) = tx.send(()) {
+                        log::trace!("{to} could not send {msg:?} due to: {e:?}");
                     }
                     return;
                 }
