@@ -20,7 +20,6 @@ struct ExeMeta {
     name: String,
     version: String,
     get_exe_archive_url: fn(version: &str, target_os: &str, target_arch: &str) -> Result<String>,
-    // get_path_to_exe: Option<fn(target_os: &str) -> Vec<String>>,
     get_exe_name: fn(target_os: &str) -> String,
 }
 
@@ -74,7 +73,6 @@ impl ExeMeta {
     }
 
     fn extract_archive(&self, data: &Bytes) -> Result<()> {
-        // let (target_os, _) = os_arch()?;
         let name = self.get_name();
 
         let url = self.get_download_url();
@@ -103,43 +101,6 @@ impl ExeMeta {
             &decompress::ExtractOpts { strip: 1 },
         )?;
 
-        // let get_path_to_exe = &self.get_path_to_exe;
-
-        // match get_path_to_exe {
-        //     Some(get_path_to_exe) => {
-        //         let executables = get_path_to_exe(target_os);
-
-        //         for e in executables {
-        //             let source_path = dest_dir.join(&e);
-
-        //             let file_name = source_path.as_path().file_name().unwrap();
-        //             let dest_path = dest_dir.join(&file_name);
-
-        //             println!("paaath {:?}", source_path);
-        //             println!("dest_dir {:?}", dest_dir);
-
-        //             if !source_path.exists() {
-        //                 bail!(
-        //                     "Did not find executable {} in the extracted archive at {}",
-        //                     e,
-        //                     dest_dir.to_str().unwrap()
-        //                 );
-        //             }
-
-        //             // If file already exists, do not move it, it's already in the root.
-        //             if dest_path.as_path().exists() {
-        //                 continue;
-        //             }
-
-        //             println!("file {:?}", &source_path);
-        //             println!("move to {:?}", &dest_dir);
-
-        //             fs::copy(&source_path, dest_path)?;
-        //             fs::remove_file(source_path)?;
-        //         }
-        //     }
-        //     None => {}
-        // }
         // Rename the root executable directory
         fs::remove_file(&temp_file_path)?;
 
@@ -224,7 +185,6 @@ fn get_executable(app: Exe) -> Result<ExeMeta> {
                 let url = format!("https://github.com/cargo-generate/cargo-generate/releases/download/v{version}/cargo-generate-v{version}-{target}.tar.gz");
                 Ok(url)
             },
-            // get_path_to_exe: None,
             get_exe_name: |target_os| match target_os {
                 "windows" => "cargo-generate.exe".to_string(),
                 _ => "cargo-generate".to_string(),
@@ -242,19 +202,6 @@ fn get_executable(app: Exe) -> Result<ExeMeta> {
                 };
                 Ok(url)
             },
-            // get_path_to_exe: Some(|target_os| match target_os {
-            //     "windows" => vec![
-            //         "sass.bat".to_string(),
-            //         "src/dart.exe".to_string(),
-            //         "src/sass.snapshot".to_string(),
-            //     ],
-            //     "macos" => vec![
-            //         "sass".to_string(),
-            //         "src/dart".to_string(),
-            //         "src/sass.snapshot".to_string(),
-            //     ],
-            //     _ => vec!["sass".to_string()],
-            // }),
             get_exe_name: |target_os| match target_os {
                 "windows" => "sass.bat".to_string(),
                 _ => "sass".to_string(),
@@ -274,7 +221,6 @@ fn get_executable(app: Exe) -> Result<ExeMeta> {
                 let url = format!("https://github.com/WebAssembly/binaryen/releases/download/{version}/binaryen-{version}-{target}.tar.gz");
                 Ok(url)
             },
-            // get_path_to_exe: None,
             get_exe_name: |target_os| match target_os {
                 "windows" => "bin/wasm-opt.exe".to_string(),
                 _ => "bin/wasm-opt".to_string(),
