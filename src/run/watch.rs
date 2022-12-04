@@ -1,3 +1,4 @@
+use crate::ext::anyhow::{Context, Result};
 use crate::{
     fs::remove_nested,
     logger::GRAY,
@@ -6,7 +7,6 @@ use crate::{
     util::{SenderAdditions, StrAdditions},
     Config, Msg, MSG_BUS,
 };
-use anyhow_ext::{Context, Result};
 use notify::{DebouncedEvent, RecursiveMode, Watcher};
 use std::{fmt::Display, path::PathBuf, time::Duration};
 use tokio::task::JoinHandle;

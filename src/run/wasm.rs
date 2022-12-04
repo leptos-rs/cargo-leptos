@@ -1,10 +1,10 @@
+use crate::ext::anyhow::{anyhow, bail, Context, Result};
 use crate::{
     fs,
     sync::{run_interruptible, src_or_style_change, wait_for},
     util::os_arch,
     Config, INSTALL_CACHE,
 };
-use anyhow_ext::{anyhow, bail, Context, Result};
 use std::path::{Path, PathBuf};
 use tokio::process::Command;
 use wasm_bindgen_cli_support::Bindgen;

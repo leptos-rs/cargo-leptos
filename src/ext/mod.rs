@@ -1,3 +1,4 @@
+pub mod anyhow;
 pub mod fs;
 pub mod path;
 pub mod sync;

@@ -1,5 +1,5 @@
+use crate::ext::anyhow::{anyhow, bail, ensure, Context, Result};
 use crate::{ext::fs, logger::GRAY, Cli, Commands, Opts};
-use anyhow_ext::{anyhow, bail, ensure, Context, Result};
 use cargo_metadata::{MetadataCommand, Package as CargoPackage};
 use regex::Regex;
 use serde::Deserialize;

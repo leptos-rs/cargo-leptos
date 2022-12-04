@@ -1,6 +1,6 @@
 use super::watch::Watched;
+use crate::ext::anyhow::{Context, Result};
 use crate::{fs, logger::GRAY, path::PathExt, util::StrAdditions, Config, Msg, MSG_BUS};
-use anyhow_ext::{Context, Result};
 use std::path::PathBuf;
 use tokio::task::JoinHandle;
 

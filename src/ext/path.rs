@@ -1,4 +1,4 @@
-use anyhow_ext::{bail, ensure, Context, Result};
+use crate::ext::anyhow::{bail, ensure, Context, Result};
 use std::path::{Path, PathBuf};
 
 pub trait PathExt {

@@ -1,12 +1,12 @@
 use std::path::PathBuf;
 
+use crate::ext::anyhow::{anyhow, bail, Context, Result};
 use crate::{
     ext::path::PathExt,
     logger::BOLD,
     sync::{run_interruptible, shutdown_msg},
     Config,
 };
-use anyhow_ext::{anyhow, bail, Context, Result};
 use tokio::process::Command;
 
 pub async fn run(config: &Config) -> Result<()> {

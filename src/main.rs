@@ -5,7 +5,7 @@ mod run;
 
 use ext::{fs, path, sync, util};
 
-use anyhow_ext::{Context, Result};
+use crate::ext::anyhow::{Context, Result};
 use binary_install::Cache;
 use clap::{Parser, Subcommand, ValueEnum};
 use config::Config;

@@ -1,7 +1,7 @@
 use std::{net::SocketAddr, time::Duration};
 
+use crate::ext::anyhow::{bail, Result};
 use crate::run::watch::Watched;
-use anyhow_ext::{bail, Result};
 use tokio::{
     net::TcpStream,
     process::Child,

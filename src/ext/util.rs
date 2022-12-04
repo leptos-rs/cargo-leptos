@@ -1,5 +1,5 @@
+use crate::ext::anyhow::{bail, Context, Result};
 use crate::Msg;
-use anyhow_ext::{bail, Context, Result};
 use cargo_metadata::{Artifact, Message};
 use serde::Deserialize;
 use std::{borrow::Cow, path::PathBuf, process::Stdio};

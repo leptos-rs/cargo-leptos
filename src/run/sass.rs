@@ -1,5 +1,5 @@
+use crate::ext::anyhow::{anyhow, bail, Context, Result};
 use crate::{fs, util::os_arch, Config, INSTALL_CACHE};
-use anyhow_ext::{anyhow, bail, Context, Result};
 use lightningcss::{
     stylesheet::{MinifyOptions, ParserOptions, PrinterOptions, StyleSheet},
     targets::Browsers,

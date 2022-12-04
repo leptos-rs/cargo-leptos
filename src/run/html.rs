@@ -1,5 +1,5 @@
+use crate::ext::anyhow::{ensure, Context, Result};
 use crate::{fs, path::PathExt, Config};
-use anyhow_ext::{ensure, Context, Result};
 use regex::Regex;
 use std::path::PathBuf;
 

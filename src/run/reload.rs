@@ -1,7 +1,7 @@
+use crate::ext::anyhow::{bail, Result};
 use crate::logger::{BOLD, GRAY};
 use crate::sync::{oneshot_when, shutdown_msg, wait_for_localhost};
 use crate::{Config, Msg, MSG_BUS};
-use anyhow_ext::{bail, Result};
 use axum::{
     extract::ws::{Message, WebSocket, WebSocketUpgrade},
     response::IntoResponse,

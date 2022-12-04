@@ -63,14 +63,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "216261ddc8289130e551ddcd5ce8a064710c0d064a4d2895c67151c92b5443f6"
 
 [[package]]
-name = "anyhow_ext"
-version = "0.2.0"
-source = "git+https://github.com/gensmusic/anyhow_ext.git#31f563443d50660992aff175000b2c6e05c65ff7"
-dependencies = [
- "anyhow",
-]
-
-[[package]]
 name = "arrayref"
 version = "0.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -341,7 +333,7 @@ name = "cargo-leptos"
 version = "0.0.7"
 dependencies = [
  "ansi_term",
- "anyhow_ext",
+ "anyhow",
  "axum",
  "binary-install",
  "cargo_metadata",

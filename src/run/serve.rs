@@ -1,9 +1,9 @@
+use crate::ext::anyhow::{bail, Result};
 use crate::{
     logger::BOLD,
     sync::{oneshot_when, shutdown_msg},
     Config,
 };
-use anyhow_ext::{bail, Result};
 use axum::{http::StatusCode, response::IntoResponse, routing::get_service, Router};
 use std::{io, net::SocketAddr};
 use tokio::{net::TcpStream, task::JoinHandle};
