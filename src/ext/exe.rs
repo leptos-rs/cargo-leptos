@@ -1,4 +1,5 @@
 use crate::ext::anyhow::{bail, Result};
+use anyhow::Context;
 use axum::body::Bytes;
 use decompress::decompressors;
 use regex::Regex;
@@ -86,7 +87,9 @@ impl ExeMeta {
         let temp_file_path = CACHE_DIR.join(format!("tmp-{}.{}", name, ext));
         let dest_dir = &self.get_exe_dir_path();
 
-        let mut temp_file = std::fs::File::create(&temp_file_path)?;
+        let mut temp_file = fs::File::create(&temp_file_path)
+            .context(format!("Could not create file {temp_file_path:?}"))?;
+
         let mut content = Cursor::new(data);
         std::io::copy(&mut content, &mut temp_file)?;
 
@@ -102,7 +105,8 @@ impl ExeMeta {
         )?;
 
         // Rename the root executable directory
-        fs::remove_file(&temp_file_path)?;
+        fs::remove_file(&temp_file_path)
+            .context(format!("Could not remove file {temp_file_path:?}"))?;
 
         Ok(())
     }
@@ -161,7 +165,7 @@ fn get_cache_dir(name: &str) -> Result<PathBuf> {
     let cache_dir = os_cache_dir.join(name);
 
     if !cache_dir.exists() {
-        fs::create_dir(&cache_dir)?;
+        std::fs::create_dir(&cache_dir).context(format!("Could not create dir {cache_dir:?}"))?;
     }
 
     Ok(cache_dir)
