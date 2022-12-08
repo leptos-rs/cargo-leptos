@@ -20,8 +20,6 @@ flexi_logger = "0.24.1"
 lightningcss = { version = "1.0.0-alpha.36", features = ["browserslist"] }
 tokio = { version = "1", default-features = false, features = ["full"] }
 axum = { version = "0.5", features = ["ws"] }
-tower = { version = "0.4", features = ["util"] }
-tower-http = { version = "0.3", features = ["fs"] }
 # not using notify 5.0 because it uses Crossbeam which has an issue with tokio
 notify = "4.0"
 lazy_static = "1.4"

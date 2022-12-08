@@ -10,7 +10,7 @@ use clap::{Parser, Subcommand, ValueEnum};
 use config::Config;
 use ext::path::PathBufExt;
 use ext::sync::{send_reload, src_or_style_change, wait_for, Msg, MSG_BUS, SHUTDOWN};
-use run::{assets, cargo, end2end, new, reload, sass, serve, wasm, watch, Html};
+use run::{assets, cargo, end2end, new, reload, sass, wasm, watch};
 use std::{env, path::PathBuf};
 use tokio::signal;
 
@@ -27,10 +27,6 @@ pub struct Opts {
     /// Build artifacts in release mode, with optimizations.
     #[arg(short, long)]
     release: bool,
-
-    /// Build for client side rendering instead of the default hydrate mode. Useful during development due to faster compile times.
-    #[arg(long)]
-    csr: bool,
 
     /// Verbosity (none: info, errors & warnings, -v: verbose, --vv: very verbose).
     #[arg(short, action = clap::ArgAction::Count)]
@@ -56,7 +52,7 @@ pub struct Cli {
 enum Commands {
     /// Output toml that needs to be added to the Cargo.toml file.
     Config,
-    /// Compile the project. Defaults to hydrate mode.
+    /// Build the server (feature ssr) and the client (wasm with feature hydrate).
     Build(Opts),
     /// Run the cargo tests for app, client and server.
     Test(Opts),
@@ -64,7 +60,7 @@ enum Commands {
     EndToEnd(Opts),
     /// Serve. Defaults to hydrate mode.
     Serve(Opts),
-    /// Serve and automatically reload when files change. Defaults to hydrate mode.
+    /// Serve and automatically reload when files change.
     Watch(Opts),
     /// WIP: Start wizard for creating a new project (using cargo-generate). Ask at Leptos discord before using.
     New(new::NewCommand),
@@ -122,11 +118,8 @@ async fn main() -> Result<()> {
 
 async fn e2e_test(config: &Config) -> Result<()> {
     build(config, true).await.dot()?;
-    let handle = if config.cli.csr {
-        serve::spawn(&config).await.dot()?
-    } else {
-        cargo::spawn_run(&config).await
-    };
+    let handle = cargo::spawn_run(&config, false).await;
+
     end2end::run(config).await.dot()?;
     MSG_BUS.send(Msg::ShutDown).dot()?;
     handle.await.dot()?;
@@ -141,33 +134,19 @@ async fn build(config: &Config, copy_assets: bool) -> Result<()> {
     }
     build_client(&config).await.dot()?;
 
-    if !config.cli.csr {
-        cargo::build(&config, false).await.dot()?;
-    }
+    cargo::build(&config, false).await.dot()?;
     Ok(())
 }
 async fn build_client(config: &Config) -> Result<()> {
     sass::run(&config).await.dot()?;
 
-    let html = Html::read(&config.leptos.index_file).await.dot()?;
-
-    if config.cli.csr {
-        wasm::build(&config).await.dot()?;
-        html.generate_html(&config).await.dot()?;
-    } else {
-        wasm::build(&config).await.dot()?;
-        html.generate_rust(&config).await.dot()?;
-    }
+    wasm::build(&config).await.dot()?;
     Ok(())
 }
 
 async fn serve(config: &Config) -> Result<()> {
     build(&config, true).await.dot()?;
-    if config.cli.csr {
-        serve::spawn(&config).await?.await.dot()
-    } else {
-        cargo::run(&config).await
-    }
+    cargo::run(&config, false).await
 }
 
 async fn watch(config: &Config) -> Result<()> {
@@ -176,9 +155,6 @@ async fn watch(config: &Config) -> Result<()> {
     if let Some(assets_dir) = &config.leptos.assets_dir {
         let _ = assets::spawn(assets_dir).await.dot()?;
     }
-    if config.cli.csr {
-        serve::spawn(&config).await?;
-    }
 
     reload::spawn(&config).await?;
 
@@ -186,11 +162,7 @@ async fn watch(config: &Config) -> Result<()> {
         match build(config, false).await {
             Ok(_) => {
                 send_reload().await;
-                if config.cli.csr {
-                    wait_for(src_or_style_change).await;
-                } else {
-                    cargo::run(&config).await.dot()?;
-                }
+                cargo::run(&config, true).await.dot()?;
             }
             Err(e) => {
                 log::warn!("Leptos rebuild stopped due to error: {e:?}");

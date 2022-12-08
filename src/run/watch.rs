@@ -41,10 +41,8 @@ pub async fn spawn(config: &Config) -> Result<JoinHandle<()>> {
         )
     );
 
-    let exclude = vec![PathBuf::from(&config.leptos.gen_file).to_canonicalized()?];
-
     Ok(tokio::spawn(async move {
-        run(&paths, exclude, assets_dir).await
+        run(&paths, vec![], assets_dir).await
     }))
 }
 

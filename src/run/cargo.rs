@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::ext::anyhow::{anyhow, Context, Result};
 use crate::{
     logger::GRAY,
@@ -29,28 +31,34 @@ pub async fn build(config: &Config, lib: bool) -> Result<()> {
     Ok(())
 }
 
-pub async fn spawn_run(config: &Config) -> JoinHandle<()> {
+pub async fn spawn_run(config: &Config, watch: bool) -> JoinHandle<()> {
     let config = config.clone();
     tokio::spawn(async move {
-        if let Err(e) = self::run(&config).await {
+        if let Err(e) = self::run(&config, watch).await {
             log::error!("Cargo error: {e}")
         }
     })
 }
 
-pub async fn run(config: &Config) -> Result<()> {
-    cmd("run", config, false).await.dot()
+pub async fn run(config: &Config, watch: bool) -> Result<()> {
+    cmd("run", config, false, watch).await.dot()
 }
 
 pub async fn test(config: &Config) -> Result<()> {
-    cmd("test", config, false).await.dot()
+    cmd("test", config, false, false).await.dot()
 }
 
-async fn cmd(command: &str, config: &Config, lib: bool) -> Result<()> {
+async fn cmd(command: &str, config: &Config, lib: bool, watch: bool) -> Result<()> {
     let args = args(command, config, lib);
+
+    let mut envs: HashMap<String, String> = HashMap::new();
+
+    let rust_env = watch.then(|| "dev").unwrap_or("prod").to_string();
+    envs.insert("RUST_ENV".to_string(), rust_env);
 
     let process = Command::new("cargo")
         .args(&args)
+        .envs(envs)
         .spawn()
         .context("Could not spawn command")?;
     run_interruptible(src_or_style_change, "Cargo", process)
@@ -64,19 +72,14 @@ async fn cmd(command: &str, config: &Config, lib: bool) -> Result<()> {
 }
 
 fn args<'a>(command: &'a str, config: &Config, lib: bool) -> Vec<&'a str> {
-    let features = match (lib, config.cli.csr, config.watch) {
-        (false, _, true) => "--features=ssr,leptos_autoreload",
-        (false, _, false) => "--features=ssr",
-        (true, false, true) => "--features=hydrate,leptos_autoreload",
-        (true, false, false) => "--features=hydrate",
-        (true, true, true) => "--features=csr,leptos_autoreload",
-        (true, true, false) => "--features=csr",
-    };
-    let mut args = vec![command, "--no-default-features", features];
+    let mut args = vec![command, "--no-default-features"];
 
     if lib {
+        args.push("--features=hydrate");
         args.push("--lib");
         args.push("--target=wasm32-unknown-unknown");
+    } else {
+        args.push("--features=ssr");
     }
 
     config.cli.release.then(|| args.push("--release"));

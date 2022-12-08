@@ -11,17 +11,17 @@ Build tool for [Leptos](https://crates.io/crates/leptos):
 
 ## Features
 
+- Build server and client for hydration (client-side rendering mode not supported).
 - SCSS compilation using [dart-sass](https://sass-lang.com/dart-sass).
 - CSS transformation and minification using [Lightning CSS](https://lightningcss.dev). See docs for full details.
 - Builds server and client (wasm) binaries using Cargo.
 - Generates JS - Wasm bindings with [wasm-bindgen](https://crates.io/crates/wasm-bindgen)
 - Optimises the wasm with _wasm-opt_ from [Binaryen](https://github.com/WebAssembly/binaryen)
 - Generation of rust code for integrating with a server of choice.
-- `--csr` mode, building only the client side rendered wasm, for a fast development experience.
 - Standard mode for building full server and client.
-- `watch` command for automatic rebuilds with browser autoreload. Works both for `--csr` and standard mode.
-- `test` command for running tests. Note that this runs `cargo test` for the three different modes (`csr`, `hydrate` and `ssr`).
-- `build` command for building (normal mode or `--csr`).
+- `watch` command for automatic rebuilds with browser autoreload.
+- `test` command for running tests. Note that this runs `cargo test` for the two different modes (`hydrate` and `ssr`).
+- `build` build the server and client.
 - `end2end` command for building, running the server and calling a bash shell hook. The hook would typically launch Playwright or similar.
 - `new` command for creating a new project based on templates, using [cargo-generate](https://cargo-generate.github.io/cargo-generate/index.html). WIP: You'll need to ask on the Leptos [discord](https://discord.gg/YdRAhS7eQB) for the url of a template.
 

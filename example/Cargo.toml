@@ -22,7 +22,7 @@ gloo-net = { version = "0.2", features = ["http"] }
 log = "0.4"
 cfg-if = "1.0"
 
-# dependecies for client (enable when csr or hydrate set)
+# dependecies for client (enable hydrate set)
 wasm-bindgen = { version = "0.2", optional = true }
 console_log = { version = "0.2", optional = true }
 console_error_panic_hook = { version = "0.1", optional = true }
@@ -42,20 +42,11 @@ lto = true
 opt-level = 'z'
 
 [features]
-leptos_autoreload = []
-default = ["csr"]
+default = ["ssr"]
 hydrate = [
   "leptos/hydrate",
   "leptos_meta/hydrate",
   "leptos_router/hydrate",
-  "dep:wasm-bindgen",
-  "dep:console_log",
-  "dep:console_error_panic_hook",
-]
-csr = [
-  "leptos/csr",
-  "leptos_meta/csr",
-  "leptos_router/csr",
   "dep:wasm-bindgen",
   "dep:console_log",
   "dep:console_error_panic_hook",
@@ -74,18 +65,12 @@ ssr = [
 ]
 
 [package.metadata.leptos]
-# Path, relative to root, to generat rust code to
-gen_file = "src/server/generated.rs"
 # Path to the source index.html file
 index_file = "index.html"
 # [Optional] Files in the asset_dir will be copied to the target/site directory
 assets_dir = "assets"
 # [Optional] Command to use when running end2end tests. It will run in the end2end dir.
 end2end_test_cmd = "npx playwright test"
-# On which port to serve the client side rendered site (when using --csr option)
-csr_port = 3000
-# The port to use for automatic reload monitoring
-reload_port = 3001
 
 [package.metadata.leptos.style]
 # Main style file. If scss or sass then it will be compiled to css.

@@ -103,15 +103,11 @@ struct Metadata {
 pub struct LeptosManifest {
     /// source index file
     pub index_file: String,
-    /// where to generate rust code
-    pub gen_file: String,
     /// assets dir. content will be copied to the target/site dir
     pub assets_dir: Option<String>,
     /// command for launching end-2-end tests
     pub end2end_test_cmd: Option<String>,
-    /// on which port to serve the client side rendered site
-    pub csr_port: u16,
-    /// the port to use for automatic reload monitoring
+    /// the port to use for automatic reload monitoring. TODO should use port from .leptos.kdl
     pub reload_port: u16,
     pub style: Style,
 }

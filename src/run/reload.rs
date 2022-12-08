@@ -12,7 +12,8 @@ use std::net::SocketAddr;
 use tokio::{net::TcpStream, task::JoinHandle};
 
 pub async fn spawn(config: &Config) -> Result<JoinHandle<()>> {
-    let port = config.leptos.csr_port;
+    // TODO use port from leptos server integrations (.leptos.kdl)
+    let port = 3000;
     let route = Router::new().route("/autoreload", get(move |ws| websocket_handler(ws, port)));
 
     let addr = SocketAddr::from(([127, 0, 0, 1], config.leptos.reload_port));
