@@ -107,8 +107,6 @@ pub struct LeptosManifest {
     pub assets_dir: Option<String>,
     /// command for launching end-2-end tests
     pub end2end_test_cmd: Option<String>,
-    /// the port to use for automatic reload monitoring. TODO should use port from .leptos.kdl
-    pub reload_port: u16,
     pub style: Style,
 }
 

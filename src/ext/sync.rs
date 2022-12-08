@@ -29,6 +29,8 @@ pub enum Msg {
     StyleChanged,
     /// messages sent to reload server (forwarded to browser)
     Reload(String),
+    /// the .leptos.kdl changed (it is generated when the server is compiled)
+    RunConfigChanged,
 }
 
 pub async fn send_reload() {
@@ -66,6 +68,13 @@ pub fn src_or_style_change(msg: &Msg) -> bool {
 pub fn shutdown_msg(msg: &Msg) -> bool {
     match msg {
         Msg::ShutDown => true,
+        _ => false,
+    }
+}
+
+pub fn runconfig_changed_or_shutdown(msg: &Msg) -> bool {
+    match msg {
+        Msg::ShutDown | Msg::RunConfigChanged => true,
         _ => false,
     }
 }
@@ -127,7 +136,7 @@ pub async fn wait_for_localhost(port: u16) -> bool {
 
     for _ in 0..20 {
         if let Ok(_) = TcpStream::connect(&addr).await {
-            log::trace!("Autoreload server port {port} open");
+            log::debug!("Autoreload server port {port} open");
             return true;
         }
         sleep(duration).await;

@@ -5,8 +5,6 @@ index_file = "index.html"
 assets_dir = "assets"
 # [Optional] Command to use when running end2end tests. It will run in the end2end dir.
 end2end_test_cmd = "npx playwright test"
-# The port to use for automatic reload monitoring
-reload_port = 3001
 
 [package.metadata.leptos.style]
 # Main style file. If scss or sass then it will be compiled to css.

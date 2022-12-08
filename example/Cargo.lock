@@ -895,9 +895,9 @@ dependencies = [
 
 [[package]]
 name = "ipnet"
-version = "2.5.1"
+version = "2.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f88c5561171189e69df9d98bcf18fd5f9558300f7ea7b801eb8a0fd748bd8745"
+checksum = "ec947b7a4ce12e3b87e353abae7ce124d025b6c7d6c5aea5cc0bcf92e9510ded"
 
 [[package]]
 name = "itertools"
@@ -947,7 +947,7 @@ checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 [[package]]
 name = "leptos"
 version = "0.0.20"
-source = "git+https://github.com/gbj/leptos#9d950b97ff73caad58a8079c45e6e844d22c882c"
+source = "git+https://github.com/gbj/leptos#3d10bbb0c69afcb7982485ba2a445364839080b2"
 dependencies = [
  "leptos_config",
  "leptos_core",
@@ -961,7 +961,7 @@ dependencies = [
 [[package]]
 name = "leptos_actix"
 version = "0.0.2"
-source = "git+https://github.com/gbj/leptos#9d950b97ff73caad58a8079c45e6e844d22c882c"
+source = "git+https://github.com/gbj/leptos#3d10bbb0c69afcb7982485ba2a445364839080b2"
 dependencies = [
  "actix-web",
  "futures",
@@ -973,7 +973,7 @@ dependencies = [
 [[package]]
 name = "leptos_config"
 version = "0.0.20"
-source = "git+https://github.com/gbj/leptos#9d950b97ff73caad58a8079c45e6e844d22c882c"
+source = "git+https://github.com/gbj/leptos#3d10bbb0c69afcb7982485ba2a445364839080b2"
 dependencies = [
  "typed-builder 0.11.0",
 ]
@@ -981,7 +981,7 @@ dependencies = [
 [[package]]
 name = "leptos_core"
 version = "0.0.20"
-source = "git+https://github.com/gbj/leptos#9d950b97ff73caad58a8079c45e6e844d22c882c"
+source = "git+https://github.com/gbj/leptos#3d10bbb0c69afcb7982485ba2a445364839080b2"
 dependencies = [
  "leptos_dom",
  "leptos_macro",
@@ -994,7 +994,7 @@ dependencies = [
 [[package]]
 name = "leptos_dom"
 version = "0.0.20"
-source = "git+https://github.com/gbj/leptos#9d950b97ff73caad58a8079c45e6e844d22c882c"
+source = "git+https://github.com/gbj/leptos#3d10bbb0c69afcb7982485ba2a445364839080b2"
 dependencies = [
  "cfg-if",
  "futures",
@@ -1012,7 +1012,7 @@ dependencies = [
 [[package]]
 name = "leptos_macro"
 version = "0.0.20"
-source = "git+https://github.com/gbj/leptos#9d950b97ff73caad58a8079c45e6e844d22c882c"
+source = "git+https://github.com/gbj/leptos#3d10bbb0c69afcb7982485ba2a445364839080b2"
 dependencies = [
  "cfg-if",
  "lazy_static",
@@ -1031,7 +1031,7 @@ dependencies = [
 [[package]]
 name = "leptos_meta"
 version = "0.0.5"
-source = "git+https://github.com/gbj/leptos#9d950b97ff73caad58a8079c45e6e844d22c882c"
+source = "git+https://github.com/gbj/leptos#3d10bbb0c69afcb7982485ba2a445364839080b2"
 dependencies = [
  "cfg-if",
  "leptos",
@@ -1042,7 +1042,7 @@ dependencies = [
 [[package]]
 name = "leptos_reactive"
 version = "0.0.20"
-source = "git+https://github.com/gbj/leptos#9d950b97ff73caad58a8079c45e6e844d22c882c"
+source = "git+https://github.com/gbj/leptos#3d10bbb0c69afcb7982485ba2a445364839080b2"
 dependencies = [
  "base64",
  "cfg-if",
@@ -1065,7 +1065,7 @@ dependencies = [
 [[package]]
 name = "leptos_router"
 version = "0.0.6"
-source = "git+https://github.com/gbj/leptos#9d950b97ff73caad58a8079c45e6e844d22c882c"
+source = "git+https://github.com/gbj/leptos#3d10bbb0c69afcb7982485ba2a445364839080b2"
 dependencies = [
  "bincode",
  "cfg-if",
@@ -1092,7 +1092,7 @@ dependencies = [
 [[package]]
 name = "leptos_server"
 version = "0.0.20"
-source = "git+https://github.com/gbj/leptos#9d950b97ff73caad58a8079c45e6e844d22c882c"
+source = "git+https://github.com/gbj/leptos#3d10bbb0c69afcb7982485ba2a445364839080b2"
 dependencies = [
  "ciborium",
  "form_urlencoded",

@@ -40,7 +40,6 @@ pub async fn run() -> std::io::Result<()> {
 
     log::info!("serving at {addr}");
 
-    log::info!("CWD: {:?}", std::env::current_dir());
     HttpServer::new(move || {
         let render_options: RenderOptions = RenderOptions::builder()
             .pkg_path("/pkg/app")

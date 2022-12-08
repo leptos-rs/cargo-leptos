@@ -80,12 +80,12 @@ pub fn render_app_to_stream(
                 RustEnv::DEV => format!(
                     r#"
                         <script crossorigin="">(function () {{
-                            var ws = new WebSocket('ws://{socket_ip}:{reload_port}/autoreload');
+                            var ws = new WebSocket('ws://{socket_ip}:{reload_port}/live_reload');
                             ws.onmessage = (ev) => {{
                                 console.log(`Reload message: `);
                                 if (ev.data === 'reload') window.location.reload();
                             }};
-                            ws.onclose = () => console.warn('Autoreload stopped. Manual reload necessary.');
+                            ws.onclose = () => console.warn('Live-reload stopped. Manual reload necessary.');
                         }})()
                         </script>
                     "#

@@ -1,90 +1,94 @@
-use crate::ext::anyhow::{bail, Result};
-use crate::logger::{BOLD, GRAY};
-use crate::sync::{oneshot_when, shutdown_msg, wait_for_localhost};
-use crate::{Config, Msg, MSG_BUS};
+use std::net::SocketAddr;
+
+use crate::ext::sync::{runconfig_changed_or_shutdown, wait_for, SHUTDOWN};
+use crate::ext::util::SenderAdditions;
+use crate::logger::GRAY;
+use crate::run::run_config;
+use crate::sync::{oneshot_when, wait_for_localhost};
+use crate::{Msg, MSG_BUS};
 use axum::{
     extract::ws::{Message, WebSocket, WebSocketUpgrade},
     response::IntoResponse,
     routing::get,
     Router,
 };
-use std::net::SocketAddr;
 use tokio::{net::TcpStream, task::JoinHandle};
 
-pub async fn spawn(config: &Config) -> Result<JoinHandle<()>> {
-    // TODO use port from leptos server integrations (.leptos.kdl)
-    let port = 3000;
-    let route = Router::new().route("/autoreload", get(move |ws| websocket_handler(ws, port)));
+pub async fn spawn() -> JoinHandle<()> {
+    tokio::spawn(async {
+        wait_for(runconfig_changed_or_shutdown).await;
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], config.leptos.reload_port));
+        while !*SHUTDOWN.read().await {
+            let shutdown_rx = oneshot_when(runconfig_changed_or_shutdown, "LiveReload");
 
-    if let Ok(_) = TcpStream::connect(&addr).await {
-        bail!(
-            "Server port {} already in use. You can set which port to use with {} in {} section {}",
-            config.leptos.reload_port,
-            BOLD.paint("reload_port"),
-            BOLD.paint("Cargo.toml"),
-            BOLD.paint("[package.metadata.leptos]"),
-        );
-    }
+            let port = run_config::RUN_CONFIG.read().await.reload_port;
+            let addr = SocketAddr::from(([127, 0, 0, 1], port));
 
-    let shutdown_rx = oneshot_when(shutdown_msg, "Autoreload");
+            if let Ok(_) = TcpStream::connect(&addr).await {
+                log::error!(
+                    "LiveReload TCP port {addr} already in use. You can set the port in the server integration's RenderOptions reload_port"
+                );
+                MSG_BUS.send_logged("LiveReload", Msg::ShutDown);
+                return;
+            }
+            let route = Router::new().route("/live_reload", get(move |ws| websocket_handler(ws)));
 
-    log::debug!("Autoreload server started {}", GRAY.paint(addr.to_string()));
+            log::debug!("LiveReload server started {}", GRAY.paint(addr.to_string()));
 
-    Ok(tokio::spawn(async move {
-        match axum::Server::bind(&addr)
-            .serve(route.into_make_service())
-            .with_graceful_shutdown(async move { drop(shutdown_rx.await.ok()) })
-            .await
-        {
-            Ok(_) => log::debug!("Autoreload server stopped"),
-            Err(e) => log::error!("Autoreload {e}"),
+            match axum::Server::bind(&addr)
+                .serve(route.into_make_service())
+                .with_graceful_shutdown(async move { drop(shutdown_rx.await.ok()) })
+                .await
+            {
+                Ok(_) => log::debug!("LiveReload server stopped"),
+                Err(e) => log::error!("LiveReload {e}"),
+            }
         }
-    }))
+    })
 }
 
-async fn websocket_handler(ws: WebSocketUpgrade, port: u16) -> impl IntoResponse {
-    ws.on_upgrade(move |stream| websocket(stream, port))
+async fn websocket_handler(ws: WebSocketUpgrade) -> impl IntoResponse {
+    ws.on_upgrade(move |stream| websocket(stream))
 }
 
-async fn websocket(stream: WebSocket, port: u16) {
+async fn websocket(stream: WebSocket) {
     let mut rx = MSG_BUS.subscribe();
 
-    log::trace!("Autoreload websocket connected");
+    log::trace!("LiveReload websocket connected");
     tokio::spawn(async move {
         loop {
             match rx.recv().await {
                 Ok(Msg::Reload(msg)) => {
+                    let port = run_config::RUN_CONFIG.read().await.server_addr.port();
                     if wait_for_localhost(port).await {
                         send_and_close(stream, &msg).await;
                     } else {
-                        log::warn!(r#"Autoreload could not send "reload" to websocket"#);
+                        log::warn!(r#"LiveReload could not send "reload" to websocket"#);
                     }
                     break;
                 }
                 Err(e) => {
-                    log::debug!("Autoreload recive error {e}");
+                    log::debug!("LiveReload recive error {e}");
                     break;
                 }
                 Ok(Msg::ShutDown) => break,
                 _ => {}
             }
         }
-        log::trace!("Autoreload websocket closed")
+        log::trace!("LiveReload websocket closed")
     });
 }
 
 async fn send_and_close(mut stream: WebSocket, msg: &str) {
     match stream.send(Message::Text(msg.to_string())).await {
         Err(e) => {
-            log::debug!("Autoreload could not send {msg} due to {e}");
+            log::debug!("LiveReload could not send {msg} due to {e}");
         }
         Ok(_) => {
-            log::debug!("Autoreload sent \"{msg}\" to browser");
+            log::debug!("LiveReload sent \"{msg}\" to browser");
         }
     }
     if let Err(e) = stream.close().await {
-        log::error!("Autoreload socket close error {e}");
+        log::error!("LiveReload socket close error {e}");
     }
 }

@@ -10,6 +10,7 @@ pub trait PathExt {
 
     /// removes the src_root from the path and adds the dest_root
     fn rebase(&self, src_root: &PathBuf, dest_root: &PathBuf) -> Result<PathBuf>;
+
     /// As .canonicalize() but returning a contextualized anyhow Result
     fn to_canonicalized(&self) -> Result<PathBuf>;
 }

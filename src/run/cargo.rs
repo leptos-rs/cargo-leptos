@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use crate::ext::anyhow::{anyhow, Context, Result};
+use crate::run::run_config;
 use crate::{
     logger::GRAY,
     sync::{run_interruptible, src_or_style_change},
@@ -41,7 +42,15 @@ pub async fn spawn_run(config: &Config, watch: bool) -> JoinHandle<()> {
 }
 
 pub async fn run(config: &Config, watch: bool) -> Result<()> {
-    cmd("run", config, false, watch).await.dot()
+    if watch {
+        run_config::remove().await;
+        let h = run_config::send_msg_when_created();
+        let r = cmd("run", config, false, watch).await.dot();
+        let _ = h.await;
+        r
+    } else {
+        cmd("run", config, false, watch).await.dot()
+    }
 }
 
 pub async fn test(config: &Config) -> Result<()> {

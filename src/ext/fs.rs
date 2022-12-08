@@ -39,6 +39,7 @@ pub async fn write<P: AsRef<Path>, C: AsRef<[u8]>>(path: P, contents: C) -> Resu
         .context(format!("Could not write to {:?}", path.as_ref()))
 }
 
+#[allow(dead_code)]
 pub async fn write_if_changed<P: AsRef<Path>, C: AsRef<[u8]>>(
     path: P,
     contents: C,

@@ -156,7 +156,7 @@ async fn watch(config: &Config) -> Result<()> {
         let _ = assets::spawn(assets_dir).await.dot()?;
     }
 
-    reload::spawn(&config).await?;
+    reload::spawn().await;
 
     loop {
         match build(config, false).await {
