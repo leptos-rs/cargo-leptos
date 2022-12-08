@@ -6,8 +6,8 @@ if #[cfg(feature = "hydrate")] {
 
   use wasm_bindgen::prelude::wasm_bindgen;
 
-    #[wasm_bindgen(start)]
-    pub fn main() {
+    #[wasm_bindgen]
+    pub fn hydrate() {
       use app::*;
       use leptos::*;
 
