@@ -1,9 +1,9 @@
-use crate::ext::anyhow::{anyhow, bail, Context, Result};
+use crate::ext::anyhow::{Context, Result};
 use clap::Args;
-use std::path::PathBuf;
+
 use tokio::process::Command;
 
-use crate::{util::os_arch, INSTALL_CACHE};
+use crate::ext::exe::{get_exe, Exe};
 
 // A subset of the cargo-generate commands available.
 // See: https://github.com/cargo-generate/cargo-generate/blob/main/src/args.rs
@@ -52,7 +52,10 @@ pub struct NewCommand {
 impl NewCommand {
     pub async fn run(&self) -> Result<()> {
         let args = self.to_args();
-        let exe = cargo_generate_exe()?;
+        let exe = get_exe(Exe::CargoGenerate)
+            .await
+            .context("Try manually installing cargo-generate: https://github.com/cargo-generate/cargo-generate#installation")?;
+
         let mut process = Command::new(exe)
             .arg("generate")
             .args(&args)
@@ -64,7 +67,7 @@ impl NewCommand {
 
     pub fn to_args(&self) -> Vec<String> {
         let mut args = vec![];
-        opt_push(&mut args, "git", &self.git);
+        opt_push(&mut args, "git", &absolute_git_url(&self.git));
         opt_push(&mut args, "branch", &self.branch);
         opt_push(&mut args, "tag", &self.tag);
         opt_push(&mut args, "path", &self.path);
@@ -89,40 +92,16 @@ fn opt_push(args: &mut Vec<String>, name: &str, arg: &Option<String>) {
     }
 }
 
-fn cargo_generate_exe() -> Result<PathBuf> {
-    // manually installed
-    if let Ok(p) = which::which("cargo-generate") {
-        return Ok(p);
-    }
-
-    // cargo-leptos installed
-    let (target_os, target_arch) = os_arch()?;
-
-    let binary = match target_os {
-        "windows" => "cargo-generate.exe",
-        _ => "cargo-generate",
+/// Workaround to support short `new --git leptos-rs/start` command when behind Git proxy.
+/// See https://github.com/cargo-generate/cargo-generate/issues/752.
+fn absolute_git_url(url: &Option<String>) -> Option<String> {
+    let x = match url {
+        Some(url) => match url.as_str() {
+            "leptos-rs/start" => Some("https://github.com/leptos-rs/start".to_string()),
+            _ => Some(url.to_string()),
+        },
+        None => None,
     };
 
-    let version = "0.17.3";
-    let target = match (target_os, target_arch) {
-        ("macos", "aarch64") => "aarch64-apple-darwin",
-        ("linux", "aarch64") => "aarch64-unknown-linux-gnu",
-        ("macos", "x86_64") => "x86_64-apple-darwin",
-        ("windows", "x86_64") => "x86_64-pc-windows-msvc",
-        ("linux", "x86_64") => "x86_64-unknown-linux-gnu",
-        _ => bail!("No cargo-generate tar binary found for {target_os} {target_arch}"),
-    };
-    let url = format!("https://github.com/cargo-generate/cargo-generate/releases/download/v{version}/cargo-generate-v{version}-{target}.tar.gz");
-
-    let name = format!("cargo-generate-v{version}");
-
-    match INSTALL_CACHE.download(true, &name, &[], &url) {
-        Ok(None) => bail!("Unable to download cargo-generate for {target_os} {target_arch}"),
-        Err(e) => {
-            bail!("Unable to download cargo-generate for {target_os} {target_arch} due to: {e}")
-        }
-        Ok(Some(d)) => d
-            .binary(binary)
-            .map_err(|e| anyhow!("Could not find {binary} in downloaded cargo-generate: {e}")),
-    }
+    x.clone()
 }

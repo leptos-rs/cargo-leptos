@@ -1,11 +1,11 @@
-use crate::ext::anyhow::{anyhow, bail, Context, Result};
+use crate::ext::anyhow::{anyhow, Context, Result};
 use crate::{
+    ext::exe::{get_exe, Exe},
     fs,
     sync::{run_interruptible, src_or_style_change, wait_for},
-    util::os_arch,
-    Config, INSTALL_CACHE,
+    Config,
 };
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use tokio::process::Command;
 use wasm_bindgen_cli_support::Bindgen;
 
@@ -74,7 +74,10 @@ async fn run_build(config: &Config) -> Result<()> {
 }
 
 async fn optimize(src: &str, dest: &str) -> Result<()> {
-    let wasm_opt = wasm_opt_exe().dot()?;
+    let wasm_opt = get_exe(Exe::WasmOpt)
+        .await
+        .context("Try manually installing binaryen: https://github.com/WebAssembly/binaryen")?;
+
     let args = [src, "-Os", "-o", dest];
     let process = Command::new(wasm_opt)
         .args(&args)
@@ -85,44 +88,4 @@ async fn optimize(src: &str, dest: &str) -> Result<()> {
         .context(format!("wasm-opt {}", &args.join(" ")))?;
     std::fs::remove_file(&src).dot()?;
     Ok(())
-}
-
-fn wasm_opt_exe() -> Result<PathBuf> {
-    // manually installed sass
-    if let Ok(p) = which::which("wasm-opt") {
-        return Ok(p);
-    }
-
-    // cargo-leptos installed sass
-    let (target_os, target_arch) = os_arch()?;
-
-    let binary = match target_os {
-        "windows" => "bin/wasm-opt.exe",
-        _ => "bin/wasm-opt",
-    };
-
-    let version = "version_111";
-    let target = match (target_os, target_arch) {
-        ("linux", _) => "x86_64-linux",
-        ("windows", _) => "x86_64-windows",
-        ("macos", "aarch64") => "arm64-macos",
-        ("macos", "x86_64") => "x86_64-macos",
-        _ => bail!("No wasm-opt tar binary found for {target_os} {target_arch}"),
-    };
-    let url = format!("https://github.com/WebAssembly/binaryen/releases/download/{version}/binaryen-{version}-{target}.tar.gz");
-
-    let name = format!("wasm-opt-{version}");
-    let binaries = match target_os {
-        "windows" => vec!["bin/wasm-opt.exe", "lib/binaryen.lib"],
-        "macos" => vec!["bin/wasm-opt", "lib/libbinaryen.dylib"],
-        "linux" => vec!["bin/wasm-opt", "lib/libbinaryen.a"],
-        _ => bail!("No wasm-opt binary found for {target_os}"),
-    };
-    match INSTALL_CACHE.download(true, &name, &binaries, &url) {
-        Ok(None) => bail!("Unable to download wasm-opt for {target_os} {target_arch}"),
-        Err(e) => bail!("Unable to download wasm-opt for {target_os} {target_arch} due to: {e}"),
-        Ok(Some(d)) => d
-            .binary(binary)
-            .map_err(|e| anyhow!("Could not find {binary} in downloaded wasm-opt: {e}")),
-    }
 }

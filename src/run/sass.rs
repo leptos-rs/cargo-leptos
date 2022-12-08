@@ -1,5 +1,8 @@
 use crate::ext::anyhow::{anyhow, bail, Context, Result};
-use crate::{fs, util::os_arch, Config, INSTALL_CACHE};
+use crate::{
+    ext::exe::{get_exe, Exe},
+    fs, Config,
+};
 use lightningcss::{
     stylesheet::{MinifyOptions, ParserOptions, PrinterOptions, StyleSheet},
     targets::Browsers,
@@ -42,8 +45,9 @@ async fn compile_sass(scss_file: &str, release: bool) -> Result<PathBuf> {
     let mut args = vec![scss_file, DEST];
     release.then(|| args.push("--no-source-map"));
 
-    let exe = sass_exe().context("Try manually installing sass: https://sass-lang.com/install")?;
-    log::debug!("Sass using executable at: {exe:?}");
+    let exe = get_exe(Exe::Sass)
+        .await
+        .context("Try manually installing sass: https://sass-lang.com/install")?;
 
     let mut cmd = Command::new(exe).args(&args).spawn()?;
 
@@ -80,39 +84,39 @@ async fn process_css(file: &Path, browsers: Option<Browsers>, release: bool) -> 
     Ok(())
 }
 
-fn sass_exe() -> Result<PathBuf> {
-    // manually installed sass
-    if let Ok(p) = which::which("sass") {
-        return Ok(p);
-    }
+// fn sass_exe() -> Result<PathBuf> {
+//     // manually installed sass
+//     if let Ok(p) = which::which("sass") {
+//         return Ok(p);
+//     }
 
-    // cargo-leptos installed sass
-    let (target_os, target_arch) = os_arch()?;
+//     // cargo-leptos installed sass
+//     let (target_os, target_arch) = os_arch()?;
 
-    let binary = match target_os {
-        "windows" => "sass.bat",
-        _ => "sass",
-    };
+//     let binary = match target_os {
+//         "windows" => "sass.bat",
+//         _ => "sass",
+//     };
 
-    let version = "1.56.1";
-    let url = match (target_os, target_arch) {
-        ("windows", "x86_64") => format!("https://github.com/sass/dart-sass/releases/download/{version}/dart-sass-{version}-windows-x64.zip"),
-        ("macos" | "linux", "x86_64") => format!("https://github.com/sass/dart-sass/releases/download/{version}/dart-sass-{version}-{target_os}-x64.tar.gz"),
-        ("macos" | "linux", "aarch64") => format!("https://github.com/sass/dart-sass/releases/download/{version}/dart-sass-{version}-{target_os}-arm64.tar.gz"),
-        _ => bail!("No sass binary found for {target_os} {target_arch}")
-      };
+//     let version = "1.56.1";
+//     let url = match (target_os, target_arch) {
+//         ("windows", "x86_64") => format!("https://github.com/sass/dart-sass/releases/download/{version}/dart-sass-{version}-windows-x64.zip"),
+//         ("macos" | "linux", "x86_64") => format!("https://github.com/sass/dart-sass/releases/download/{version}/dart-sass-{version}-{target_os}-x64.tar.gz"),
+//         ("macos" | "linux", "aarch64") => format!("https://github.com/sass/dart-sass/releases/download/{version}/dart-sass-{version}-{target_os}-arm64.tar.gz"),
+//         _ => bail!("No sass binary found for {target_os} {target_arch}")
+//       };
 
-    let name = format!("sass-{version}");
-    let binaries = match target_os {
-        "windows" => vec![binary, "src/dart.exe", "src/sass.snapshot"],
-        "macos" => vec![binary, "src/dart", "src/sass.snapshot"],
-        _ => vec![binary],
-    };
-    match INSTALL_CACHE.download(true, &name, &binaries, &url) {
-        Ok(None) => bail!("Unable to download sass for {target_os} {target_arch}"),
-        Err(e) => bail!("Unable to download sass for {target_os} {target_arch} due to: {e}"),
-        Ok(Some(d)) => Ok(d
-            .binary(binary)
-            .map_err(|e| anyhow!("Could not find {binary} in downloaded sass: {e}"))?),
-    }
-}
+//     let name = format!("sass-{version}");
+//     let binaries = match target_os {
+//         "windows" => vec![binary, "src/dart.exe", "src/sass.snapshot"],
+//         "macos" => vec![binary, "src/dart", "src/sass.snapshot"],
+//         _ => vec![binary],
+//     };
+//     match INSTALL_CACHE.download(true, &name, &binaries, &url) {
+//         Ok(None) => bail!("Unable to download sass for {target_os} {target_arch}"),
+//         Err(e) => bail!("Unable to download sass for {target_os} {target_arch} due to: {e}"),
+//         Ok(Some(d)) => Ok(d
+//             .binary(binary)
+//             .map_err(|e| anyhow!("Could not find {binary} in downloaded sass: {e}"))?),
+//     }
+// }

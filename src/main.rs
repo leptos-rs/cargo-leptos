@@ -6,7 +6,6 @@ mod run;
 use ext::{fs, path, sync, util};
 
 use crate::ext::anyhow::{Context, Result};
-use binary_install::Cache;
 use clap::{Parser, Subcommand, ValueEnum};
 use config::Config;
 use ext::path::PathBufExt;
@@ -14,10 +13,6 @@ use ext::sync::{send_reload, src_or_style_change, wait_for, Msg, MSG_BUS, SHUTDO
 use run::{assets, cargo, end2end, new, reload, sass, serve, wasm, watch, Html};
 use std::{env, path::PathBuf};
 use tokio::signal;
-
-lazy_static::lazy_static! {
-    pub static ref INSTALL_CACHE: Cache = Cache::new("cargo-leptos").unwrap();
-}
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 pub enum Log {
