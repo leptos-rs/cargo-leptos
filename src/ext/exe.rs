@@ -8,7 +8,7 @@ use std::{fs, io::Cursor, path::PathBuf};
 use super::util::os_arch;
 
 lazy_static::lazy_static! {
-    static ref CACHE_DIR: PathBuf = get_cache_dir(".cargo-leptos").expect("Can not get cache directory");
+    static ref CACHE_DIR: PathBuf = get_cache_dir("cargo-leptos").expect("Can not get cache directory");
 }
 
 pub enum Exe {
@@ -30,13 +30,10 @@ impl ExeMeta {
     }
 
     fn get_name(&self) -> String {
-        let version_hash = seahash::hash(&self.version.as_bytes());
-        format!("{}-{}", &self.name, version_hash)
+        format!("{}-{}", &self.name, &self.version)
     }
 
     /// Returns an absolute path to be used for the binary.
-    ///
-    /// `BINARY_NAME-VERSION_HASH` -> `cargo-generate-2101299161167296450`
     fn get_exe_dir_path(&self) -> PathBuf {
         CACHE_DIR.join(self.get_name())
     }
