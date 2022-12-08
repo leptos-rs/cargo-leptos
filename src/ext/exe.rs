@@ -1,4 +1,7 @@
-use crate::ext::anyhow::{bail, Result};
+use crate::{
+    ext::anyhow::{bail, Result},
+    logger::GRAY,
+};
 use anyhow::Context;
 use axum::body::Bytes;
 use decompress::decompressors;
@@ -66,7 +69,9 @@ impl ExeMeta {
     }
 
     async fn fetch_archive(&self) -> Result<Bytes> {
-        let data = reqwest::get(self.get_download_url()).await?.bytes().await?;
+        let url = self.get_download_url();
+        log::debug!("Install downloading {} {}", self.name, GRAY.paint(&url));
+        let data = reqwest::get(url).await?.bytes().await?;
         Ok(data)
     }
 
@@ -95,11 +100,21 @@ impl ExeMeta {
             decompressors::targz::Targz::build(Some(Regex::new(r".*\.tar\.gz").unwrap())),
         ]);
 
-        extractor.decompress(
-            &temp_file_path,
-            dest_dir,
-            &decompress::ExtractOpts { strip: 1 },
-        )?;
+        log::debug!(
+            "Install decompressing {} {}",
+            self.name,
+            GRAY.paint(temp_file_path.to_string_lossy())
+        );
+
+        extractor
+            .decompress(
+                &temp_file_path,
+                dest_dir,
+                &decompress::ExtractOpts { strip: 1 },
+            )
+            .context(format!(
+                "Could not decompress {temp_file_path:?} to {dest_dir:?}"
+            ))?;
 
         // Rename the root executable directory
         fs::remove_file(&temp_file_path)
@@ -109,13 +124,23 @@ impl ExeMeta {
     }
 
     async fn download_exe(&self) -> Result<PathBuf> {
-        let data = self.fetch_archive().await?;
-        self.extract_archive(&data)?;
+        log::info!("Command installing {} ...", self.get_name());
+
+        let data = self
+            .fetch_archive()
+            .await
+            .context(format!("Could not download {}", self.get_name()))?;
+        self.extract_archive(&data)
+            .context(format!("Could not extract {}", self.get_name()))?;
 
         if let Some(binary_path) = self.exe_in_cache() {
+            log::info!("Command {} installed.", self.get_name());
             Ok(binary_path)
         } else {
-            bail!("Something went wrong")
+            bail!(
+                "Binary downloaded and extracted but could still not be found at {:?}",
+                self.get_exe_dir_path()
+            )
         }
     }
 }
@@ -123,21 +148,19 @@ impl ExeMeta {
 pub async fn get_exe(app: Exe) -> Result<PathBuf> {
     let exe = get_executable(app).unwrap();
 
-    if let Some(path) = exe.exe_in_global_path() {
-        return Ok(path);
-    }
-
-    if let Some(path) = exe.exe_in_cache() {
-        return Ok(path);
-    }
-
-    let path = exe.download_exe().await?;
+    let path = if let Some(path) = exe.exe_in_global_path() {
+        path
+    } else if let Some(path) = exe.exe_in_cache() {
+        path
+    } else {
+        exe.download_exe().await?
+    };
 
     log::debug!(
-        "{} (version {}) using executable at: {:?}",
+        "Command using {} {}. {}",
         exe.name,
         exe.version,
-        path
+        GRAY.paint(path.to_string_lossy())
     );
 
     Ok(path)
@@ -150,9 +173,9 @@ pub async fn get_exe(app: Exe) -> Result<PathBuf> {
 ///
 /// | OS       | Example                            |
 /// | -------- | ---------------------------------- |
-/// | Linux    | /home/alice/.cache/.NAME           |
-/// | macOS    | /Users/Alice/Library/Caches/.NAME  |
-/// | Windows  | C:\Users\Alice\AppData\Local\.NAME |
+/// | Linux    | /home/alice/.cache/NAME           |
+/// | macOS    | /Users/Alice/Library/Caches/NAME  |
+/// | Windows  | C:\Users\Alice\AppData\Local\NAME |
 fn get_cache_dir(name: &str) -> Result<PathBuf> {
     let os_cache_dir = match dirs::cache_dir() {
         Some(d) => d,
@@ -162,7 +185,7 @@ fn get_cache_dir(name: &str) -> Result<PathBuf> {
     let cache_dir = os_cache_dir.join(name);
 
     if !cache_dir.exists() {
-        std::fs::create_dir(&cache_dir).context(format!("Could not create dir {cache_dir:?}"))?;
+        fs::create_dir(&cache_dir).context(format!("Could not create dir {cache_dir:?}"))?;
     }
 
     Ok(cache_dir)
