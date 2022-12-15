@@ -1,7 +1,11 @@
+mod command;
 mod config;
+mod config_paths;
 mod ext;
 mod logger;
 mod run;
+pub mod service;
+pub mod task;
 
 use ext::{fs, path, sync, util};
 
@@ -103,16 +107,46 @@ async fn main() -> Result<()> {
         signal::ctrl_c().await.expect("failed to listen for event");
         log::info!("Leptos ctrl-c received");
         *SHUTDOWN.write().await = true;
-        MSG_BUS.send(Msg::ShutDown).unwrap();
+        _ = MSG_BUS.send(Msg::ShutDown);
     });
 
     match args.command {
         Commands::Config | Commands::New(_) => panic!(),
-        Commands::Build(_) => build(&config, true).await,
-        Commands::Serve(_) => serve(&config).await,
-        Commands::Test(_) => cargo::test(&config).await,
-        Commands::EndToEnd(_) => e2e_test(&config).await,
-        Commands::Watch(_) => watch(&config).await,
+        Commands::Build(_) => {
+            if false {
+                build(&config, true).await
+            } else {
+                command::build::run(&config).await
+            }
+        }
+        Commands::Serve(_) => {
+            if false {
+                serve(&config).await
+            } else {
+                command::serve::run(&config).await
+            }
+        }
+        Commands::Test(_) => {
+            if false {
+                cargo::test(&config).await
+            } else {
+                command::test::run(&config).await
+            }
+        }
+        Commands::EndToEnd(_) => {
+            if false {
+                e2e_test(&config).await
+            } else {
+                command::end2end::run(&config).await
+            }
+        }
+        Commands::Watch(_) => {
+            if false {
+                watch(&config).await
+            } else {
+                command::watch::run(&config).await
+            }
+        }
     }
 }
 
@@ -153,7 +187,7 @@ async fn watch(config: &Config) -> Result<()> {
     let _ = watch::spawn(config).await.dot()?;
 
     if let Some(assets_dir) = &config.leptos.assets_dir {
-        let _ = assets::spawn(assets_dir).await.dot()?;
+        let _ = assets::spawn(assets_dir.as_str()).await.dot()?;
     }
 
     reload::spawn().await;

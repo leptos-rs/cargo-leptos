@@ -5,7 +5,7 @@ use actix_files::Files;
 use actix_web::*;
 use leptos::*;
 use leptos_router::*;
-use std::{env, net};
+use std::net;
 
 #[derive(Copy, Clone, Debug)]
 struct ActixIntegration {
@@ -34,28 +34,22 @@ fn app(cx: leptos::Scope) -> Element {
 }
 
 pub async fn run() -> std::io::Result<()> {
-    let addr = net::SocketAddr::from(([127, 0, 0, 1], 3000));
+    dotenvy::dotenv().unwrap();
+
+    let addr: net::SocketAddr = std::env::var("LEPTOS_SITE_ADDR").unwrap().parse().unwrap();
 
     simple_logger::init_with_level(log::Level::Debug).expect("couldn't initialize logging");
 
     log::info!("serving at {addr}");
 
-    HttpServer::new(move || {
-        let render_options: RenderOptions = RenderOptions::builder()
-            .pkg_path("/pkg/app")
-            .reload_port(3001)
-            .socket_address(addr.clone())
-            .environment(&env::var("RUST_ENV"))
-            .build();
-        render_options.write_to_file();
+    let site_root = std::env::var("LEPTOS_SITE_ROOT").unwrap();
+    let pkg_dir = std::env::var("LEPTOS_SITE_PKG_DIR").unwrap();
 
+    HttpServer::new(move || {
         App::new()
-            .service(Files::new("/pkg", "target/site/pkg"))
+            .service(Files::new(&pkg_dir, format!("{site_root}/{pkg_dir}")))
             .wrap(middleware::Compress::default())
-            .route(
-                "/{tail:.*}",
-                actix_integ::render_app_to_stream(render_options, app),
-            )
+            .route("/{tail:.*}", actix_integ::render_app_to_stream(app))
     })
     .bind(&addr)?
     .run()

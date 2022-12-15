@@ -10,7 +10,7 @@ use crate::{
 use tokio::process::Command;
 
 pub async fn run(config: &Config) -> Result<()> {
-    if let Some(e2e) = &config.leptos.end2end_test_cmd {
+    if let Some(e2e) = &config.leptos.end2end_cmd {
         try_run(e2e)
             .await
             .context(format!("Could not run command {e2e:?}"))

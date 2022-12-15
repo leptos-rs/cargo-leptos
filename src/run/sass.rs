@@ -13,16 +13,17 @@ use tokio::process::Command;
 const DEST: &str = "target/site/pkg/app.css";
 
 pub async fn run(config: &Config) -> Result<()> {
+    let style_file = match &config.leptos.style_file {
+        Some(f) => f,
+        None => return Ok(()),
+    };
     fs::create_dir_all("target/site/pkg").await.dot()?;
-
-    let style = &config.leptos.style;
-    let style_file = &style.file;
 
     log::debug!("Style found: {style_file}");
     let file = PathBuf::from(style_file);
 
     let css_file = match file.extension().map(|ext| ext.to_str()).flatten() {
-        Some("sass") | Some("scss") => compile_sass(style_file, config.cli.release)
+        Some("sass") | Some("scss") => compile_sass(style_file.as_str(), config.cli.release)
             .await
             .context(format!("compile sass/scss: {style_file}"))?,
         Some("css") => {
@@ -32,7 +33,8 @@ pub async fn run(config: &Config) -> Result<()> {
         _ => bail!("Not a css/sass/scss style file: {style_file}"),
     };
 
-    let browsers = browser_lists(&style.browserquery).context("leptos.style.browserquery")?;
+    let browsers =
+        browser_lists(&config.leptos.browserquery).context("leptos.style.browserquery")?;
 
     process_css(&css_file, browsers, config.cli.release)
         .await

@@ -1,14 +1,25 @@
 [package.metadata.leptos]
-# Path to the source index.html file
-index_file = "index.html"
-# [Optional] Files in the asset_dir will be copied to the target/site directory
-assets_dir = "assets"
-# [Optional] Command to use when running end2end tests. It will run in the end2end dir.
-end2end_test_cmd = "npx playwright test"
 
-[package.metadata.leptos.style]
+# [Optional] The site root directory where all content is generated.
+site_root = "target/site"
+
+# [Optional] 
+site_pkg_dir = "pkg"
+
 # Main style file. If scss or sass then it will be compiled to css.
 # the parent folder will be watched for changes
-file = "style/main.scss"
+style_file = "style/main.scss"
+
+# [Optional] Files in the asset_dir will be copied to the target/site directory
+assets_dir = "assets"
+
+site_addr = "127.0.0.1:3000"
+
+# When running in watch mode, the reload port is used for launching live-reload server.
+reload_port = 3001
+
+# [Optional] Command to use when running end2end integration tests. It will run in the end2end dir.
+end2end_cmd = "npx playwright test"
+
 # A https://browsersl.ist query
 browserquery = "defaults"

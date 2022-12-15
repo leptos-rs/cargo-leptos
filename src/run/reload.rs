@@ -60,7 +60,7 @@ async fn websocket(stream: WebSocket) {
             match rx.recv().await {
                 Ok(Msg::Reload(msg)) => {
                     let port = run_config::RUN_CONFIG.read().await.server_addr.port();
-                    if wait_for_localhost(port).await {
+                    if wait_for_localhost("LiveReload", port).await {
                         send_and_close(stream, &msg).await;
                     } else {
                         log::warn!(r#"LiveReload could not send "reload" to websocket"#);

@@ -1,45 +1,50 @@
-use super::watch::Watched;
 use crate::ext::anyhow::{Context, Result};
-use crate::{fs, logger::GRAY, path::PathExt, util::StrAdditions, Config, Msg, MSG_BUS};
+use crate::service::notify::Watched;
+use crate::service::site::{self, SiteFile};
+use crate::{config::Config, task::change::ChangeSet};
+use crate::{fs, logger::GRAY, path::PathExt};
 use camino::{Utf8Path, Utf8PathBuf};
 use tokio::task::JoinHandle;
 
-const DEST: &str = "target/site";
+use super::results::{Outcome, Product};
 
-pub async fn spawn(assets_dir: &str) -> Result<JoinHandle<()>> {
-    let mut rx = MSG_BUS.subscribe();
+pub async fn assets(
+    conf: &Config,
+    changes: &ChangeSet,
+    first_sync: bool,
+) -> JoinHandle<Result<Outcome>> {
+    let changes = changes.clone();
 
-    let dest = DEST.to_canoncial_dir()?;
-    let src = assets_dir.to_canoncial_dir()?;
-    resync(&src, &dest)
-        .await
-        .context(format!("Could not synchronize {src:?} with {dest:?}"))?;
+    let assets_dir = conf.leptos.assets_dir.as_ref().map(|d| d.clone());
+    let conf = conf.clone();
+    tokio::spawn(async move {
+        let src_root = match assets_dir {
+            Some(dir) => dir.to_canonicalized()?,
+            None => return Ok(Outcome::Success(Product::NoChange)),
+        };
+        let dest_root = &conf.leptos.site_root;
 
-    let reserved = reserved(&src);
-
-    log::trace!("Assets updater started");
-    Ok(tokio::spawn(async move {
-        loop {
-            match rx.recv().await {
-                Ok(Msg::AssetsChanged(watched)) => {
-                    if let Err(e) = update_asset(watched, &src, &dest, &reserved).await {
-                        log::debug!(
-                            "Assets resyncing all due to error: {}",
-                            GRAY.paint(e.to_string())
-                        );
-                        resync(&src, &dest).await.unwrap();
-                    }
-                }
-                Err(e) => {
-                    log::debug!("Assets recive error {e}");
-                    break;
-                }
-                Ok(Msg::ShutDown) => break,
-                _ => {}
+        let change = if first_sync {
+            log::trace!("Assets starting full resync");
+            resync(&src_root, &dest_root).await?;
+            true
+        } else {
+            let mut changed = false;
+            for watched in changes.asset_iter() {
+                log::trace!("Assets processing {watched:?}");
+                let change = update_asset(watched.clone(), &src_root, &dest_root, &[]).await?;
+                changed |= change;
             }
+            changed
+        };
+        if change {
+            log::debug!("Assets finished (with changes)");
+            Ok(Outcome::Success(Product::Assets))
+        } else {
+            log::debug!("Assets finished (no changes)");
+            Ok(Outcome::Success(Product::NoChange))
         }
-        log::debug!("Assets updater closed")
-    }))
+    })
 }
 
 async fn update_asset(
@@ -47,14 +52,14 @@ async fn update_asset(
     src_root: &Utf8PathBuf,
     dest_root: &Utf8PathBuf,
     reserved: &[Utf8PathBuf],
-) -> Result<()> {
+) -> Result<bool> {
     if let Some(path) = watched.path() {
         if reserved.contains(path) {
             log::warn!("Assets reserved filename for Leptos. Please remove {path:?}");
-            return Ok(());
+            return Ok(false);
         }
     }
-    match watched {
+    Ok(match watched {
         Watched::Create(f) => {
             let to = f.rebase(src_root, dest_root)?;
             if f.is_dir() {
@@ -62,6 +67,7 @@ async fn update_asset(
             } else {
                 fs::copy(&f, &to).await?;
             }
+            true
         }
         Watched::Remove(f) => {
             let path = f.rebase(src_root, dest_root)?;
@@ -74,6 +80,7 @@ async fn update_asset(
                     .await
                     .context(format!("remove file {path:?}"))?;
             }
+            false
         }
         Watched::Rename(from, to) => {
             let from = from.rebase(src_root, dest_root)?;
@@ -81,32 +88,34 @@ async fn update_asset(
             fs::rename(&from, &to)
                 .await
                 .context(format!("rename {from:?} to {to:?}"))?;
+            true
         }
         Watched::Write(f) => {
-            let to = f.rebase(src_root, dest_root)?;
-            fs::copy(&f, &to).await?;
+            let to = SiteFile::from(f.unbase(src_root)?);
+            site::copy_file_if_changed(&f, &to).await?
         }
-        Watched::Rescan => resync(src_root, dest_root).await?,
-    }
-    MSG_BUS.send(Msg::Reload("reload".to_string()))?;
-    Ok(())
+        Watched::Rescan => {
+            resync(src_root, dest_root).await?;
+            true
+        }
+    })
 }
 
 pub fn reserved(src: &Utf8Path) -> Vec<Utf8PathBuf> {
     vec![src.join("index.html"), src.join("pkg")]
 }
 
-pub async fn update(config: &Config) -> Result<()> {
-    if let Some(src) = &config.leptos.assets_dir {
-        let dest = DEST.to_canoncial_dir().dot()?;
-        let src = src.to_canonicalized().dot()?;
+// pub async fn update(config: &Config) -> Result<()> {
+//     if let Some(src) = &config.leptos.assets_dir {
+//         let dest = DEST.to_canoncial_dir().dot()?;
+//         let src = src.to_canoncial_dir().dot()?;
 
-        resync(&src, &dest)
-            .await
-            .context(format!("Could not synchronize {src:?} with {dest:?}"))?;
-    }
-    Ok(())
-}
+//         resync(&src, &dest)
+//             .await
+//             .context(format!("Could not synchronize {src:?} with {dest:?}"))?;
+//     }
+//     Ok(())
+// }
 
 async fn resync(src: &Utf8Path, dest: &Utf8Path) -> Result<()> {
     clean_dest(dest)

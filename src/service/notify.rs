@@ -1,10 +1,12 @@
+use crate::command::send_source_change;
 use crate::ext::anyhow::{anyhow, Context, Result};
+use crate::task::Change;
 use crate::{
     logger::GRAY,
     path::{remove_nested, PathBufExt, PathExt},
     sync::{oneshot_when, shutdown_msg},
-    util::{SenderAdditions, StrAdditions},
-    Config, Msg, MSG_BUS,
+    util::StrAdditions,
+    Config,
 };
 use camino::Utf8PathBuf;
 use itertools::Itertools;
@@ -15,8 +17,8 @@ use tokio::task::JoinHandle;
 
 pub async fn spawn(config: &Config) -> Result<JoinHandle<()>> {
     let mut paths = vec!["src".to_canoncial_dir()?];
-    if let Some(style_file) = &config.leptos.style_file {
-        paths.push(style_file.clone().without_last().to_canonicalized().dot()?);
+    if let Some(style) = &config.leptos.style_file {
+        paths.push(style.clone().without_last().to_canonicalized().dot()?);
     }
 
     let assets_dir = if let Some(dir) = &config.leptos.assets_dir {
@@ -29,7 +31,10 @@ pub async fn spawn(config: &Config) -> Result<JoinHandle<()>> {
 
     let paths = remove_nested(paths);
 
-    log::info!("Watching folders {}", GRAY.paint(paths.iter().join(", ")));
+    log::info!(
+        "Notify watching folders {}",
+        GRAY.paint(paths.iter().join(", "))
+    );
 
     Ok(tokio::spawn(async move {
         run(&paths, vec![], assets_dir).await
@@ -41,12 +46,13 @@ async fn run(paths: &[Utf8PathBuf], exclude: Vec<Utf8PathBuf>, assets_dir: Optio
 
     std::thread::spawn(move || {
         while let Ok(event) = sync_rx.recv() {
+            log::trace!("Notify received {event:?}");
             match Watched::try_new(event) {
                 Ok(Some(watched)) => handle(watched, &exclude, &assets_dir),
                 _ => {}
             }
         }
-        log::debug!("Watching stopped");
+        log::debug!("Notify stopped");
     });
 
     let mut watcher = notify::watcher(sync_tx, Duration::from_millis(200))
@@ -54,40 +60,48 @@ async fn run(paths: &[Utf8PathBuf], exclude: Vec<Utf8PathBuf>, assets_dir: Optio
 
     for path in paths {
         if let Err(e) = watcher.watch(&path, RecursiveMode::Recursive) {
-            log::error!("Watcher could not watch {path:?} due to {e:?}");
+            log::error!("Notify could not watch {path:?} due to {e:?}");
         }
     }
 
     if let Err(e) = oneshot_when(shutdown_msg, "Watch").await {
-        log::trace!("Watcher stopped due to: {e:?}");
+        log::trace!("Notify stopped due to: {e:?}");
     }
 }
 
 fn handle(watched: Watched, exclude: &[Utf8PathBuf], assets_dir: &Option<Utf8PathBuf>) {
     if let Some(path) = watched.path() {
         if exclude.contains(path) {
+            log::trace!("Notify excluded: {path}");
             return;
         }
     }
 
     if let Some(assets_dir) = assets_dir {
-        if watched.path_starts_with(assets_dir) {
-            log::debug!("Watcher asset change {}", GRAY.paint(watched.to_string()));
-            MSG_BUS.send_logged("Watcher", Msg::AssetsChanged(watched));
-            return;
+        match watched.path() {
+            Some(path) if path.starts_with(assets_dir) => {
+                log::debug!("Notify asset change {}", GRAY.paint(watched.to_string()));
+                send_source_change(Change::Asset(watched));
+                return;
+            }
+            _ => {}
         }
     }
 
     match watched.path_ext() {
         Some("rs") => {
-            log::debug!("Watcher source change {}", GRAY.paint(watched.to_string()));
-            MSG_BUS.send_logged("Watcher", Msg::SrcChanged)
+            log::debug!("Notify source change {}", GRAY.paint(watched.to_string()));
+            send_source_change(Change::Source);
         }
         Some(ext) if ["scss", "sass", "css"].contains(&ext.to_lowercase().as_str()) => {
-            log::debug!("Watcher style change {}", GRAY.paint(watched.to_string()));
-            MSG_BUS.send_logged("Watcher", Msg::StyleChanged)
+            log::debug!("Notify style change {}", GRAY.paint(watched.to_string()));
+            send_source_change(Change::Style);
         }
-        _ => {}
+        _ => log::trace!(
+            "Notify path ext '{:?}' not matching in: {:?}",
+            watched.path_ext(),
+            watched.path()
+        ),
     }
 }
 
@@ -117,18 +131,18 @@ impl Watched {
             Write(f) => Some(Self::Write(convert(f)?)),
             Rescan => Some(Self::Rescan),
             Error(e, Some(p)) => {
-                log::error!("Watcher error watching {p:?}: {e:?}");
+                log::error!("Notify error watching {p:?}: {e:?}");
                 None
             }
             Error(e, None) => {
-                log::error!("Watcher error: {e:?}");
+                log::error!("Notify error: {e:?}");
                 None
             }
         })
     }
 
     pub fn path_ext(&self) -> Option<&str> {
-        self.path().map(|p| p.as_str())
+        self.path().map(|p| p.extension()).flatten()
     }
 
     pub fn path(&self) -> Option<&Utf8PathBuf> {

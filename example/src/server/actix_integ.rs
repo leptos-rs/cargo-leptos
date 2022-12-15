@@ -1,3 +1,5 @@
+use std::net;
+
 use actix_web::*;
 use futures::StreamExt;
 use leptos::*;
@@ -44,11 +46,9 @@ use leptos_router::*;
 /// # }
 /// ```
 pub fn render_app_to_stream(
-    options: RenderOptions,
     app_fn: impl Fn(leptos::Scope) -> Element + Clone + 'static,
 ) -> Route {
     web::get().to(move |req: HttpRequest| {
-        let options = options.clone();
         let app_fn = app_fn.clone();
         async move {
             let path = req.path();
@@ -72,26 +72,46 @@ pub fn render_app_to_stream(
                 }
             };
 
-            let pkg_path = &options.pkg_path;
-            let socket_ip = &options.socket_address.ip().to_string();
-            let reload_port = options.reload_port;
-
-            let leptos_autoreload = match options.environment {
-                RustEnv::DEV => format!(
+            
+            let leptos_autoreload = if std::option_env!("LEPTOS_WATCH").is_some() {
+                let mut addr: net::SocketAddr = std::env::var("LEPTOS_SITE_ADDR").unwrap().parse().unwrap();
+                let reload_port:u16 = std::env::var("LEPTOS_RELOAD_PORT").unwrap().parse().unwrap();
+                addr.set_port(reload_port);
+                format!(
                     r#"
                         <script crossorigin="">(function () {{
-                            var ws = new WebSocket('ws://{socket_ip}:{reload_port}/live_reload');
+                            var ws = new WebSocket('ws://{addr}/live_reload');
                             ws.onmessage = (ev) => {{
-                                console.log(`Reload message: `);
-                                if (ev.data === 'reload') window.location.reload();
+                                let msg = JSON.parse(event.data);
+                                if (msg.all) window.location.reload();
+                                if (msg.css) {{
+                                    const link = document.querySelector("link#leptos");
+                                    if (link) {{
+                                        let href = link.getAttribute('href').split('?')[0];
+                                        let newHref = href + '?version=' + new Date().getMilliseconds();
+                                        link.setAttribute('href', newHref);
+                                    }} else {{
+                                        console.warn("Could not find link#leptos");
+                                    }}
+                                }};
                             }};
                             ws.onclose = () => console.warn('Live-reload stopped. Manual reload necessary.');
                         }})()
                         </script>
                     "#
-                ),
-                RustEnv::PROD => "".to_string(),
+                )
+            } else {
+                "".to_string()
             };
+            let reload_id = if std::option_env!("LEPTOS_WATCH").is_some() {
+                r#"id="leptos""#
+            } else {
+                ""
+            };
+            
+
+            let pkg_path = std::env::var("LEPTOS_SITE_PKG_DIR").unwrap();
+            let pkg_name = std::env::var("PACKAGE_NAME").unwrap();
 
             let head = format!(
               r#"<!DOCTYPE html>
@@ -99,10 +119,10 @@ pub fn render_app_to_stream(
                   <head>
                       <meta charset="utf-8"/>
                       <meta name="viewport" content="width=device-width, initial-scale=1"/>
-                      <link rel="stylesheet" href="{pkg_path}.css">
-                      <link rel="modulepreload" href="{pkg_path}.js">
-                      <link rel="preload" href="{pkg_path}.wasm" as="fetch" type="application/wasm" crossorigin="">
-                      <script type="module">import init, {{ hydrate }} from '{pkg_path}.js'; init('{pkg_path}.wasm').then(hydrate);</script>
+                      <link {reload_id} rel="stylesheet" href="/{pkg_path}/{pkg_name}.css">
+                      <link rel="modulepreload" href="/{pkg_path}/{pkg_name}.js">
+                      <link rel="preload" href="/{pkg_path}/{pkg_name}.wasm" as="fetch" type="application/wasm" crossorigin="">
+                      <script type="module">import init, {{ hydrate }} from '/{pkg_path}/{pkg_name}.js'; init('/{pkg_path}/{pkg_name}.wasm').then(hydrate);</script>
                       {leptos_autoreload}
                       "#
           );

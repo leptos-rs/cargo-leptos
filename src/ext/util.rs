@@ -1,8 +1,9 @@
 use crate::ext::anyhow::{bail, Context, Result};
 use crate::Msg;
+use camino::Utf8PathBuf;
 use cargo_metadata::{Artifact, Message};
 use serde::Deserialize;
-use std::{borrow::Cow, path::PathBuf, process::Stdio};
+use std::{borrow::Cow, process::Stdio};
 use tokio::{
     io::{AsyncBufReadExt, BufReader},
     process::{Child, Command},
@@ -37,7 +38,7 @@ pub trait StrAdditions {
     fn with(&self, append: &str) -> String;
     fn pad_left_to<'a>(&'a self, len: usize) -> Cow<'a, str>;
     /// returns the string as a canonical path (creates the dir if necessary)
-    fn to_canoncial_dir(&self) -> Result<PathBuf>;
+    fn to_canoncial_dir(&self) -> Result<Utf8PathBuf>;
 }
 
 impl StrAdditions for str {
@@ -56,8 +57,8 @@ impl StrAdditions for str {
         }
     }
 
-    fn to_canoncial_dir(&self) -> Result<PathBuf> {
-        let path = PathBuf::from(self);
+    fn to_canoncial_dir(&self) -> Result<Utf8PathBuf> {
+        let path = Utf8PathBuf::from(self);
         if !path.exists() {
             std::fs::create_dir_all(&path).context(format!("Could not create dir {self:?}"))?;
         }
@@ -76,7 +77,7 @@ impl StrAdditions for String {
         self.as_str().pad_left_to(len)
     }
 
-    fn to_canoncial_dir(&self) -> Result<PathBuf> {
+    fn to_canoncial_dir(&self) -> Result<Utf8PathBuf> {
         self.as_str().to_canoncial_dir()
     }
 }
