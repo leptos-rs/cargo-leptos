@@ -63,9 +63,7 @@ impl ExeMeta {
     fn get_download_url(&self) -> String {
         let (target_os, target_arch) = os_arch().unwrap();
         let url = &self.get_exe_archive_url;
-        let url = url(&self.version, target_os, target_arch).unwrap();
-
-        url
+        url(&self.version, target_os, target_arch).unwrap()
     }
 
     async fn fetch_archive(&self) -> Result<Bytes> {

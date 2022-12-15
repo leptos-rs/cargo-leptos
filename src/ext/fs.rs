@@ -1,9 +1,7 @@
 use super::path::PathExt;
 use crate::ext::anyhow::{Context, Result};
-use std::{
-    collections::VecDeque,
-    path::{Path, PathBuf},
-};
+use camino::{Utf8Path, Utf8PathBuf};
+use std::{collections::VecDeque, path::Path};
 use tokio::fs::{self, ReadDir};
 
 pub async fn rm_dir_content<P: AsRef<Path>>(dir: P) -> Result<()> {
@@ -39,33 +37,21 @@ pub async fn write<P: AsRef<Path>, C: AsRef<[u8]>>(path: P, contents: C) -> Resu
         .context(format!("Could not write to {:?}", path.as_ref()))
 }
 
-pub async fn write_if_changed<P: AsRef<Path>, C: AsRef<[u8]>>(
-    path: P,
-    contents: C,
-) -> Result<bool> {
-    if path.as_ref().exists() {
-        let current = self::read_to_string(&path).await?;
-        let current_hash = seahash::hash(current.as_bytes());
-        let new_hash = seahash::hash(contents.as_ref());
-        if current_hash != new_hash {
-            self::write(&path, contents).await?;
-            Ok(true)
-        } else {
-            Ok(false)
-        }
-    } else {
-        self::write(&path, contents).await?;
-        Ok(true)
-    }
+pub async fn read(path: impl AsRef<Path>) -> Result<Vec<u8>> {
+    fs::read(&path)
+        .await
+        .context(format!("Could not read {:?}", path.as_ref()))
 }
 
 pub async fn create_dir(path: impl AsRef<Path>) -> Result<()> {
+    log::trace!("FS create_dir {:?}", path.as_ref());
     fs::create_dir(&path)
         .await
         .context(format!("Could not create dir {:?}", path.as_ref()))
 }
 
 pub async fn create_dir_all<P: AsRef<Path>>(path: P) -> Result<()> {
+    log::trace!("FS create_dir_all {:?}", path.as_ref());
     fs::create_dir_all(&path)
         .await
         .context(format!("Could not create {:?}", path.as_ref()))
@@ -115,7 +101,7 @@ pub async fn remove_dir_all<P: AsRef<Path>>(path: P) -> Result<()> {
         .context(format!("Could not remove dir {:?}", path.as_ref()))
 }
 
-pub async fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> Result<()> {
+pub async fn copy_dir_all(src: impl AsRef<Utf8Path>, dst: impl AsRef<Path>) -> Result<()> {
     cp_dir_all(&src, &dst).await.context(format!(
         "Copy dir recursively from {:?} to {:?}",
         src.as_ref(),
@@ -123,9 +109,9 @@ pub async fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> Resul
     ))
 }
 
-async fn cp_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> Result<()> {
+async fn cp_dir_all(src: impl AsRef<Utf8Path>, dst: impl AsRef<Path>) -> Result<()> {
     let src = src.as_ref().to_canonicalized()?;
-    let dst = dst.as_ref().to_path_buf();
+    let dst = Utf8PathBuf::from_path_buf(dst.as_ref().to_path_buf()).unwrap();
 
     self::create_dir_all(&dst).await?;
 
@@ -133,37 +119,19 @@ async fn cp_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> Result<()> 
     dirs.push_back(src.clone());
 
     while let Some(dir) = dirs.pop_front() {
-        let mut entries = self::read_dir(&dir).await?;
+        let mut entries = dir.read_dir_utf8()?;
 
-        while let Some(entry) = entries.next_entry().await? {
+        while let Some(Ok(entry)) = entries.next() {
             let from = entry.path();
             let to = from.rebase(&src, &dst)?;
 
-            if entry.file_type().await?.is_dir() {
+            if entry.file_type()?.is_dir() {
                 self::create_dir(&to).await?;
-                dirs.push_back(from);
+                dirs.push_back(from.to_owned());
             } else {
                 self::copy(from, to).await?;
             }
         }
     }
     Ok(())
-}
-
-pub fn remove_nested(paths: Vec<PathBuf>) -> Vec<PathBuf> {
-    paths.into_iter().fold(vec![], |mut vec, path| {
-        for added in vec.iter_mut() {
-            // path is a parent folder of added
-            if added.starts_with(&path) {
-                *added = path;
-                return vec;
-            }
-            // path is a sub folder of added
-            if path.starts_with(added) {
-                return vec;
-            }
-        }
-        vec.push(path);
-        vec
-    })
 }

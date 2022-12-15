@@ -1,18 +1,19 @@
-mod config;
+mod command;
+pub mod compile;
+pub mod config;
 mod ext;
 mod logger;
-mod run;
-
-use ext::{fs, path, sync, util};
+pub mod service;
+pub mod signal;
 
 use crate::ext::anyhow::{Context, Result};
+use camino::Utf8PathBuf;
 use clap::{Parser, Subcommand, ValueEnum};
-use config::Config;
+use command::NewCommand;
 use ext::path::PathBufExt;
-use ext::sync::{send_reload, src_or_style_change, wait_for, Msg, MSG_BUS, SHUTDOWN};
-use run::{assets, cargo, end2end, new, reload, sass, serve, wasm, watch, Html};
-use std::{env, path::PathBuf};
-use tokio::signal;
+use ext::{fs, path, util};
+use signal::Interrupt;
+use std::env;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 pub enum Log {
@@ -27,10 +28,6 @@ pub struct Opts {
     /// Build artifacts in release mode, with optimizations.
     #[arg(short, long)]
     release: bool,
-
-    /// Build for client side rendering instead of the default hydrate mode. Useful during development due to faster compile times.
-    #[arg(long)]
-    csr: bool,
 
     /// Verbosity (none: info, errors & warnings, -v: verbose, --vv: very verbose).
     #[arg(short, action = clap::ArgAction::Count)]
@@ -54,9 +51,7 @@ pub struct Cli {
 
 #[derive(Debug, Subcommand, PartialEq)]
 enum Commands {
-    /// Output toml that needs to be added to the Cargo.toml file.
-    Config,
-    /// Compile the project. Defaults to hydrate mode.
+    /// Build the server (feature ssr) and the client (wasm with feature hydrate).
     Build(Opts),
     /// Run the cargo tests for app, client and server.
     Test(Opts),
@@ -64,10 +59,10 @@ enum Commands {
     EndToEnd(Opts),
     /// Serve. Defaults to hydrate mode.
     Serve(Opts),
-    /// Serve and automatically reload when files change. Defaults to hydrate mode.
+    /// Serve and automatically reload when files change.
     Watch(Opts),
     /// WIP: Start wizard for creating a new project (using cargo-generate). Ask at Leptos discord before using.
-    New(new::NewCommand),
+    New(NewCommand),
 }
 
 #[tokio::main]
@@ -86,122 +81,30 @@ async fn main() -> Result<()> {
     }
 
     if let Some(path) = &args.manifest_path {
-        let path = PathBuf::from(path).without_last();
+        let path = Utf8PathBuf::from(path).without_last();
         std::env::set_current_dir(path).dot()?;
     }
 
     let opts = match &args.command {
         Commands::New(_) => panic!(""),
-        Commands::Config => return Ok(println!(include_str!("leptos.toml"))),
         Commands::Build(opts)
         | Commands::Serve(opts)
         | Commands::Test(opts)
         | Commands::EndToEnd(opts)
         | Commands::Watch(opts) => opts,
     };
+
     logger::setup(opts.verbose, &args.log);
 
-    let config = config::read(&args, opts.clone()).await.dot()?;
+    let config = crate::config::read(&args, opts.clone()).await.dot()?;
 
-    tokio::spawn(async {
-        signal::ctrl_c().await.expect("failed to listen for event");
-        log::info!("Leptos ctrl-c received");
-        *SHUTDOWN.write().await = true;
-        MSG_BUS.send(Msg::ShutDown).unwrap();
-    });
-
+    let _monitor = Interrupt::run_ctrl_c_monitor();
     match args.command {
-        Commands::Config | Commands::New(_) => panic!(),
-        Commands::Build(_) => build(&config, true).await,
-        Commands::Serve(_) => serve(&config).await,
-        Commands::Test(_) => cargo::test(&config).await,
-        Commands::EndToEnd(_) => e2e_test(&config).await,
-        Commands::Watch(_) => watch(&config).await,
+        Commands::New(_) => panic!(),
+        Commands::Build(_) => command::build(&config).await,
+        Commands::Serve(_) => command::serve(&config).await,
+        Commands::Test(_) => command::test(&config).await,
+        Commands::EndToEnd(_) => command::end2end(&config).await,
+        Commands::Watch(_) => command::watch(&config).await,
     }
-}
-
-async fn e2e_test(config: &Config) -> Result<()> {
-    build(config, true).await.dot()?;
-    let handle = if config.cli.csr {
-        serve::spawn(&config).await.dot()?
-    } else {
-        cargo::spawn_run(&config).await
-    };
-    end2end::run(config).await.dot()?;
-    MSG_BUS.send(Msg::ShutDown).dot()?;
-    handle.await.dot()?;
-    Ok(())
-}
-
-async fn build(config: &Config, copy_assets: bool) -> Result<()> {
-    log::debug!(r#"Leptos cleaning contents of "target/site/pkg""#);
-    fs::rm_dir_content("target/site/pkg").await.dot()?;
-    if copy_assets {
-        assets::update(config).await.dot()?;
-    }
-    build_client(&config).await.dot()?;
-
-    if !config.cli.csr {
-        cargo::build(&config, false).await.dot()?;
-    }
-    Ok(())
-}
-async fn build_client(config: &Config) -> Result<()> {
-    sass::run(&config).await.dot()?;
-
-    let html = Html::read(&config.leptos.index_file).await.dot()?;
-
-    if config.cli.csr {
-        wasm::build(&config).await.dot()?;
-        html.generate_html(&config).await.dot()?;
-    } else {
-        wasm::build(&config).await.dot()?;
-        html.generate_rust(&config).await.dot()?;
-    }
-    Ok(())
-}
-
-async fn serve(config: &Config) -> Result<()> {
-    build(&config, true).await.dot()?;
-    if config.cli.csr {
-        serve::spawn(&config).await?.await.dot()
-    } else {
-        cargo::run(&config).await
-    }
-}
-
-async fn watch(config: &Config) -> Result<()> {
-    let _ = watch::spawn(config).await.dot()?;
-
-    if let Some(assets_dir) = &config.leptos.assets_dir {
-        let _ = assets::spawn(assets_dir).await.dot()?;
-    }
-    if config.cli.csr {
-        serve::spawn(&config).await?;
-    }
-
-    reload::spawn(&config).await?;
-
-    loop {
-        match build(config, false).await {
-            Ok(_) => {
-                send_reload().await;
-                if config.cli.csr {
-                    wait_for(src_or_style_change).await;
-                } else {
-                    cargo::run(&config).await.dot()?;
-                }
-            }
-            Err(e) => {
-                log::warn!("Leptos rebuild stopped due to error: {e:?}");
-                wait_for(src_or_style_change).await;
-            }
-        }
-        if *SHUTDOWN.read().await {
-            break;
-        } else {
-            log::info!("Leptos ===================== rebuilding =====================");
-        }
-    }
-    Ok(())
 }

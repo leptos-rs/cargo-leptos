@@ -22,7 +22,7 @@ gloo-net = { version = "0.2", features = ["http"] }
 log = "0.4"
 cfg-if = "1.0"
 
-# dependecies for client (enable when csr or hydrate set)
+# dependecies for client (enable hydrate set)
 wasm-bindgen = { version = "0.2", optional = true }
 console_log = { version = "0.2", optional = true }
 console_error_panic_hook = { version = "0.1", optional = true }
@@ -34,6 +34,8 @@ futures = { version = "0.3", optional = true }
 simple_logger = { version = "4.0", optional = true }
 serde_json = { version = "1.0", optional = true }
 reqwest = { version = "0.11", features = ["json"], optional = true }
+leptos_actix = { git = "https://github.com/gbj/leptos", optional = true }
+dotenvy = { version = "0.15", optional = true }
 
 [profile.release]
 codegen-units = 1
@@ -41,8 +43,7 @@ lto = true
 opt-level = 'z'
 
 [features]
-leptos_autoreload = []
-default = ["csr"]
+default = ["ssr"]
 hydrate = [
   "leptos/hydrate",
   "leptos_meta/hydrate",
@@ -51,43 +52,29 @@ hydrate = [
   "dep:console_log",
   "dep:console_error_panic_hook",
 ]
-csr = [
-  "leptos/csr",
-  "leptos_meta/csr",
-  "leptos_router/csr",
-  "dep:wasm-bindgen",
-  "dep:console_log",
-  "dep:console_error_panic_hook",
-]
 ssr = [
   "leptos/ssr",
   "leptos_meta/ssr",
   "leptos_router/ssr",
+  "dep:leptos_actix",
   "dep:reqwest",
   "dep:actix-web",
   "dep:actix-files",
   "dep:futures",
   "dep:simple_logger",
   "dep:serde_json",
+  "dep:dotenvy",
 ]
 
+
 [package.metadata.leptos]
-# Path, relative to root, to generat rust code to
-gen_file = "src/server/generated.rs"
-# Path to the source index.html file
-index_file = "index.html"
+# See https://github.com/akesson/cargo-leptos for documentation of all the parameters.
+
 # [Optional] Files in the asset_dir will be copied to the target/site directory
 assets_dir = "assets"
 # [Optional] Command to use when running end2end tests. It will run in the end2end dir.
-end2end_test_cmd = "npx playwright test"
-# On which port to serve the client side rendered site (when using --csr option)
-csr_port = 3000
-# The port to use for automatic reload monitoring
-reload_port = 3001
+end2end_cmd = "npx playwright test"
 
-[package.metadata.leptos.style]
 # Main style file. If scss or sass then it will be compiled to css.
 # the parent folder will be watched for changes
-file = "style/main.scss"
-# A https://browsersl.ist query
-browserquery = "defaults"
+style_file = "style/main.scss"
