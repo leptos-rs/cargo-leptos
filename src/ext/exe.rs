@@ -193,7 +193,7 @@ fn get_executable(app: Exe) -> Result<ExeMeta> {
     let exe = match app {
         Exe::CargoGenerate => ExeMeta {
             name: "cargo-generate".to_string(),
-            version: "0.17.3".to_string(),
+            version: "0.17.4".to_string(),
             get_exe_archive_url: |version, target_os, target_arch| {
                 let target = match (target_os, target_arch) {
                     ("macos", "aarch64") => "aarch64-apple-darwin",
@@ -214,7 +214,7 @@ fn get_executable(app: Exe) -> Result<ExeMeta> {
         },
         Exe::Sass => ExeMeta {
             name: "sass".to_string(),
-            version: "1.56.1".to_string(),
+            version: "1.56.2".to_string(),
             get_exe_archive_url: |version, target_os, target_arch| {
                 let url = match (target_os, target_arch) {
                     ("windows", "x86_64") => format!("https://github.com/sass/dart-sass/releases/download/{version}/dart-sass-{version}-windows-x64.zip"),
