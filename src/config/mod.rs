@@ -3,8 +3,14 @@ mod paths;
 
 use crate::ext::anyhow::{anyhow, ensure, Context, Result};
 use crate::{ext::fs, logger::GRAY, Cli, Commands, Opts};
+use camino::Utf8PathBuf;
 use cargo_metadata::{Metadata, MetadataCommand, Package as CargoPackage};
 use leptos::LeptosConfig;
+use tokio::sync::RwLock;
+
+lazy_static::lazy_static! {
+    pub static ref SITE_ROOT: RwLock<Utf8PathBuf> = RwLock::new(Utf8PathBuf::from("target/site"));
+}
 
 #[derive(Debug, Clone)]
 pub struct Config {
@@ -62,6 +68,10 @@ pub async fn read(cli: &Cli, opts: Opts) -> Result<Config> {
     if !leptos.site_root.is_absolute() {
         leptos.site_root = leptos.site_root.canonicalize_utf8()?;
     }
+
+    let mut sr = SITE_ROOT.write().await;
+    *sr = leptos.site_root.clone();
+    drop(sr);
 
     ensure!(
         leptos.site_pkg_dir.is_relative(),

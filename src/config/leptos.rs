@@ -93,7 +93,7 @@ impl LeptosConfig {
             "reload_port",
             &mut env.leptos_reload_port,
             &mut conf.reload_port,
-            3000,
+            3001,
         );
         let end2end_cmd = env_conf(
             "end2end_cmd",

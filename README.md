@@ -11,6 +11,7 @@ Build tool for [Leptos](https://crates.io/crates/leptos):
 
 ## Features
 
+- Parallel build of server and client in watch mode for fast developer feedback.
 - Build server and client for hydration (client-side rendering mode not supported).
 - SCSS compilation using [dart-sass](https://sass-lang.com/dart-sass).
 - CSS transformation and minification using [Lightning CSS](https://lightningcss.dev). See docs for full details.
@@ -48,7 +49,7 @@ For setting up your project, base yourself on the [example](https://github.com/a
 ## Configuration
 
 The columns are in order of preference. I.e. a parameter found in an environment variable
-will take precedence to a value found in _Cargo.toml_.
+will take precedence over a value found in _Cargo.toml_.
 
 | parameter             | env <sup>1</sup>    | Cargo.toml                               | default <sup>2</sup> |
 | --------------------- | ------------------- | ---------------------------------------- | -------------------- |
@@ -144,7 +145,7 @@ This is mainly relevant for the `watch` mode.
 ```mermaid
 graph TD;
   subgraph Watcher[watch]
-    Watch[FS Watcher];
+    Watch[FS Notifier];
   end
   Watch-->|"*.rs"| TailW;
   Watch-->|"*.sass & *.scss"| Sass;
@@ -183,7 +184,6 @@ graph TD;
   CSSProc -->|"site/pkg/app.css"| WOC;
 
   Live -.->|Port scan| Server;
-  Server -->|.leptos.kdl| Live
 
   WOC -->|"target/server/app<br>site/**"| Server;
   WOC -->|"site/pkg/app.css, <br>client & server change"| Live;

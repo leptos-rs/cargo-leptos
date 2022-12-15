@@ -4,14 +4,16 @@ use camino::{Utf8Path, Utf8PathBuf};
 use serde::{Deserialize, Serialize};
 use tokio::sync::RwLock;
 
-use crate::ext::{
-    anyhow::{Context, Result},
-    fs,
-    path::PathExt,
+use crate::{
+    config::SITE_ROOT,
+    ext::{
+        anyhow::{Context, Result},
+        fs,
+        path::PathExt,
+    },
 };
 
 lazy_static::lazy_static! {
-    static ref SITE_ROOT: RwLock<Utf8PathBuf> = RwLock::new(Utf8PathBuf::from("target/site"));
     static ref FILE_REG: RwLock<HashMap<String, u64>> = RwLock::new(HashMap::new());
     static ref EXT_FILE_REG: RwLock<HashMap<String, u64>> = RwLock::new(HashMap::new());
 }

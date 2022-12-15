@@ -51,8 +51,6 @@ pub struct Cli {
 
 #[derive(Debug, Subcommand, PartialEq)]
 enum Commands {
-    /// Output toml that needs to be added to the Cargo.toml file.
-    Config,
     /// Build the server (feature ssr) and the client (wasm with feature hydrate).
     Build(Opts),
     /// Run the cargo tests for app, client and server.
@@ -89,20 +87,20 @@ async fn main() -> Result<()> {
 
     let opts = match &args.command {
         Commands::New(_) => panic!(""),
-        Commands::Config => return Ok(println!(include_str!("config/leptos.toml"))),
         Commands::Build(opts)
         | Commands::Serve(opts)
         | Commands::Test(opts)
         | Commands::EndToEnd(opts)
         | Commands::Watch(opts) => opts,
     };
+
     logger::setup(opts.verbose, &args.log);
 
     let config = crate::config::read(&args, opts.clone()).await.dot()?;
 
     let _monitor = Interrupt::run_ctrl_c_monitor();
     match args.command {
-        Commands::Config | Commands::New(_) => panic!(),
+        Commands::New(_) => panic!(),
         Commands::Build(_) => command::build(&config).await,
         Commands::Serve(_) => command::serve(&config).await,
         Commands::Test(_) => command::test(&config).await,

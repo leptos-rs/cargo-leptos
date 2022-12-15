@@ -66,9 +66,10 @@ ssr = [
   "dep:dotenvy",
 ]
 
+
 [package.metadata.leptos]
-# Path to the source index.html file
-index_file = "index.html"
+# See https://github.com/akesson/cargo-leptos for documentation of all the parameters.
+
 # [Optional] Files in the asset_dir will be copied to the target/site directory
 assets_dir = "assets"
 # [Optional] Command to use when running end2end tests. It will run in the end2end dir.
@@ -77,5 +78,3 @@ end2end_cmd = "npx playwright test"
 # Main style file. If scss or sass then it will be compiled to css.
 # the parent folder will be watched for changes
 style_file = "style/main.scss"
-# A https://browsersl.ist query
-browserquery = "defaults"
