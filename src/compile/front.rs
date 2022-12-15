@@ -1,8 +1,7 @@
-use super::results::{Outcome, Product};
-use crate::command::subscribe_interrupt;
+use super::ChangeSet;
 use crate::ext::fs;
 use crate::service::site;
-use crate::task::change::ChangeSet;
+use crate::signal::{Interrupt, Outcome, Product};
 use crate::{config::Config, ext::sync::wait_interruptible};
 use crate::{
     ext::{
@@ -30,12 +29,12 @@ pub async fn front(conf: &Config, changes: &ChangeSet) -> JoinHandle<Result<Outc
 
         let (line, process) = front_cargo_process("build", true, &conf)?;
 
-        if !wait_interruptible("Cargo", process, subscribe_interrupt()).await? {
+        if !wait_interruptible("Cargo", process, Interrupt::subscribe_any()).await? {
             return Ok(Outcome::Stopped);
         }
         log::info!("Cargo finished {}", GRAY.paint(line));
 
-        bindgen(&conf, subscribe_interrupt()).await.dot()
+        bindgen(&conf).await.dot()
     })
 }
 
@@ -64,8 +63,9 @@ pub fn front_cargo_process(cmd: &str, wasm: bool, conf: &Config) -> Result<(Stri
     Ok((line, process))
 }
 
-async fn bindgen(conf: &Config, interrupt: broadcast::Receiver<()>) -> Result<Outcome> {
+async fn bindgen(conf: &Config) -> Result<Outcome> {
     let wasm_path = conf.cargo_wasm_file();
+    let interrupt = Interrupt::subscribe_any();
 
     // see:
     // https://github.com/rustwasm/wasm-bindgen/blob/main/crates/cli-support/src/lib.rs#L95

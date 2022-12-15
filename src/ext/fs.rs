@@ -1,6 +1,6 @@
 use super::path::PathExt;
 use crate::ext::anyhow::{Context, Result};
-use camino::Utf8PathBuf;
+use camino::{Utf8Path, Utf8PathBuf};
 use std::{collections::VecDeque, path::Path};
 use tokio::fs::{self, ReadDir};
 
@@ -37,32 +37,10 @@ pub async fn write<P: AsRef<Path>, C: AsRef<[u8]>>(path: P, contents: C) -> Resu
         .context(format!("Could not write to {:?}", path.as_ref()))
 }
 
-#[allow(dead_code)]
 pub async fn read(path: impl AsRef<Path>) -> Result<Vec<u8>> {
     fs::read(&path)
         .await
         .context(format!("Could not read {:?}", path.as_ref()))
-}
-
-#[allow(dead_code)]
-pub async fn write_if_changed<P: AsRef<Path>, C: AsRef<[u8]>>(
-    path: P,
-    contents: C,
-) -> Result<bool> {
-    if path.as_ref().exists() {
-        let current = self::read_to_string(&path).await?;
-        let current_hash = seahash::hash(current.as_bytes());
-        let new_hash = seahash::hash(contents.as_ref());
-        if current_hash != new_hash {
-            self::write(&path, contents).await?;
-            Ok(true)
-        } else {
-            Ok(false)
-        }
-    } else {
-        self::write(&path, contents).await?;
-        Ok(true)
-    }
 }
 
 pub async fn create_dir(path: impl AsRef<Path>) -> Result<()> {
@@ -123,7 +101,7 @@ pub async fn remove_dir_all<P: AsRef<Path>>(path: P) -> Result<()> {
         .context(format!("Could not remove dir {:?}", path.as_ref()))
 }
 
-pub async fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> Result<()> {
+pub async fn copy_dir_all(src: impl AsRef<Utf8Path>, dst: impl AsRef<Path>) -> Result<()> {
     cp_dir_all(&src, &dst).await.context(format!(
         "Copy dir recursively from {:?} to {:?}",
         src.as_ref(),
@@ -131,7 +109,7 @@ pub async fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> Resul
     ))
 }
 
-async fn cp_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> Result<()> {
+async fn cp_dir_all(src: impl AsRef<Utf8Path>, dst: impl AsRef<Path>) -> Result<()> {
     let src = src.as_ref().to_canonicalized()?;
     let dst = Utf8PathBuf::from_path_buf(dst.as_ref().to_path_buf()).unwrap();
 

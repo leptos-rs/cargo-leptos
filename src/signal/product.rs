@@ -1,7 +1,11 @@
-use std::{collections::HashSet, fmt::Display};
-
 use derive_more::Display;
 use itertools::Itertools;
+use std::{collections::HashSet, fmt};
+use tokio::sync::broadcast;
+
+lazy_static::lazy_static! {
+  static ref PRODUCT_CHANGE_CHANNEL: broadcast::Sender::<ProductSet> = broadcast::channel::<ProductSet>(1).0;
+}
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub enum Outcome {
@@ -22,6 +26,10 @@ pub enum Product {
 pub struct ProductSet(HashSet<Product>);
 
 impl ProductSet {
+    pub fn empty() -> Self {
+        Self(HashSet::new())
+    }
+
     pub fn from(vec: Vec<Outcome>) -> Self {
         Self(HashSet::from_iter(vec.into_iter().filter_map(
             |entry| match entry {
@@ -45,8 +53,8 @@ impl ProductSet {
     }
 }
 
-impl Display for ProductSet {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for ProductSet {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
             "{}",
@@ -56,5 +64,19 @@ impl Display for ProductSet {
                 .collect_vec()
                 .join(", ")
         )
+    }
+}
+
+pub struct ProductChange {}
+
+impl ProductChange {
+    pub fn subscribe() -> broadcast::Receiver<ProductSet> {
+        PRODUCT_CHANGE_CHANNEL.subscribe()
+    }
+
+    pub fn send(set: ProductSet) {
+        if let Err(e) = PRODUCT_CHANGE_CHANNEL.send(set) {
+            log::error!("Error could not send product changes due to {e}")
+        }
     }
 }

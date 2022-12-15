@@ -1,3 +1,9 @@
+use crate::{
+    config::Config,
+    ext::anyhow::Result,
+    logger::GRAY,
+    signal::{Interrupt, Product, ProductChange, ReloadSignal},
+};
 use camino::Utf8PathBuf;
 use tokio::{
     process::{Child, Command},
@@ -5,21 +11,10 @@ use tokio::{
     task::JoinHandle,
 };
 
-use crate::{
-    command::{
-        is_shutdown_requested, send_reload, subscribe_interrupt, subscribe_product_changes,
-        ReloadType,
-    },
-    config::Config,
-    ext::anyhow::Result,
-    logger::GRAY,
-    task::compile::Product,
-};
-
-pub async fn run(conf: &Config) -> JoinHandle<Result<()>> {
-    let mut int = subscribe_interrupt();
+pub async fn spawn(conf: &Config) -> JoinHandle<Result<()>> {
+    let mut int = Interrupt::subscribe_shutdown();
     let conf = conf.clone();
-    let mut change = subscribe_product_changes();
+    let mut change = ProductChange::subscribe();
     tokio::spawn(async move {
         // wait for first build to finish even if no products updated
         select! {
@@ -34,15 +29,13 @@ pub async fn run(conf: &Config) -> JoinHandle<Result<()>> {
                 if let Ok(set) = res {
                   if set.contains(&Product::ServerBin) {
                       server.restart().await?;
-                      send_reload(ReloadType::Full);
+                      ReloadSignal::send_full();
                   }
                 }
               },
               _ = int.recv() => {
-                if is_shutdown_requested().await {
                     server.kill().await;
                     return Ok(())
-                }
               },
             }
         }

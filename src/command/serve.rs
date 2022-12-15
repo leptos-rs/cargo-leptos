@@ -1,15 +1,13 @@
-use super::{ctrl_c_monitor, send_product_change};
 use crate::config::Config;
 use crate::ext::anyhow::{Context, Result};
 use crate::service::serve;
-use crate::task::compile::ProductSet;
+use crate::signal::{ProductChange, ProductSet};
 
-pub async fn run(conf: &Config) -> Result<()> {
-    let _ = ctrl_c_monitor();
-    super::build::run(conf).await.dot()?;
-    let server = serve::run(&conf).await;
+pub async fn serve(conf: &Config) -> Result<()> {
+    super::build::build(conf).await.dot()?;
+    let server = serve::spawn(&conf).await;
     // the server waits for the first product change before starting
-    send_product_change(ProductSet::from(vec![]));
+    ProductChange::send(ProductSet::empty());
 
     server.await??;
     Ok(())

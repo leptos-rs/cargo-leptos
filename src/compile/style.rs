@@ -1,8 +1,11 @@
-use crate::ext::anyhow::{anyhow, bail, Context, Result};
-use crate::{config::Config, service::site, task::change::ChangeSet};
+use super::ChangeSet;
 use crate::{
+    config::Config,
+    ext::anyhow::{anyhow, bail, Context, Result},
     ext::exe::{get_exe, Exe},
     fs,
+    service::site,
+    signal::{Outcome, Product},
 };
 use camino::{Utf8Path, Utf8PathBuf};
 use lightningcss::{
@@ -11,8 +14,6 @@ use lightningcss::{
 };
 use tokio::process::Command;
 use tokio::task::JoinHandle;
-
-use super::results::{Outcome, Product};
 
 pub async fn style(conf: &Config, changes: &ChangeSet) -> JoinHandle<Result<Outcome>> {
     let changes = changes.clone();

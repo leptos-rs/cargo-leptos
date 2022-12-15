@@ -1,12 +1,11 @@
-use crate::command::send_source_change;
+use crate::compile::Change;
 use crate::ext::anyhow::{anyhow, Context, Result};
-use crate::task::Change;
+use crate::signal::Interrupt;
 use crate::{
+    config::Config,
     logger::GRAY,
     path::{remove_nested, PathBufExt, PathExt},
-    sync::{oneshot_when, shutdown_msg},
     util::StrAdditions,
-    Config,
 };
 use camino::Utf8PathBuf;
 use itertools::Itertools;
@@ -64,7 +63,7 @@ async fn run(paths: &[Utf8PathBuf], exclude: Vec<Utf8PathBuf>, assets_dir: Optio
         }
     }
 
-    if let Err(e) = oneshot_when(shutdown_msg, "Watch").await {
+    if let Err(e) = Interrupt::subscribe_shutdown().recv().await {
         log::trace!("Notify stopped due to: {e:?}");
     }
 }
@@ -81,7 +80,7 @@ fn handle(watched: Watched, exclude: &[Utf8PathBuf], assets_dir: &Option<Utf8Pat
         match watched.path() {
             Some(path) if path.starts_with(assets_dir) => {
                 log::debug!("Notify asset change {}", GRAY.paint(watched.to_string()));
-                send_source_change(Change::Asset(watched));
+                Interrupt::send(Change::Asset(watched));
                 return;
             }
             _ => {}
@@ -91,11 +90,11 @@ fn handle(watched: Watched, exclude: &[Utf8PathBuf], assets_dir: &Option<Utf8Pat
     match watched.path_ext() {
         Some("rs") => {
             log::debug!("Notify source change {}", GRAY.paint(watched.to_string()));
-            send_source_change(Change::Source);
+            Interrupt::send(Change::Source);
         }
         Some(ext) if ["scss", "sass", "css"].contains(&ext.to_lowercase().as_str()) => {
             log::debug!("Notify style change {}", GRAY.paint(watched.to_string()));
-            send_source_change(Change::Style);
+            Interrupt::send(Change::Style);
         }
         _ => log::trace!(
             "Notify path ext '{:?}' not matching in: {:?}",

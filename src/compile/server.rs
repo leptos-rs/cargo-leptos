@@ -1,18 +1,16 @@
+use super::ChangeSet;
 use crate::{
-    command::subscribe_interrupt,
     config::Config,
     ext::anyhow::{Context, Result},
     ext::sync::wait_interruptible,
     logger::GRAY,
     service::site,
-    task::change::ChangeSet,
+    signal::{Interrupt, Outcome, Product},
 };
 use tokio::{
     process::{Child, Command},
     task::JoinHandle,
 };
-
-use super::results::{Outcome, Product};
 
 pub async fn server(conf: &Config, changes: &ChangeSet) -> JoinHandle<Result<Outcome>> {
     let conf = conf.clone();
@@ -25,7 +23,7 @@ pub async fn server(conf: &Config, changes: &ChangeSet) -> JoinHandle<Result<Out
 
         let (line, process) = server_cargo_process("build", &conf)?;
 
-        match wait_interruptible("Cargo", process, subscribe_interrupt()).await? {
+        match wait_interruptible("Cargo", process, Interrupt::subscribe_any()).await? {
             true => {
                 log::info!("Cargo finished {}", GRAY.paint(line));
 

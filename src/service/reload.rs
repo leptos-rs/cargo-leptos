@@ -1,10 +1,7 @@
-use crate::command::{
-    is_shutdown_requested, request_shutdown, subscribe_interrupt, subscribe_product_changes,
-    subscribe_reload, ReloadType,
-};
-use crate::config::Config;
 use crate::ext::sync::wait_for_socket;
 use crate::logger::GRAY;
+use crate::signal::{ProductChange, ReloadSignal, ReloadType};
+use crate::{config::Config, signal::Interrupt};
 use axum::{
     extract::ws::{Message, WebSocket, WebSocketUpgrade},
     response::IntoResponse,
@@ -20,10 +17,10 @@ lazy_static::lazy_static! {
   static ref CSS_LINK: RwLock<String> = RwLock::new(String::default());
 }
 
-pub async fn run(conf: &Config) -> JoinHandle<()> {
+pub async fn spawn(conf: &Config) -> JoinHandle<()> {
     let conf = conf.clone();
-    let mut int = subscribe_interrupt();
-    let mut prod = subscribe_product_changes();
+    let mut int = Interrupt::subscribe_any();
+    let mut prod = ProductChange::subscribe();
 
     let mut site_addr = SITE_ADDR.write().await;
     *site_addr = conf.leptos.site_addr.clone();
@@ -31,7 +28,7 @@ pub async fn run(conf: &Config) -> JoinHandle<()> {
     *css_link = conf.site_css_file().to_string();
 
     tokio::spawn(async move {
-        let _change = subscribe_reload();
+        let _change = ReloadSignal::subscribe();
 
         // wait for first build to finish even if no products updated
         select! {
@@ -46,7 +43,8 @@ pub async fn run(conf: &Config) -> JoinHandle<()> {
             log::error!(
                     "Reload TCP port {reload_addr} already in use. You can set the port in the server integration's RenderOptions reload_port"
                 );
-            request_shutdown().await;
+            Interrupt::request_shutdown().await;
+
             return;
         }
         let route = Router::new().route("/live_reload", get(move |ws| websocket_handler(ws)));
@@ -71,8 +69,8 @@ async fn websocket_handler(ws: WebSocketUpgrade) -> impl IntoResponse {
 }
 
 async fn websocket(mut stream: WebSocket) {
-    let mut rx = subscribe_reload();
-    let mut int = subscribe_interrupt();
+    let mut rx = ReloadSignal::subscribe();
+    let mut int = Interrupt::subscribe_any();
 
     log::trace!("Reload websocket connected");
     tokio::spawn(async move {
@@ -91,7 +89,7 @@ async fn websocket(mut stream: WebSocket) {
                     }
 
                 }
-                _ = int.recv(), if is_shutdown_requested().await => {
+                _ = int.recv(), if Interrupt::is_shutdown_requested().await => {
                     log::trace!("Reload websocket closed");
                     return
                 },

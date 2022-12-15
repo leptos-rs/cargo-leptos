@@ -1,37 +1,31 @@
 use crate::{
-    command::{
-        clear_source_changes, get_source_changes, is_shutdown_requested, send_product_change,
-        send_reload, ReloadType,
-    },
+    compile::{self},
     config::Config,
     ext::anyhow::Context,
     service,
-    task::compile::{self, ProductSet},
+    signal::{Interrupt, ProductChange, ProductSet, ReloadSignal},
 };
 use anyhow::Result;
 use tokio::{task::JoinHandle, try_join};
 
-use super::{ctrl_c_monitor, request_shutdown, subscribe_interrupt};
-
-pub async fn run(conf: &Config) -> Result<()> {
-    let _ = ctrl_c_monitor();
+pub async fn watch(conf: &Config) -> Result<()> {
     let _ = watch_changes(&conf).await?;
 
-    service::serve::run(conf).await;
-    service::reload::run(conf).await;
+    service::serve::spawn(conf).await;
+    service::reload::spawn(conf).await;
 
     let res = run_loop(conf).await;
     if res.is_err() {
-        request_shutdown().await;
+        Interrupt::request_shutdown().await;
     }
     res
 }
 
 pub async fn run_loop(conf: &Config) -> Result<()> {
-    let mut int = subscribe_interrupt();
+    let mut int = Interrupt::subscribe_any();
     let mut first_sync = true;
     loop {
-        let changes = get_source_changes().await;
+        let changes = Interrupt::get_source_changes().await;
 
         let server_hdl = compile::server(conf, &changes).await;
         let front_hdl = compile::front(conf, &changes).await;
@@ -46,18 +40,18 @@ pub async fn run_loop(conf: &Config) -> Result<()> {
         log::trace!("Build step done with changes: {set}");
         first_sync = false;
         if set.only_style() {
-            send_reload(ReloadType::Style);
+            ReloadSignal::send_style();
             log::info!("Watch updated style")
         } else if !set.is_empty() {
-            send_product_change(set.clone());
+            ProductChange::send(set.clone());
         }
-        clear_source_changes().await;
+        Interrupt::clear_source_changes().await;
 
         log::debug!("Watch waiting for changes");
         int.recv().await.dot()?;
         log::debug!("Watch Changes in {set}");
 
-        if is_shutdown_requested().await {
+        if Interrupt::is_shutdown_requested().await {
             log::debug!("Shutting down");
             return Ok(());
         } else {

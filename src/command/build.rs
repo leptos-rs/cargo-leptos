@@ -1,13 +1,14 @@
 use crate::{
+    compile,
+    compile::ChangeSet,
     config::Config,
     ext::{
         anyhow::{Context, Result},
         fs,
     },
-    task::{compile, ChangeSet},
 };
 
-pub async fn run(conf: &Config) -> Result<()> {
+pub async fn build(conf: &Config) -> Result<()> {
     if conf.site_root().exists() {
         fs::rm_dir_content(conf.site_root()).await.dot()?;
     }

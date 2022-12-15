@@ -1,22 +1,19 @@
 mod command;
-mod config;
-mod config_paths;
+pub mod compile;
+pub mod config;
 mod ext;
 mod logger;
-mod run;
 pub mod service;
-pub mod task;
-
-use ext::{fs, path, sync, util};
+pub mod signal;
 
 use crate::ext::anyhow::{Context, Result};
+use camino::Utf8PathBuf;
 use clap::{Parser, Subcommand, ValueEnum};
-use config::Config;
+use command::NewCommand;
 use ext::path::PathBufExt;
-use ext::sync::{send_reload, src_or_style_change, wait_for, Msg, MSG_BUS, SHUTDOWN};
-use run::{assets, cargo, end2end, new, reload, sass, wasm, watch};
-use std::{env, path::PathBuf};
-use tokio::signal;
+use ext::{fs, path, util};
+use signal::Interrupt;
+use std::env;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 pub enum Log {
@@ -67,7 +64,7 @@ enum Commands {
     /// Serve and automatically reload when files change.
     Watch(Opts),
     /// WIP: Start wizard for creating a new project (using cargo-generate). Ask at Leptos discord before using.
-    New(new::NewCommand),
+    New(NewCommand),
 }
 
 #[tokio::main]
@@ -86,13 +83,13 @@ async fn main() -> Result<()> {
     }
 
     if let Some(path) = &args.manifest_path {
-        let path = PathBuf::from(path).without_last();
+        let path = Utf8PathBuf::from(path).without_last();
         std::env::set_current_dir(path).dot()?;
     }
 
     let opts = match &args.command {
         Commands::New(_) => panic!(""),
-        Commands::Config => return Ok(println!(include_str!("leptos.toml"))),
+        Commands::Config => return Ok(println!(include_str!("config/leptos.toml"))),
         Commands::Build(opts)
         | Commands::Serve(opts)
         | Commands::Test(opts)
@@ -101,113 +98,15 @@ async fn main() -> Result<()> {
     };
     logger::setup(opts.verbose, &args.log);
 
-    let config = config::read(&args, opts.clone()).await.dot()?;
+    let config = crate::config::read(&args, opts.clone()).await.dot()?;
 
-    tokio::spawn(async {
-        signal::ctrl_c().await.expect("failed to listen for event");
-        log::info!("Leptos ctrl-c received");
-        *SHUTDOWN.write().await = true;
-        _ = MSG_BUS.send(Msg::ShutDown);
-    });
-
+    let _ = Interrupt::run_ctrl_c_monitor();
     match args.command {
         Commands::Config | Commands::New(_) => panic!(),
-        Commands::Build(_) => {
-            if false {
-                build(&config, true).await
-            } else {
-                command::build::run(&config).await
-            }
-        }
-        Commands::Serve(_) => {
-            if false {
-                serve(&config).await
-            } else {
-                command::serve::run(&config).await
-            }
-        }
-        Commands::Test(_) => {
-            if false {
-                cargo::test(&config).await
-            } else {
-                command::test::run(&config).await
-            }
-        }
-        Commands::EndToEnd(_) => {
-            if false {
-                e2e_test(&config).await
-            } else {
-                command::end2end::run(&config).await
-            }
-        }
-        Commands::Watch(_) => {
-            if false {
-                watch(&config).await
-            } else {
-                command::watch::run(&config).await
-            }
-        }
+        Commands::Build(_) => command::build(&config).await,
+        Commands::Serve(_) => command::serve(&config).await,
+        Commands::Test(_) => command::test(&config).await,
+        Commands::EndToEnd(_) => command::end2end(&config).await,
+        Commands::Watch(_) => command::watch(&config).await,
     }
-}
-
-async fn e2e_test(config: &Config) -> Result<()> {
-    build(config, true).await.dot()?;
-    let handle = cargo::spawn_run(&config, false).await;
-
-    end2end::run(config).await.dot()?;
-    MSG_BUS.send(Msg::ShutDown).dot()?;
-    handle.await.dot()?;
-    Ok(())
-}
-
-async fn build(config: &Config, copy_assets: bool) -> Result<()> {
-    log::debug!(r#"Leptos cleaning contents of "target/site/pkg""#);
-    fs::rm_dir_content("target/site/pkg").await.dot()?;
-    if copy_assets {
-        assets::update(config).await.dot()?;
-    }
-    build_client(&config).await.dot()?;
-
-    cargo::build(&config, false).await.dot()?;
-    Ok(())
-}
-async fn build_client(config: &Config) -> Result<()> {
-    sass::run(&config).await.dot()?;
-
-    wasm::build(&config).await.dot()?;
-    Ok(())
-}
-
-async fn serve(config: &Config) -> Result<()> {
-    build(&config, true).await.dot()?;
-    cargo::run(&config, false).await
-}
-
-async fn watch(config: &Config) -> Result<()> {
-    let _ = watch::spawn(config).await.dot()?;
-
-    if let Some(assets_dir) = &config.leptos.assets_dir {
-        let _ = assets::spawn(assets_dir.as_str()).await.dot()?;
-    }
-
-    reload::spawn().await;
-
-    loop {
-        match build(config, false).await {
-            Ok(_) => {
-                send_reload().await;
-                cargo::run(&config, true).await.dot()?;
-            }
-            Err(e) => {
-                log::warn!("Leptos rebuild stopped due to error: {e:?}");
-                wait_for(src_or_style_change).await;
-            }
-        }
-        if *SHUTDOWN.read().await {
-            break;
-        } else {
-            log::info!("Leptos ===================== rebuilding =====================");
-        }
-    }
-    Ok(())
 }

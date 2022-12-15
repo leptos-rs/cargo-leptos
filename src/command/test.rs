@@ -1,9 +1,9 @@
+use crate::compile::{front_cargo_process, server_cargo_process};
 use crate::config::Config;
 use crate::ext::anyhow::{Context, Result};
 use crate::logger::GRAY;
-use crate::task::compile::{front_cargo_process, server_cargo_process};
 
-pub async fn run(conf: &Config) -> Result<()> {
+pub async fn test(conf: &Config) -> Result<()> {
     let (line, mut proc) = server_cargo_process("test", conf).dot()?;
 
     proc.wait().await.dot()?;
