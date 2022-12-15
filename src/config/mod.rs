@@ -30,10 +30,7 @@ pub async fn read(cli: &Cli, opts: Opts) -> Result<Config> {
         log::debug!("Conf no .env file found");
     }
 
-    let watch = match cli.command {
-        Commands::Watch(_) => true,
-        _ => false,
-    };
+    let watch = matches!(cli.command, Commands::Watch(_));
     let workspace = MetadataCommand::new().manifest_path("Cargo.toml").exec()?;
 
     let cargo = workspace
@@ -46,13 +43,13 @@ pub async fn read(cli: &Cli, opts: Opts) -> Result<Config> {
         .iter()
         .find(|t| t.kind.iter().any(|k| k == "cdylib"))
     {
-        Some(lib) => lib.name.replace("-", "_"),
-        None => cargo.name.replace("-", "_"),
+        Some(lib) => lib.name.replace('-', "_"),
+        None => cargo.name.replace('-', "_"),
     };
 
     let mut leptos = LeptosConfig::load(&package_name)
         .await
-        .context(format!("read config: Cargo.toml"))?;
+        .context("read config: Cargo.toml")?;
 
     if let Some(style) = &leptos.style_file {
         ensure!(style.exists(), "no css/sass/scss file found at: {style:?}",);

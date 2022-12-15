@@ -23,7 +23,7 @@ pub async fn spawn(conf: &Config) -> JoinHandle<()> {
     let mut prod = ProductChange::subscribe();
 
     let mut site_addr = SITE_ADDR.write().await;
-    *site_addr = conf.leptos.site_addr.clone();
+    *site_addr = conf.leptos.site_addr;
     let mut css_link = CSS_LINK.write().await;
     *css_link = conf.site_css_file().to_string();
 
@@ -33,13 +33,13 @@ pub async fn spawn(conf: &Config) -> JoinHandle<()> {
         // wait for first build to finish even if no products updated
         select! {
             _ = prod.recv() => {}
-            _ = int.recv() => return ()
+            _ = int.recv() => return
         }
 
         let mut reload_addr = conf.leptos.site_addr;
         reload_addr.set_port(conf.leptos.reload_port);
 
-        if let Ok(_) = TcpStream::connect(&reload_addr).await {
+        if TcpStream::connect(&reload_addr).await.is_ok() {
             log::error!(
                     "Reload TCP port {reload_addr} already in use. You can set the port in the server integration's RenderOptions reload_port"
                 );
@@ -47,7 +47,7 @@ pub async fn spawn(conf: &Config) -> JoinHandle<()> {
 
             return;
         }
-        let route = Router::new().route("/live_reload", get(move |ws| websocket_handler(ws)));
+        let route = Router::new().route("/live_reload", get(websocket_handler));
 
         log::debug!(
             "Reload server started {}",
@@ -65,7 +65,7 @@ pub async fn spawn(conf: &Config) -> JoinHandle<()> {
 }
 
 async fn websocket_handler(ws: WebSocketUpgrade) -> impl IntoResponse {
-    ws.on_upgrade(move |stream| websocket(stream))
+    ws.on_upgrade(websocket)
 }
 
 async fn websocket(mut stream: WebSocket) {
@@ -99,7 +99,7 @@ async fn websocket(mut stream: WebSocket) {
 }
 
 async fn send(stream: &mut WebSocket, msg: BrowserMessage) {
-    let site_addr = SITE_ADDR.read().await.clone();
+    let site_addr = *SITE_ADDR.read().await;
     if !wait_for_socket("Reload", site_addr).await {
         log::warn!(r#"Reload could not send "{msg}" to websocket"#);
     }

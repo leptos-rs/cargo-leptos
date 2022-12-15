@@ -77,7 +77,7 @@ impl ServerProcess {
         let bin = &self.2;
         let child = if bin.exists() {
             log::debug!("Serve running {}", GRAY.paint(bin.as_str()));
-            Some(Command::new(&bin).envs(self.1.clone()).spawn()?)
+            Some(Command::new(bin).envs(self.1.clone()).spawn()?)
         } else {
             log::debug!("Serve no exe found {}", GRAY.paint(bin.as_str()));
             None

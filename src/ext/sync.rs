@@ -33,7 +33,7 @@ pub async fn wait_for_socket(name: &str, addr: SocketAddr) -> bool {
     let duration = Duration::from_millis(500);
 
     for _ in 0..20 {
-        if let Ok(_) = TcpStream::connect(&addr).await {
+        if TcpStream::connect(&addr).await.is_ok() {
             log::debug!("{name} server port {addr} open");
             return true;
         }

@@ -9,13 +9,13 @@ impl Config {
     }
 
     pub fn cargo_wasm_file(&self) -> Utf8PathBuf {
-        let rel_dbg = self.cli.release.then(|| "release").unwrap_or("debug");
+        let rel_dbg = if self.cli.release { "release" } else { "debug" };
 
         self.target_dir()
             .join("front")
             .join("wasm32-unknown-unknown")
             .join(rel_dbg)
-            .join(&self.lib_crate_name())
+            .join(self.lib_crate_name())
             .with_extension("wasm")
     }
 
@@ -50,7 +50,7 @@ impl Config {
         &self.leptos.site_root
     }
     pub fn pkg_dir(&self) -> SiteFile {
-        SiteFile::from(self.leptos.site_pkg_dir.clone())
+        self.leptos.site_pkg_dir.clone()
     }
 
     /// Get the crate name for bin crate
@@ -61,17 +61,17 @@ impl Config {
             .iter()
             .find(|t| t.kind.iter().any(|k| k == "bin"))
         {
-            Some(bin) => bin.name.replace("-", "_"),
-            None => self.cargo.name.replace("-", "_"),
+            Some(bin) => bin.name.replace('-', "_"),
+            None => self.cargo.name.replace('-', "_"),
         }
     }
 
     pub fn cargo_bin_file(&self) -> Utf8PathBuf {
-        let rel_dbg = self.cli.release.then(|| "release").unwrap_or("debug");
+        let rel_dbg = if self.cli.release { "release" } else { "debug" };
         self.target_dir()
             .join("server")
             .join(rel_dbg)
-            .join(&self.lib_crate_name())
+            .join(self.lib_crate_name())
     }
 
     pub fn target_dir(&self) -> &Utf8Path {
@@ -85,7 +85,7 @@ pub fn lib_crate_name(cargo: &CargoPackage) -> String {
         .iter()
         .find(|t| t.kind.iter().any(|k| k == "cdylib"))
     {
-        Some(lib) => lib.name.replace("-", "_"),
-        None => cargo.name.replace("-", "_"),
+        Some(lib) => lib.name.replace('-', "_"),
+        None => cargo.name.replace('-', "_"),
     }
 }

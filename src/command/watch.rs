@@ -9,7 +9,7 @@ use anyhow::Result;
 use tokio::{task::JoinHandle, try_join};
 
 pub async fn watch(conf: &Config) -> Result<()> {
-    let _ = watch_changes(&conf).await?;
+    let _watch = watch_changes(conf).await?;
 
     service::serve::spawn(conf).await;
     service::reload::spawn(conf).await;

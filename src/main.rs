@@ -100,7 +100,7 @@ async fn main() -> Result<()> {
 
     let config = crate::config::read(&args, opts.clone()).await.dot()?;
 
-    let _ = Interrupt::run_ctrl_c_monitor();
+    let _monitor = Interrupt::run_ctrl_c_monitor();
     match args.command {
         Commands::Config | Commands::New(_) => panic!(),
         Commands::Build(_) => command::build(&config).await,

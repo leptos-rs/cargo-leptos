@@ -11,7 +11,7 @@ lazy_static::lazy_static! {
   static ref SHUTDOWN: broadcast::Sender<()> = broadcast::channel(1).0;
 
   static ref SHUTDOWN_REQUESTED: RwLock<bool> = RwLock::new(false);
-  static ref SOURCE_CHANGES: RwLock<ChangeSet> = RwLock::new(ChangeSet::new());
+  static ref SOURCE_CHANGES: RwLock<ChangeSet> = RwLock::new(ChangeSet::default());
 }
 
 pub struct Interrupt {}

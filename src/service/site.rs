@@ -47,7 +47,7 @@ impl AsRef<Utf8Path> for SiteFile {
 impl std::ops::Deref for SiteFile {
     type Target = Utf8Path;
     fn deref(&self) -> &Self::Target {
-        &*self.0
+        &self.0
     }
 }
 
@@ -83,7 +83,7 @@ pub mod ext {
     /// check after writing the file if it changed
     pub async fn did_file_change(to: &Utf8Path) -> Result<bool> {
         let new_hash = super::file_hash(to).await.dot()?;
-        let cur_hash = { EXT_FILE_REG.read().await.get(to.as_str()).map(|hash| *hash) };
+        let cur_hash = { EXT_FILE_REG.read().await.get(to.as_str()).copied() };
         if Some(new_hash) == cur_hash {
             return Ok(false);
         }
@@ -117,7 +117,7 @@ pub async fn copy_file_if_changed(from: &Utf8Path, to: &SiteFile) -> Result<bool
 /// check after writing the file if it changed
 pub async fn did_file_change(to: &SiteFile) -> Result<bool> {
     let new_hash = file_hash(&to.to_absolute().await).await.dot()?;
-    let cur_hash = { FILE_REG.read().await.get(to.as_str()).map(|hash| *hash) };
+    let cur_hash = { FILE_REG.read().await.get(to.as_str()).copied() };
     if Some(new_hash) == cur_hash {
         return Ok(false);
     }
@@ -129,7 +129,7 @@ pub async fn did_file_change(to: &SiteFile) -> Result<bool> {
 pub async fn write_if_changed(to: &SiteFile, data: &[u8]) -> Result<bool> {
     let dest = get_dest(to).await?;
 
-    let new_hash = seahash::hash(&data);
+    let new_hash = seahash::hash(data);
     let cur_hash = current_hash(to, &dest).await?;
 
     if Some(new_hash) == cur_hash {
@@ -164,7 +164,7 @@ async fn file_hash(file: &Utf8Path) -> Result<u64> {
 }
 
 async fn current_hash(to: &Utf8Path, dest: &Utf8Path) -> Result<Option<u64>> {
-    if let Some(hash) = FILE_REG.read().await.get(to.as_str()).map(|hash| *hash) {
+    if let Some(hash) = FILE_REG.read().await.get(to.as_str()).copied() {
         Ok(Some(hash))
     } else if dest.exists() {
         Ok(Some(file_hash(dest).await?))

@@ -81,10 +81,8 @@ async fn bindgen(conf: &Config) -> Result<Outcome> {
     let abs_wasm_path = conf.site_wasm_file().to_absolute().await;
     bindgen.wasm_mut().emit_wasm_file(&abs_wasm_path).dot()?;
     log::trace!("Front wrote wasm to {:?}", abs_wasm_path.as_str());
-    if conf.cli.release {
-        if !optimize(&abs_wasm_path, interrupt).await.dot()? {
-            return Ok(Outcome::Stopped);
-        }
+    if conf.cli.release && !optimize(&abs_wasm_path, interrupt).await.dot()? {
+        return Ok(Outcome::Stopped);
     }
 
     let module_js = bindgen.local_modules().values().join("\n");
@@ -104,11 +102,11 @@ async fn bindgen(conf: &Config) -> Result<Outcome> {
         .dot()?;
     log::debug!(
         "Front js {}",
-        js_changed.then(|| "changed").unwrap_or("unchanged")
+        if js_changed { "changed" } else { "unchanged" }
     );
     log::debug!(
         "Front wasm {}",
-        wasm_changed.then(|| "changed").unwrap_or("unchanged")
+        if wasm_changed { "changed" } else { "unchanged" }
     );
     if js_changed || wasm_changed {
         Ok(Outcome::Success(Product::ClientWasm))
@@ -124,7 +122,7 @@ async fn optimize(file: &Utf8Path, interrupt: broadcast::Receiver<()>) -> Result
 
     let args = [file.as_str(), "-Os", "-o", file.as_str()];
     let process = Command::new(wasm_opt)
-        .args(&args)
+        .args(args)
         .spawn()
         .context("Could not spawn command")?;
     wait_interruptible("wasm-opt", process, interrupt).await

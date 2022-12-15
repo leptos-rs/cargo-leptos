@@ -51,7 +51,7 @@ impl LeptosConfig {
                     "Conf package_name = {p} {}",
                     GRAY.paint("from env PACKAGE_NAME")
                 );
-                p.to_string()
+                p
             }
             None => {
                 log::debug!(

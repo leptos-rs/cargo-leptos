@@ -95,13 +95,11 @@ fn opt_push(args: &mut Vec<String>, name: &str, arg: &Option<String>) {
 /// Workaround to support short `new --git leptos-rs/start` command when behind Git proxy.
 /// See https://github.com/cargo-generate/cargo-generate/issues/752.
 fn absolute_git_url(url: &Option<String>) -> Option<String> {
-    let x = match url {
+    match url {
         Some(url) => match url.as_str() {
             "leptos-rs/start" => Some("https://github.com/leptos-rs/start".to_string()),
             _ => Some(url.to_string()),
         },
         None => None,
-    };
-
-    x.clone()
+    }
 }

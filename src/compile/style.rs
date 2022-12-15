@@ -53,7 +53,7 @@ async fn build(conf: &Config) -> Result<Product> {
         _ => bail!("Not a css/sass/scss style file: {style_file}"),
     };
 
-    process_css(&conf)
+    process_css(conf)
         .await
         .context(format!("process css {style_file}"))
 }
@@ -94,8 +94,10 @@ async fn process_css(conf: &Config) -> Result<Product> {
         style.minify(MinifyOptions::default())?;
     }
 
-    let mut options = PrinterOptions::default();
-    options.targets = browsers;
+    let mut options = PrinterOptions::<'_> {
+        targets: browsers,
+        ..Default::default()
+    };
 
     if conf.cli.release {
         options.minify = true;

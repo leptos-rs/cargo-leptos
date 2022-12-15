@@ -26,7 +26,7 @@ pub fn os_arch() -> Result<(&'static str, &'static str)> {
 
 pub trait StrAdditions {
     fn with(&self, append: &str) -> String;
-    fn pad_left_to<'a>(&'a self, len: usize) -> Cow<'a, str>;
+    fn pad_left_to(&self, len: usize) -> Cow<str>;
     /// returns the string as a canonical path (creates the dir if necessary)
     fn to_canoncial_dir(&self) -> Result<Utf8PathBuf>;
 }
@@ -38,7 +38,7 @@ impl StrAdditions for str {
         s
     }
 
-    fn pad_left_to<'a>(&'a self, len: usize) -> Cow<'a, str> {
+    fn pad_left_to(&self, len: usize) -> Cow<str> {
         let chars = self.chars().count();
         if chars < len {
             Cow::Owned(format!("{}{self}", " ".repeat(len - chars)))
@@ -63,7 +63,7 @@ impl StrAdditions for String {
         s
     }
 
-    fn pad_left_to<'a>(&'a self, len: usize) -> Cow<'a, str> {
+    fn pad_left_to(&self, len: usize) -> Cow<str> {
         self.as_str().pad_left_to(len)
     }
 

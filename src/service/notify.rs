@@ -46,9 +46,8 @@ async fn run(paths: &[Utf8PathBuf], exclude: Vec<Utf8PathBuf>, assets_dir: Optio
     std::thread::spawn(move || {
         while let Ok(event) = sync_rx.recv() {
             log::trace!("Notify received {event:?}");
-            match Watched::try_new(event) {
-                Ok(Some(watched)) => handle(watched, &exclude, &assets_dir),
-                _ => {}
+            if let Ok(Some(watched)) = Watched::try_new(event) {
+                handle(watched, &exclude, &assets_dir);
             }
         }
         log::debug!("Notify stopped");
@@ -58,7 +57,7 @@ async fn run(paths: &[Utf8PathBuf], exclude: Vec<Utf8PathBuf>, assets_dir: Optio
         .expect("failed to build file system watcher");
 
     for path in paths {
-        if let Err(e) = watcher.watch(&path, RecursiveMode::Recursive) {
+        if let Err(e) = watcher.watch(path, RecursiveMode::Recursive) {
             log::error!("Notify could not watch {path:?} due to {e:?}");
         }
     }
@@ -141,12 +140,12 @@ impl Watched {
     }
 
     pub fn path_ext(&self) -> Option<&str> {
-        self.path().map(|p| p.extension()).flatten()
+        self.path().and_then(|p| p.extension())
     }
 
     pub fn path(&self) -> Option<&Utf8PathBuf> {
         match self {
-            Self::Remove(p) | Self::Rename(p, _) | Self::Write(p) | Self::Create(p) => Some(&p),
+            Self::Remove(p) | Self::Rename(p, _) | Self::Write(p) | Self::Create(p) => Some(p),
             Self::Rescan => None,
         }
     }

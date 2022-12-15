@@ -9,10 +9,10 @@ use crate::signal::{Interrupt, ProductChange, ProductSet};
 pub async fn end2end(conf: &Config) -> Result<()> {
     if let Some(e2e_cmd) = &conf.leptos.end2end_cmd {
         super::build::build(conf).await.dot()?;
-        let server = serve::spawn(&conf).await;
+        let server = serve::spawn(conf).await;
         // the server waits for the first product change before starting
         ProductChange::send(ProductSet::empty());
-        try_run(&e2e_cmd)
+        try_run(e2e_cmd)
             .await
             .context(format!("running: {e2e_cmd}"))?;
         Interrupt::request_shutdown().await;

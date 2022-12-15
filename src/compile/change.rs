@@ -14,14 +14,10 @@ pub enum Change {
     Conf,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct ChangeSet(Vec<Change>);
 
 impl ChangeSet {
-    pub fn new() -> Self {
-        Self(Vec::new())
-    }
-
     pub fn all_changes() -> Self {
         Self(vec![
             Change::Source,

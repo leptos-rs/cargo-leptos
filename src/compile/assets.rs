@@ -15,7 +15,7 @@ pub async fn assets(
 ) -> JoinHandle<Result<Outcome>> {
     let changes = changes.clone();
 
-    let assets_dir = conf.leptos.assets_dir.as_ref().map(|d| d.clone());
+    let assets_dir = conf.leptos.assets_dir.as_ref().cloned();
     let conf = conf.clone();
     tokio::spawn(async move {
         let src_root = match assets_dir {
@@ -26,13 +26,13 @@ pub async fn assets(
 
         let change = if first_sync {
             log::trace!("Assets starting full resync");
-            resync(&src_root, &dest_root).await?;
+            resync(&src_root, dest_root).await?;
             true
         } else {
             let mut changed = false;
             for watched in changes.asset_iter() {
                 log::trace!("Assets processing {watched:?}");
-                let change = update_asset(watched.clone(), &src_root, &dest_root, &[]).await?;
+                let change = update_asset(watched.clone(), &src_root, dest_root, &[]).await?;
                 changed |= change;
             }
             changed

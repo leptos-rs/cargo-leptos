@@ -30,10 +30,9 @@ impl PathExt for Utf8Path {
     }
 
     fn unbase(&self, base: &Utf8Path) -> Result<Utf8PathBuf> {
-        let mut base_comp_iter = base.components();
         let mut self_comp_iter = self.components();
 
-        while let Some(base_comp) = base_comp_iter.next() {
+        for base_comp in base.components() {
             match self_comp_iter.next() {
                 Some(self_comp) if base_comp != self_comp => {
                     bail!("Cannot remove base {base:?} from {self:?} because base doesn't match")
