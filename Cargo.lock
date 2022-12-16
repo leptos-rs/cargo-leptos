@@ -690,7 +690,8 @@ dependencies = [
 [[package]]
 name = "decompress"
 version = "0.1.0"
-source = "git+https://github.com/rusty-ferris-club/decompress#a810fcab19901d89cfc9fc1d9102a7a1bfa74e47"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8491780536e90888d5983ed44d28a2fbe9d883d612d48830319ce42097aeb06e"
 dependencies = [
  "ar",
  "bzip2",
