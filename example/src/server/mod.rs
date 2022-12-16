@@ -34,7 +34,7 @@ fn app(cx: leptos::Scope) -> Element {
 }
 
 pub async fn run() -> std::io::Result<()> {
-    dotenvy::dotenv().unwrap();
+    _ = dotenvy::dotenv();
 
     let addr: net::SocketAddr = std::env::var("LEPTOS_SITE_ADDR").unwrap().parse().unwrap();
 
