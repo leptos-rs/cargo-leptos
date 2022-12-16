@@ -1,12 +1,14 @@
 use crate::{
-    ext::anyhow::{bail, Result},
+    ext::anyhow::{bail, Context, Result},
     logger::GRAY,
 };
-use anyhow::Context;
 use axum::body::Bytes;
-use decompress::decompressors;
-use regex::Regex;
-use std::{fs, io::Cursor, path::PathBuf};
+use std::{
+    fs,
+    io::Cursor,
+    path::{Path, PathBuf},
+};
+use zip::ZipArchive;
 
 use super::util::os_arch;
 
@@ -63,9 +65,7 @@ impl ExeMeta {
     fn get_download_url(&self) -> String {
         let (target_os, target_arch) = os_arch().unwrap();
         let url = &self.get_exe_archive_url;
-        let url = url(&self.version, target_os, target_arch).unwrap();
-
-        url
+        url(&self.version, target_os, target_arch).unwrap()
     }
 
     async fn fetch_archive(&self) -> Result<Bytes> {
@@ -76,49 +76,22 @@ impl ExeMeta {
     }
 
     fn extract_archive(&self, data: &Bytes) -> Result<()> {
-        let name = self.get_name();
-
         let url = self.get_download_url();
-
-        let ext = match url {
-            url if url.ends_with(".tar.gz") => "tar.gz",
-            url if url.ends_with(".zip") => "zip",
-            _ => bail!("The download URL does not contain either '.tar.gz' or '.zip' extension"),
-        };
-
-        let temp_file_path = CACHE_DIR.join(format!("tmp-{}.{}", name, ext));
         let dest_dir = &self.get_exe_dir_path();
 
-        let mut temp_file = fs::File::create(&temp_file_path)
-            .context(format!("Could not create file {temp_file_path:?}"))?;
-
-        let mut content = Cursor::new(data);
-        std::io::copy(&mut content, &mut temp_file)?;
-
-        let extractor = decompress::Decompress::build(vec![
-            decompressors::zip::Zip::build(Some(Regex::new(r".*\.zip").unwrap())),
-            decompressors::targz::Targz::build(Some(Regex::new(r".*\.tar\.gz").unwrap())),
-        ]);
+        if url.ends_with(".zip") {
+            extract_zip(data, &dest_dir)?;
+        } else if url.ends_with(".tar.gz") {
+            extract_tar(data, &dest_dir)?;
+        } else {
+            bail!("The download URL does not contain either '.tar.gz' or '.zip' extension");
+        }
 
         log::debug!(
             "Install decompressing {} {}",
             self.name,
-            GRAY.paint(temp_file_path.to_string_lossy())
+            GRAY.paint(dest_dir.to_string_lossy())
         );
-
-        extractor
-            .decompress(
-                &temp_file_path,
-                dest_dir,
-                &decompress::ExtractOpts { strip: 1 },
-            )
-            .context(format!(
-                "Could not decompress {temp_file_path:?} to {dest_dir:?}"
-            ))?;
-
-        // Rename the root executable directory
-        fs::remove_file(&temp_file_path)
-            .context(format!("Could not remove file {temp_file_path:?}"))?;
 
         Ok(())
     }
@@ -143,6 +116,23 @@ impl ExeMeta {
             )
         }
     }
+}
+
+// there's a issue in the tar crate: https://github.com/alexcrichton/tar-rs/issues/295
+// It doesn't handle TAR sparse extensions, with data ending up in a GNUSparseFile.0 sub-folder
+fn extract_tar(src: &Bytes, dest: &Path) -> Result<()> {
+    let content = Cursor::new(src);
+    let dec = flate2::read::GzDecoder::new(content);
+    let mut arch = tar::Archive::new(dec);
+    arch.unpack(dest).dot()?;
+    Ok(())
+}
+
+fn extract_zip(src: &Bytes, dest: &Path) -> Result<()> {
+    let content = Cursor::new(src);
+    let mut arch = ZipArchive::new(content).dot()?;
+    arch.extract(dest).dot().dot()?;
+    Ok(())
 }
 
 pub async fn get_exe(app: Exe) -> Result<PathBuf> {
@@ -216,7 +206,7 @@ fn get_executable(app: Exe) -> Result<ExeMeta> {
         },
         Exe::Sass => ExeMeta {
             name: "sass".to_string(),
-            version: "1.56.1".to_string(),
+            version: "1.56.2".to_string(),
             get_exe_archive_url: |version, target_os, target_arch| {
                 let url = match (target_os, target_arch) {
                     ("windows", "x86_64") => format!("https://github.com/sass/dart-sass/releases/download/{version}/dart-sass-{version}-windows-x64.zip"),
@@ -228,7 +218,7 @@ fn get_executable(app: Exe) -> Result<ExeMeta> {
             },
             get_exe_name: |target_os| match target_os {
                 "windows" => "sass.bat".to_string(),
-                _ => "sass".to_string(),
+                _ => "dart-sass/sass".to_string(),
             },
         },
         Exe::WasmOpt => ExeMeta {
