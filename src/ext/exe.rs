@@ -218,7 +218,7 @@ fn get_executable(app: Exe) -> Result<ExeMeta> {
             },
             get_exe_name: |target_os| match target_os {
                 "windows" => "sass.bat".to_string(),
-                _ => "sass".to_string(),
+                _ => "dart-sass/sass".to_string(),
             },
         },
         Exe::WasmOpt => ExeMeta {
