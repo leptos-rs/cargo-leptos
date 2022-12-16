@@ -185,7 +185,7 @@ fn get_executable(app: Exe) -> Result<ExeMeta> {
     let exe = match app {
         Exe::CargoGenerate => ExeMeta {
             name: "cargo-generate".to_string(),
-            version: "0.17.4".to_string(),
+            version: "0.17.3".to_string(),
             get_exe_archive_url: |version, target_os, target_arch| {
                 let target = match (target_os, target_arch) {
                     ("macos", "aarch64") => "aarch64-apple-darwin",
