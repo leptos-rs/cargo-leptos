@@ -4,30 +4,7 @@ use crate::app::*;
 use actix_files::Files;
 use actix_web::*;
 use leptos::*;
-use leptos_router::*;
 use std::net;
-
-#[derive(Copy, Clone, Debug)]
-struct ActixIntegration {
-    path: ReadSignal<String>,
-}
-
-impl History for ActixIntegration {
-    fn location(&self, cx: leptos::Scope) -> ReadSignal<LocationChange> {
-        create_signal(
-            cx,
-            LocationChange {
-                value: self.path.get(),
-                replace: false,
-                scroll: true,
-                state: State(None),
-            },
-        )
-        .0
-    }
-
-    fn navigate(&self, _loc: &LocationChange) {}
-}
 
 fn app(cx: leptos::Scope) -> Element {
     view! { cx, <App /> }
