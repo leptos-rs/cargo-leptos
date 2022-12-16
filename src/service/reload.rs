@@ -117,11 +117,8 @@ async fn send(stream: &mut WebSocket, msg: BrowserMessage) {
 
 async fn send_and_close(mut stream: WebSocket, msg: BrowserMessage) {
     send(&mut stream, msg).await;
-    if let Err(e) = stream.close().await {
-        log::error!("Reload socket close error {e}");
-    } else {
-        log::trace!("Reload websocket closed");
-    }
+    let _ = stream.close().await;
+    log::trace!("Reload websocket closed");
 }
 
 #[derive(Serialize)]
