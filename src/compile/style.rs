@@ -72,7 +72,7 @@ async fn compile_sass(conf: &Config, style_file: &Utf8Path, release: bool) -> Re
 
     log::trace!(
         "Style running {}",
-        GRAY.paint(format!("sass {}", args.join(sep)))
+        GRAY.paint(format!("sass {}", args.join(" ")))
     );
 
     cmd.wait()
