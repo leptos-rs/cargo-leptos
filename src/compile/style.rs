@@ -4,6 +4,7 @@ use crate::{
     ext::anyhow::{anyhow, bail, Context, Result},
     ext::exe::{get_exe, Exe},
     fs,
+    logger::GRAY,
     service::site,
     signal::{Outcome, Product},
 };
@@ -68,6 +69,11 @@ async fn compile_sass(conf: &Config, style_file: &Utf8Path, release: bool) -> Re
         .context("Try manually installing sass: https://sass-lang.com/install")?;
 
     let mut cmd = Command::new(exe).args(&args).spawn()?;
+
+    log::trace!(
+        "Style running {}",
+        GRAY.paint(format!("sass {}", args.join(sep)))
+    );
 
     cmd.wait()
         .await
