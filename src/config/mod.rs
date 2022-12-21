@@ -6,10 +6,12 @@ use crate::{ext::fs, logger::GRAY, Cli, Commands, Opts};
 use camino::Utf8PathBuf;
 use cargo_metadata::{Metadata, MetadataCommand, Package as CargoPackage};
 use leptos::LeptosConfig;
-use tokio::sync::RwLock;
+use once_cell::sync::OnceCell;
 
 lazy_static::lazy_static! {
-    pub static ref SITE_ROOT: RwLock<Utf8PathBuf> = RwLock::new(Utf8PathBuf::from("target/site"));
+    /// The site root is the path from the current working directory
+    /// to the folder that contains the generated site
+    pub static ref SITE_ROOT: OnceCell<Utf8PathBuf> = OnceCell::new();
 }
 
 #[derive(Debug, Clone)]
@@ -53,7 +55,7 @@ pub async fn read(cli: &Cli, opts: Opts) -> Result<Config> {
         None => cargo.name.replace('-', "_"),
     };
 
-    let mut leptos = LeptosConfig::load(&package_name)
+    let leptos = LeptosConfig::load(&package_name)
         .await
         .context("read config: Cargo.toml")?;
 
@@ -65,13 +67,8 @@ pub async fn read(cli: &Cli, opts: Opts) -> Result<Config> {
     if !leptos.site_root.exists() {
         fs::create_dir_all(&leptos.site_root).await?;
     }
-    if !leptos.site_root.is_absolute() {
-        leptos.site_root = leptos.site_root.canonicalize_utf8()?;
-    }
 
-    let mut sr = SITE_ROOT.write().await;
-    *sr = leptos.site_root.clone();
-    drop(sr);
+    SITE_ROOT.set(leptos.site_root.clone()).unwrap();
 
     ensure!(
         leptos.site_pkg_dir.is_relative(),

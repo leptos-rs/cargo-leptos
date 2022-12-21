@@ -23,14 +23,8 @@ lazy_static::lazy_static! {
 pub struct SiteFile(Utf8PathBuf);
 
 impl SiteFile {
-    pub async fn to_absolute(&self) -> Utf8PathBuf {
-        let root = SITE_ROOT.read().await;
-        root.join(&self.0)
-    }
-
-    pub fn to_absolute_blocking(&self) -> Utf8PathBuf {
-        let root = SITE_ROOT.blocking_read();
-        root.join(&self.0)
+    pub fn to_relative(&self) -> Utf8PathBuf {
+        SITE_ROOT.get().unwrap().join(&self.0)
     }
 }
 
@@ -118,7 +112,7 @@ pub async fn copy_file_if_changed(from: &Utf8Path, to: &SiteFile) -> Result<bool
 
 /// check after writing the file if it changed
 pub async fn did_file_change(to: &SiteFile) -> Result<bool> {
-    let new_hash = file_hash(&to.to_absolute().await).await.dot()?;
+    let new_hash = file_hash(&to.to_relative()).await.dot()?;
     let cur_hash = { FILE_REG.read().await.get(to.as_str()).copied() };
     if Some(new_hash) == cur_hash {
         return Ok(false);
@@ -146,7 +140,7 @@ pub async fn write_if_changed(to: &SiteFile, data: &[u8]) -> Result<bool> {
 }
 
 async fn get_dest(to: &SiteFile) -> Result<Utf8PathBuf> {
-    let root = SITE_ROOT.read().await.clone();
+    let root = SITE_ROOT.get().unwrap();
 
     if to.components().count() > 1 {
         let mut to = to.to_path_buf();

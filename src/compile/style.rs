@@ -37,7 +37,7 @@ async fn build(conf: &Config) -> Result<Product> {
             return Ok(Product::NoChange);
         }
     };
-    fs::create_dir_all(conf.pkg_dir().to_absolute().await)
+    fs::create_dir_all(conf.pkg_dir().to_relative())
         .await
         .dot()?;
 
@@ -60,7 +60,7 @@ async fn build(conf: &Config) -> Result<Product> {
 }
 
 async fn compile_sass(conf: &Config, style_file: &Utf8Path, release: bool) -> Result<()> {
-    let dest = conf.site_css_file().to_absolute().await;
+    let dest = conf.site_css_file();
     let mut args = vec![style_file.as_str(), dest.as_str()];
     release.then(|| args.push("--no-source-map"));
 
@@ -90,7 +90,7 @@ fn browser_lists(query: &str) -> Result<Option<Browsers>> {
 async fn process_css(conf: &Config) -> Result<Product> {
     let browsers = browser_lists(&conf.leptos.browserquery).context("leptos.style.browserquery")?;
 
-    let file = conf.site_css_file().to_absolute().await;
+    let file = conf.site_css_file().to_relative();
     let css = fs::read_to_string(&file).await?;
 
     let mut style =
