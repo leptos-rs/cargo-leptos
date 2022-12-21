@@ -37,7 +37,6 @@ impl LeptosConfig {
                 )
             }
         };
-        log::trace!("Config file content:\n{text}");
 
         // so that serde error messages have right line number
         let newlines = text[..start].matches('\n').count();

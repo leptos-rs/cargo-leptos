@@ -1,4 +1,4 @@
-use crate::ext::anyhow::{bail, ensure, Result};
+use crate::ext::anyhow::{bail, Context, Result};
 use camino::{Utf8Path, Utf8PathBuf};
 
 pub trait PathExt {
@@ -63,13 +63,11 @@ impl PathExt for Utf8PathBuf {
     where
         Self: Sized,
     {
-        ensure!(src_root.is_absolute(), "Not canonicalized: {src_root:?}");
-        ensure!(dest_root.is_absolute(), "Not canonicalized: {dest_root:?}");
-        if let Some(rel) = self.relative_to(src_root) {
-            Ok(dest_root.join(rel))
-        } else {
-            bail!("Could not rebase {self:?} from {src_root:?} to {dest_root:?}")
-        }
+        let unbased = self
+            .unbase(src_root)
+            .dot()
+            .context(format!("Rebase {self} from {src_root} to {dest_root}"))?;
+        Ok(dest_root.join(unbased))
     }
 
     fn unbase(&self, base: &Utf8Path) -> Result<Utf8PathBuf> {
