@@ -68,10 +68,17 @@ impl Config {
 
     pub fn cargo_bin_file(&self) -> Utf8PathBuf {
         let rel_dbg = if self.cli.release { "release" } else { "debug" };
+
+        let file_ext = if cfg!(target_os = "windows") {
+            "exe"
+        } else {
+            ""
+        };
         self.target_dir()
             .join("server")
             .join(rel_dbg)
             .join(self.lib_crate_name())
+            .with_extension(file_ext)
     }
 
     pub fn target_dir(&self) -> &Utf8Path {

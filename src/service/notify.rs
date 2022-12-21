@@ -1,27 +1,29 @@
 use crate::compile::Change;
-use crate::ext::anyhow::{anyhow, Context, Result};
+use crate::ext::anyhow::{anyhow, Result};
+use crate::ext::path::PathExt;
 use crate::signal::Interrupt;
+use crate::WORKING_DIR;
 use crate::{
     config::Config,
     logger::GRAY,
-    path::{remove_nested, PathBufExt, PathExt},
+    path::{remove_nested, PathBufExt},
     util::StrAdditions,
 };
 use camino::Utf8PathBuf;
 use itertools::Itertools;
 use notify::{DebouncedEvent, RecursiveMode, Watcher};
-use std::path::PathBuf;
+use std::path::Path;
 use std::{fmt::Display, time::Duration};
 use tokio::task::JoinHandle;
 
 pub async fn spawn(config: &Config) -> Result<JoinHandle<()>> {
-    let mut paths = vec!["src".to_canoncial_dir()?];
+    let mut paths = vec!["src".to_created_dir()?];
     if let Some(style) = &config.leptos.style_file {
-        paths.push(style.clone().without_last().to_canonicalized().dot()?);
+        paths.push(style.clone().without_last());
     }
 
     let assets_dir = if let Some(dir) = &config.leptos.assets_dir {
-        let assets_root = dir.to_canonicalized().dot()?;
+        let assets_root = dir.to_owned();
         paths.push(assets_root.clone());
         Some(assets_root)
     } else {
@@ -45,9 +47,11 @@ async fn run(paths: &[Utf8PathBuf], exclude: Vec<Utf8PathBuf>, assets_dir: Optio
 
     std::thread::spawn(move || {
         while let Ok(event) = sync_rx.recv() {
-            log::trace!("Notify received {event:?}");
-            if let Ok(Some(watched)) = Watched::try_new(event) {
-                handle(watched, &exclude, &assets_dir);
+            log::trace!("Notify received {}", GRAY.paint(format!("{:?}", event)));
+            match Watched::try_new(&event) {
+                Ok(Some(watched)) => handle(watched, &exclude, &assets_dir),
+                Err(e) => log::error!("Notify error {e}"),
+                _ => log::trace!("Notify not handled {}", GRAY.paint(format!("{:?}", event))),
             }
         }
         log::debug!("Notify stopped");
@@ -70,10 +74,15 @@ async fn run(paths: &[Utf8PathBuf], exclude: Vec<Utf8PathBuf>, assets_dir: Optio
 fn handle(watched: Watched, exclude: &[Utf8PathBuf], assets_dir: &Option<Utf8PathBuf>) {
     if let Some(path) = watched.path() {
         if exclude.contains(path) {
-            log::trace!("Notify excluded: {path}");
+            log::trace!("Notify excluded {}", GRAY.paint(path.as_str()));
             return;
         }
     }
+
+    log::trace!(
+        "Notify handle {}",
+        GRAY.paint(format!("{:?}", watched.path()))
+    );
 
     if let Some(assets_dir) = assets_dir {
         match watched.path() {
@@ -112,11 +121,14 @@ pub enum Watched {
     Rescan,
 }
 
-fn convert(p: PathBuf) -> Result<Utf8PathBuf> {
-    Utf8PathBuf::from_path_buf(p).map_err(|e| anyhow!("Could not convert to a Utf8PathBuf: {e:?}"))
+fn convert(p: &Path) -> Result<Utf8PathBuf> {
+    let p = Utf8PathBuf::from_path_buf(p.to_path_buf())
+        .map_err(|e| anyhow!("Could not convert to a Utf8PathBuf: {e:?}"))?;
+    p.unbase(WORKING_DIR.get().unwrap())
 }
+
 impl Watched {
-    fn try_new(event: DebouncedEvent) -> Result<Option<Self>> {
+    fn try_new(event: &DebouncedEvent) -> Result<Option<Self>> {
         use DebouncedEvent::{
             Chmod, Create, Error, NoticeRemove, NoticeWrite, Remove, Rename, Rescan, Write,
         };

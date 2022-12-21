@@ -1,4 +1,4 @@
-use crate::ext::anyhow::{bail, ensure, Context, Result};
+use crate::ext::anyhow::{bail, Context, Result};
 use camino::{Utf8Path, Utf8PathBuf};
 
 pub trait PathExt {
@@ -10,9 +10,6 @@ pub trait PathExt {
 
     /// removes base from path (making sure they match)
     fn unbase(&self, base: &Utf8Path) -> Result<Utf8PathBuf>;
-
-    /// As .canonicalize() but returning a contextualized anyhow Result
-    fn to_canonicalized(&self) -> Result<Utf8PathBuf>;
 }
 
 pub trait PathBufExt: PathExt {
@@ -43,10 +40,6 @@ impl PathExt for Utf8Path {
         }
         Ok(Utf8PathBuf::from_iter(self_comp_iter))
     }
-
-    fn to_canonicalized(&self) -> Result<Utf8PathBuf> {
-        self.to_path_buf().to_canonicalized()
-    }
 }
 
 impl PathBufExt for Utf8PathBuf {
@@ -70,29 +63,15 @@ impl PathExt for Utf8PathBuf {
     where
         Self: Sized,
     {
-        ensure!(src_root.is_absolute(), "Not canonicalized: {src_root:?}");
-        ensure!(dest_root.is_absolute(), "Not canonicalized: {dest_root:?}");
-        if let Some(rel) = self.relative_to(src_root) {
-            Ok(dest_root.join(rel))
-        } else {
-            bail!("Could not rebase {self:?} from {src_root:?} to {dest_root:?}")
-        }
+        let unbased = self
+            .unbase(src_root)
+            .dot()
+            .context(format!("Rebase {self} from {src_root} to {dest_root}"))?;
+        Ok(dest_root.join(unbased))
     }
 
     fn unbase(&self, base: &Utf8Path) -> Result<Utf8PathBuf> {
         self.as_path().unbase(base)
-    }
-
-    fn to_canonicalized(&self) -> Result<Utf8PathBuf>
-    where
-        Self: Sized,
-    {
-        Ok(Utf8PathBuf::from_path_buf(
-            self.as_path()
-                .canonicalize()
-                .context(format!("Could not canonicalize {:?}", self))?,
-        )
-        .unwrap())
     }
 }
 

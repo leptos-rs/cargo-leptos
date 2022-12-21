@@ -4,6 +4,7 @@ use crate::{
     ext::anyhow::{anyhow, bail, Context, Result},
     ext::exe::{get_exe, Exe},
     fs,
+    logger::GRAY,
     service::site,
     signal::{Outcome, Product},
 };
@@ -36,7 +37,7 @@ async fn build(conf: &Config) -> Result<Product> {
             return Ok(Product::NoChange);
         }
     };
-    fs::create_dir_all(conf.pkg_dir().to_absolute().await)
+    fs::create_dir_all(conf.pkg_dir().to_relative())
         .await
         .dot()?;
 
@@ -59,7 +60,7 @@ async fn build(conf: &Config) -> Result<Product> {
 }
 
 async fn compile_sass(conf: &Config, style_file: &Utf8Path, release: bool) -> Result<()> {
-    let dest = conf.site_css_file().to_absolute().await;
+    let dest = conf.site_css_file().to_relative();
     let mut args = vec![style_file.as_str(), dest.as_str()];
     release.then(|| args.push("--no-source-map"));
 
@@ -69,11 +70,16 @@ async fn compile_sass(conf: &Config, style_file: &Utf8Path, release: bool) -> Re
 
     let mut cmd = Command::new(exe).args(&args).spawn()?;
 
+    log::trace!(
+        "Style running {}",
+        GRAY.paint(format!("sass {}", args.join(" ")))
+    );
+
     cmd.wait()
         .await
         .context(format!("sass {}", args.join(" ")))?;
 
-    log::trace!("Style compiled sass to {dest:?}");
+    log::trace!("Style compiled sass {}", GRAY.paint(dest.to_string()));
     Ok(())
 }
 
@@ -84,7 +90,7 @@ fn browser_lists(query: &str) -> Result<Option<Browsers>> {
 async fn process_css(conf: &Config) -> Result<Product> {
     let browsers = browser_lists(&conf.leptos.browserquery).context("leptos.style.browserquery")?;
 
-    let file = conf.site_css_file().to_absolute().await;
+    let file = conf.site_css_file().to_relative();
     let css = fs::read_to_string(&file).await?;
 
     let mut style =
@@ -108,7 +114,10 @@ async fn process_css(conf: &Config) -> Result<Product> {
 
     let prod = match site::write_if_changed(&conf.site_css_file(), bytes).await? {
         true => {
-            log::trace!("Style finished with changes");
+            log::trace!(
+                "Style finished with changes {}",
+                GRAY.paint(&conf.site_css_file().to_string())
+            );
             Product::Style
         }
         false => {

@@ -7,13 +7,19 @@ pub mod service;
 pub mod signal;
 
 use crate::ext::anyhow::{Context, Result};
+use crate::logger::GRAY;
 use camino::Utf8PathBuf;
 use clap::{Parser, Subcommand, ValueEnum};
 use command::NewCommand;
 use ext::path::PathBufExt;
 use ext::{fs, path, util};
+use once_cell::sync::OnceCell;
 use signal::Interrupt;
 use std::env;
+
+lazy_static::lazy_static! {
+    pub static ref WORKING_DIR: OnceCell<Utf8PathBuf> = OnceCell::new();
+}
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 pub enum Log {
@@ -81,8 +87,15 @@ async fn main() -> Result<()> {
     }
 
     if let Some(path) = &args.manifest_path {
-        let path = Utf8PathBuf::from(path).without_last();
-        std::env::set_current_dir(path).dot()?;
+        let path = Utf8PathBuf::from(path)
+            .without_last()
+            .canonicalize_utf8()
+            .dot()?;
+        std::env::set_current_dir(&path).dot()?;
+        WORKING_DIR.set(path).unwrap();
+    } else {
+        let path = Utf8PathBuf::from_path_buf(std::env::current_dir().unwrap()).unwrap();
+        WORKING_DIR.set(path).unwrap();
     }
 
     let opts = match &args.command {
@@ -95,6 +108,10 @@ async fn main() -> Result<()> {
     };
 
     logger::setup(opts.verbose, &args.log);
+    log::trace!(
+        "Path working dir {}",
+        GRAY.paint(WORKING_DIR.get().unwrap().as_str())
+    );
 
     let config = crate::config::read(&args, opts.clone()).await.dot()?;
 

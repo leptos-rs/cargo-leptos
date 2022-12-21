@@ -6,10 +6,10 @@ use crate::{
     signal::{Interrupt, ProductChange, ProductSet, ReloadSignal},
 };
 use anyhow::Result;
-use tokio::{task::JoinHandle, try_join};
+use tokio::try_join;
 
 pub async fn watch(conf: &Config) -> Result<()> {
-    let _watch = watch_changes(conf).await?;
+    let _watch = service::notify::spawn(conf).await?;
 
     service::serve::spawn(conf).await;
     service::reload::spawn(conf).await;
@@ -58,8 +58,4 @@ pub async fn run_loop(conf: &Config) -> Result<()> {
             log::debug!("Watch build output didn't change")
         }
     }
-}
-
-async fn watch_changes(conf: &Config) -> Result<JoinHandle<()>> {
-    service::notify::spawn(conf).await
 }

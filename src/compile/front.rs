@@ -25,7 +25,7 @@ pub async fn front(conf: &Config, changes: &ChangeSet) -> JoinHandle<Result<Outc
             return Ok(Outcome::Success(Product::NoChange));
         }
 
-        fs::create_dir_all(conf.pkg_dir().to_absolute().await).await?;
+        fs::create_dir_all(conf.pkg_dir().to_relative()).await?;
 
         let (line, process) = front_cargo_process("build", true, &conf)?;
 
@@ -78,7 +78,7 @@ async fn bindgen(conf: &Config) -> Result<Outcome> {
         .generate_output()
         .dot()?;
 
-    let abs_wasm_path = conf.site_wasm_file().to_absolute().await;
+    let abs_wasm_path = conf.site_wasm_file().to_relative();
     bindgen.wasm_mut().emit_wasm_file(&abs_wasm_path).dot()?;
     log::trace!("Front wrote wasm to {:?}", abs_wasm_path.as_str());
     if conf.cli.release && !optimize(&abs_wasm_path, interrupt).await.dot()? {
