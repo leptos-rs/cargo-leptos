@@ -1,8 +1,9 @@
-use super::path::PathExt;
 use crate::ext::anyhow::{Context, Result};
 use camino::{Utf8Path, Utf8PathBuf};
 use std::{collections::VecDeque, path::Path};
 use tokio::fs::{self, ReadDir};
+
+use super::path::PathExt;
 
 pub async fn rm_dir_content<P: AsRef<Path>>(dir: P) -> Result<()> {
     try_rm_dir_content(&dir)
@@ -110,24 +111,24 @@ pub async fn copy_dir_all(src: impl AsRef<Utf8Path>, dst: impl AsRef<Path>) -> R
 }
 
 async fn cp_dir_all(src: impl AsRef<Utf8Path>, dst: impl AsRef<Path>) -> Result<()> {
-    let src = src.as_ref().to_canonicalized()?;
+    let src = src.as_ref();
     let dst = Utf8PathBuf::from_path_buf(dst.as_ref().to_path_buf()).unwrap();
 
     self::create_dir_all(&dst).await?;
 
     let mut dirs = VecDeque::new();
-    dirs.push_back(src.clone());
+    dirs.push_back(src.to_owned());
 
     while let Some(dir) = dirs.pop_front() {
         let mut entries = dir.read_dir_utf8()?;
 
         while let Some(Ok(entry)) = entries.next() {
-            let from = entry.path();
+            let from = entry.path().to_owned();
             let to = from.rebase(&src, &dst)?;
 
             if entry.file_type()?.is_dir() {
                 self::create_dir(&to).await?;
-                dirs.push_back(from.to_owned());
+                dirs.push_back(from);
             } else {
                 self::copy(from, to).await?;
             }

@@ -19,7 +19,7 @@ pub async fn assets(
     let conf = conf.clone();
     tokio::spawn(async move {
         let src_root = match assets_dir {
-            Some(dir) => dir.to_canonicalized()?,
+            Some(dir) => dir,
             None => return Ok(Outcome::Success(Product::NoChange)),
         };
         let dest_root = &conf.leptos.site_root;
@@ -49,7 +49,7 @@ pub async fn assets(
 
 async fn update_asset(
     watched: Watched,
-    src_root: &Utf8PathBuf,
+    src_root: &Utf8Path,
     dest_root: &Utf8PathBuf,
     reserved: &[Utf8PathBuf],
 ) -> Result<bool> {

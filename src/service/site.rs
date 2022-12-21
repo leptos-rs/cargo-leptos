@@ -9,7 +9,6 @@ use crate::{
     ext::{
         anyhow::{Context, Result},
         fs,
-        path::PathExt,
     },
 };
 
@@ -91,9 +90,6 @@ pub mod ext {
 }
 
 pub async fn copy_file_if_changed(from: &Utf8Path, to: &SiteFile) -> Result<bool> {
-    let from = from
-        .to_canonicalized()
-        .expect("Could not create Utf8PathBuf");
     let dest = get_dest(to).await?;
 
     let new_hash = file_hash(&from).await?;

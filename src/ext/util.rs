@@ -1,4 +1,3 @@
-use super::path::PathExt;
 use crate::ext::anyhow::{bail, Context, Result};
 use camino::Utf8PathBuf;
 use std::borrow::Cow;
@@ -28,7 +27,7 @@ pub trait StrAdditions {
     fn with(&self, append: &str) -> String;
     fn pad_left_to(&self, len: usize) -> Cow<str>;
     /// returns the string as a canonical path (creates the dir if necessary)
-    fn to_canoncial_dir(&self) -> Result<Utf8PathBuf>;
+    fn to_created_dir(&self) -> Result<Utf8PathBuf>;
 }
 
 impl StrAdditions for str {
@@ -47,12 +46,12 @@ impl StrAdditions for str {
         }
     }
 
-    fn to_canoncial_dir(&self) -> Result<Utf8PathBuf> {
+    fn to_created_dir(&self) -> Result<Utf8PathBuf> {
         let path = Utf8PathBuf::from(self);
         if !path.exists() {
             std::fs::create_dir_all(&path).context(format!("Could not create dir {self:?}"))?;
         }
-        path.to_canonicalized()
+        Ok(path)
     }
 }
 
@@ -67,7 +66,7 @@ impl StrAdditions for String {
         self.as_str().pad_left_to(len)
     }
 
-    fn to_canoncial_dir(&self) -> Result<Utf8PathBuf> {
-        self.as_str().to_canoncial_dir()
+    fn to_created_dir(&self) -> Result<Utf8PathBuf> {
+        self.as_str().to_created_dir()
     }
 }

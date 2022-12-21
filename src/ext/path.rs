@@ -1,4 +1,4 @@
-use crate::ext::anyhow::{bail, ensure, Context, Result};
+use crate::ext::anyhow::{bail, ensure, Result};
 use camino::{Utf8Path, Utf8PathBuf};
 
 pub trait PathExt {
@@ -10,9 +10,6 @@ pub trait PathExt {
 
     /// removes base from path (making sure they match)
     fn unbase(&self, base: &Utf8Path) -> Result<Utf8PathBuf>;
-
-    /// As .canonicalize() but returning a contextualized anyhow Result
-    fn to_canonicalized(&self) -> Result<Utf8PathBuf>;
 }
 
 pub trait PathBufExt: PathExt {
@@ -42,10 +39,6 @@ impl PathExt for Utf8Path {
             };
         }
         Ok(Utf8PathBuf::from_iter(self_comp_iter))
-    }
-
-    fn to_canonicalized(&self) -> Result<Utf8PathBuf> {
-        self.to_path_buf().to_canonicalized()
     }
 }
 
@@ -81,18 +74,6 @@ impl PathExt for Utf8PathBuf {
 
     fn unbase(&self, base: &Utf8Path) -> Result<Utf8PathBuf> {
         self.as_path().unbase(base)
-    }
-
-    fn to_canonicalized(&self) -> Result<Utf8PathBuf>
-    where
-        Self: Sized,
-    {
-        Ok(Utf8PathBuf::from_path_buf(
-            self.as_path()
-                .canonicalize()
-                .context(format!("Could not canonicalize {:?}", self))?,
-        )
-        .unwrap())
     }
 }
 
