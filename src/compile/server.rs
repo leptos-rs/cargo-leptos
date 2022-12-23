@@ -1,10 +1,11 @@
+use std::sync::Arc;
+
 use super::ChangeSet;
 use crate::{
-    config::Config,
+    config::Project,
     ext::anyhow::{Context, Result},
     ext::sync::wait_interruptible,
     logger::GRAY,
-    service::site,
     signal::{Interrupt, Outcome, Product},
 };
 use tokio::{
@@ -12,8 +13,8 @@ use tokio::{
     task::JoinHandle,
 };
 
-pub async fn server(conf: &Config, changes: &ChangeSet) -> JoinHandle<Result<Outcome>> {
-    let conf = conf.clone();
+pub async fn server(proj: &Arc<Project>, changes: &ChangeSet) -> JoinHandle<Result<Outcome>> {
+    let proj = proj.clone();
     let changes = changes.clone();
 
     tokio::spawn(async move {
@@ -21,16 +22,18 @@ pub async fn server(conf: &Config, changes: &ChangeSet) -> JoinHandle<Result<Out
             return Ok(Outcome::Success(Product::NoChange));
         }
 
-        let (line, process) = server_cargo_process("build", &conf)?;
+        let (line, process) = server_cargo_process("build", &proj)?;
 
         match wait_interruptible("Cargo", process, Interrupt::subscribe_any()).await? {
             true => {
                 log::info!("Cargo finished {}", GRAY.paint(line));
 
-                if site::ext::did_file_change(&conf.cargo_bin_file())
+                let changed = proj
+                    .site
+                    .did_external_file_change(&proj.paths.cargo_bin_file)
                     .await
-                    .dot()?
-                {
+                    .dot()?;
+                if changed {
                     log::debug!("Cargo server bin changed");
                     Ok(Outcome::Success(Product::ServerBin))
                 } else {
@@ -43,19 +46,17 @@ pub async fn server(conf: &Config, changes: &ChangeSet) -> JoinHandle<Result<Out
     })
 }
 
-pub fn server_cargo_process(cmd: &str, conf: &Config) -> Result<(String, Child)> {
-    let mut args = vec![
+pub fn server_cargo_process(cmd: &str, proj: &Project) -> Result<(String, Child)> {
+    let profile = format!("--profile={}", proj.server_profile);
+    let args = vec![
         cmd,
         "--no-default-features",
         "--features=ssr",
         "--target-dir=target/server",
+        profile.as_str(),
     ];
 
-    if conf.cli.release {
-        args.push("--release");
-    }
-
-    let envs = conf.to_envs();
+    let envs = proj.to_envs();
 
     let child = Command::new("cargo").args(&args).envs(envs).spawn()?;
     let line = format!("cargo {}", args.join(" "));

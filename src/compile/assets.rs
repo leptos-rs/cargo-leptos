@@ -1,28 +1,29 @@
+use std::sync::Arc;
+
 use super::ChangeSet;
-use crate::config::Config;
+use crate::config::Project;
 use crate::ext::anyhow::{Context, Result};
 use crate::service::notify::Watched;
-use crate::service::site::{self, SiteFile};
+use crate::service::site::SourcedSiteFile;
 use crate::signal::{Outcome, Product};
 use crate::{fs, logger::GRAY, path::PathExt};
 use camino::{Utf8Path, Utf8PathBuf};
 use tokio::task::JoinHandle;
 
 pub async fn assets(
-    conf: &Config,
+    proj: &Arc<Project>,
     changes: &ChangeSet,
     first_sync: bool,
 ) -> JoinHandle<Result<Outcome>> {
     let changes = changes.clone();
 
-    let assets_dir = conf.leptos.assets_dir.as_ref().cloned();
-    let conf = conf.clone();
+    let proj = proj.clone();
     tokio::spawn(async move {
-        let src_root = match assets_dir {
+        let src_root = match &proj.paths.assets_dir {
             Some(dir) => dir,
             None => return Ok(Outcome::Success(Product::NoChange)),
         };
-        let dest_root = &conf.leptos.site_root;
+        let dest_root = &proj.paths.site_root;
 
         let change = if first_sync {
             log::trace!("Assets starting full resync");
@@ -32,7 +33,8 @@ pub async fn assets(
             let mut changed = false;
             for watched in changes.asset_iter() {
                 log::trace!("Assets processing {watched:?}");
-                let change = update_asset(watched.clone(), &src_root, dest_root, &[]).await?;
+                let change =
+                    update_asset(&proj, watched.clone(), &src_root, dest_root, &[]).await?;
                 changed |= change;
             }
             changed
@@ -48,9 +50,10 @@ pub async fn assets(
 }
 
 async fn update_asset(
+    proj: &Project,
     watched: Watched,
     src_root: &Utf8Path,
-    dest_root: &Utf8PathBuf,
+    dest_root: &Utf8Path,
     reserved: &[Utf8PathBuf],
 ) -> Result<bool> {
     if let Some(path) = watched.path() {
@@ -91,8 +94,12 @@ async fn update_asset(
             true
         }
         Watched::Write(f) => {
-            let to = SiteFile::from(f.unbase(src_root)?);
-            site::copy_file_if_changed(&f, &to).await?
+            let file = SourcedSiteFile {
+                source: f.clone(),
+                dest: f.rebase(src_root, dest_root)?,
+                site: f.unbase(src_root)?,
+            };
+            proj.site.updated(&file).await?
         }
         Watched::Rescan => {
             resync(src_root, dest_root).await?;

@@ -11,6 +11,7 @@ use crate::logger::GRAY;
 use camino::Utf8PathBuf;
 use clap::{Parser, Subcommand, ValueEnum};
 use command::NewCommand;
+use config::Config;
 use ext::path::PathBufExt;
 use ext::{fs, path, util};
 use once_cell::sync::OnceCell;
@@ -34,6 +35,10 @@ pub struct Opts {
     /// Build artifacts in release mode, with optimizations.
     #[arg(short, long)]
     release: bool,
+
+    /// Which project to use, from a list of projects defined in a workspace
+    #[arg(short, long)]
+    project: Option<String>,
 
     /// Verbosity (none: info, errors & warnings, -v: verbose, --vv: very verbose).
     #[arg(short, action = clap::ArgAction::Count)]
@@ -98,13 +103,10 @@ async fn main() -> Result<()> {
         WORKING_DIR.set(path).unwrap();
     }
 
+    use Commands::{Build, EndToEnd, New, Serve, Test, Watch};
     let opts = match &args.command {
-        Commands::New(_) => panic!(""),
-        Commands::Build(opts)
-        | Commands::Serve(opts)
-        | Commands::Test(opts)
-        | Commands::EndToEnd(opts)
-        | Commands::Watch(opts) => opts,
+        New(_) => panic!(""),
+        Build(opts) | Serve(opts) | Test(opts) | EndToEnd(opts) | Watch(opts) => opts,
     };
 
     logger::setup(opts.verbose, &args.log);
@@ -113,15 +115,15 @@ async fn main() -> Result<()> {
         GRAY.paint(WORKING_DIR.get().unwrap().as_str())
     );
 
-    let config = crate::config::read(&args, opts.clone()).await.dot()?;
+    let config = Config::load(&args, opts.clone()).dot()?;
 
     let _monitor = Interrupt::run_ctrl_c_monitor();
     match args.command {
-        Commands::New(_) => panic!(),
-        Commands::Build(_) => command::build(&config).await,
-        Commands::Serve(_) => command::serve(&config).await,
-        Commands::Test(_) => command::test(&config).await,
-        Commands::EndToEnd(_) => command::end2end(&config).await,
-        Commands::Watch(_) => command::watch(&config).await,
+        New(_) => panic!(),
+        Build(_) => command::build_all(&config).await,
+        Serve(_) => command::serve(&config.current_project()?).await,
+        Test(_) => command::test_all(&config).await,
+        EndToEnd(_) => command::end2end_all(&config).await,
+        Watch(_) => command::watch(&config.current_project()?).await,
     }
 }

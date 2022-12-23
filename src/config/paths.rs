@@ -1,98 +1,116 @@
-use crate::{config::Config, service::site::SiteFile};
-use camino::{Utf8Path, Utf8PathBuf};
-use cargo_metadata::Package as CargoPackage;
+use crate::{
+    ext::path::PathBufExt,
+    service::site::{SiteFile, SourcedSiteFile},
+    Opts,
+};
+use camino::Utf8PathBuf;
+use cargo_metadata::{Metadata, Package};
 
-impl Config {
-    /// Get the crate name for cdylib crate
-    pub fn lib_crate_name(&self) -> String {
-        lib_crate_name(&self.cargo)
-    }
+use super::FrontConfig;
 
-    pub fn cargo_wasm_file(&self) -> Utf8PathBuf {
-        let rel_dbg = if self.cli.release { "release" } else { "debug" };
-
-        self.target_dir()
-            .join("front")
-            .join("wasm32-unknown-unknown")
-            .join(rel_dbg)
-            .join(self.lib_crate_name())
-            .with_extension("wasm")
-    }
-
-    pub fn site_wasm_file(&self) -> SiteFile {
-        SiteFile::from(
-            self.leptos
-                .site_pkg_dir
-                .join(&self.leptos.package_name)
-                .with_extension("wasm"),
-        )
-    }
-
-    pub fn site_js_file(&self) -> SiteFile {
-        SiteFile::from(
-            self.leptos
-                .site_pkg_dir
-                .join(&self.leptos.package_name)
-                .with_extension("js"),
-        )
-    }
-
-    pub fn site_css_file(&self) -> SiteFile {
-        SiteFile::from(
-            self.leptos
-                .site_pkg_dir
-                .join(&self.leptos.package_name)
-                .with_extension("css"),
-        )
-    }
-
-    pub fn site_root(&self) -> &Utf8Path {
-        &self.leptos.site_root
-    }
-    pub fn pkg_dir(&self) -> SiteFile {
-        self.leptos.site_pkg_dir.clone()
-    }
-
-    /// Get the crate name for bin crate
-    pub fn bin_crate_name(&self) -> String {
-        match self
-            .cargo
-            .targets
-            .iter()
-            .find(|t| t.kind.iter().any(|k| k == "bin"))
-        {
-            Some(bin) => bin.name.replace('-', "_"),
-            None => self.cargo.name.replace('-', "_"),
-        }
-    }
-
-    pub fn cargo_bin_file(&self) -> Utf8PathBuf {
-        let rel_dbg = if self.cli.release { "release" } else { "debug" };
-
-        let file_ext = if cfg!(target_os = "windows") {
-            "exe"
-        } else {
-            ""
-        };
-        self.target_dir()
-            .join("server")
-            .join(rel_dbg)
-            .join(self.lib_crate_name())
-            .with_extension(file_ext)
-    }
-
-    pub fn target_dir(&self) -> &Utf8Path {
-        &self.workspace.target_directory
-    }
+#[derive(Debug)]
+pub struct ProjectPaths {
+    pub lib_crate_name: String,
+    /// the absolute root directory.
+    pub abs_root_dir: Utf8PathBuf,
+    pub site_root: Utf8PathBuf,
+    pub site_pkg_dir: Utf8PathBuf,
+    /// the relative (to abs_root_dir) library project dir
+    pub front_dir: Utf8PathBuf,
+    /// the relative (to abs_root_dir) server project dir
+    pub server_dir: Utf8PathBuf,
+    /// the relative (to abs_root_dir) target dir
+    pub target_dir: Utf8PathBuf,
+    pub wasm_file: SourcedSiteFile,
+    pub js_file: SiteFile,
+    pub style_file: Option<SourcedSiteFile>,
+    pub assets_dir: Option<Utf8PathBuf>,
+    pub cargo_bin_file: Utf8PathBuf,
 }
 
-pub fn lib_crate_name(cargo: &CargoPackage) -> String {
-    match cargo
-        .targets
-        .iter()
-        .find(|t| t.kind.iter().any(|k| k == "cdylib"))
-    {
-        Some(lib) => lib.name.replace('-', "_"),
-        None => cargo.name.replace('-', "_"),
+impl ProjectPaths {
+    pub fn new(
+        metadata: &Metadata,
+        front: &Package,
+        server: &Package,
+        front_config: &FrontConfig,
+        cli: &Opts,
+    ) -> Self {
+        let abs_root_dir = metadata.workspace_root.clone();
+        let front_dir = front.manifest_path.clone().without_last();
+        let server_dir = server.manifest_path.clone().without_last();
+        let target_dir = metadata.target_directory.clone();
+        let profile = if cli.release { "release" } else { "debug" };
+        let site_root = front_config.site_root.clone();
+        let site_pkg_dir = site_root.join(&front_config.site_pkg_dir);
+        let lib_crate_name = front.name.replace('-', "_");
+
+        let wasm_file = {
+            let source = target_dir
+                .join("front")
+                .join("wasm32-unkown-unknown")
+                .join(&profile)
+                .join(&lib_crate_name);
+            let site = front_config
+                .site_pkg_dir
+                .join(&front_config.package_name)
+                .with_extension("wasm");
+            let dest = site_root.join(&site);
+            SourcedSiteFile { source, dest, site }
+        };
+
+        let js_file = {
+            let site = front_config
+                .site_pkg_dir
+                .join(&front_config.package_name)
+                .with_extension("js");
+            let dest = site_root.join(&site);
+            SiteFile { dest, site }
+        };
+
+        let style_file = if let Some(style_file) = &front_config.style_file {
+            let source = front_dir.join(style_file);
+            let site = front_config
+                .site_pkg_dir
+                .join(&front_config.package_name)
+                .with_extension("css");
+            let dest = site_root.join(&site);
+            Some(SourcedSiteFile { source, dest, site })
+        } else {
+            None
+        };
+
+        let assets_dir = front_config
+            .assets_dir
+            .as_ref()
+            .map(|dir| front_dir.join(dir));
+
+        let cargo_bin_file = {
+            let file_ext = if cfg!(target_os = "windows") {
+                "exe"
+            } else {
+                ""
+            };
+            let bin_crate_name = server.name.replace('-', "_");
+            target_dir
+                .join("server")
+                .join(&profile)
+                .join(bin_crate_name)
+                .with_extension(file_ext)
+        };
+        Self {
+            lib_crate_name,
+            abs_root_dir,
+            site_root,
+            site_pkg_dir,
+            front_dir,
+            server_dir,
+            target_dir,
+            wasm_file,
+            js_file,
+            style_file,
+            assets_dir,
+            cargo_bin_file,
+        }
     }
 }

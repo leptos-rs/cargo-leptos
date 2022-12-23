@@ -1,5 +1,7 @@
+use std::sync::Arc;
+
 use crate::{
-    config::Config,
+    config::Project,
     ext::anyhow::Result,
     logger::GRAY,
     signal::{Interrupt, Product, ProductChange, ReloadSignal},
@@ -11,9 +13,9 @@ use tokio::{
     task::JoinHandle,
 };
 
-pub async fn spawn(conf: &Config) -> JoinHandle<Result<()>> {
+pub async fn spawn(proj: &Arc<Project>) -> JoinHandle<Result<()>> {
     let mut int = Interrupt::subscribe_shutdown();
-    let conf = conf.clone();
+    let proj = proj.clone();
     let mut change = ProductChange::subscribe();
     tokio::spawn(async move {
         // wait for first build to finish even if no products updated
@@ -22,7 +24,7 @@ pub async fn spawn(conf: &Config) -> JoinHandle<Result<()>> {
             _ = int.recv() => return Ok(())
         }
 
-        let mut server = ServerProcess::start_new(&conf).await?;
+        let mut server = ServerProcess::start_new(&proj).await?;
         loop {
             select! {
               res = change.recv() => {
@@ -45,12 +47,12 @@ pub async fn spawn(conf: &Config) -> JoinHandle<Result<()>> {
 struct ServerProcess(Option<Child>, Vec<(&'static str, String)>, Utf8PathBuf);
 
 impl ServerProcess {
-    fn new(conf: &Config) -> Self {
-        Self(None, conf.to_envs(), conf.cargo_bin_file())
+    fn new(proj: &Project) -> Self {
+        Self(None, proj.to_envs(), proj.paths.cargo_bin_file.clone())
     }
 
-    async fn start_new(conf: &Config) -> Result<Self> {
-        let mut me = Self::new(conf);
+    async fn start_new(proj: &Project) -> Result<Self> {
+        let mut me = Self::new(proj);
         me.start().await?;
         Ok(me)
     }
