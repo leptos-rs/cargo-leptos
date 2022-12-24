@@ -4,9 +4,12 @@ mod project;
 
 use std::sync::Arc;
 
-use crate::{ext::anyhow::Result, Cli, Commands, Opts};
+use crate::{
+    ext::anyhow::{Context, Result},
+    Cli, Commands, Opts,
+};
 use anyhow::bail;
-pub use project::{FrontConfig, Project};
+pub use project::{Project, ProjectConfig};
 
 pub struct Config {
     pub projects: Vec<Arc<Project>>,
@@ -17,7 +20,7 @@ pub struct Config {
 impl Config {
     pub fn load(cli: &Cli, opts: Opts) -> Result<Self> {
         let watch = matches!(cli.command, Commands::Watch(_));
-        let mut projects = Project::resolve(&opts, watch)?;
+        let mut projects = Project::resolve(&opts, watch).dot()?;
 
         if projects.is_empty() {
             bail!("Please define leptos projects in the workspace Cargo.toml sections [[workspace.metadata.leptos]]")

@@ -16,7 +16,7 @@ pub async fn end2end_all(conf: &Config) -> Result<()> {
 }
 
 pub async fn end2end_proj(proj: &Arc<Project>) -> Result<()> {
-    if let Some(e2e_cmd) = &proj.front_config.end2end_cmd {
+    if let Some(e2e_cmd) = &proj.config.end2end_cmd {
         super::build::build_proj(proj).await.dot()?;
         let server = serve::spawn(proj).await;
         // the server waits for the first product change before starting

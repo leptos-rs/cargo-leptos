@@ -10,7 +10,7 @@ use crate::{
 };
 use anyhow::bail;
 use camino::{Utf8Path, Utf8PathBuf};
-use cargo_metadata::{MetadataCommand, Package, Target};
+use cargo_metadata::{Metadata, MetadataCommand, Package, Target};
 use serde::Deserialize;
 
 use super::{
@@ -21,8 +21,8 @@ use super::{
 #[derive(Debug)]
 pub struct Project {
     pub name: String,
+    pub config: ProjectConfig,
     pub front_package: Package,
-    pub front_config: FrontConfig,
     pub front_profile: String,
     pub server_package: Package,
     pub server_target: Target,
@@ -36,22 +36,34 @@ impl Project {
     pub fn resolve(cli: &Opts, watch: bool) -> Result<Vec<Arc<Project>>> {
         let metadata = MetadataCommand::new().manifest_path("Cargo.toml").exec()?;
 
-        let projects = WorkspaceProject::parse(&metadata.workspace_metadata)?;
+        let projects = ProjectDefinition::parse(&metadata)?;
         let packages = metadata.workspace_packages();
 
+        println!(
+            "{}",
+            packages
+                .iter()
+                .map(|p| p.name.clone())
+                .collect::<Vec<_>>()
+                .join(", ")
+        );
+        if true {
+            panic!()
+        }
         let mut resolved = Vec::new();
-        for project in projects {
-            let (bin_pkg, lib_pkg) = parse_packages(&project.packages)?;
+        for (project, mut config) in projects {
+            let bin_pkg = &project.bin_package;
+            let lib_pkg = &project.lib_package;
 
             let server = packages
                 .iter()
-                .find(|p| p.name == bin_pkg)
-                .ok_or_else(|| package_not_found(bin_pkg, &project.packages))?;
+                .find(|p| p.name == *bin_pkg)
+                .ok_or_else(|| anyhow!(r#"Could not find the project bin-package "{bin_pkg}""#,))?;
 
             let front = packages
                 .iter()
-                .find(|p| p.name == lib_pkg)
-                .ok_or_else(|| package_not_found(lib_pkg, &project.packages))?;
+                .find(|p| p.name == *lib_pkg)
+                .ok_or_else(|| anyhow!(r#"Could not find the project lib-package "{lib_pkg}""#,))?;
 
             let bin_targets = server
                 .targets
@@ -60,7 +72,11 @@ impl Project {
                 .filter(|(_, t)| t.is_bin())
                 .collect::<Vec<(usize, &Target)>>();
 
-            let server_target_idx = if let Some(bin_target) = &project.bin_target {
+            if config.package_name.is_empty() {
+                config.package_name = front.name.replace('-', "_");
+            }
+
+            let server_target_idx = if let Some(bin_target) = &config.bin_target {
                 bin_targets
                     .iter()
                     .find(|(_, t)| t.name == *bin_target)
@@ -73,22 +89,16 @@ impl Project {
             } else {
                 return Err(many_targets_found(bin_pkg));
             };
-            let front_dir = front.manifest_path.clone().without_last();
 
-            let mut leptos_config = FrontConfig::parse(&front_dir, &front.metadata)?;
-
-            if leptos_config.package_name.is_empty() {
-                leptos_config.package_name = front.name.replace('-', "_");
-            }
             let profile = if cli.release { "release" } else { "debug" };
 
-            let paths = ProjectPaths::new(&metadata, front, server, &leptos_config, cli);
+            let paths = ProjectPaths::new(&metadata, front, server, &config, cli);
 
             let proj = Project {
                 name: project.name.clone(),
                 front_package: (*front).clone(),
                 front_profile: profile.to_string(),
-                front_config: leptos_config,
+                config,
                 server_package: (*server).clone(),
                 server_target: server.targets[server_target_idx].clone(),
                 server_profile: profile.to_string(),
@@ -112,17 +122,11 @@ impl Project {
     /// env vars to use when running external command
     pub fn to_envs(&self) -> Vec<(&'static str, String)> {
         let mut vec = vec![
-            ("PACKAGE_NAME", self.front_config.package_name.to_string()),
-            ("LEPTOS_SITE_ROOT", self.front_config.site_root.to_string()),
-            (
-                "LEPTOS_SITE_PKG_DIR",
-                self.front_config.site_pkg_dir.to_string(),
-            ),
-            ("LEPTOS_SITE_ADDR", self.front_config.site_addr.to_string()),
-            (
-                "LEPTOS_RELOAD_PORT",
-                self.front_config.reload_port.to_string(),
-            ),
+            ("PACKAGE_NAME", self.config.package_name.to_string()),
+            ("LEPTOS_SITE_ROOT", self.config.site_root.to_string()),
+            ("LEPTOS_SITE_PKG_DIR", self.config.site_pkg_dir.to_string()),
+            ("LEPTOS_SITE_ADDR", self.config.site_addr.to_string()),
+            ("LEPTOS_RELOAD_PORT", self.config.reload_port.to_string()),
         ];
         if self.watch {
             vec.push(("LEPTOS_WATCH", "ON".to_string()))
@@ -132,7 +136,8 @@ impl Project {
 }
 
 #[derive(Deserialize, Debug)]
-pub struct FrontConfig {
+#[serde(rename_all = "kebab-case")]
+pub struct ProjectConfig {
     #[serde(default)]
     pub package_name: String,
     #[serde(default = "default_site_addr")]
@@ -148,22 +153,21 @@ pub struct FrontConfig {
     pub reload_port: u16,
     /// command for launching end-2-end integration tests
     pub end2end_cmd: Option<String>,
+    /// the dir used when launching end-2-end integration tests
+    pub end2end_dir: Option<String>,
     #[serde(default = "default_browserquery")]
     pub browserquery: String,
+    /// the bin target to use for building the server
+    bin_target: Option<String>,
 }
 
-impl FrontConfig {
-    fn parse(dir: &Utf8Path, value: &serde_json::Value) -> Result<Self> {
-        let value = value.as_object().map(|o| o.get("leptos")).flatten();
-        if let Some(value) = value {
-            let mut conf: FrontConfig = serde_json::from_value(value.clone())?;
-            if let Some(file) = find_env_file(dir) {
-                overlay_env(&mut conf, &file)?;
-            }
-            Ok(conf)
-        } else {
-            bail!("Missing [package.metadata.leptos] section")
+impl ProjectConfig {
+    fn parse(dir: &Utf8Path, metadata: &serde_json::Value) -> Result<Self> {
+        let mut conf: ProjectConfig = serde_json::from_value(metadata.clone())?;
+        if let Some(file) = find_env_file(dir) {
+            overlay_env(&mut conf, &file)?;
         }
+        Ok(conf)
     }
 }
 fn default_site_addr() -> SocketAddr {
@@ -197,41 +201,65 @@ fn target_not_found(target: &str) -> Error {
     )
 }
 
-fn package_not_found(pkg: &str, packages: &str) -> Error {
-    anyhow!(
-        r#"Could not find the workspace package "{pkg}", specified: [[workspace.metadata.leptos]] packages = "{packages}""#,
-    )
-}
-
 #[derive(Debug, Deserialize)]
-pub struct WorkspaceProject {
+#[serde(rename_all = "kebab-case")]
+pub struct ProjectDefinition {
     name: String,
-    packages: String,
-    bin_target: Option<String>,
+    bin_package: String,
+    lib_package: String,
 }
-impl WorkspaceProject {
-    fn parse(value: &serde_json::Value) -> Result<Vec<Self>> {
-        let value = value.as_object().map(|o| o.get("leptos")).flatten();
-        if let Some(value) = value {
-            Ok(serde_json::from_value(value.clone())?)
-        } else {
-            Ok(Default::default())
-        }
-    }
-}
-
-fn parse_packages(packages: &str) -> Result<(&str, &str)> {
-    let mut parts = packages.split(" ");
-    match (parts.next(), parts.next(), parts.next()) {
-        (Some(p1), Some(p2), None) => {
-            if p1.starts_with("bin:") && p2.starts_with("lib:") {
-                return Ok((&p1[4..], &p2[4..]));
-            } else if p1.starts_with("lib:") && p2.starts_with("bin:") {
-                return Ok((&p2[4..], &p1[4..]));
+impl ProjectDefinition {
+    fn from_workspace(
+        metadata: &serde_json::Value,
+        dir: &Utf8Path,
+    ) -> Result<Vec<(Self, ProjectConfig)>> {
+        let mut found = Vec::new();
+        if let Some(arr) = metadata.as_array() {
+            for section in arr {
+                let conf = ProjectConfig::parse(dir, section)?;
+                let def: Self = serde_json::from_value(section.clone())?;
+                found.push((def, conf))
             }
         }
-        (Some(p1), None, None) => return Ok((p1, p1)),
-        (_, _, Some(_)) | (None, _, _) => {}
+        Ok(found)
     }
-    bail!("Invalid [[workspace.metadata.leptos]] members specification: {packages}")
+
+    fn from_project(
+        package: &Package,
+        metadata: &serde_json::Value,
+        dir: &Utf8Path,
+    ) -> Result<(Self, ProjectConfig)> {
+        let conf = ProjectConfig::parse(dir, metadata)?;
+        Ok((
+            ProjectDefinition {
+                name: package.name.to_string(),
+                bin_package: package.name.to_string(),
+                lib_package: package.name.to_string(),
+            },
+            conf,
+        ))
+    }
+
+    fn parse(metadata: &Metadata) -> Result<Vec<(Self, ProjectConfig)>> {
+        let mut found: Vec<(Self, ProjectConfig)> =
+            if let Some(md) = leptos_metadata(&metadata.workspace_metadata) {
+                let dir = &metadata.workspace_root;
+                Self::from_workspace(md, dir)?
+            } else {
+                Default::default()
+            };
+
+        for package in metadata.workspace_packages() {
+            let dir = package.manifest_path.clone().without_last();
+
+            if let Some(metadata) = leptos_metadata(&package.metadata) {
+                found.push(Self::from_project(package, metadata, &dir)?);
+            }
+        }
+        Ok(found)
+    }
+}
+
+fn leptos_metadata(metadata: &serde_json::Value) -> Option<&serde_json::Value> {
+    metadata.as_object().map(|o| o.get("leptos")).flatten()
 }

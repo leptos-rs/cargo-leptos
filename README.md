@@ -1,25 +1,32 @@
 [![crates.io](https://img.shields.io/crates/v/cargo-leptos)](https://crates.io/crates/cargo-leptos)
 [![Discord](https://img.shields.io/discord/1031524867910148188?color=%237289DA&label=discord)](https://discord.gg/YdRAhS7eQB)
 
-# cargo-leptos
-
 Build tool for [Leptos](https://crates.io/crates/leptos):
 
 [<img src="https://raw.githubusercontent.com/gbj/leptos/main/docs/logos/logo.svg" alt="Leptos Logo" style="width: 40%; height: auto; display: block; margin: auto;">](http://https://crates.io/crates/leptos)
 
 <br/>
 
-## Features
+- [Features](#features)
+- [Getting started](#getting-started)
+- [Single-package setup](#single-package-setup)
+- [Workspace setup](#workspace-setup)
+- [Build features](#build-features)
+- [Parameters reference](#parameters-reference)
+
+<br/>
+
+# Features
 
 - Parallel build of server and client in watch mode for fast developer feedback.
 - Build server and client for hydration (client-side rendering mode not supported).
+- Support for both workspace and single-package setup.
 - SCSS compilation using [dart-sass](https://sass-lang.com/dart-sass).
 - CSS transformation and minification using [Lightning CSS](https://lightningcss.dev). See docs for full details.
 - Builds server and client (wasm) binaries using Cargo.
 - Generates JS - Wasm bindings with [wasm-bindgen](https://crates.io/crates/wasm-bindgen)
 - Optimises the wasm with _wasm-opt_ from [Binaryen](https://github.com/WebAssembly/binaryen)
 - Generation of rust code for integrating with a server of choice.
-- Standard mode for building full server and client.
 - `watch` command for automatic rebuilds with browser live-reload.
 - `test` command for running tests. Note that this runs `cargo test` for the two different modes (`hydrate` and `ssr`).
 - `build` build the server and client.
@@ -28,7 +35,7 @@ Build tool for [Leptos](https://crates.io/crates/leptos):
 
   <br/>
 
-## Getting started
+# Getting started
 
 Install:
 
@@ -42,186 +49,113 @@ Help:
 
 > `cargo leptos --help`
 
-For setting up your project, base yourself on the [example](https://github.com/akesson/cargo-leptos/tree/main/example)
+For setting up your project, have a look at the [examples](https://github.com/akesson/cargo-leptos/tree/main/examples)
 
 <br/>
 
-## Configuration
+# Single-package setup
 
-The columns are in order of preference. I.e. a parameter found in an environment variable
-will take precedence over a value found in _Cargo.toml_.
+The single-package setup is where the code for both the frontend and the server is defined in a single package.
 
-| parameter             | env <sup>1</sup>    | Cargo.toml                               | default <sup>2</sup> |
-| --------------------- | ------------------- | ---------------------------------------- | -------------------- |
-| **package_name**      | PACKAGE_NAME        | package.**name**                         |                      |
-| **site_root**         | LEPTOS_SITE_ROOT    | package.metadata.leptos.**site_root**    | "target/site"        |
-| **site_pkg_dir**      | LEPTOS_SITE_PKG_DIR | package.metadata.leptos.**site_pkg**     | "pkg"                |
-| **style_file**        | LEPTOS_STYLE_FILE   | package.metadata.leptos.**style_file**   |                      |
-| **assets_dir**        | LEPTOS_ASSETS_DIR   | package.metadata.leptos.**assets_dir**   |                      |
-| **site_addr**         | LEPTOS_SITE_ADDR    | package.metadata.leptos.**site_addr**    | 127.0.0.1:3000       |
-| **reload_port**       | LEPTOS_RELOAD_PORT  | package.metadata.leptos.**reload_port**  | 3000                 |
-| **end2end_cmd**       | LEPTOS_END2END_CMD  | package.metadata.leptos.**end2end_cmd**  |                      |
-| **browserquery**      | LEPTOS_BROWSERQUERY | package.metadata.leptos.**browserquery** | "defaults"           |
-| **watch**<sup>3</sup> | LEPTOS_WATCH        |                                          |                      |
-
-- <sup>1</sup> If environment var is found in a .env file it will be used with precedence over
-  anything defined on the command line or in the shell.
-- <sup>2</sup> When empty, the related feature is not activated.
-- <sup>3</sup> Used by _cargo-leptos_: provided at compile-time and run-time when running in watch mode.
+Configuration parameters are defined in the package `Cargo.toml` section `[package.metadata.leptos]`. See the Parameters reference for
+a full list of parameters that can be used. All paths are relative to the package root (i.e. to the `Cargo.toml` file)
 
 <br/>
 
-### Overview
+# Workspace setup
 
-`cargo-leptos`
+When using a workspace setup both single-package and multi-package projects are supported. The latter is when the frontend
+and the server reside in different packages.
 
-- compiles a client from sources found in the src folder to a `<package_name>.wasm` and a `<package_name>.js` in `<site_root>/<site_pkg_dir>/`.
-- compiles a server binary from sources found in the src folder to the standard location (`target/[debug|release]/<package_name>`).
-- compiles (if scss or sass) and optimises CSS from `<style_file>` to `<site_root>/<site_pkg_dir>/<package_name>.css`.
-- mirrors any assets from `<assets_dir>` to `<site_root>/<site_pkg_dir>`.
+All workspace members whose `Cargo.toml` define the `[package.metadata.leptos]` section are automatically included as Leptos
+single-package projects. The multi-package projects are defined on the workspace level in the `Cargo.toml`'s
+section `[[workspace.metadata.leptos]]` which takes three mandatory parameters:
 
-<br />
+```toml
+[[workspace.metadata.leptos]]
+name = "leptos-project"
+bin-package = "server"
+lib-package = "front"
 
-### Parameters
+# more configuration parameters...
+```
 
-- **package_name** <sup>r</sup><br/> The _Cargo.toml_ package name.
-- **site_root**<br/> The site root folder is where _cargo-leptos_ generate all output.
-  WARNING: all content of this folder will be erased on a rebuild. Use it in your server setup.
-- **site_pkg** <sup>c</sup><br/> The **site_root** relative folder where all compiled output (JS, WASM and CSS) is written.
-- **style_file**<br/> [optional] The source CSS file. If it ends with _.sass_ or _.scss_ then it will be compiled by `dart-sass` into CSS.
-  The CSS is optimized by [Lightning CSS](https://lightningcss.dev) before being written to `<site_root>/<site_pkg>/app.css`
-- **assets_dir** <br/> [optional] Assets source dir. All files found here will be copied and synchronized to **site_root**.
-  The **assets_dir** should have a sub-directory with the same name/path as **site_pkg**.
-- **site_addr** <sup>r</sup><br/> The IP and port (ex: _127.0.0.1:3000_) where the server serves the content. Use it in your server setup.
-- **reload_port** <sup>c</sup><br/> The port number used by the reload server (only used in watch mode).
-- **end2end_cmd**<br/> [optional] The command used for running integration tests. Typically: `npx playwright test`.
-- **browserquery**<br/> The [browserlist](https://browsersl.ist) query used for optimizing the CSS.
-- **watch** <sup>c</sup><br/> Set by _cargo-leptos_ when running in watch mode.
-
-<sup>r.</sup> Set by _cargo-leptos_ at runtime and used by the server integrations.<br/>
-<sup>c.</sup> Set by _cargo-leptos_ at compile time and used by the server integrations<br/>
+Note the double braces: several projects can be defined and one package can be used in several projects.
 
 <br/>
 
-## Folder structure
+# Build features
 
-```
-├── src/
-│ ├── app/             (the app logic)
-│ ├── client/          (client packaging)
-│ ├── server/          (the http server)
-│ │ └── generated.rs   (generated by build)
-│ ├── lib.rs
-│ ├── app.scss         (root css/sass/scss file)
-│ └── main.rs
-│
-├── static/
-│ └── favicon.png
-│
-├── index.html         (template for generating the root page)
-├── Cargo.toml         (needs the [package.metadata.leptos] config)
-│
-├── end2end/           (end-to-end test using Playwright)
-│ ├── tests/
-│ ├── playwright.config.ts
-│ └── package.json
-│
-└── target/
-  └── site/
-    ├── index.html     (generated by build)
-    ├── favicon.png
-    └── pkg/
-      ├── app.wasm
-      ├── app.js
-      └── app.css
-```
+When building with cargo-leptos, the frontend, library package, is compiled into wasm using target
+`wasm-unknown-unknown` and the features `--no-default-features --features=hydrate`
+The server binary is compiled with the features `--no-default-features --features=ssr`
 
-# Tasks
+<br/>
 
-## File view
+# Parameters reference
 
-This is mainly relevant for the `watch` mode.
+These parameters are used either in the workspace section `[[workspace.metadata.leptos]]` or the package,
+for single-package setups, section `[package.metadata.leptos]`.
 
-```mermaid
-graph TD;
-  subgraph Watcher[watch]
-    Watch[FS Notifier];
-  end
-  Watch-->|"*.rs"| TailW;
-  Watch-->|"*.sass & *.scss"| Sass;
-  Watch-->|"*.css"| CSSProc;
-  Watch-->|"*.rs"| WASM;
-  Watch-->|"*.rs"| BIN;
-  Watch-->|"assets/**"| Mirror;
+These parameters can be overridden by setting the corresponding environment variable. They can also be
+set in a `.env` file as cargo-leptos reads the first it finds in the package or workspace directory and
+any parent directory.
 
-  subgraph style
-    TailW[Tailwind CSS];
-    Sass;
-    CSSProc[CSS Processor<br>Lightning CSS]
-  end
+The environment variables are also provided by cargo-leptos when building, running and testing.
 
-  TailW --> CSSProc;
-  Sass --> CSSProc;
+```toml
+# Sets the name of the output js, wasm and css files.
+#
+# Optional, defaults to the _Cargo.toml_ package name. Env: PACKAGE_NAME.
+package-name = "myproj"
 
-  subgraph rust
-    WASM[Client WASM];
-    BIN[Server BIN];
-  end
+# The site root folder is where cargo-leptos generate all output.
+# WARNING: all content of this folder will be erased on a rebuild.
+#
+# Optional, defaults to "target/site". Env: LEPTOS_SITE_ROOT.
+site-root = "target/site"
 
-  subgraph asset
-    Mirror
-  end
+# The site-root relative folder where all compiled output (JS, WASM and CSS) is written.
+#
+# Optional, defaults to "pkg". Env: LEPTOS_SITE_PKG_DIR.
+site-pkg-dir = "pkg"
 
-  subgraph update
-    WOC[target/site/<br>Write-on-change FS];
-    Live[Live Reload];
-    Server;
-  end
+# The source style file. If it ends with _.sass_ or _.scss_ then it will be compiled by `dart-sass`
+# into CSS and processed by lightning css. When release is set, then it will also be minified.
+#
+# Optional. Env: LEPTOS_STYLE_FILE.
+style-file = "style/main.scss"
 
-  Mirror -->|"site/**"| WOC;
-  WASM -->|"site/pkg/app.wasm"| WOC;
-  BIN -->|"server/app"| WOC;
-  CSSProc -->|"site/pkg/app.css"| WOC;
+# The browserlist https://browsersl.ist query used for optimizing the CSS.
+#
+# Optional, defaults to "defaults". Env: LEPTOS_BROWSERQUERY.
+browserquery = "defaults"
 
-  Live -.->|Port scan| Server;
+# Assets source dir. All files found here will be copied and synchronized to site-root.
+# The assets-dir cannot have a sub directory with the same name/path as site-pkg-dir.
+#
+# Optional. Env: LEPTOS_ASSETS_DIR.
+assets-dir = "assets"
 
-  WOC -->|"target/server/app<br>site/**"| Server;
-  WOC -->|"site/pkg/app.css, <br>client & server change"| Live;
+# The IP and port where the server serves the content. Use it in your server setup.
+#
+# Optional, defaults to 127.0.0.1:3000. Env: LEPTOS_SITE_ADDR.
+site-addr = "127.0.0.1:3000"
 
-  Live -->|"Reload all or<br>update app.css"| Browser
+# The port number used by the reload server (only used in watch mode).
+#
+# Optional, defaults 3001. Env: LEPTOS_RELOAD_PORT
+reload-port = 3001
 
-  Browser;
-  Server -.- Browser;
+# The command used for running end-to-end tests.
+#
+# Optional. Env: LEPTOS_END2END_CMD.
+end2end-cmd = "npx playwright test"
+
+# The directory from which the end-to-end tests are run.
+#
+# Optional. Env: LEPTOS_END2END_DIR
+end2end-dir = "npx playwright test"
 ```
 
-## Concurrency view
-
-Very approximate
-
-```mermaid
-stateDiagram-v2
-    wasm: Build front
-    bin: Build server
-    style: Build style
-    asset: Mirror assets
-    serve: Run server
-
-    state wait_for_start <<fork>>
-      [*] --> wait_for_start
-      wait_for_start --> wasm
-      wait_for_start --> bin
-      wait_for_start --> style
-      wait_for_start --> asset
-
-    reload: Reload
-    state join_state <<join>>
-      wasm --> join_state
-      bin --> join_state
-      style --> join_state
-      asset --> join_state
-    state if_state <<choice>>
-        join_state --> if_state
-        if_state --> reload: Ok
-        if_state --> serve: Ok
-        if_state --> [*] : Err
-```
+<br/>

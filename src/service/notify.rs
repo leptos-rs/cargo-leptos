@@ -18,11 +18,11 @@ use tokio::task::JoinHandle;
 
 pub async fn spawn(proj: &Project) -> Result<JoinHandle<()>> {
     let mut paths = vec!["src".to_created_dir()?];
-    if let Some(style) = &proj.front_config.style_file {
+    if let Some(style) = &proj.config.style_file {
         paths.push(style.clone().without_last());
     }
 
-    let assets_dir = if let Some(dir) = &proj.front_config.assets_dir {
+    let assets_dir = if let Some(dir) = &proj.config.assets_dir {
         let assets_root = dir.to_owned();
         paths.push(assets_root.clone());
         Some(assets_root)

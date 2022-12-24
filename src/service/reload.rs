@@ -25,7 +25,7 @@ pub async fn spawn(proj: &Arc<Project>) -> JoinHandle<()> {
     let mut prod = ProductChange::subscribe();
 
     let mut site_addr = SITE_ADDR.write().await;
-    *site_addr = proj.front_config.site_addr;
+    *site_addr = proj.config.site_addr;
     if let Some(style_file) = &proj.paths.style_file {
         let mut css_link = CSS_LINK.write().await;
         *css_link = style_file.site.to_string();
@@ -40,8 +40,8 @@ pub async fn spawn(proj: &Arc<Project>) -> JoinHandle<()> {
             _ = int.recv() => return
         }
 
-        let mut reload_addr = proj.front_config.site_addr;
-        reload_addr.set_port(proj.front_config.reload_port);
+        let mut reload_addr = proj.config.site_addr;
+        reload_addr.set_port(proj.config.reload_port);
 
         if TcpStream::connect(&reload_addr).await.is_ok() {
             log::error!(

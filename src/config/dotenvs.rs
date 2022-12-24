@@ -1,4 +1,4 @@
-use super::FrontConfig;
+use super::ProjectConfig;
 use crate::{ext::anyhow::Result, logger::GRAY};
 use camino::{Utf8Path, Utf8PathBuf};
 use std::fs;
@@ -19,7 +19,7 @@ pub fn find_env_file(directory: &Utf8Path) -> Option<Utf8PathBuf> {
     }
 }
 
-pub fn overlay_env(conf: &mut FrontConfig, file: &Utf8Path) -> Result<()> {
+pub fn overlay_env(conf: &mut ProjectConfig, file: &Utf8Path) -> Result<()> {
     for entry in dotenvy::from_path_iter(file)? {
         let (key, val) = entry?;
 
@@ -32,6 +32,7 @@ pub fn overlay_env(conf: &mut FrontConfig, file: &Utf8Path) -> Result<()> {
             "LEPTOS_SITE_ADDR" => conf.site_addr = val.parse()?,
             "LEPTOS_RELOAD_PORT" => conf.reload_port = val.parse()?,
             "LEPTOS_END2END_CMD" => conf.end2end_cmd = Some(val),
+            "LEPTOS_END2END_DIR" => conf.end2end_dir = Some(val),
             "LEPTOS_BROWSERQUERY" => conf.browserquery = val,
             _ if key.starts_with("LEPTOS_") => {
                 log::warn!(

@@ -93,8 +93,7 @@ fn browser_lists(query: &str) -> Result<Option<Browsers>> {
 }
 
 async fn process_css(proj: &Project, style_file: &SourcedSiteFile) -> Result<Product> {
-    let browsers =
-        browser_lists(&proj.front_config.browserquery).context("leptos.style.browserquery")?;
+    let browsers = browser_lists(&proj.config.browserquery).context("leptos.style.browserquery")?;
 
     let css = fs::read_to_string(&style_file.dest).await?;
 

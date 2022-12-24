@@ -6,7 +6,7 @@ use crate::{
 use camino::Utf8PathBuf;
 use cargo_metadata::{Metadata, Package};
 
-use super::FrontConfig;
+use super::ProjectConfig;
 
 #[derive(Debug)]
 pub struct ProjectPaths {
@@ -33,7 +33,7 @@ impl ProjectPaths {
         metadata: &Metadata,
         front: &Package,
         server: &Package,
-        front_config: &FrontConfig,
+        front_config: &ProjectConfig,
         cli: &Opts,
     ) -> Self {
         let abs_root_dir = metadata.workspace_root.clone();
