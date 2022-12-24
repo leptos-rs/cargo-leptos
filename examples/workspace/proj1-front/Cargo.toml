@@ -1,0 +1,33 @@
+[package]
+name = "proj1-front"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+proj1-app = { path = "../proj1-app" }
+leptos = { git = "https://github.com/gbj/leptos", default-features = false, features = [
+  "serde",
+  "hydrate",
+] }
+log = "0.4"
+wasm-bindgen = "0.2"
+console_log = "0.2"
+console_error_panic_hook = "0.1"
+
+
+[package.metadata.leptos]
+# See https://github.com/akesson/cargo-leptos for documentation of all the parameters.
+
+# [Optional] Files in the asset_dir will be copied to the target/site directory
+assets_dir = "assets"
+# [Optional] Command to use when running end2end tests. It will run in the end2end dir.
+end2end_cmd = "npx playwright test"
+
+# Main style file. If scss or sass then it will be compiled to css.
+# the parent folder will be watched for changes
+style_file = "style/main.scss"

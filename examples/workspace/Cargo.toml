@@ -1,0 +1,41 @@
+[workspace]
+members = ["proj1-app", "proj1-server", "proj1-front"]
+
+# need to be applied only to wasm build
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 'z'
+
+# See https://github.com/akesson/cargo-leptos for documentation of all the parameters.
+
+# A leptos project defines which workspace members
+# that are used together frontend (lib) & server (bin)
+[[workspace.metadata.leptos]]
+name = "project1"
+# The workspace packages used. If one is specified, then it is used both for frontend and server,
+# otherwise a syntax of "bin:<package> lib:<package>" must be used
+packages = "lib:proj1-front bin:proj1-server"
+# [optional] The binary target to use (packages can define multiple binary targets).
+# This is only needed if the package defines more than one binary target.
+# bin-target = "name"
+
+# # A leptos project defines which workspace members
+# # that are used together frontend (lib) & server (bin)
+# [[workspace.metadata.leptos]]
+# name = "second"
+# # The workspace packages used. If one is specified, then it is used both for frontend and server,
+# # otherwise a syntax of "bin:<package> lib:<package>" must be used
+# packages = "bin:polyglot lib:polyglot"
+# # [optional] The binary target to use (packages can define multiple binary targets).
+# # This is only needed if the package defines more than one binary target.
+# # bin-target = "name"
+
+# [Optional] Files in the asset_dir will be copied to the target/site directory
+assets_dir = "assets"
+# [Optional] Command to use when running end2end tests. It will run in the end2end dir.
+end2end_cmd = "npx playwright test"
+
+# Main style file. If scss or sass then it will be compiled to css.
+# the parent folder will be watched for changes
+style_file = "proj1-css/main.scss"
