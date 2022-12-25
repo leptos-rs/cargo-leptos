@@ -1,0 +1,78 @@
+---
+source: src/config/tests.rs
+expression: conf
+---
+Config {
+    projects: [
+        Project {
+            name: "project1",
+            config: ProjectConfig {
+                package_name: "proj1_front",
+                site_addr: 127.0.0.1:3000,
+                site_root: "target/site",
+                site_pkg_dir: "pkg",
+                style_file: Some(
+                    "proj1-css/main.scss",
+                ),
+                assets_dir: Some(
+                    "assets",
+                ),
+                reload_port: 3001,
+                end2end_cmd: Some(
+                    "npx playwright test",
+                ),
+                end2end_dir: None,
+                browserquery: "defaults",
+                bin_target: None,
+            },
+            front_package: "proj1-front ..",
+            front_profile: "debug",
+            server_package: "proj1-server ..",
+            server_target: "proj1-server (bin) ..",
+            server_profile: "debug",
+            watch: true,
+            site: Site {
+                file_reg: {},
+                ext_file_reg: {},
+            },
+            paths: ProjectPaths {
+                lib_crate_name: "proj1_front",
+                site_root: "target/site",
+                site_pkg_dir: "target/site/pkg",
+                front_dir: "proj1-front",
+                server_dir: "proj1-server",
+                target_dir: "target",
+                wasm_file: SourcedSiteFile {
+                    source: "target/front/wasm32-unknown-unknown/debug/proj1_front",
+                    dest: "target/site/pkg/proj1_front.wasm",
+                    site: "pkg/proj1_front.wasm",
+                },
+                js_file: SiteFile {
+                    dest: "target/site/pkg/proj1_front.js",
+                    site: "pkg/proj1_front.js",
+                },
+                style_file: Some(
+                    SourcedSiteFile {
+                        source: "proj1-front/proj1-css/main.scss",
+                        dest: "target/site/pkg/proj1_front.css",
+                        site: "pkg/proj1_front.css",
+                    },
+                ),
+                assets_dir: Some(
+                    "proj1-front/assets",
+                ),
+                cargo_bin_file: "target/server/debug/proj1_server",
+                ..
+            },
+            ..
+        },
+    ],
+    cli: Opts {
+        release: false,
+        project: Some(
+            "project1",
+        ),
+        verbose: 0,
+    },
+    watch: true,
+}

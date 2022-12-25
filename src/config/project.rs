@@ -5,10 +5,11 @@ use crate::{
         anyhow::{anyhow, Error, Result},
         path::PathBufExt,
     },
+    logger::GRAY,
     service::site::Site,
     Opts,
 };
-use anyhow::bail;
+use anyhow::{bail, ensure};
 use camino::{Utf8Path, Utf8PathBuf};
 use cargo_metadata::{Metadata, MetadataCommand, Package, Target};
 use serde::Deserialize;
@@ -18,7 +19,7 @@ use super::{
     paths::ProjectPaths,
 };
 
-#[derive(Debug)]
+#[cfg_attr(not(test), derive(Debug))]
 pub struct Project {
     pub name: String,
     pub config: ProjectConfig,
@@ -32,32 +33,87 @@ pub struct Project {
     pub paths: ProjectPaths,
 }
 
+#[cfg(test)]
+impl std::fmt::Debug for Project {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Project")
+            .field("name", &self.name)
+            .field("config", &self.config)
+            .field("front_package", &format!("{} ..", self.front_package.name))
+            .field("front_profile", &self.front_profile)
+            .field(
+                "server_package",
+                &format!("{} ..", self.server_package.name),
+            )
+            .field(
+                "server_target",
+                &format!(
+                    "{} ({}) ..",
+                    &self.server_target.name,
+                    self.server_target.crate_types.join(", ")
+                ),
+            )
+            .field("server_profile", &self.server_profile)
+            .field("watch", &self.watch)
+            .field("site", &self.site)
+            .field("paths", &self.paths)
+            .finish_non_exhaustive()
+    }
+}
+
+trait PackageExt {
+    fn has_bin_target(&self) -> bool;
+    fn bin_targets(&self) -> Box<dyn Iterator<Item = &Target> + '_>;
+    fn cdylib_target(&self) -> Option<&Target>;
+    fn target_list(&self) -> String;
+}
+
+impl PackageExt for Package {
+    fn has_bin_target(&self) -> bool {
+        self.targets.iter().find(|t| t.is_bin()).is_some()
+    }
+
+    fn bin_targets(&self) -> Box<dyn Iterator<Item = &Target> + '_> {
+        Box::new(self.targets.iter().filter(|t| t.is_bin()))
+    }
+    fn cdylib_target(&self) -> Option<&Target> {
+        let cdylib: String = "cdylib".to_string();
+        self.targets
+            .iter()
+            .find(|t| t.crate_types.contains(&cdylib))
+    }
+    fn target_list(&self) -> String {
+        self.targets
+            .iter()
+            .map(|t| format!("{} ({})", t.name, t.crate_types.join(", ")))
+            .collect::<Vec<_>>()
+            .join(", ")
+    }
+}
 impl Project {
-    pub fn resolve(cli: &Opts, watch: bool) -> Result<Vec<Arc<Project>>> {
-        let metadata = MetadataCommand::new().manifest_path("Cargo.toml").exec()?;
+    pub fn resolve(cli: &Opts, manifest_path: &Utf8Path, watch: bool) -> Result<Vec<Arc<Project>>> {
+        let metadata = MetadataCommand::new().manifest_path(manifest_path).exec()?;
 
         let projects = ProjectDefinition::parse(&metadata)?;
         let packages = metadata.workspace_packages();
 
-        println!(
-            "{}",
-            packages
-                .iter()
-                .map(|p| p.name.clone())
-                .collect::<Vec<_>>()
-                .join(", ")
-        );
-        if true {
-            panic!()
-        }
         let mut resolved = Vec::new();
         for (project, mut config) in projects {
             let bin_pkg = &project.bin_package;
             let lib_pkg = &project.lib_package;
 
+            log::trace!("bin: {bin_pkg}, lib: {lib_pkg}");
+            log::trace!(
+                "PACKAGES {}",
+                packages
+                    .iter()
+                    .map(|p| p.target_list())
+                    .collect::<Vec<_>>()
+                    .join(": ")
+            );
             let server = packages
                 .iter()
-                .find(|p| p.name == *bin_pkg)
+                .find(|p| p.name == *bin_pkg && p.has_bin_target())
                 .ok_or_else(|| anyhow!(r#"Could not find the project bin-package "{bin_pkg}""#,))?;
 
             let front = packages
@@ -92,7 +148,7 @@ impl Project {
 
             let profile = if cli.release { "release" } else { "debug" };
 
-            let paths = ProjectPaths::new(&metadata, front, server, &config, cli);
+            let paths = ProjectPaths::new(&metadata, front, server, &config, cli)?;
 
             let proj = Project {
                 name: project.name.clone(),
@@ -230,6 +286,18 @@ impl ProjectDefinition {
         dir: &Utf8Path,
     ) -> Result<(Self, ProjectConfig)> {
         let conf = ProjectConfig::parse(dir, metadata)?;
+
+        ensure!(
+            package.cdylib_target().is_some(),
+            "Cargo.toml has leptos metadata but is missing a cdylib library target. {}",
+            GRAY.paint(package.manifest_path.as_str())
+        );
+        ensure!(
+            package.has_bin_target(),
+            "Cargo.toml has leptos metadata but is missing a bin target. {}",
+            GRAY.paint(package.manifest_path.as_str())
+        );
+
         Ok((
             ProjectDefinition {
                 name: package.name.to_string(),

@@ -1,0 +1,76 @@
+---
+source: src/config/tests.rs
+expression: conf
+---
+Config {
+    projects: [
+        Project {
+            name: "project2",
+            config: ProjectConfig {
+                package_name: "project2",
+                site_addr: 127.0.0.1:3000,
+                site_root: "target/site",
+                site_pkg_dir: "pkg",
+                style_file: Some(
+                    "src/main.scss",
+                ),
+                assets_dir: Some(
+                    "src/assets",
+                ),
+                reload_port: 3001,
+                end2end_cmd: None,
+                end2end_dir: None,
+                browserquery: "defaults",
+                bin_target: None,
+            },
+            front_package: "project2 ..",
+            front_profile: "debug",
+            server_package: "project2 ..",
+            server_target: "project2 (bin) ..",
+            server_profile: "debug",
+            watch: true,
+            site: Site {
+                file_reg: {},
+                ext_file_reg: {},
+            },
+            paths: ProjectPaths {
+                lib_crate_name: "project2",
+                site_root: "target/site",
+                site_pkg_dir: "target/site/pkg",
+                front_dir: "proj2",
+                server_dir: "proj2",
+                target_dir: "target",
+                wasm_file: SourcedSiteFile {
+                    source: "target/front/wasm32-unknown-unknown/debug/project2",
+                    dest: "target/site/pkg/project2.wasm",
+                    site: "pkg/project2.wasm",
+                },
+                js_file: SiteFile {
+                    dest: "target/site/pkg/project2.js",
+                    site: "pkg/project2.js",
+                },
+                style_file: Some(
+                    SourcedSiteFile {
+                        source: "proj2/src/main.scss",
+                        dest: "target/site/pkg/project2.css",
+                        site: "pkg/project2.css",
+                    },
+                ),
+                assets_dir: Some(
+                    "proj2/src/assets",
+                ),
+                cargo_bin_file: "target/server/debug/project2",
+                ..
+            },
+            ..
+        },
+    ],
+    cli: Opts {
+        release: false,
+        project: Some(
+            "project2",
+        ),
+        verbose: 0,
+    },
+    watch: true,
+}

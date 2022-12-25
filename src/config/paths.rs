@@ -1,5 +1,6 @@
 use crate::{
-    ext::path::PathBufExt,
+    ext::anyhow::Result,
+    ext::path::{PathBufExt, PathExt},
     service::site::{SiteFile, SourcedSiteFile},
     Opts,
 };
@@ -8,7 +9,7 @@ use cargo_metadata::{Metadata, Package};
 
 use super::ProjectConfig;
 
-#[derive(Debug)]
+#[cfg_attr(not(test), derive(Debug))]
 pub struct ProjectPaths {
     pub lib_crate_name: String,
     /// the absolute root directory.
@@ -28,6 +29,24 @@ pub struct ProjectPaths {
     pub cargo_bin_file: Utf8PathBuf,
 }
 
+#[cfg(test)]
+impl std::fmt::Debug for ProjectPaths {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ProjectPaths")
+            .field("lib_crate_name", &self.lib_crate_name)
+            .field("site_root", &self.site_root)
+            .field("site_pkg_dir", &self.site_pkg_dir)
+            .field("front_dir", &self.front_dir)
+            .field("server_dir", &self.server_dir)
+            .field("target_dir", &self.target_dir)
+            .field("wasm_file", &self.wasm_file)
+            .field("js_file", &self.js_file)
+            .field("style_file", &self.style_file)
+            .field("assets_dir", &self.assets_dir)
+            .field("cargo_bin_file", &self.cargo_bin_file)
+            .finish_non_exhaustive()
+    }
+}
 impl ProjectPaths {
     pub fn new(
         metadata: &Metadata,
@@ -35,11 +54,20 @@ impl ProjectPaths {
         server: &Package,
         front_config: &ProjectConfig,
         cli: &Opts,
-    ) -> Self {
+    ) -> Result<Self> {
         let abs_root_dir = metadata.workspace_root.clone();
-        let front_dir = front.manifest_path.clone().without_last();
-        let server_dir = server.manifest_path.clone().without_last();
-        let target_dir = metadata.target_directory.clone();
+        log::trace!("Project root dir {abs_root_dir}");
+        let front_dir = front
+            .manifest_path
+            .clone()
+            .without_last()
+            .unbase(&abs_root_dir)?;
+        let server_dir = server
+            .manifest_path
+            .clone()
+            .without_last()
+            .unbase(&abs_root_dir)?;
+        let target_dir = metadata.target_directory.clone().unbase(&abs_root_dir)?;
         let profile = if cli.release { "release" } else { "debug" };
         let site_root = front_config.site_root.clone();
         let site_pkg_dir = site_root.join(&front_config.site_pkg_dir);
@@ -48,7 +76,7 @@ impl ProjectPaths {
         let wasm_file = {
             let source = target_dir
                 .join("front")
-                .join("wasm32-unkown-unknown")
+                .join("wasm32-unknown-unknown")
                 .join(&profile)
                 .join(&lib_crate_name);
             let site = front_config
@@ -98,7 +126,7 @@ impl ProjectPaths {
                 .join(bin_crate_name)
                 .with_extension(file_ext)
         };
-        Self {
+        Ok(Self {
             lib_crate_name,
             abs_root_dir,
             site_root,
@@ -111,6 +139,6 @@ impl ProjectPaths {
             style_file,
             assets_dir,
             cargo_bin_file,
-        }
+        })
     }
 }

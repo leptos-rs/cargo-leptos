@@ -1,5 +1,5 @@
 [workspace]
-members = ["proj1-app", "proj1-server", "proj1-front"]
+members = ["proj1-app", "proj1-server", "proj1-front", "proj2"]
 
 # need to be applied only to wasm build
 [profile.release]

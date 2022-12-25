@@ -38,7 +38,12 @@ impl PathExt for Utf8Path {
                 _ => {}
             };
         }
-        Ok(Utf8PathBuf::from_iter(self_comp_iter))
+        let path = Utf8PathBuf::from_iter(self_comp_iter);
+        Ok(if path == "" {
+            Utf8PathBuf::from(".")
+        } else {
+            path
+        })
     }
 }
 

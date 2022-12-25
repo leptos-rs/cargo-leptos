@@ -1,16 +1,20 @@
 mod dotenvs;
 mod paths;
 mod project;
+#[cfg(test)]
+mod tests;
 
 use std::sync::Arc;
 
 use crate::{
     ext::anyhow::{Context, Result},
-    Cli, Commands, Opts,
+    Opts,
 };
 use anyhow::bail;
+use camino::Utf8Path;
 pub use project::{Project, ProjectConfig};
 
+#[derive(Debug)]
 pub struct Config {
     pub projects: Vec<Arc<Project>>,
     pub cli: Opts,
@@ -18,15 +22,14 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn load(cli: &Cli, opts: Opts) -> Result<Self> {
-        let watch = matches!(cli.command, Commands::Watch(_));
-        let mut projects = Project::resolve(&opts, watch).dot()?;
+    pub fn load(cli: Opts, manifest_path: &Utf8Path, watch: bool) -> Result<Self> {
+        let mut projects = Project::resolve(&cli, manifest_path, watch).dot()?;
 
         if projects.is_empty() {
             bail!("Please define leptos projects in the workspace Cargo.toml sections [[workspace.metadata.leptos]]")
         }
 
-        if let Some(proj_name) = &opts.project {
+        if let Some(proj_name) = &cli.project {
             if let Some(proj) = projects.iter().find(|p| p.name == *proj_name) {
                 projects = vec![proj.clone()];
             } else {
@@ -39,7 +42,7 @@ impl Config {
 
         Ok(Self {
             projects,
-            cli: opts,
+            cli,
             watch,
         })
     }

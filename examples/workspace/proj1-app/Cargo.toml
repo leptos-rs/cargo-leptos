@@ -15,14 +15,3 @@ leptos_meta = { git = "https://github.com/gbj/leptos", default-features = false 
 default = ["hydrate"]
 hydrate = ["leptos/hydrate", "leptos_meta/hydrate"]
 ssr = ["leptos/ssr", "leptos_meta/ssr"]
-
-
-[package.metadata.leptos]
-# See https://github.com/akesson/cargo-leptos for documentation of all the parameters.
-
-# [Optional] Files in the asset_dir will be copied to the target/site directory
-assets_dir = "assets"
-
-# Main style file. If scss or sass then it will be compiled to css.
-# the parent folder will be watched for changes
-style_file = "style/main.scss"

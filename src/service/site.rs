@@ -1,4 +1,7 @@
-use std::{collections::HashMap, fmt::Display};
+use std::{
+    collections::HashMap,
+    fmt::{self, Display},
+};
 
 use camino::{Utf8Path, Utf8PathBuf};
 use tokio::sync::RwLock;
@@ -48,10 +51,18 @@ impl Display for SiteFile {
     }
 }
 
-#[derive(Debug)]
 pub struct Site {
     file_reg: RwLock<HashMap<String, u64>>,
     ext_file_reg: RwLock<HashMap<String, u64>>,
+}
+
+impl fmt::Debug for Site {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Site")
+            .field("file_reg", &self.file_reg.blocking_read())
+            .field("ext_file_reg", &self.ext_file_reg.blocking_read())
+            .finish()
+    }
 }
 
 impl Site {
