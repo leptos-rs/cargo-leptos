@@ -11,14 +11,16 @@ pub async fn test_all(conf: &Config) -> Result<()> {
 }
 
 pub async fn test_proj(proj: &Project) -> Result<()> {
-    let (line, mut proc) = server_cargo_process("test", proj).dot()?;
+    let (envs, line, mut proc) = server_cargo_process("test", proj).dot()?;
 
     proc.wait().await.dot()?;
+    log::debug!("Cargo envs: {}", GRAY.paint(envs));
     log::info!("Cargo server tests finished {}", GRAY.paint(line));
 
-    let (line, mut proc) = front_cargo_process("test", false, proj).dot()?;
+    let (envs, line, mut proc) = front_cargo_process("test", false, proj).dot()?;
 
     proc.wait().await.dot()?;
+    log::debug!("Cargo envs: {}", GRAY.paint(envs));
     log::info!("Cargo front tests finished {}", GRAY.paint(line));
     Ok(())
 }

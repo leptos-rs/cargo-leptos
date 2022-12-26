@@ -2,13 +2,19 @@ use camino::Utf8PathBuf;
 
 use super::Config;
 
+fn opts(project: Option<&str>) -> crate::Opts {
+    crate::Opts {
+        release: false,
+        project: project.map(|s| s.to_string()),
+        verbose: 0,
+        bin_features: Vec::new(),
+        lib_features: Vec::new(),
+    }
+}
+
 #[test]
 fn test_project() {
-    let cli = crate::Opts {
-        release: false,
-        project: None,
-        verbose: 0,
-    };
+    let cli = opts(None);
 
     let conf = Config::load(cli, &Utf8PathBuf::from("examples/project/Cargo.toml"), true).unwrap();
 
@@ -17,11 +23,7 @@ fn test_project() {
 
 #[test]
 fn test_workspace() {
-    let cli = crate::Opts {
-        release: false,
-        project: None,
-        verbose: 0,
-    };
+    let cli = opts(None);
 
     let conf = Config::load(
         cli,
@@ -35,11 +37,7 @@ fn test_workspace() {
 
 #[test]
 fn test_workspace_project1() {
-    let cli = crate::Opts {
-        release: false,
-        project: Some("project1".to_string()),
-        verbose: 0,
-    };
+    let cli = opts(Some("project1"));
 
     let conf = Config::load(
         cli,
@@ -53,11 +51,7 @@ fn test_workspace_project1() {
 
 #[test]
 fn test_workspace_project2() {
-    let cli = crate::Opts {
-        release: false,
-        project: Some("project2".to_string()),
-        verbose: 0,
-    };
+    let cli = opts(Some("project2"));
 
     let conf = Config::load(
         cli,

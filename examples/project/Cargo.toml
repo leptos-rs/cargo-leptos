@@ -78,3 +78,7 @@ end2end-cmd = "npx playwright test"
 # Main style file. If scss or sass then it will be compiled to css.
 # the parent folder will be watched for changes
 style-file = "style/main.scss"
+
+bin-features = ["ssr"]
+
+lib-features = ["hydrate"]

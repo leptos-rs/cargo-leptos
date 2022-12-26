@@ -9,7 +9,7 @@ Config {
             config: ProjectConfig {
                 output_name: "front_package",
                 site_addr: 127.0.0.1:3000,
-                site_root: "target/site",
+                site_root: "target/site/project1",
                 site_pkg_dir: "pkg",
                 style_file: Some(
                     "project1/css/main.scss",
@@ -21,14 +21,18 @@ Config {
                 end2end_cmd: None,
                 end2end_dir: None,
                 browserquery: "defaults",
-                bin_target: None,
+                bin_target: "server-package",
+                lib_features: [],
+                lib_default_features: false,
+                bin_features: [],
+                bin_default_features: false,
                 config_dir: "",
             },
             front_package: "front-package ..",
-            front_profile: "debug",
+            front_profile: "dev",
             server_package: "server-package ..",
             server_target: "server-package (bin) ..",
-            server_profile: "debug",
+            server_profile: "dev",
             watch: true,
             site: Site {
                 file_reg: {},
@@ -36,31 +40,31 @@ Config {
             },
             paths: ProjectPaths {
                 lib_crate_name: "front_package",
-                site_root: "target/site",
-                site_pkg_dir: "target/site/pkg",
+                site_root: "target/site/project1",
+                site_pkg_dir: "target/site/project1/pkg",
                 front_dir: "project1/front",
                 server_dir: "project1/server",
                 target_dir: "target",
                 wasm_file: SourcedSiteFile {
-                    source: "target/front/wasm32-unknown-unknown/debug/front_package",
-                    dest: "target/site/pkg/front_package.wasm",
+                    source: "target/front/wasm32-unknown-unknown/debug/front_package.wasm",
+                    dest: "target/site/project1/pkg/front_package.wasm",
                     site: "pkg/front_package.wasm",
                 },
                 js_file: SiteFile {
-                    dest: "target/site/pkg/front_package.js",
+                    dest: "target/site/project1/pkg/front_package.js",
                     site: "pkg/front_package.js",
                 },
                 style_file: Some(
                     SourcedSiteFile {
                         source: "project1/css/main.scss",
-                        dest: "target/site/pkg/front_package.css",
+                        dest: "target/site/project1/pkg/front_package.css",
                         site: "pkg/front_package.css",
                     },
                 ),
                 assets_dir: Some(
                     "project1/assets",
                 ),
-                cargo_bin_file: "target/server/debug/server_package",
+                cargo_bin_file: "target/server/debug/server-package",
                 ..
             },
             ..
@@ -71,6 +75,8 @@ Config {
         project: Some(
             "project1",
         ),
+        lib_features: [],
+        bin_features: [],
         verbose: 0,
     },
     watch: true,

@@ -13,6 +13,8 @@ Build tool for [Leptos](https://crates.io/crates/leptos):
 - [Workspace setup](#workspace-setup)
 - [Build features](#build-features)
 - [Parameters reference](#parameters-reference)
+  - [Compilation parameters](#compilation-parameters)
+  - [Site parameters](#site-parameters)
 
 <br/>
 
@@ -98,6 +100,37 @@ The server binary is compiled with the features `--no-default-features --feature
 These parameters are used either in the workspace section `[[workspace.metadata.leptos]]` or the package,
 for single-package setups, section `[package.metadata.leptos]`.
 
+## Compilation parameters
+
+```toml
+# Sets the name of the binary target used.
+#
+# Optional, only necessary if the bin-package defines more than one target
+bin-target = "my-bin-name"
+
+# The features to use when compiling the bin target
+#
+# Optional. Can be over-ridden with the command line parameter --bin-features
+bin-features = ["ssr"]
+
+# If the --no-default-features flag should be used when compiling the bin target
+#
+# Optional. Defaults to false.
+bin-default-features = false
+
+# The features to use when compiling the lib target
+#
+# Optional. Can be over-ridden with the command line parameter --lib-features
+lib-features = ["hydrate"]
+
+# If the --no-default-features flag should be used when compiling the lib target
+#
+# Optional. Defaults to false.
+lib-default-features = false
+```
+
+## Site parameters
+
 These parameters can be overridden by setting the corresponding environment variable. They can also be
 set in a `.env` file as cargo-leptos reads the first it finds in the package or workspace directory and
 any parent directory.
@@ -157,7 +190,7 @@ end2end-cmd = "npx playwright test"
 # The directory from which the end-to-end tests are run.
 #
 # Optional. Env: LEPTOS_END2END_DIR
-end2end-dir = "npx playwright test"
+end2end-dir = "integration"
 ```
 
 <br/>

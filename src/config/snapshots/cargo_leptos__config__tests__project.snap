@@ -23,14 +23,22 @@ Config {
                 ),
                 end2end_dir: None,
                 browserquery: "defaults",
-                bin_target: None,
+                bin_target: "example",
+                lib_features: [
+                    "hydrate",
+                ],
+                lib_default_features: false,
+                bin_features: [
+                    "ssr",
+                ],
+                bin_default_features: false,
                 config_dir: "",
             },
             front_package: "example ..",
-            front_profile: "debug",
+            front_profile: "dev",
             server_package: "example ..",
             server_target: "example (bin) ..",
-            server_profile: "debug",
+            server_profile: "dev",
             watch: true,
             site: Site {
                 file_reg: {},
@@ -44,7 +52,7 @@ Config {
                 server_dir: ".",
                 target_dir: "target",
                 wasm_file: SourcedSiteFile {
-                    source: "target/front/wasm32-unknown-unknown/debug/example",
+                    source: "target/front/wasm32-unknown-unknown/debug/example.wasm",
                     dest: "target/site/pkg/example.wasm",
                     site: "pkg/example.wasm",
                 },
@@ -71,6 +79,8 @@ Config {
     cli: Opts {
         release: false,
         project: None,
+        lib_features: [],
+        bin_features: [],
         verbose: 0,
     },
     watch: true,

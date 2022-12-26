@@ -22,10 +22,11 @@ pub async fn server(proj: &Arc<Project>, changes: &ChangeSet) -> JoinHandle<Resu
             return Ok(Outcome::Success(Product::NoChange));
         }
 
-        let (line, process) = server_cargo_process("build", &proj)?;
+        let (envs, line, process) = server_cargo_process("build", &proj)?;
 
         match wait_interruptible("Cargo", process, Interrupt::subscribe_any()).await? {
             true => {
+                log::debug!("Cargo envs: {}", GRAY.paint(envs));
                 log::info!("Cargo finished {}", GRAY.paint(line));
 
                 let changed = proj
@@ -46,19 +47,47 @@ pub async fn server(proj: &Arc<Project>, changes: &ChangeSet) -> JoinHandle<Resu
     })
 }
 
-pub fn server_cargo_process(cmd: &str, proj: &Project) -> Result<(String, Child)> {
-    let profile = format!("--profile={}", proj.server_profile);
-    let args = vec![
-        cmd,
-        "--no-default-features",
-        "--features=ssr",
-        "--target-dir=target/server",
-        profile.as_str(),
+pub fn server_cargo_process(cmd: &str, proj: &Project) -> Result<(String, String, Child)> {
+    let mut command = Command::new("cargo");
+    let (envs, line) = build_cargo_server_cmd(cmd, proj, &mut command);
+    Ok((envs, line, command.spawn()?))
+}
+
+pub fn build_cargo_server_cmd(
+    cmd: &str,
+    proj: &Project,
+    command: &mut Command,
+) -> (String, String) {
+    let mut args = vec![
+        cmd.to_string(),
+        format!("--package={}", proj.server_target.name.as_str()),
+        format!("--bin={}", proj.config.bin_target),
+        "--target-dir=target/server".to_string(),
     ];
+
+    if !proj.config.bin_default_features {
+        args.push("--no-default-features".to_string());
+    }
+
+    if !proj.config.bin_features.is_empty() {
+        args.push(format!("--features={}", proj.config.bin_features.join(",")));
+    }
+
+    match proj.server_profile.as_str() {
+        "release" => args.push("--release".to_string()),
+        "dev" => {}
+        prof => args.push(format!("--profile={prof}")),
+    }
 
     let envs = proj.to_envs();
 
-    let child = Command::new("cargo").args(&args).envs(envs).spawn()?;
+    let envs_str = envs
+        .iter()
+        .map(|(name, val)| format!("{name}={val}"))
+        .collect::<Vec<_>>()
+        .join(" ");
+
+    command.args(&args).envs(envs);
     let line = format!("cargo {}", args.join(" "));
-    Ok((line, child))
+    (envs_str, line)
 }

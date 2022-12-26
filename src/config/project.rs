@@ -102,6 +102,14 @@ impl Project {
             let bin_pkg = &project.bin_package;
             let lib_pkg = &project.lib_package;
 
+            if !cli.bin_features.is_empty() {
+                config.bin_features = cli.bin_features.clone();
+            }
+
+            if !cli.lib_features.is_empty() {
+                config.lib_features = cli.lib_features.clone();
+            }
+
             log::trace!("bin: {bin_pkg}, lib: {lib_pkg}");
             log::trace!(
                 "PACKAGES {}",
@@ -132,21 +140,21 @@ impl Project {
                 config.output_name = front.name.replace('-', "_");
             }
 
-            let server_target_idx = if let Some(bin_target) = &config.bin_target {
+            let server_target_idx = if !&config.bin_target.is_empty() {
                 bin_targets
                     .iter()
-                    .find(|(_, t)| t.name == *bin_target)
-                    .ok_or_else(|| target_not_found(bin_target))?
+                    .find(|(_, t)| t.name == config.bin_target)
+                    .ok_or_else(|| target_not_found(config.bin_target.as_str()))?
                     .0
             } else if bin_targets.len() == 1 {
+                config.bin_target = bin_targets[0].1.name.to_string();
                 bin_targets[0].0
             } else if bin_targets.is_empty() {
                 bail!("No bin targets found for member {bin_pkg}");
             } else {
                 return Err(many_targets_found(bin_pkg));
             };
-
-            let profile = if cli.release { "release" } else { "debug" };
+            let profile = if cli.release { "release" } else { "dev" };
 
             let paths = ProjectPaths::new(&metadata, front, server, &config, cli)?;
 
@@ -214,7 +222,16 @@ pub struct ProjectConfig {
     #[serde(default = "default_browserquery")]
     pub browserquery: String,
     /// the bin target to use for building the server
-    pub bin_target: Option<String>,
+    #[serde(default)]
+    pub bin_target: String,
+    #[serde(default)]
+    pub lib_features: Vec<String>,
+    #[serde(default)]
+    pub lib_default_features: bool,
+    #[serde(default)]
+    pub bin_features: Vec<String>,
+    #[serde(default)]
+    pub bin_default_features: bool,
     #[serde(skip)]
     pub config_dir: Utf8PathBuf,
 }

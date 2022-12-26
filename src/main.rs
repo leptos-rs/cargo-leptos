@@ -40,6 +40,14 @@ pub struct Opts {
     #[arg(short, long)]
     pub project: Option<String>,
 
+    /// The features to use when compiling the lib target
+    #[arg(long)]
+    pub lib_features: Vec<String>,
+
+    /// The features to use when compiling the bin target
+    #[arg(long)]
+    pub bin_features: Vec<String>,
+
     /// Verbosity (none: info, errors & warnings, -v: verbose, --vv: very verbose).
     #[arg(short, action = clap::ArgAction::Count)]
     pub verbose: u8,
@@ -106,15 +114,13 @@ async fn main() -> Result<()> {
         return new.run().await;
     }
 
-    let base_path = if let Some(path) = &args.manifest_path {
+    if let Some(path) = &args.manifest_path {
         let path = Utf8PathBuf::from(path).without_last();
         std::env::set_current_dir(&path).dot()?;
         WORKING_DIR.set(path.clone()).unwrap();
-        path
     } else {
         let path = Utf8PathBuf::from_path_buf(std::env::current_dir().unwrap()).unwrap();
         WORKING_DIR.set(path.clone()).unwrap();
-        path
     };
 
     let opts = args.opts().unwrap();
@@ -124,7 +130,7 @@ async fn main() -> Result<()> {
         GRAY.paint(WORKING_DIR.get().unwrap().as_str())
     );
     let watch = matches!(args.command, Commands::Watch(_));
-    let config = Config::load(opts.clone(), &base_path.join("Cargo.toml"), watch).dot()?;
+    let config = Config::load(opts.clone(), &Utf8PathBuf::from("Cargo.toml"), watch).dot()?;
 
     let _monitor = Interrupt::run_ctrl_c_monitor();
     use Commands::{Build, EndToEnd, New, Serve, Test, Watch};

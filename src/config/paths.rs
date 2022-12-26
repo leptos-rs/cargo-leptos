@@ -110,7 +110,8 @@ impl ProjectPaths {
                 .join("front")
                 .join("wasm32-unknown-unknown")
                 .join(&profile)
-                .join(&lib_crate_name);
+                .join(&lib_crate_name)
+                .with_extension("wasm");
             let site = front_config
                 .site_pkg_dir
                 .join(&front_config.output_name)
@@ -153,7 +154,7 @@ impl ProjectPaths {
             } else {
                 ""
             };
-            let bin_crate_name = server.name.replace('-', "_");
+            let bin_crate_name = server.name.clone();
             target_dir
                 .join("server")
                 .join(&profile)

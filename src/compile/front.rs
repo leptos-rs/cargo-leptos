@@ -29,39 +29,68 @@ pub async fn front(proj: &Arc<Project>, changes: &ChangeSet) -> JoinHandle<Resul
 
         fs::create_dir_all(&proj.paths.site_pkg_dir).await?;
 
-        let (line, process) = front_cargo_process("build", true, &proj)?;
+        let (envs, line, process) = front_cargo_process("build", true, &proj)?;
 
         if !wait_interruptible("Cargo", process, Interrupt::subscribe_any()).await? {
             return Ok(Outcome::Stopped);
         }
+        log::debug!("Cargo envs: {}", GRAY.paint(envs));
         log::info!("Cargo finished {}", GRAY.paint(line));
 
         bindgen(&proj).await.dot()
     })
 }
 
-pub fn front_cargo_process(cmd: &str, wasm: bool, proj: &Project) -> Result<(String, Child)> {
-    let profile = format!("--profile={}", proj.front_profile);
-    let mut args = vec![
-        cmd,
-        "--no-default-features",
-        "--features=hydrate",
-        "--lib",
-        "--target-dir=target/front",
-        profile.as_str(),
-    ];
+pub fn front_cargo_process(
+    cmd: &str,
+    wasm: bool,
+    proj: &Project,
+) -> Result<(String, String, Child)> {
+    let mut command = Command::new("cargo");
+    let (envs, line) = build_cargo_front_cmd(cmd, wasm, proj, &mut command);
+    Ok((envs, line, command.spawn()?))
+}
 
+pub fn build_cargo_front_cmd(
+    cmd: &str,
+    wasm: bool,
+    proj: &Project,
+    command: &mut Command,
+) -> (String, String) {
+    let mut args = vec![
+        cmd.to_string(),
+        format!("--package={}", proj.front_package.name.as_str()),
+        "--lib".to_string(),
+        "--target-dir=target/front".to_string(),
+    ];
     if wasm {
-        args.push("--target=wasm32-unknown-unknown");
+        args.push("--target=wasm32-unknown-unknown".to_string());
     }
 
-    let process = Command::new("cargo")
-        .args(&args)
-        .envs(proj.to_envs())
-        .spawn()
-        .context("Could not spawn command")?;
+    if !proj.config.lib_default_features {
+        args.push("--no-default-features".to_string());
+    }
+
+    if !proj.config.lib_features.is_empty() {
+        args.push(format!("--features={}", proj.config.lib_features.join(",")));
+    }
+    match proj.front_profile.as_str() {
+        "release" => args.push("--release".to_string()),
+        "dev" => {}
+        prof => args.push(format!("--profile={prof}")),
+    }
+
+    let envs = proj.to_envs();
+
+    let envs_str = envs
+        .iter()
+        .map(|(name, val)| format!("{name}={val}"))
+        .collect::<Vec<_>>()
+        .join(" ");
+
+    command.args(&args).envs(envs);
     let line = format!("cargo {}", args.join(" "));
-    Ok((line, process))
+    (envs_str, line)
 }
 
 async fn bindgen(proj: &Project) -> Result<Outcome> {
