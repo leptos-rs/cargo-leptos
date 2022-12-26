@@ -39,6 +39,7 @@ jobs:
             profile: minimal
             toolchain: nightly
             override: true
+            target: wasm32-unknown-unknown
         - uses: actions-rs/cargo@v1
           with:
             command: test
