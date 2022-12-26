@@ -8,7 +8,7 @@ use crate::signal::{Interrupt, Outcome, Product};
 use crate::{
     ext::{
         anyhow::{Context, Result},
-        exe::{get_exe, Exe},
+        exe::Exe,
     },
     logger::GRAY,
 };
@@ -151,9 +151,7 @@ async fn bindgen(proj: &Project) -> Result<Outcome> {
 }
 
 async fn optimize(file: &Utf8Path, interrupt: broadcast::Receiver<()>) -> Result<bool> {
-    let wasm_opt = get_exe(Exe::WasmOpt)
-        .await
-        .context("Try manually installing binaryen: https://github.com/WebAssembly/binaryen")?;
+    let wasm_opt = Exe::WasmOpt.get().await.dot()?;
 
     let args = [file.as_str(), "-Os", "-o", file.as_str()];
     let process = Command::new(wasm_opt)

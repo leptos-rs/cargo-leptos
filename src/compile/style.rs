@@ -3,7 +3,7 @@ use std::sync::Arc;
 use super::ChangeSet;
 use crate::{
     config::Project,
-    ext::exe::{get_exe, Exe},
+    ext::exe::Exe,
     ext::{
         anyhow::{anyhow, bail, Context, Result},
         path::PathBufExt,
@@ -66,9 +66,7 @@ async fn compile_sass(style_file: &SourcedSiteFile, optimise: bool) -> Result<()
     let mut args = vec![style_file.source.as_str(), style_file.dest.as_str()];
     optimise.then(|| args.push("--no-source-map"));
 
-    let exe = get_exe(Exe::Sass)
-        .await
-        .context("Try manually installing sass: https://sass-lang.com/install")?;
+    let exe = Exe::Sass.get().await.dot()?;
 
     let mut cmd = Command::new(exe).args(&args).spawn()?;
 

@@ -52,3 +52,7 @@ tar = "0.4"
 
 [dev-dependencies]
 insta = { version = "1.23", features = ["yaml"] }
+temp-dir = "0.1"
+
+[features]
+test_download = []
