@@ -1,5 +1,5 @@
 [package]
-name = "proj1-front"
+name = "front-package"
 version = "0.1.0"
 edition = "2021"
 
@@ -9,7 +9,7 @@ crate-type = ["cdylib", "rlib"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-proj1-app = { path = "../proj1-app" }
+app-package = { path = "../app" }
 leptos = { git = "https://github.com/gbj/leptos", default-features = false, features = [
   "serde",
   "hydrate",

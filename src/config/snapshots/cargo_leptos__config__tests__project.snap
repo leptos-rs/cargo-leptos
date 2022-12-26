@@ -7,7 +7,7 @@ Config {
         Project {
             name: "example",
             config: ProjectConfig {
-                package_name: "example",
+                output_name: "example",
                 site_addr: 127.0.0.1:3000,
                 site_root: "target/site",
                 site_pkg_dir: "pkg",
@@ -24,6 +24,7 @@ Config {
                 end2end_dir: None,
                 browserquery: "defaults",
                 bin_target: None,
+                config_dir: "",
             },
             front_package: "example ..",
             front_profile: "debug",
@@ -53,13 +54,13 @@ Config {
                 },
                 style_file: Some(
                     SourcedSiteFile {
-                        source: "./style/main.scss",
+                        source: "style/main.scss",
                         dest: "target/site/pkg/example.css",
                         site: "pkg/example.css",
                     },
                 ),
                 assets_dir: Some(
-                    "./assets",
+                    "assets",
                 ),
                 cargo_bin_file: "target/server/debug/example",
                 ..

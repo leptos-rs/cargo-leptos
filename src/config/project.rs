@@ -3,7 +3,7 @@ use std::{net::SocketAddr, sync::Arc};
 use crate::{
     ext::{
         anyhow::{anyhow, Error, Result},
-        path::PathBufExt,
+        path::{PathBufExt, PathExt},
     },
     logger::GRAY,
     service::site::Site,
@@ -128,8 +128,8 @@ impl Project {
                 .filter(|(_, t)| t.is_bin())
                 .collect::<Vec<(usize, &Target)>>();
 
-            if config.package_name.is_empty() {
-                config.package_name = front.name.replace('-', "_");
+            if config.output_name.is_empty() {
+                config.output_name = front.name.replace('-', "_");
             }
 
             let server_target_idx = if let Some(bin_target) = &config.bin_target {
@@ -178,7 +178,7 @@ impl Project {
     /// env vars to use when running external command
     pub fn to_envs(&self) -> Vec<(&'static str, String)> {
         let mut vec = vec![
-            ("PACKAGE_NAME", self.config.package_name.to_string()),
+            ("OUTPUT_NAME", self.config.output_name.to_string()),
             ("LEPTOS_SITE_ROOT", self.config.site_root.to_string()),
             ("LEPTOS_SITE_PKG_DIR", self.config.site_pkg_dir.to_string()),
             ("LEPTOS_SITE_ADDR", self.config.site_addr.to_string()),
@@ -195,7 +195,7 @@ impl Project {
 #[serde(rename_all = "kebab-case")]
 pub struct ProjectConfig {
     #[serde(default)]
-    pub package_name: String,
+    pub output_name: String,
     #[serde(default = "default_site_addr")]
     pub site_addr: SocketAddr,
     #[serde(default = "default_site_root")]
@@ -214,12 +214,15 @@ pub struct ProjectConfig {
     #[serde(default = "default_browserquery")]
     pub browserquery: String,
     /// the bin target to use for building the server
-    bin_target: Option<String>,
+    pub bin_target: Option<String>,
+    #[serde(skip)]
+    pub config_dir: Utf8PathBuf,
 }
 
 impl ProjectConfig {
     fn parse(dir: &Utf8Path, metadata: &serde_json::Value) -> Result<Self> {
         let mut conf: ProjectConfig = serde_json::from_value(metadata.clone())?;
+        conf.config_dir = dir.to_path_buf();
         if let Some(file) = find_env_file(dir) {
             overlay_env(&mut conf, &file)?;
         }
@@ -309,16 +312,16 @@ impl ProjectDefinition {
     }
 
     fn parse(metadata: &Metadata) -> Result<Vec<(Self, ProjectConfig)>> {
+        let workspace_dir = &metadata.workspace_root;
         let mut found: Vec<(Self, ProjectConfig)> =
             if let Some(md) = leptos_metadata(&metadata.workspace_metadata) {
-                let dir = &metadata.workspace_root;
-                Self::from_workspace(md, dir)?
+                Self::from_workspace(md, &Utf8PathBuf::default())?
             } else {
                 Default::default()
             };
 
         for package in metadata.workspace_packages() {
-            let dir = package.manifest_path.clone().without_last();
+            let dir = package.manifest_path.unbase(workspace_dir)?.without_last();
 
             if let Some(metadata) = leptos_metadata(&package.metadata) {
                 found.push(Self::from_project(package, metadata, &dir)?);

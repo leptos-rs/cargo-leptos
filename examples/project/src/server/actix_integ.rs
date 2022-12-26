@@ -111,7 +111,7 @@ pub fn render_app_to_stream(
             
 
             let pkg_path = std::env::var("LEPTOS_SITE_PKG_DIR").unwrap();
-            let pkg_name = std::env::var("PACKAGE_NAME").unwrap();
+            let pkg_name = std::env::var("OUTPUT_NAME").unwrap();
 
             let head = format!(
               r#"<!DOCTYPE html>

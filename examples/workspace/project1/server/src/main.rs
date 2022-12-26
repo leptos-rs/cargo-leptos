@@ -8,7 +8,7 @@ use leptos::*;
 
 #[cfg(feature = "ssr")]
 fn app(cx: leptos::Scope) -> Element {
-    use app::*;
+    use app_package::*;
 
     view! { cx, <App /> }
 }

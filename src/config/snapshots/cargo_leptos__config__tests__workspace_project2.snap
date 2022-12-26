@@ -7,7 +7,7 @@ Config {
         Project {
             name: "project2",
             config: ProjectConfig {
-                package_name: "project2",
+                output_name: "project2",
                 site_addr: 127.0.0.1:3000,
                 site_root: "target/site",
                 site_pkg_dir: "pkg",
@@ -22,6 +22,7 @@ Config {
                 end2end_dir: None,
                 browserquery: "defaults",
                 bin_target: None,
+                config_dir: "project2",
             },
             front_package: "project2 ..",
             front_profile: "debug",
@@ -37,8 +38,8 @@ Config {
                 lib_crate_name: "project2",
                 site_root: "target/site",
                 site_pkg_dir: "target/site/pkg",
-                front_dir: "proj2",
-                server_dir: "proj2",
+                front_dir: "project2",
+                server_dir: "project2",
                 target_dir: "target",
                 wasm_file: SourcedSiteFile {
                     source: "target/front/wasm32-unknown-unknown/debug/project2",
@@ -51,13 +52,13 @@ Config {
                 },
                 style_file: Some(
                     SourcedSiteFile {
-                        source: "proj2/src/main.scss",
+                        source: "project2/src/main.scss",
                         dest: "target/site/pkg/project2.css",
                         site: "pkg/project2.css",
                     },
                 ),
                 assets_dir: Some(
-                    "proj2/src/assets",
+                    "project2/src/assets",
                 ),
                 cargo_bin_file: "target/server/debug/project2",
                 ..

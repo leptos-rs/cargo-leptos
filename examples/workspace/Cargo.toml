@@ -1,5 +1,5 @@
 [workspace]
-members = ["proj1-app", "proj1-server", "proj1-front", "proj2"]
+members = ["project1/app", "project1/front", "project1/server", "project2"]
 
 # need to be applied only to wasm build
 [profile.release]
@@ -13,32 +13,7 @@ opt-level = 'z'
 # that are used together frontend (lib) & server (bin)
 [[workspace.metadata.leptos]]
 name = "project1"
-# the package that is used for building the server. Needs to have a binary target.
-bin-package = "proj1-server"
-# the package that is used for building the frontend. Needs to have a library target.
-lib-package = "proj1-front"
-
-
-# [optional] The binary target to use (packages can define multiple binary targets).
-# This is only needed if the package defines more than one binary target.
-# bin-target = "name"
-
-# # A leptos project defines which workspace members
-# # that are used together frontend (lib) & server (bin)
-# [[workspace.metadata.leptos]]
-# name = "second"
-# # The workspace packages used. If one is specified, then it is used both for frontend and server,
-# # otherwise a syntax of "bin:<package> lib:<package>" must be used
-# packages = "bin:polyglot lib:polyglot"
-# # [optional] The binary target to use (packages can define multiple binary targets).
-# # This is only needed if the package defines more than one binary target.
-# # bin-target = "name"
-
-# [Optional] Files in the asset_dir will be copied to the target/site directory
-assets-dir = "assets"
-# [Optional] Command to use when running end2end tests. It will run in the end2end dir.
-end2end-cmd = "npx playwright test"
-
-# Main style file. If scss or sass then it will be compiled to css.
-# the parent folder will be watched for changes
-style-file = "proj1-css/main.scss"
+bin-package = "server-package"
+lib-package = "front-package"
+assets-dir = "project1/assets"
+style-file = "project1/css/main.scss"

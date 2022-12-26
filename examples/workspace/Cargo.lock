@@ -246,6 +246,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "app-package"
+version = "0.1.0"
+dependencies = [
+ "leptos 0.0.21 (git+https://github.com/gbj/leptos)",
+ "leptos_meta 0.0.6 (git+https://github.com/gbj/leptos)",
+]
+
+[[package]]
 name = "askama_escape"
 version = "0.10.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -577,6 +585,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a9c384f161156f5260c24a097c56119f9be8c798586aecc13afbcbe7b7e26bf8"
 dependencies = [
  "percent-encoding",
+]
+
+[[package]]
+name = "front-package"
+version = "0.1.0"
+dependencies = [
+ "app-package",
+ "console_error_panic_hook",
+ "console_log",
+ "leptos 0.0.21 (git+https://github.com/gbj/leptos)",
+ "log",
+ "wasm-bindgen",
 ]
 
 [[package]]
@@ -1587,48 +1607,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "proj1-app"
-version = "0.1.0"
-dependencies = [
- "leptos 0.0.21 (git+https://github.com/gbj/leptos)",
- "leptos_meta 0.0.6 (git+https://github.com/gbj/leptos)",
-]
-
-[[package]]
-name = "proj1-front"
-version = "0.1.0"
-dependencies = [
- "console_error_panic_hook",
- "console_log",
- "leptos 0.0.21 (git+https://github.com/gbj/leptos)",
- "log",
- "proj1-app",
- "wasm-bindgen",
-]
-
-[[package]]
-name = "proj1-server"
-version = "0.1.0"
-dependencies = [
- "actix-files",
- "actix-web",
- "cfg-if",
- "dotenvy",
- "futures",
- "gloo-net",
- "leptos 0.0.21 (git+https://github.com/gbj/leptos)",
- "leptos_actix 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "leptos_dom 0.0.21 (git+https://github.com/gbj/leptos)",
- "leptos_meta 0.0.6 (git+https://github.com/gbj/leptos)",
- "leptos_router 0.0.7 (git+https://github.com/gbj/leptos)",
- "log",
- "proj1-app",
- "reqwest",
- "serde_json",
- "simple_logger",
-]
-
-[[package]]
 name = "project2"
 version = "0.1.0"
 dependencies = [
@@ -1896,6 +1874,28 @@ dependencies = [
  "itoa",
  "ryu",
  "serde",
+]
+
+[[package]]
+name = "server-package"
+version = "0.1.0"
+dependencies = [
+ "actix-files",
+ "actix-web",
+ "app-package",
+ "cfg-if",
+ "dotenvy",
+ "futures",
+ "gloo-net",
+ "leptos 0.0.21 (git+https://github.com/gbj/leptos)",
+ "leptos_actix 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "leptos_dom 0.0.21 (git+https://github.com/gbj/leptos)",
+ "leptos_meta 0.0.6 (git+https://github.com/gbj/leptos)",
+ "leptos_router 0.0.7 (git+https://github.com/gbj/leptos)",
+ "log",
+ "reqwest",
+ "serde_json",
+ "simple_logger",
 ]
 
 [[package]]

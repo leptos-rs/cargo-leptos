@@ -1,9 +1,11 @@
 use crate::{
     ext::anyhow::Result,
     ext::path::{PathBufExt, PathExt},
+    logger::GRAY,
     service::site::{SiteFile, SourcedSiteFile},
     Opts,
 };
+use anyhow::ensure;
 use camino::Utf8PathBuf;
 use cargo_metadata::{Metadata, Package};
 
@@ -14,6 +16,8 @@ pub struct ProjectPaths {
     pub lib_crate_name: String,
     /// the absolute root directory.
     pub abs_root_dir: Utf8PathBuf,
+    /// the dir of the ProjectConfig relative to workspace
+    // pub config_dir: Utf8PathBuf,
     pub site_root: Utf8PathBuf,
     pub site_pkg_dir: Utf8PathBuf,
     /// the relative (to abs_root_dir) library project dir
@@ -48,6 +52,34 @@ impl std::fmt::Debug for ProjectPaths {
     }
 }
 impl ProjectPaths {
+    pub fn validate(self) -> Result<Self> {
+        ensure!(
+            self.abs_root_dir.join(&self.front_dir).exists(),
+            "The frontend package dir doesn't exist {}",
+            GRAY.paint(self.front_dir.as_str())
+        );
+        ensure!(
+            self.abs_root_dir.join(&self.server_dir).exists(),
+            "The server package dir doesn't exist {}",
+            GRAY.paint(self.server_dir.as_str())
+        );
+        if let Some(style_file) = &self.style_file {
+            ensure!(
+                self.abs_root_dir.join(&style_file.source).exists(),
+                "The style file doesn't exist {}",
+                GRAY.paint(style_file.source.as_str())
+            );
+        }
+        if let Some(assets_dir) = &self.assets_dir {
+            ensure!(
+                self.abs_root_dir.join(&assets_dir).exists(),
+                "The assets directory doesn't exist {}",
+                GRAY.paint(assets_dir.as_str())
+            );
+        }
+        Ok(self)
+    }
+
     pub fn new(
         metadata: &Metadata,
         front: &Package,
@@ -81,7 +113,7 @@ impl ProjectPaths {
                 .join(&lib_crate_name);
             let site = front_config
                 .site_pkg_dir
-                .join(&front_config.package_name)
+                .join(&front_config.output_name)
                 .with_extension("wasm");
             let dest = site_root.join(&site);
             SourcedSiteFile { source, dest, site }
@@ -90,17 +122,18 @@ impl ProjectPaths {
         let js_file = {
             let site = front_config
                 .site_pkg_dir
-                .join(&front_config.package_name)
+                .join(&front_config.output_name)
                 .with_extension("js");
             let dest = site_root.join(&site);
             SiteFile { dest, site }
         };
 
         let style_file = if let Some(style_file) = &front_config.style_file {
-            let source = front_dir.join(style_file);
+            // relative to the configuration file
+            let source = front_config.config_dir.join(style_file);
             let site = front_config
                 .site_pkg_dir
-                .join(&front_config.package_name)
+                .join(&front_config.output_name)
                 .with_extension("css");
             let dest = site_root.join(&site);
             Some(SourcedSiteFile { source, dest, site })
@@ -108,10 +141,11 @@ impl ProjectPaths {
             None
         };
 
+        // relative to the configuration file
         let assets_dir = front_config
             .assets_dir
             .as_ref()
-            .map(|dir| front_dir.join(dir));
+            .map(|dir| front_config.config_dir.join(dir));
 
         let cargo_bin_file = {
             let file_ext = if cfg!(target_os = "windows") {
@@ -140,5 +174,6 @@ impl ProjectPaths {
             assets_dir,
             cargo_bin_file,
         })
+        // .validate()
     }
 }

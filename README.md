@@ -73,6 +73,7 @@ section `[[workspace.metadata.leptos]]` which takes three mandatory parameters:
 
 ```toml
 [[workspace.metadata.leptos]]
+# project name
 name = "leptos-project"
 bin-package = "server"
 lib-package = "front"
@@ -106,10 +107,11 @@ The environment variables are also provided by cargo-leptos when building, runni
 ```toml
 # Sets the name of the output js, wasm and css files.
 #
-# Optional, defaults to the _Cargo.toml_ package name. Env: PACKAGE_NAME.
-package-name = "myproj"
+# Optional, defaults to the lib package name or, in a workspace, the project name. Env: OUTPUT_NAME.
+output-name = "myproj"
 
 # The site root folder is where cargo-leptos generate all output.
+# NOTE: It is relative to the workspace root when running in a workspace.
 # WARNING: all content of this folder will be erased on a rebuild.
 #
 # Optional, defaults to "target/site". Env: LEPTOS_SITE_ROOT.
