@@ -21,7 +21,7 @@ pub trait PathBufExt: PathExt {
     fn test_string(&self) -> String;
 
     #[cfg(test)]
-    fn ls_ascii(&self) -> Result<String>;
+    fn ls_ascii(&self, indent: usize) -> Result<String>;
 }
 
 impl PathExt for Utf8Path {
@@ -71,36 +71,28 @@ impl PathBufExt for Utf8PathBuf {
     }
 
     #[cfg(test)]
-    fn ls_ascii(&self) -> Result<String> {
-        use std::collections::VecDeque;
-
-        let mut dirs: VecDeque<(usize, Utf8PathBuf)> = VecDeque::new();
-
-        dirs.push_back((0, self.clone()));
-
+    fn ls_ascii(&self, indent: usize) -> Result<String> {
         let mut out = Vec::new();
 
-        while let Some((indent, dir)) = dirs.pop_front() {
-            let mut entries = dir.read_dir_utf8()?;
-            out.push(format!(
-                "{}{}:",
-                "  ".repeat(indent),
-                dir.file_name().unwrap_or_default()
-            ));
+        let mut entries = self.read_dir_utf8()?;
+        out.push(format!(
+            "{}{}:",
+            "  ".repeat(indent),
+            self.file_name().unwrap_or_default()
+        ));
 
-            let indent = indent + 1;
-            while let Some(Ok(entry)) = entries.next() {
-                let path = entry.path();
+        let indent = indent + 1;
+        while let Some(Ok(entry)) = entries.next() {
+            let path = entry.path().to_path_buf();
 
-                if entry.file_type()?.is_dir() {
-                    dirs.push_back((indent, path.to_owned()));
-                } else {
-                    out.push(format!(
-                        "{}{}",
-                        "  ".repeat(indent),
-                        path.file_name().unwrap_or_default()
-                    ));
-                }
+            if entry.file_type()?.is_dir() {
+                out.push(path.ls_ascii(indent)?);
+            } else {
+                out.push(format!(
+                    "{}{}",
+                    "  ".repeat(indent),
+                    path.file_name().unwrap_or_default()
+                ));
             }
         }
         Ok(out.join("\n"))

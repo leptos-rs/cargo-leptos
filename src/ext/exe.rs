@@ -130,12 +130,9 @@ fn extract_zip(src: &Bytes, dest: &Path) -> Result<()> {
 /// | macOS    | /Users/Alice/Library/Caches/NAME  |
 /// | Windows  | C:\Users\Alice\AppData\Local\NAME |
 fn get_cache_dir(name: &str) -> Result<PathBuf> {
-    #[cfg(not(test))]
     let dir = dirs::cache_dir()
         .ok_or_else(|| anyhow::anyhow!("Cache directory does not exist"))?
         .join(name);
-    #[cfg(test)]
-    let dir = PathBuf::from("tmp").join(name);
 
     if !dir.exists() {
         std::fs::create_dir_all(&dir).context(format!("Could not create dir {dir:?}"))?;

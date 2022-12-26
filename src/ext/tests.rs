@@ -44,6 +44,6 @@ async fn download_wasmopt() {
 fn ls(dir: &TempDir) -> String {
     Utf8PathBuf::from_path_buf(dir.path().to_path_buf())
         .unwrap()
-        .ls_ascii()
+        .ls_ascii(0)
         .unwrap_or_default()
 }
