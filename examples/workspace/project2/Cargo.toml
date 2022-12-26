@@ -1,7 +1,5 @@
-[workspace]
-
 [package]
-name = "example"
+name = "project2"
 version = "0.1.0"
 edition = "2021"
 
@@ -37,11 +35,6 @@ reqwest = { version = "0.11", features = ["json"], optional = true }
 leptos_actix = { git = "https://github.com/gbj/leptos", optional = true }
 dotenvy = { version = "0.15", optional = true }
 
-[profile.release]
-codegen-units = 1
-lto = true
-opt-level = 'z'
-
 [features]
 default = ["ssr"]
 hydrate = [
@@ -71,10 +64,13 @@ ssr = [
 # See https://github.com/akesson/cargo-leptos for documentation of all the parameters.
 
 # [Optional] Files in the asset_dir will be copied to the target/site directory
-assets_dir = "assets"
-# [Optional] Command to use when running end2end tests. It will run in the end2end dir.
-end2end_cmd = "npx playwright test"
+assets-dir = "src/assets"
 
 # Main style file. If scss or sass then it will be compiled to css.
 # the parent folder will be watched for changes
-style_file = "style/main.scss"
+style-file = "src/main.scss"
+
+site-root = "target/site/project2"
+bin-features = ["ssr"]
+
+lib-features = ["hydrate"]

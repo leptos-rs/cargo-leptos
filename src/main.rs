@@ -1,3 +1,6 @@
+#[cfg(all(test, feature = "full_tests"))]
+mod tests;
+
 mod command;
 pub mod compile;
 pub mod config;
@@ -11,6 +14,7 @@ use crate::logger::GRAY;
 use camino::Utf8PathBuf;
 use clap::{Parser, Subcommand, ValueEnum};
 use command::NewCommand;
+use config::Config;
 use ext::path::PathBufExt;
 use ext::{fs, path, util};
 use once_cell::sync::OnceCell;
@@ -33,11 +37,23 @@ pub enum Log {
 pub struct Opts {
     /// Build artifacts in release mode, with optimizations.
     #[arg(short, long)]
-    release: bool,
+    pub release: bool,
+
+    /// Which project to use, from a list of projects defined in a workspace
+    #[arg(short, long)]
+    pub project: Option<String>,
+
+    /// The features to use when compiling the lib target
+    #[arg(long)]
+    pub lib_features: Vec<String>,
+
+    /// The features to use when compiling the bin target
+    #[arg(long)]
+    pub bin_features: Vec<String>,
 
     /// Verbosity (none: info, errors & warnings, -v: verbose, --vv: very verbose).
     #[arg(short, action = clap::ArgAction::Count)]
-    verbose: u8,
+    pub verbose: u8,
 }
 
 #[derive(Debug, Parser)]
@@ -45,7 +61,7 @@ pub struct Opts {
 pub struct Cli {
     /// Path to Cargo.toml.
     #[arg(long)]
-    manifest_path: Option<String>,
+    manifest_path: Option<Utf8PathBuf>,
 
     /// Output logs from dependencies (multiple --log accepted).
     #[arg(long)]
@@ -53,6 +69,18 @@ pub struct Cli {
 
     #[command(subcommand)]
     command: Commands,
+}
+
+impl Cli {
+    fn opts(&self) -> Option<Opts> {
+        use Commands::{Build, EndToEnd, New, Serve, Test, Watch};
+        match &self.command {
+            New(_) => None,
+            Build(opts) | Serve(opts) | Test(opts) | EndToEnd(opts) | Watch(opts) => {
+                Some(opts.clone())
+            }
+        }
+    }
 }
 
 #[derive(Debug, Subcommand, PartialEq)]
@@ -81,47 +109,43 @@ async fn main() -> Result<()> {
     }
 
     let args = Cli::parse_from(&args);
+    run(args).await
+}
+
+pub async fn run(args: Cli) -> Result<()> {
+    let verbose = args.opts().map(|o| o.verbose).unwrap_or(0);
+    logger::setup(verbose, &args.log);
 
     if let Commands::New(new) = &args.command {
         return new.run().await;
     }
 
     if let Some(path) = &args.manifest_path {
-        let path = Utf8PathBuf::from(path)
-            .without_last()
-            .canonicalize_utf8()
-            .dot()?;
+        let path = Utf8PathBuf::from(path).without_last();
         std::env::set_current_dir(&path).dot()?;
-        WORKING_DIR.set(path).unwrap();
+        WORKING_DIR.set(path.clone()).unwrap();
     } else {
         let path = Utf8PathBuf::from_path_buf(std::env::current_dir().unwrap()).unwrap();
-        WORKING_DIR.set(path).unwrap();
-    }
-
-    let opts = match &args.command {
-        Commands::New(_) => panic!(""),
-        Commands::Build(opts)
-        | Commands::Serve(opts)
-        | Commands::Test(opts)
-        | Commands::EndToEnd(opts)
-        | Commands::Watch(opts) => opts,
+        WORKING_DIR.set(path.clone()).unwrap();
     };
 
-    logger::setup(opts.verbose, &args.log);
+    let opts = args.opts().unwrap();
+
     log::trace!(
         "Path working dir {}",
         GRAY.paint(WORKING_DIR.get().unwrap().as_str())
     );
-
-    let config = crate::config::read(&args, opts.clone()).await.dot()?;
+    let watch = matches!(args.command, Commands::Watch(_));
+    let config = Config::load(opts.clone(), &Utf8PathBuf::from("Cargo.toml"), watch).dot()?;
 
     let _monitor = Interrupt::run_ctrl_c_monitor();
+    use Commands::{Build, EndToEnd, New, Serve, Test, Watch};
     match args.command {
-        Commands::New(_) => panic!(),
-        Commands::Build(_) => command::build(&config).await,
-        Commands::Serve(_) => command::serve(&config).await,
-        Commands::Test(_) => command::test(&config).await,
-        Commands::EndToEnd(_) => command::end2end(&config).await,
-        Commands::Watch(_) => command::watch(&config).await,
+        New(_) => panic!(),
+        Build(_) => command::build_all(&config).await,
+        Serve(_) => command::serve(&config.current_project()?).await,
+        Test(_) => command::test_all(&config).await,
+        EndToEnd(_) => command::end2end_all(&config).await,
+        Watch(_) => command::watch(&config.current_project()?).await,
     }
 }

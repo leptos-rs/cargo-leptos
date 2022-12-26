@@ -1,7 +1,8 @@
+use crate::config::Project;
 use crate::ext::sync::wait_for_socket;
 use crate::logger::GRAY;
+use crate::signal::Interrupt;
 use crate::signal::{ProductChange, ReloadSignal, ReloadType};
-use crate::{config::Config, signal::Interrupt};
 use axum::{
     extract::ws::{Message, WebSocket, WebSocketUpgrade},
     response::IntoResponse,
@@ -9,6 +10,7 @@ use axum::{
     Router,
 };
 use serde::Serialize;
+use std::sync::Arc;
 use std::{fmt::Display, net::SocketAddr};
 use tokio::{net::TcpStream, select, sync::RwLock, task::JoinHandle};
 
@@ -17,15 +19,17 @@ lazy_static::lazy_static! {
   static ref CSS_LINK: RwLock<String> = RwLock::new(String::default());
 }
 
-pub async fn spawn(conf: &Config) -> JoinHandle<()> {
-    let conf = conf.clone();
+pub async fn spawn(proj: &Arc<Project>) -> JoinHandle<()> {
+    let proj = proj.clone();
     let mut int = Interrupt::subscribe_any();
     let mut prod = ProductChange::subscribe();
 
     let mut site_addr = SITE_ADDR.write().await;
-    *site_addr = conf.leptos.site_addr;
-    let mut css_link = CSS_LINK.write().await;
-    *css_link = conf.site_css_file().to_string();
+    *site_addr = proj.config.site_addr;
+    if let Some(style_file) = &proj.paths.style_file {
+        let mut css_link = CSS_LINK.write().await;
+        *css_link = style_file.site.to_string();
+    }
 
     tokio::spawn(async move {
         let _change = ReloadSignal::subscribe();
@@ -36,8 +40,8 @@ pub async fn spawn(conf: &Config) -> JoinHandle<()> {
             _ = int.recv() => return
         }
 
-        let mut reload_addr = conf.leptos.site_addr;
-        reload_addr.set_port(conf.leptos.reload_port);
+        let mut reload_addr = proj.config.site_addr;
+        reload_addr.set_port(proj.config.reload_port);
 
         if TcpStream::connect(&reload_addr).await.is_ok() {
             log::error!(
@@ -130,6 +134,9 @@ struct BrowserMessage {
 impl BrowserMessage {
     async fn css() -> Self {
         let link = CSS_LINK.read().await.clone();
+        if link.is_empty() {
+            log::error!("Reload internal error: sending css reload but no css file is set.");
+        }
         Self {
             css: Some(link),
             all: false,

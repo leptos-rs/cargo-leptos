@@ -1,10 +1,11 @@
+use std::sync::Arc;
+
 use super::ChangeSet;
 use crate::{
-    config::Config,
+    config::Project,
     ext::anyhow::{Context, Result},
     ext::sync::wait_interruptible,
     logger::GRAY,
-    service::site,
     signal::{Interrupt, Outcome, Product},
 };
 use tokio::{
@@ -12,8 +13,8 @@ use tokio::{
     task::JoinHandle,
 };
 
-pub async fn server(conf: &Config, changes: &ChangeSet) -> JoinHandle<Result<Outcome>> {
-    let conf = conf.clone();
+pub async fn server(proj: &Arc<Project>, changes: &ChangeSet) -> JoinHandle<Result<Outcome>> {
+    let proj = proj.clone();
     let changes = changes.clone();
 
     tokio::spawn(async move {
@@ -21,16 +22,19 @@ pub async fn server(conf: &Config, changes: &ChangeSet) -> JoinHandle<Result<Out
             return Ok(Outcome::Success(Product::NoChange));
         }
 
-        let (line, process) = server_cargo_process("build", &conf)?;
+        let (envs, line, process) = server_cargo_process("build", &proj)?;
 
         match wait_interruptible("Cargo", process, Interrupt::subscribe_any()).await? {
             true => {
+                log::debug!("Cargo envs: {}", GRAY.paint(envs));
                 log::info!("Cargo finished {}", GRAY.paint(line));
 
-                if site::ext::did_file_change(&conf.cargo_bin_file())
+                let changed = proj
+                    .site
+                    .did_external_file_change(&proj.paths.cargo_bin_file)
                     .await
-                    .dot()?
-                {
+                    .dot()?;
+                if changed {
                     log::debug!("Cargo server bin changed");
                     Ok(Outcome::Success(Product::ServerBin))
                 } else {
@@ -43,21 +47,47 @@ pub async fn server(conf: &Config, changes: &ChangeSet) -> JoinHandle<Result<Out
     })
 }
 
-pub fn server_cargo_process(cmd: &str, conf: &Config) -> Result<(String, Child)> {
+pub fn server_cargo_process(cmd: &str, proj: &Project) -> Result<(String, String, Child)> {
+    let mut command = Command::new("cargo");
+    let (envs, line) = build_cargo_server_cmd(cmd, proj, &mut command);
+    Ok((envs, line, command.spawn()?))
+}
+
+pub fn build_cargo_server_cmd(
+    cmd: &str,
+    proj: &Project,
+    command: &mut Command,
+) -> (String, String) {
     let mut args = vec![
-        cmd,
-        "--no-default-features",
-        "--features=ssr",
-        "--target-dir=target/server",
+        cmd.to_string(),
+        format!("--package={}", proj.server_target.name.as_str()),
+        format!("--bin={}", proj.config.bin_target),
+        "--target-dir=target/server".to_string(),
     ];
 
-    if conf.cli.release {
-        args.push("--release");
+    if !proj.config.bin_default_features {
+        args.push("--no-default-features".to_string());
     }
 
-    let envs = conf.to_envs();
+    if !proj.config.bin_features.is_empty() {
+        args.push(format!("--features={}", proj.config.bin_features.join(",")));
+    }
 
-    let child = Command::new("cargo").args(&args).envs(envs).spawn()?;
+    match proj.server_profile.as_str() {
+        "release" => args.push("--release".to_string()),
+        "dev" => {}
+        prof => args.push(format!("--profile={prof}")),
+    }
+
+    let envs = proj.to_envs();
+
+    let envs_str = envs
+        .iter()
+        .map(|(name, val)| format!("{name}={val}"))
+        .collect::<Vec<_>>()
+        .join(" ");
+
+    command.args(&args).envs(envs);
     let line = format!("cargo {}", args.join(" "));
-    Ok((line, child))
+    (envs_str, line)
 }

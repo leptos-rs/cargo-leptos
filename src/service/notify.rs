@@ -1,10 +1,10 @@
 use crate::compile::Change;
+use crate::config::Project;
 use crate::ext::anyhow::{anyhow, Result};
 use crate::ext::path::PathExt;
 use crate::signal::Interrupt;
 use crate::WORKING_DIR;
 use crate::{
-    config::Config,
     logger::GRAY,
     path::{remove_nested, PathBufExt},
     util::StrAdditions,
@@ -16,13 +16,13 @@ use std::path::Path;
 use std::{fmt::Display, time::Duration};
 use tokio::task::JoinHandle;
 
-pub async fn spawn(config: &Config) -> Result<JoinHandle<()>> {
+pub async fn spawn(proj: &Project) -> Result<JoinHandle<()>> {
     let mut paths = vec!["src".to_created_dir()?];
-    if let Some(style) = &config.leptos.style_file {
-        paths.push(style.clone().without_last());
+    if let Some(style) = &proj.paths.style_file {
+        paths.push(style.source.clone().without_last());
     }
 
-    let assets_dir = if let Some(dir) = &config.leptos.assets_dir {
+    let assets_dir = if let Some(dir) = &proj.paths.assets_dir {
         let assets_root = dir.to_owned();
         paths.push(assets_root.clone());
         Some(assets_root)

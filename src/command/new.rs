@@ -3,7 +3,7 @@ use clap::Args;
 
 use tokio::process::Command;
 
-use crate::ext::exe::{get_exe, Exe};
+use crate::ext::exe::Exe;
 
 // A subset of the cargo-generate commands available.
 // See: https://github.com/cargo-generate/cargo-generate/blob/main/src/args.rs
@@ -52,9 +52,7 @@ pub struct NewCommand {
 impl NewCommand {
     pub async fn run(&self) -> Result<()> {
         let args = self.to_args();
-        let exe = get_exe(Exe::CargoGenerate)
-            .await
-            .context("Try manually installing cargo-generate: https://github.com/cargo-generate/cargo-generate#installation")?;
+        let exe = Exe::CargoGenerate.get().await.dot()?;
 
         let mut process = Command::new(exe)
             .arg("generate")

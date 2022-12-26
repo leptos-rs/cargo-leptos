@@ -1,0 +1,20 @@
+[workspace]
+members = ["project1/app", "project1/front", "project1/server", "project2"]
+
+# need to be applied only to wasm build
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 'z'
+
+# See https://github.com/akesson/cargo-leptos for documentation of all the parameters.
+
+# A leptos project defines which workspace members
+# that are used together frontend (lib) & server (bin)
+[[workspace.metadata.leptos]]
+name = "project1"
+bin-package = "server-package"
+lib-package = "front-package"
+assets-dir = "project1/assets"
+style-file = "project1/css/main.scss"
+site-root = "target/site/project1"

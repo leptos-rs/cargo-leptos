@@ -3,6 +3,8 @@ mod change;
 mod front;
 mod server;
 mod style;
+#[cfg(test)]
+mod tests;
 
 pub use assets::assets;
 pub use change::{Change, ChangeSet};

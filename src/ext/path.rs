@@ -15,6 +15,13 @@ pub trait PathExt {
 pub trait PathBufExt: PathExt {
     /// drops the last path component
     fn without_last(self) -> Self;
+
+    #[cfg(test)]
+    /// returns a platform independent string suitable for testing
+    fn test_string(&self) -> String;
+
+    #[cfg(test)]
+    fn ls_ascii(&self, indent: usize) -> Result<String>;
 }
 
 impl PathExt for Utf8Path {
@@ -38,7 +45,12 @@ impl PathExt for Utf8Path {
                 _ => {}
             };
         }
-        Ok(Utf8PathBuf::from_iter(self_comp_iter))
+        let path = Utf8PathBuf::from_iter(self_comp_iter);
+        Ok(if path == "" {
+            Utf8PathBuf::from(".")
+        } else {
+            path
+        })
     }
 }
 
@@ -46,6 +58,58 @@ impl PathBufExt for Utf8PathBuf {
     fn without_last(mut self) -> Utf8PathBuf {
         self.pop();
         self
+    }
+
+    #[cfg(test)]
+    fn test_string(&self) -> String {
+        let s = self.to_string().replace("\\", "/");
+        if s.ends_with(".exe") {
+            s[..s.len() - 4].to_string()
+        } else {
+            s
+        }
+    }
+
+    #[cfg(test)]
+    fn ls_ascii(&self, indent: usize) -> Result<String> {
+        let mut entries = self.read_dir_utf8()?;
+        let mut out = Vec::new();
+
+        out.push(format!(
+            "{}{}:",
+            "  ".repeat(indent),
+            self.file_name().unwrap_or_default()
+        ));
+
+        let indent = indent + 1;
+        let mut files = Vec::new();
+        let mut dirs = Vec::new();
+
+        while let Some(Ok(entry)) = entries.next() {
+            let path = entry.path().to_path_buf();
+
+            if entry.file_type()?.is_dir() {
+                dirs.push(path);
+            } else {
+                files.push(path);
+            }
+        }
+
+        dirs.sort();
+        files.sort();
+
+        for file in files {
+            out.push(format!(
+                "{}{}",
+                "  ".repeat(indent),
+                file.file_name().unwrap_or_default()
+            ));
+        }
+
+        for path in dirs {
+            out.push(path.ls_ascii(indent)?);
+        }
+        Ok(out.join("\n"))
     }
 }
 

@@ -1,166 +1,171 @@
-use std::{collections::HashMap, fmt::Display, path::Path};
-
-use camino::{Utf8Path, Utf8PathBuf};
-use serde::{Deserialize, Serialize};
-use tokio::sync::RwLock;
-
-use crate::{
-    config::SITE_ROOT,
-    ext::{
-        anyhow::{Context, Result},
-        fs,
-    },
+use std::{
+    collections::HashMap,
+    fmt::{self, Display},
 };
 
-lazy_static::lazy_static! {
-    static ref FILE_REG: RwLock<HashMap<String, u64>> = RwLock::new(HashMap::new());
-    static ref EXT_FILE_REG: RwLock<HashMap<String, u64>> = RwLock::new(HashMap::new());
+use camino::{Utf8Path, Utf8PathBuf};
+use tokio::sync::RwLock;
+
+use crate::ext::{
+    anyhow::{Context, Result},
+    fs,
+    path::PathBufExt,
+};
+
+#[derive(Clone)]
+#[cfg_attr(not(test), derive(Debug))]
+pub struct SourcedSiteFile {
+    /// source file's relative path from the root (workspace or project) directory
+    pub source: Utf8PathBuf,
+    /// dest file's relative path from the root (workspace or project) directory
+    pub dest: Utf8PathBuf,
+    /// dest file's relative path from the site directory
+    pub site: Utf8PathBuf,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(transparent)]
-pub struct SiteFile(Utf8PathBuf);
-
-impl SiteFile {
-    pub fn to_relative(&self) -> Utf8PathBuf {
-        SITE_ROOT.get().unwrap().join(&self.0)
+impl SourcedSiteFile {
+    pub fn as_site_file(&self) -> SiteFile {
+        SiteFile {
+            dest: self.dest.clone(),
+            site: self.site.clone(),
+        }
     }
 }
 
-impl AsRef<Path> for SiteFile {
-    fn as_ref(&self) -> &Path {
-        self.0.as_ref()
+#[cfg(test)]
+impl std::fmt::Debug for SourcedSiteFile {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SourcedSiteFile")
+            .field("source", &self.source.test_string())
+            .field("dest", &self.dest.test_string())
+            .field("site", &self.site.test_string())
+            .finish()
     }
 }
 
-impl AsRef<Utf8Path> for SiteFile {
-    fn as_ref(&self) -> &Utf8Path {
-        self.0.as_ref()
+impl Display for SourcedSiteFile {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} -> @{}", self.source, self.site)
     }
 }
 
-impl std::ops::Deref for SiteFile {
-    type Target = Utf8Path;
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl From<&str> for SiteFile {
-    fn from(value: &str) -> Self {
-        Self(Utf8PathBuf::from(value))
-    }
-}
-
-impl From<Utf8PathBuf> for SiteFile {
-    fn from(value: Utf8PathBuf) -> Self {
-        Self(value)
-    }
-}
-
-impl From<&Utf8Path> for SiteFile {
-    fn from(value: &Utf8Path) -> Self {
-        Self(value.to_path_buf())
-    }
+#[derive(Clone)]
+#[cfg_attr(not(test), derive(Debug))]
+pub struct SiteFile {
+    /// dest file's relative path from the root (workspace or project) directory
+    pub dest: Utf8PathBuf,
+    /// dest file's relative path from the site directory
+    pub site: Utf8PathBuf,
 }
 
 impl Display for SiteFile {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0)
+        write!(f, "@{}", self.site)
     }
 }
 
-pub mod ext {
-    use super::EXT_FILE_REG;
-    use crate::ext::anyhow::{Context, Result};
-    use camino::Utf8Path;
+#[cfg(test)]
+impl std::fmt::Debug for SiteFile {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SiteFile")
+            .field("dest", &self.dest.test_string())
+            .field("site", &self.site.test_string())
+            .finish()
+    }
+}
 
-    /// check after writing the file if it changed
-    pub async fn did_file_change(to: &Utf8Path) -> Result<bool> {
-        let new_hash = super::file_hash(to).await.dot()?;
-        let cur_hash = { EXT_FILE_REG.read().await.get(to.as_str()).copied() };
+pub struct Site {
+    file_reg: RwLock<HashMap<String, u64>>,
+    ext_file_reg: RwLock<HashMap<String, u64>>,
+}
+
+impl fmt::Debug for Site {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Site")
+            .field("file_reg", &self.file_reg.blocking_read())
+            .field("ext_file_reg", &self.ext_file_reg.blocking_read())
+            .finish()
+    }
+}
+
+impl Site {
+    pub fn new() -> Self {
+        Self {
+            file_reg: Default::default(),
+            ext_file_reg: Default::default(),
+        }
+    }
+
+    /// check if the file changed
+    pub async fn did_external_file_change(&self, to: &Utf8Path) -> Result<bool> {
+        let new_hash = file_hash(to).await.dot()?;
+        let cur_hash = { self.ext_file_reg.read().await.get(to.as_str()).copied() };
         if Some(new_hash) == cur_hash {
             return Ok(false);
         }
-        let mut f = EXT_FILE_REG.write().await;
+        let mut f = self.ext_file_reg.write().await;
         f.insert(to.to_string(), new_hash);
         log::trace!("Site update hash for {to} to {new_hash}");
         Ok(true)
     }
-}
 
-pub async fn copy_file_if_changed(from: &Utf8Path, to: &SiteFile) -> Result<bool> {
-    let dest = get_dest(to).await?;
+    pub async fn updated(&self, file: &SourcedSiteFile) -> Result<bool> {
+        fs::create_dir_all(file.dest.clone().without_last()).await?;
 
-    let new_hash = file_hash(&from).await?;
-    let cur_hash = current_hash(to, &dest).await?;
+        let new_hash = file_hash(&file.source).await?;
+        let cur_hash = self.current_hash(&file.site, &file.dest).await?;
 
-    if Some(new_hash) == cur_hash {
-        return Ok(false);
+        if Some(new_hash) == cur_hash {
+            return Ok(false);
+        }
+        fs::copy(&file.source, &file.dest).await?;
+
+        let mut reg = self.file_reg.write().await;
+        reg.insert(file.site.to_string(), new_hash);
+        Ok(true)
     }
 
-    fs::copy(from, dest).await?;
-
-    let mut reg = FILE_REG.write().await;
-    reg.insert(to.to_string(), new_hash);
-    Ok(true)
-}
-
-/// check after writing the file if it changed
-pub async fn did_file_change(to: &SiteFile) -> Result<bool> {
-    let new_hash = file_hash(&to.to_relative()).await.dot()?;
-    let cur_hash = { FILE_REG.read().await.get(to.as_str()).copied() };
-    if Some(new_hash) == cur_hash {
-        return Ok(false);
-    }
-    let mut f = FILE_REG.write().await;
-    f.insert(to.to_string(), new_hash);
-    Ok(true)
-}
-
-pub async fn write_if_changed(to: &SiteFile, data: &[u8]) -> Result<bool> {
-    let dest = get_dest(to).await?;
-
-    let new_hash = seahash::hash(data);
-    let cur_hash = current_hash(to, &dest).await?;
-
-    if Some(new_hash) == cur_hash {
-        return Ok(false);
+    /// check after writing the file if it changed
+    pub async fn did_file_change(&self, file: &SiteFile) -> Result<bool> {
+        let new_hash = file_hash(&file.dest).await.dot()?;
+        let cur_hash = { self.file_reg.read().await.get(file.site.as_str()).copied() };
+        if Some(new_hash) == cur_hash {
+            return Ok(false);
+        }
+        let mut f = self.file_reg.write().await;
+        f.insert(file.site.to_string(), new_hash);
+        Ok(true)
     }
 
-    fs::write(dest, &data).await?;
+    pub async fn updated_with(&self, file: &SiteFile, data: &[u8]) -> Result<bool> {
+        fs::create_dir_all(file.dest.clone().without_last()).await?;
 
-    let mut reg = FILE_REG.write().await;
-    reg.insert(to.to_string(), new_hash);
-    Ok(true)
-}
+        let new_hash = seahash::hash(data);
+        let cur_hash = self.current_hash(&file.site, &file.dest).await?;
 
-async fn get_dest(to: &SiteFile) -> Result<Utf8PathBuf> {
-    let root = SITE_ROOT.get().unwrap();
+        if Some(new_hash) == cur_hash {
+            return Ok(false);
+        }
 
-    if to.components().count() > 1 {
-        let mut to = to.to_path_buf();
-        to.pop();
-        let dir = root.join(&to);
-        if !dir.exists() {
-            fs::create_dir_all(dir).await.dot()?;
+        fs::write(&file.dest, &data).await?;
+
+        let mut reg = self.file_reg.write().await;
+        reg.insert(file.site.to_string(), new_hash);
+        Ok(true)
+    }
+
+    async fn current_hash(&self, site: &Utf8Path, dest: &Utf8Path) -> Result<Option<u64>> {
+        if let Some(hash) = self.file_reg.read().await.get(site.as_str()).copied() {
+            Ok(Some(hash))
+        } else if dest.exists() {
+            Ok(Some(file_hash(&dest).await?))
+        } else {
+            Ok(None)
         }
     }
-
-    Ok(root.join(to))
 }
 
 async fn file_hash(file: &Utf8Path) -> Result<u64> {
     let data = fs::read(&file).await?;
     Ok(seahash::hash(&data))
-}
-
-async fn current_hash(to: &Utf8Path, dest: &Utf8Path) -> Result<Option<u64>> {
-    if let Some(hash) = FILE_REG.read().await.get(to.as_str()).copied() {
-        Ok(Some(hash))
-    } else if dest.exists() {
-        Ok(Some(file_hash(dest).await?))
-    } else {
-        Ok(None)
-    }
 }

@@ -1,6 +1,8 @@
+use std::sync::Arc;
+
 use crate::{
     compile::{self},
-    config::Config,
+    config::Project,
     ext::anyhow::Context,
     service,
     signal::{Interrupt, ProductChange, ProductSet, ReloadSignal},
@@ -8,29 +10,29 @@ use crate::{
 use anyhow::Result;
 use tokio::try_join;
 
-pub async fn watch(conf: &Config) -> Result<()> {
-    let _watch = service::notify::spawn(conf).await?;
+pub async fn watch(proj: &Arc<Project>) -> Result<()> {
+    let _watch = service::notify::spawn(proj).await?;
 
-    service::serve::spawn(conf).await;
-    service::reload::spawn(conf).await;
+    service::serve::spawn(proj).await;
+    service::reload::spawn(proj).await;
 
-    let res = run_loop(conf).await;
+    let res = run_loop(proj).await;
     if res.is_err() {
         Interrupt::request_shutdown().await;
     }
     res
 }
 
-pub async fn run_loop(conf: &Config) -> Result<()> {
+pub async fn run_loop(proj: &Arc<Project>) -> Result<()> {
     let mut int = Interrupt::subscribe_any();
     let mut first_sync = true;
     loop {
         let changes = Interrupt::get_source_changes().await;
 
-        let server_hdl = compile::server(conf, &changes).await;
-        let front_hdl = compile::front(conf, &changes).await;
-        let assets_hdl = compile::assets(conf, &changes, first_sync).await;
-        let style_hdl = compile::style(conf, &changes).await;
+        let server_hdl = compile::server(proj, &changes).await;
+        let front_hdl = compile::front(proj, &changes).await;
+        let assets_hdl = compile::assets(proj, &changes, first_sync).await;
+        let style_hdl = compile::style(proj, &changes).await;
 
         let (serve, front, assets, style) =
             try_join!(server_hdl, front_hdl, assets_hdl, style_hdl)?;
