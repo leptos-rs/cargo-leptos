@@ -12,7 +12,8 @@ use crate::ext::{
     path::PathBufExt,
 };
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
+#[cfg_attr(not(test), derive(Debug))]
 pub struct SourcedSiteFile {
     /// source file's relative path from the root (workspace or project) directory
     pub source: Utf8PathBuf,
@@ -31,13 +32,25 @@ impl SourcedSiteFile {
     }
 }
 
+#[cfg(test)]
+impl std::fmt::Debug for SourcedSiteFile {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SourcedSiteFile")
+            .field("source", &self.source.test_string())
+            .field("dest", &self.dest.test_string())
+            .field("site", &self.site.test_string())
+            .finish()
+    }
+}
+
 impl Display for SourcedSiteFile {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{} -> @{}", self.source, self.site)
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
+#[cfg_attr(not(test), derive(Debug))]
 pub struct SiteFile {
     /// dest file's relative path from the root (workspace or project) directory
     pub dest: Utf8PathBuf,
@@ -48,6 +61,16 @@ pub struct SiteFile {
 impl Display for SiteFile {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "@{}", self.site)
+    }
+}
+
+#[cfg(test)]
+impl std::fmt::Debug for SiteFile {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SiteFile")
+            .field("dest", &self.dest.test_string())
+            .field("site", &self.site.test_string())
+            .finish()
     }
 }
 

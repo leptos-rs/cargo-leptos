@@ -38,16 +38,22 @@ impl std::fmt::Debug for ProjectPaths {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ProjectPaths")
             .field("lib_crate_name", &self.lib_crate_name)
-            .field("site_root", &self.site_root)
-            .field("site_pkg_dir", &self.site_pkg_dir)
-            .field("front_dir", &self.front_dir)
-            .field("server_dir", &self.server_dir)
-            .field("target_dir", &self.target_dir)
+            .field("site_root", &self.site_root.test_string())
+            .field(
+                "site_pkg_dir",
+                &self.site_pkg_dir.as_str().replace("\\", "/"),
+            )
+            .field("front_dir", &self.front_dir.test_string())
+            .field("server_dir", &self.server_dir.test_string())
+            .field("target_dir", &self.target_dir.test_string())
             .field("wasm_file", &self.wasm_file)
             .field("js_file", &self.js_file)
             .field("style_file", &self.style_file)
-            .field("assets_dir", &self.assets_dir)
-            .field("cargo_bin_file", &self.cargo_bin_file)
+            .field(
+                "assets_dir",
+                &self.assets_dir.as_ref().map(|d| d.test_string()),
+            )
+            .field("cargo_bin_file", &self.cargo_bin_file.test_string())
             .finish_non_exhaustive()
     }
 }

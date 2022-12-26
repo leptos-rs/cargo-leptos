@@ -15,6 +15,9 @@ pub trait PathExt {
 pub trait PathBufExt: PathExt {
     /// drops the last path component
     fn without_last(self) -> Self;
+
+    /// returns a platform independent string suitable for testing
+    fn test_string(&self) -> String;
 }
 
 impl PathExt for Utf8Path {
@@ -51,6 +54,10 @@ impl PathBufExt for Utf8PathBuf {
     fn without_last(mut self) -> Utf8PathBuf {
         self.pop();
         self
+    }
+
+    fn test_string(&self) -> String {
+        self.to_string().replace("\\", "/")
     }
 }
 
