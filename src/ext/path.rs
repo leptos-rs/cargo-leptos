@@ -16,8 +16,12 @@ pub trait PathBufExt: PathExt {
     /// drops the last path component
     fn without_last(self) -> Self;
 
+    #[cfg(test)]
     /// returns a platform independent string suitable for testing
     fn test_string(&self) -> String;
+
+    #[cfg(test)]
+    fn ls_ascii(&self) -> Result<String>;
 }
 
 impl PathExt for Utf8Path {
@@ -56,8 +60,50 @@ impl PathBufExt for Utf8PathBuf {
         self
     }
 
+    #[cfg(test)]
     fn test_string(&self) -> String {
-        self.to_string().replace("\\", "/")
+        let s = self.to_string().replace("\\", "/");
+        if s.ends_with(".exe") {
+            s[..s.len() - 4].to_string()
+        } else {
+            s
+        }
+    }
+
+    #[cfg(test)]
+    fn ls_ascii(&self) -> Result<String> {
+        use std::collections::VecDeque;
+
+        let mut dirs: VecDeque<(usize, Utf8PathBuf)> = VecDeque::new();
+
+        dirs.push_back((0, self.clone()));
+
+        let mut out = Vec::new();
+
+        while let Some((indent, dir)) = dirs.pop_front() {
+            let mut entries = dir.read_dir_utf8()?;
+            out.push(format!(
+                "{}{}:",
+                "  ".repeat(indent),
+                dir.file_name().unwrap_or_default()
+            ));
+
+            let indent = indent + 1;
+            while let Some(Ok(entry)) = entries.next() {
+                let path = entry.path();
+
+                if entry.file_type()?.is_dir() {
+                    dirs.push_back((indent, path.to_owned()));
+                } else {
+                    out.push(format!(
+                        "{}{}",
+                        "  ".repeat(indent),
+                        path.file_name().unwrap_or_default()
+                    ));
+                }
+            }
+        }
+        Ok(out.join("\n"))
     }
 }
 

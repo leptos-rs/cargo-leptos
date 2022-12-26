@@ -1,3 +1,6 @@
+#[cfg(test)]
+mod tests;
+
 mod command;
 pub mod compile;
 pub mod config;
@@ -106,7 +109,10 @@ async fn main() -> Result<()> {
     }
 
     let args = Cli::parse_from(&args);
+    run(args).await
+}
 
+pub async fn run(args: Cli) -> Result<()> {
     let verbose = args.opts().map(|o| o.verbose).unwrap_or(0);
     logger::setup(verbose, &args.log);
 

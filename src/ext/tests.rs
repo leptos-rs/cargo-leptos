@@ -1,8 +1,6 @@
 use super::exe::Exe;
-use crate::ext::anyhow::Result;
+use crate::ext::path::PathBufExt;
 use camino::Utf8PathBuf;
-use std::collections::VecDeque;
-use std::path::Path;
 use temp_dir::TempDir;
 
 #[tokio::test]
@@ -44,39 +42,8 @@ async fn download_wasmopt() {
 }
 
 fn ls(dir: &TempDir) -> String {
-    ls_path(&dir.path()).unwrap_or_default()
-}
-
-fn ls_path(root: &Path) -> Result<String> {
-    let mut dirs: VecDeque<(usize, Utf8PathBuf)> = VecDeque::new();
-    let root = Utf8PathBuf::from_path_buf(root.to_path_buf()).unwrap();
-
-    dirs.push_back((0, root));
-
-    let mut out = Vec::new();
-
-    while let Some((indent, dir)) = dirs.pop_front() {
-        let mut entries = dir.read_dir_utf8()?;
-        out.push(format!(
-            "{}{}:",
-            "  ".repeat(indent),
-            dir.file_name().unwrap_or_default()
-        ));
-
-        let indent = indent + 1;
-        while let Some(Ok(entry)) = entries.next() {
-            let path = entry.path();
-
-            if entry.file_type()?.is_dir() {
-                dirs.push_back((indent, path.to_owned()));
-            } else {
-                out.push(format!(
-                    "{}{}",
-                    "  ".repeat(indent),
-                    path.file_name().unwrap_or_default()
-                ));
-            }
-        }
-    }
-    Ok(out.join("\n"))
+    Utf8PathBuf::from_path_buf(dir.path().to_path_buf())
+        .unwrap()
+        .ls_ascii()
+        .unwrap_or_default()
 }

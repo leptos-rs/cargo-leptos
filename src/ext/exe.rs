@@ -209,7 +209,7 @@ impl Exe {
                     _ => bail!("No sass tar binary found for {target_os} {target_arch}")
                 };
                 let exe = match target_os {
-                    "windows" => "sass.bat".to_string(),
+                    "windows" => "dart-sass/sass.bat".to_string(),
                     _ => "dart-sass/sass".to_string(),
                 };
                 ExeMeta {
