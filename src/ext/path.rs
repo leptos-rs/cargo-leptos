@@ -72,9 +72,9 @@ impl PathBufExt for Utf8PathBuf {
 
     #[cfg(test)]
     fn ls_ascii(&self, indent: usize) -> Result<String> {
+        let mut entries = self.read_dir_utf8()?;
         let mut out = Vec::new();
 
-        let mut entries = self.read_dir_utf8()?;
         out.push(format!(
             "{}{}:",
             "  ".repeat(indent),
@@ -82,18 +82,32 @@ impl PathBufExt for Utf8PathBuf {
         ));
 
         let indent = indent + 1;
+        let mut files = Vec::new();
+        let mut dirs = Vec::new();
+
         while let Some(Ok(entry)) = entries.next() {
             let path = entry.path().to_path_buf();
 
             if entry.file_type()?.is_dir() {
-                out.push(path.ls_ascii(indent)?);
+                dirs.push(path);
             } else {
-                out.push(format!(
-                    "{}{}",
-                    "  ".repeat(indent),
-                    path.file_name().unwrap_or_default()
-                ));
+                files.push(path);
             }
+        }
+
+        dirs.sort();
+        files.sort();
+
+        for file in files {
+            out.push(format!(
+                "{}{}",
+                "  ".repeat(indent),
+                file.file_name().unwrap_or_default()
+            ));
+        }
+
+        for path in dirs {
+            out.push(path.ls_ascii(indent)?);
         }
         Ok(out.join("\n"))
     }
