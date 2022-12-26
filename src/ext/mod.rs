@@ -1,4 +1,4 @@
-#[cfg(all(test, feature = "test_download"))]
+#[cfg(all(test, feature = "full_tests"))]
 mod tests;
 
 pub mod anyhow;

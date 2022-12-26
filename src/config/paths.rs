@@ -26,6 +26,8 @@ pub struct ProjectPaths {
     pub server_dir: Utf8PathBuf,
     /// the relative (to abs_root_dir) target dir
     pub target_dir: Utf8PathBuf,
+    /// dir from where the end2end tests are run
+    pub end2end_dir: Option<Utf8PathBuf>,
     pub wasm_file: SourcedSiteFile,
     pub js_file: SiteFile,
     pub style_file: Option<SourcedSiteFile>,
@@ -90,7 +92,7 @@ impl ProjectPaths {
         metadata: &Metadata,
         front: &Package,
         server: &Package,
-        front_config: &ProjectConfig,
+        config: &ProjectConfig,
         cli: &Opts,
     ) -> Result<Self> {
         let abs_root_dir = metadata.workspace_root.clone();
@@ -107,8 +109,8 @@ impl ProjectPaths {
             .unbase(&abs_root_dir)?;
         let target_dir = metadata.target_directory.clone().unbase(&abs_root_dir)?;
         let profile = if cli.release { "release" } else { "debug" };
-        let site_root = front_config.site_root.clone();
-        let site_pkg_dir = site_root.join(&front_config.site_pkg_dir);
+        let site_root = config.site_root.clone();
+        let site_pkg_dir = site_root.join(&config.site_pkg_dir);
         let lib_crate_name = front.name.replace('-', "_");
 
         let wasm_file = {
@@ -118,29 +120,29 @@ impl ProjectPaths {
                 .join(&profile)
                 .join(&lib_crate_name)
                 .with_extension("wasm");
-            let site = front_config
+            let site = config
                 .site_pkg_dir
-                .join(&front_config.output_name)
+                .join(&config.output_name)
                 .with_extension("wasm");
             let dest = site_root.join(&site);
             SourcedSiteFile { source, dest, site }
         };
 
         let js_file = {
-            let site = front_config
+            let site = config
                 .site_pkg_dir
-                .join(&front_config.output_name)
+                .join(&config.output_name)
                 .with_extension("js");
             let dest = site_root.join(&site);
             SiteFile { dest, site }
         };
 
-        let style_file = if let Some(style_file) = &front_config.style_file {
+        let style_file = if let Some(style_file) = &config.style_file {
             // relative to the configuration file
-            let source = front_config.config_dir.join(style_file);
-            let site = front_config
+            let source = config.config_dir.join(style_file);
+            let site = config
                 .site_pkg_dir
-                .join(&front_config.output_name)
+                .join(&config.output_name)
                 .with_extension("css");
             let dest = site_root.join(&site);
             Some(SourcedSiteFile { source, dest, site })
@@ -149,10 +151,16 @@ impl ProjectPaths {
         };
 
         // relative to the configuration file
-        let assets_dir = front_config
+        let assets_dir = config
             .assets_dir
             .as_ref()
-            .map(|dir| front_config.config_dir.join(dir));
+            .map(|dir| config.config_dir.join(dir));
+
+        // relative to the configuration file
+        let end2end_dir = config
+            .end2end_dir
+            .as_ref()
+            .map(|dir| config.config_dir.join(dir));
 
         let cargo_bin_file = {
             let file_ext = if cfg!(target_os = "windows") {
@@ -175,6 +183,7 @@ impl ProjectPaths {
             front_dir,
             server_dir,
             target_dir,
+            end2end_dir,
             wasm_file,
             js_file,
             style_file,

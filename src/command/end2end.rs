@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use camino::Utf8PathBuf;
+use camino::{Utf8Path, Utf8PathBuf};
 use tokio::process::Command;
 
 use crate::config::{Config, Project};
@@ -21,7 +21,13 @@ pub async fn end2end_proj(proj: &Arc<Project>) -> Result<()> {
         let server = serve::spawn(proj).await;
         // the server waits for the first product change before starting
         ProductChange::send(ProductSet::empty());
-        try_run(e2e_cmd)
+        let dir = proj
+            .paths
+            .end2end_dir
+            .as_ref()
+            .cloned()
+            .unwrap_or_else(|| Utf8PathBuf::from("."));
+        try_run(e2e_cmd, &dir)
             .await
             .context(format!("running: {e2e_cmd}"))?;
         Interrupt::request_shutdown().await;
@@ -32,15 +38,13 @@ pub async fn end2end_proj(proj: &Arc<Project>) -> Result<()> {
     Ok(())
 }
 
-async fn try_run(cmd: &str) -> Result<()> {
+async fn try_run(cmd: &str, dir: &Utf8Path) -> Result<()> {
     let mut parts = cmd.split(' ');
     let exe = parts
         .next()
         .ok_or_else(|| anyhow!("Invalid command {cmd:?}"))?;
 
     let args = parts.collect::<Vec<_>>();
-
-    let dir = Utf8PathBuf::from("end2end").canonicalize_utf8()?;
 
     log::trace!("End2End running {cmd:?}");
     let mut process = Command::new(exe)

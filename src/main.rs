@@ -1,4 +1,4 @@
-#[cfg(test)]
+#[cfg(all(test, feature = "full_tests"))]
 mod tests;
 
 mod command;

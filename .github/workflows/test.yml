@@ -37,9 +37,9 @@ jobs:
         - uses: actions-rs/toolchain@v1
           with:
             profile: minimal
-            toolchain: stable
+            toolchain: nightly
             override: true
         - uses: actions-rs/cargo@v1
           with:
             command: test
-            args: --features=test_download
+            args: --features=full_tests
