@@ -3,7 +3,7 @@ use std::{net::SocketAddr, sync::Arc};
 use crate::{
     ext::{
         anyhow::{anyhow, Error, Result},
-        path::{PathBufExt, PathExt},
+        PathBufExt, PathExt,
     },
     logger::GRAY,
     service::site::Site,

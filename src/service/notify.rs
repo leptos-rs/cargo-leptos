@@ -1,13 +1,11 @@
 use crate::compile::Change;
 use crate::config::Project;
 use crate::ext::anyhow::{anyhow, Result};
-use crate::ext::path::PathExt;
 use crate::signal::Interrupt;
 use crate::WORKING_DIR;
 use crate::{
+    ext::{remove_nested, PathBufExt, PathExt, StrAdditions},
     logger::GRAY,
-    path::{remove_nested, PathBufExt},
-    util::StrAdditions,
 };
 use camino::Utf8PathBuf;
 use itertools::Itertools;

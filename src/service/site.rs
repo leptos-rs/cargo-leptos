@@ -8,8 +8,7 @@ use tokio::sync::RwLock;
 
 use crate::ext::{
     anyhow::{Context, Result},
-    fs,
-    path::PathBufExt,
+    fs, PathBufExt,
 };
 
 #[derive(Clone)]

@@ -6,7 +6,7 @@ use crate::{
     ext::exe::Exe,
     ext::{
         anyhow::{anyhow, bail, Context, Result},
-        path::PathBufExt,
+        PathBufExt,
     },
     fs,
     logger::GRAY,

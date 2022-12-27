@@ -1,6 +1,5 @@
 use crate::{
-    ext::anyhow::Result,
-    ext::path::{PathBufExt, PathExt},
+    ext::{anyhow::Result, PathBufExt, PathExt},
     logger::GRAY,
     service::site::{SiteFile, SourcedSiteFile},
     Opts,

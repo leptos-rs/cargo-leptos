@@ -6,7 +6,7 @@ use crate::ext::anyhow::{Context, Result};
 use crate::service::notify::Watched;
 use crate::service::site::SourcedSiteFile;
 use crate::signal::{Outcome, Product};
-use crate::{fs, logger::GRAY, path::PathExt};
+use crate::{ext::PathExt, fs, logger::GRAY};
 use camino::{Utf8Path, Utf8PathBuf};
 use tokio::task::JoinHandle;
 
