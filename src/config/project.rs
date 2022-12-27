@@ -1,9 +1,7 @@
-use std::{net::SocketAddr, sync::Arc};
-
 use crate::{
     ext::{
         anyhow::{anyhow, Error, Result},
-        PathBufExt, PathExt,
+        PackageExt, PathBufExt, PathExt,
     },
     logger::GRAY,
     service::site::Site,
@@ -13,6 +11,7 @@ use anyhow::{bail, ensure};
 use camino::{Utf8Path, Utf8PathBuf};
 use cargo_metadata::{Metadata, MetadataCommand, Package, Target};
 use serde::Deserialize;
+use std::{net::SocketAddr, sync::Arc};
 
 use super::{
     dotenvs::{find_env_file, overlay_env},
@@ -61,35 +60,6 @@ impl std::fmt::Debug for Project {
     }
 }
 
-trait PackageExt {
-    fn has_bin_target(&self) -> bool;
-    fn bin_targets(&self) -> Box<dyn Iterator<Item = &Target> + '_>;
-    fn cdylib_target(&self) -> Option<&Target>;
-    fn target_list(&self) -> String;
-}
-
-impl PackageExt for Package {
-    fn has_bin_target(&self) -> bool {
-        self.targets.iter().find(|t| t.is_bin()).is_some()
-    }
-
-    fn bin_targets(&self) -> Box<dyn Iterator<Item = &Target> + '_> {
-        Box::new(self.targets.iter().filter(|t| t.is_bin()))
-    }
-    fn cdylib_target(&self) -> Option<&Target> {
-        let cdylib: String = "cdylib".to_string();
-        self.targets
-            .iter()
-            .find(|t| t.crate_types.contains(&cdylib))
-    }
-    fn target_list(&self) -> String {
-        self.targets
-            .iter()
-            .map(|t| format!("{} ({})", t.name, t.crate_types.join(", ")))
-            .collect::<Vec<_>>()
-            .join(", ")
-    }
-}
 impl Project {
     pub fn resolve(cli: &Opts, manifest_path: &Utf8Path, watch: bool) -> Result<Vec<Arc<Project>>> {
         let metadata = MetadataCommand::new().manifest_path(manifest_path).exec()?;
