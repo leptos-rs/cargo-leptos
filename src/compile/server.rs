@@ -31,7 +31,7 @@ pub async fn server(proj: &Arc<Project>, changes: &ChangeSet) -> JoinHandle<Resu
 
                 let changed = proj
                     .site
-                    .did_external_file_change(&proj.paths.cargo_bin_file)
+                    .did_external_file_change(&proj.bin.exe_file)
                     .await
                     .dot()?;
                 if changed {
@@ -60,23 +60,21 @@ pub fn build_cargo_server_cmd(
 ) -> (String, String) {
     let mut args = vec![
         cmd.to_string(),
-        format!("--package={}", proj.server_target.name.as_str()),
-        format!("--bin={}", proj.config.bin_target),
+        format!("--package={}", proj.bin.name.as_str()),
+        format!("--bin={}", proj.bin.target.name),
         "--target-dir=target/server".to_string(),
     ];
 
-    if !proj.config.bin_default_features {
+    if !proj.bin.default_features {
         args.push("--no-default-features".to_string());
     }
 
-    if !proj.config.bin_features.is_empty() {
-        args.push(format!("--features={}", proj.config.bin_features.join(",")));
+    if !proj.bin.features.is_empty() {
+        args.push(format!("--features={}", proj.bin.features.join(",")));
     }
 
-    match proj.server_profile.as_str() {
-        "release" => args.push("--release".to_string()),
-        "dev" => {}
-        prof => args.push(format!("--profile={prof}")),
+    if proj.release {
+        args.push("--release".to_string());
     }
 
     let envs = proj.to_envs();

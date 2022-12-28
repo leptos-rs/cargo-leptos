@@ -2,14 +2,14 @@
 mod tests;
 
 pub mod anyhow;
+mod cargo;
 pub mod exe;
 pub mod fs;
-mod package;
 mod path;
 pub mod sync;
 mod util;
 
+pub use cargo::{MetadataExt, PackageExt};
 pub use exe::{Exe, ExeMeta};
-pub use package::PackageExt;
 pub use path::{remove_nested, PathBufExt, PathExt};
 pub use util::{os_arch, StrAdditions};

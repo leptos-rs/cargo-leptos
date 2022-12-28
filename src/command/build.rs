@@ -18,8 +18,8 @@ pub async fn build_all(conf: &Config) -> Result<()> {
 }
 
 pub async fn build_proj(proj: &Arc<Project>) -> Result<()> {
-    if proj.config.site_root.exists() {
-        fs::rm_dir_content(&proj.config.site_root).await.dot()?;
+    if proj.site.root_dir.exists() {
+        fs::rm_dir_content(&proj.site.root_dir).await.dot()?;
     }
     let changes = ChangeSet::all_changes();
 

@@ -16,7 +16,6 @@ pub trait PathBufExt: PathExt {
     /// drops the last path component
     fn without_last(self) -> Self;
 
-    #[cfg(test)]
     /// returns a platform independent string suitable for testing
     fn test_string(&self) -> String;
 
@@ -60,7 +59,6 @@ impl PathBufExt for Utf8PathBuf {
         self
     }
 
-    #[cfg(test)]
     fn test_string(&self) -> String {
         let s = self.to_string().replace("\\", "/");
         if s.ends_with(".exe") {

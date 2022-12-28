@@ -25,10 +25,10 @@ pub async fn spawn(proj: &Arc<Project>) -> JoinHandle<()> {
     let mut prod = ProductChange::subscribe();
 
     let mut site_addr = SITE_ADDR.write().await;
-    *site_addr = proj.config.site_addr;
-    if let Some(style_file) = &proj.paths.style_file {
+    *site_addr = proj.site.addr;
+    if let Some(style) = &proj.style {
         let mut css_link = CSS_LINK.write().await;
-        *css_link = style_file.site.to_string();
+        *css_link = style.file.site.to_string();
     }
 
     tokio::spawn(async move {
@@ -40,8 +40,7 @@ pub async fn spawn(proj: &Arc<Project>) -> JoinHandle<()> {
             _ = int.recv() => return
         }
 
-        let mut reload_addr = proj.config.site_addr;
-        reload_addr.set_port(proj.config.reload_port);
+        let reload_addr = proj.site.reload;
 
         if TcpStream::connect(&reload_addr).await.is_ok() {
             log::error!(

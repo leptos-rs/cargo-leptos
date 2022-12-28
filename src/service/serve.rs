@@ -48,7 +48,7 @@ struct ServerProcess(Option<Child>, Vec<(&'static str, String)>, Utf8PathBuf);
 
 impl ServerProcess {
     fn new(proj: &Project) -> Self {
-        Self(None, proj.to_envs(), proj.paths.cargo_bin_file.clone())
+        Self(None, proj.to_envs(), proj.bin.exe_file.clone())
     }
 
     async fn start_new(proj: &Project) -> Result<Self> {

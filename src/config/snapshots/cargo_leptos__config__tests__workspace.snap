@@ -6,114 +6,62 @@ Config {
     projects: [
         Project {
             name: "project1",
-            config: ProjectConfig {
-                output_name: "front_package",
-                site_addr: 127.0.0.1:3000,
-                site_root: "target/site/project1",
-                site_pkg_dir: "pkg",
-                style_file: Some(
-                    "project1/css/main.scss",
-                ),
-                assets_dir: Some(
-                    "project1/assets",
-                ),
-                reload_port: 3001,
-                end2end_cmd: None,
-                end2end_dir: None,
-                browserquery: "defaults",
-                bin_target: "server-package",
-                lib_features: [],
-                lib_default_features: false,
-                bin_features: [],
-                bin_default_features: false,
-                config_dir: "",
+            lib: LibPackage {
+                name: "front-package",
+                dir: "project1/front",
+                wasm_file: SourcedSiteFile {
+                    source: "target/front/wasm32-unknown-unknown/debug/front_package.wasm",
+                    dest: "target/site/project1/pkg/project1.wasm",
+                    site: "pkg/project1.wasm",
+                },
+                js_file: SiteFile {
+                    dest: "target/site/project1/pkg/project1.js",
+                    site: "pkg/project1.js",
+                },
+                features: [],
+                default_features: false,
+                output_name: "project1",
+                ..
             },
-            front_package: "front-package ..",
-            front_profile: "dev",
-            server_package: "server-package ..",
-            server_target: "server-package (bin) ..",
-            server_profile: "dev",
+            bin: BinPackage {
+                name: "server-package",
+                dir: "project1/server",
+                exe_file: "target/server/debug/server-package",
+                features: [],
+                ..
+            },
+            style: Some(
+                StyleConfig {
+                    file: SourcedSiteFile {
+                        source: "project1/css/main.scss",
+                        dest: "target/site/project1/pkg/project1.css",
+                        site: "pkg/project1.css",
+                    },
+                    browserquery: "defaults",
+                },
+            ),
             watch: true,
+            release: false,
             site: Site {
+                addr: 127.0.0.1:3000,
+                reload: 127.0.0.1:3001,
+                root_dir: "target/site/project1",
+                pkg_dir: "pkg",
                 file_reg: {},
                 ext_file_reg: {},
             },
-            paths: ProjectPaths {
-                lib_crate_name: "front_package",
-                site_root: "target/site/project1",
-                site_pkg_dir: "target/site/project1/pkg",
-                front_dir: "project1/front",
-                server_dir: "project1/server",
-                target_dir: "target",
-                wasm_file: SourcedSiteFile {
-                    source: "target/front/wasm32-unknown-unknown/debug/front_package.wasm",
-                    dest: "target/site/project1/pkg/front_package.wasm",
-                    site: "pkg/front_package.wasm",
+            end2end: None,
+            assets: Some(
+                AssetsConfig {
+                    dir: "project1/assets",
                 },
-                js_file: SiteFile {
-                    dest: "target/site/project1/pkg/front_package.js",
-                    site: "pkg/front_package.js",
-                },
-                style_file: Some(
-                    SourcedSiteFile {
-                        source: "project1/css/main.scss",
-                        dest: "target/site/project1/pkg/front_package.css",
-                        site: "pkg/front_package.css",
-                    },
-                ),
-                assets_dir: Some(
-                    "project1/assets",
-                ),
-                cargo_bin_file: "target/server/debug/server-package",
-                ..
-            },
-            ..
+            ),
         },
         Project {
             name: "project2",
-            config: ProjectConfig {
-                output_name: "project2",
-                site_addr: 127.0.0.1:3000,
-                site_root: "target/site/project2",
-                site_pkg_dir: "pkg",
-                style_file: Some(
-                    "src/main.scss",
-                ),
-                assets_dir: Some(
-                    "src/assets",
-                ),
-                reload_port: 3001,
-                end2end_cmd: None,
-                end2end_dir: None,
-                browserquery: "defaults",
-                bin_target: "project2",
-                lib_features: [
-                    "hydrate",
-                ],
-                lib_default_features: false,
-                bin_features: [
-                    "ssr",
-                ],
-                bin_default_features: false,
-                config_dir: "project2",
-            },
-            front_package: "project2 ..",
-            front_profile: "dev",
-            server_package: "project2 ..",
-            server_target: "project2 (bin) ..",
-            server_profile: "dev",
-            watch: true,
-            site: Site {
-                file_reg: {},
-                ext_file_reg: {},
-            },
-            paths: ProjectPaths {
-                lib_crate_name: "project2",
-                site_root: "target/site/project2",
-                site_pkg_dir: "target/site/project2/pkg",
-                front_dir: "project2",
-                server_dir: "project2",
-                target_dir: "target",
+            lib: LibPackage {
+                name: "project2",
+                dir: "project2",
                 wasm_file: SourcedSiteFile {
                     source: "target/front/wasm32-unknown-unknown/debug/project2.wasm",
                     dest: "target/site/project2/pkg/project2.wasm",
@@ -123,20 +71,48 @@ Config {
                     dest: "target/site/project2/pkg/project2.js",
                     site: "pkg/project2.js",
                 },
-                style_file: Some(
-                    SourcedSiteFile {
+                features: [
+                    "hydrate",
+                ],
+                default_features: false,
+                output_name: "project2",
+                ..
+            },
+            bin: BinPackage {
+                name: "project2",
+                dir: "project2",
+                exe_file: "target/server/debug/project2",
+                features: [
+                    "ssr",
+                ],
+                ..
+            },
+            style: Some(
+                StyleConfig {
+                    file: SourcedSiteFile {
                         source: "project2/src/main.scss",
                         dest: "target/site/project2/pkg/project2.css",
                         site: "pkg/project2.css",
                     },
-                ),
-                assets_dir: Some(
-                    "project2/src/assets",
-                ),
-                cargo_bin_file: "target/server/debug/project2",
-                ..
+                    browserquery: "defaults",
+                },
+            ),
+            watch: true,
+            release: false,
+            site: Site {
+                addr: 127.0.0.1:3000,
+                reload: 127.0.0.1:3001,
+                root_dir: "target/site/project2",
+                pkg_dir: "pkg",
+                file_reg: {},
+                ext_file_reg: {},
             },
-            ..
+            end2end: None,
+            assets: Some(
+                AssetsConfig {
+                    dir: "project2/src/assets",
+                },
+            ),
         },
     ],
     cli: Opts {

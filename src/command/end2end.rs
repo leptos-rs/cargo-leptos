@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use camino::{Utf8Path, Utf8PathBuf};
+use camino::Utf8Path;
 use tokio::process::Command;
 
 use crate::config::{Config, Project};
@@ -16,20 +16,14 @@ pub async fn end2end_all(conf: &Config) -> Result<()> {
 }
 
 pub async fn end2end_proj(proj: &Arc<Project>) -> Result<()> {
-    if let Some(e2e_cmd) = &proj.config.end2end_cmd {
+    if let Some(e2e) = &proj.end2end {
         super::build::build_proj(proj).await.dot()?;
         let server = serve::spawn(proj).await;
         // the server waits for the first product change before starting
         ProductChange::send(ProductSet::empty());
-        let dir = proj
-            .paths
-            .end2end_dir
-            .as_ref()
-            .cloned()
-            .unwrap_or_else(|| Utf8PathBuf::from("."));
-        try_run(e2e_cmd, &dir)
+        try_run(&e2e.cmd, &e2e.dir)
             .await
-            .context(format!("running: {e2e_cmd}"))?;
+            .context(format!("running: {}", &e2e.cmd))?;
         Interrupt::request_shutdown().await;
         server.await.dot()??;
     } else {

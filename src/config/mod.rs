@@ -1,8 +1,13 @@
-mod dotenvs;
-mod paths;
-mod project;
 #[cfg(test)]
 mod tests;
+
+mod assets;
+mod bin_package;
+mod dotenvs;
+mod end2end;
+mod lib_package;
+mod project;
+mod style;
 
 use std::sync::Arc;
 
@@ -13,6 +18,7 @@ use crate::{
 use anyhow::bail;
 use camino::Utf8Path;
 pub use project::{Project, ProjectConfig};
+pub use style::StyleConfig;
 
 #[derive(Debug)]
 pub struct Config {
@@ -52,7 +58,7 @@ impl Config {
         Ok(self
             .projects
             .iter()
-            .find(|p| p.paths.server_dir == cwd || p.paths.front_dir == cwd)
+            .find(|p| p.bin.dir == cwd || p.lib.dir == cwd)
             .map(|p| p.clone()))
     }
     pub fn current_project(&self) -> Result<Arc<Project>> {
