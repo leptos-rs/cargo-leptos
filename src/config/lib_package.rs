@@ -19,6 +19,7 @@ pub struct LibPackage {
     pub features: Vec<String>,
     pub default_features: bool,
     pub output_name: String,
+    pub path_deps: Vec<Utf8PathBuf>,
 }
 
 impl LibPackage {
@@ -40,11 +41,6 @@ impl LibPackage {
             .iter()
             .find(|p| p.name == *name)
             .ok_or_else(|| anyhow!(r#"Could not find the project lib-package "{name}""#,))?;
-
-        println!(
-            "FRONT PATHDEPS: {:?}",
-            metadata.src_path_dependencies(&metadata.workspace_root, &package.id)
-        );
 
         let features = if !config.lib_features.is_empty() {
             config.lib_features.clone()
@@ -88,6 +84,7 @@ impl LibPackage {
             features,
             default_features: config.lib_default_features,
             output_name,
+            path_deps: metadata.src_path_dependencies(&package.id),
         })
     }
 }
@@ -102,6 +99,15 @@ impl std::fmt::Debug for LibPackage {
             .field("features", &self.features)
             .field("default_features", &self.default_features)
             .field("output_name", &self.output_name)
+            .field(
+                "path_deps",
+                &self
+                    .path_deps
+                    .iter()
+                    .map(|p| p.as_str())
+                    .collect::<Vec<_>>()
+                    .join(", "),
+            )
             .finish()
     }
 }

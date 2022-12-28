@@ -21,6 +21,7 @@ Config {
                 features: [],
                 default_features: false,
                 output_name: "project1",
+                path_deps: "project1/app/src",
             },
             bin: BinPackage {
                 name: "server-package",
@@ -29,6 +30,7 @@ Config {
                 target: "server-package",
                 features: [],
                 default_features: false,
+                path_deps: "project1/app/src",
             },
             style: Some(
                 StyleConfig {

@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use camino::{Utf8PathBuf, Utf8Path};
+use camino::{Utf8PathBuf};
 use cargo_metadata::{Metadata, Package, PackageId, Resolve, Target};
 
 use super::PathExt;
@@ -50,7 +50,7 @@ pub trait MetadataExt {
     fn rel_target_dir(&self) -> Utf8PathBuf;
     fn package_for(&self, id: &PackageId) -> Option<&Package>;
     fn path_dependencies(&self, id: &PackageId) -> Vec<Utf8PathBuf>;
-    fn src_path_dependencies(&self,root: &Utf8Path, id: &PackageId) -> Vec<Utf8PathBuf>;
+    fn src_path_dependencies(&self, id: &PackageId) -> Vec<Utf8PathBuf>;
 }
 
 impl MetadataExt for Metadata {
@@ -80,7 +80,8 @@ impl MetadataExt for Metadata {
         found
     }
 
-    fn src_path_dependencies(&self,root: &Utf8Path, id: &PackageId) -> Vec<Utf8PathBuf> {
+    fn src_path_dependencies(&self, id: &PackageId) -> Vec<Utf8PathBuf> {
+        let root = &self.workspace_root;
         self.path_dependencies(id).iter().map(|p| p.unbase(root).unwrap_or_else(|_| p.to_path_buf()).join("src")).collect()
     }
 }
