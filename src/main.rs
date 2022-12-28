@@ -127,10 +127,7 @@ pub async fn run(args: Cli) -> Result<()> {
     }
 
     if let Some(path) = &args.manifest_path {
-        let path = Utf8PathBuf::from(path)
-            .without_last()
-            .canonicalize_utf8()
-            .unwrap();
+        let path = Utf8PathBuf::from(path).without_last();
         std::env::set_current_dir(&path).dot()?;
         WORKING_DIR.set(path.clone()).unwrap();
     } else {
