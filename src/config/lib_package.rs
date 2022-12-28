@@ -7,7 +7,7 @@ use crate::{
     Opts,
 };
 use camino::Utf8PathBuf;
-use cargo_metadata::{Metadata, Package};
+use cargo_metadata::Metadata;
 
 use super::{project::ProjectDefinition, ProjectConfig};
 
@@ -16,7 +16,6 @@ pub struct LibPackage {
     pub dir: Utf8PathBuf,
     pub wasm_file: SourcedSiteFile,
     pub js_file: SiteFile,
-    pub package: Package,
     pub features: Vec<String>,
     pub default_features: bool,
     pub output_name: String,
@@ -86,7 +85,6 @@ impl LibPackage {
             dir,
             wasm_file,
             js_file,
-            package: (*package).clone(),
             features,
             default_features: config.lib_default_features,
             output_name,
@@ -104,6 +102,6 @@ impl std::fmt::Debug for LibPackage {
             .field("features", &self.features)
             .field("default_features", &self.default_features)
             .field("output_name", &self.output_name)
-            .finish_non_exhaustive()
+            .finish()
     }
 }

@@ -23,16 +23,16 @@ Config {
                 ],
                 default_features: false,
                 output_name: "example",
-                ..
             },
             bin: BinPackage {
                 name: "example",
                 dir: ".",
                 exe_file: "target/server/debug/example",
+                target: "example",
                 features: [
                     "ssr",
                 ],
-                ..
+                default_features: false,
             },
             style: Some(
                 StyleConfig {

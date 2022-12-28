@@ -1,5 +1,5 @@
 use camino::Utf8PathBuf;
-use cargo_metadata::{Metadata, Package, Target};
+use cargo_metadata::{Metadata, Target};
 
 use crate::{
     ext::{
@@ -15,8 +15,7 @@ pub struct BinPackage {
     pub name: String,
     pub dir: Utf8PathBuf,
     pub exe_file: Utf8PathBuf,
-    pub package: Package,
-    pub target: Target,
+    pub target: String,
     pub features: Vec<String>,
     pub default_features: bool,
 }
@@ -91,8 +90,7 @@ impl BinPackage {
             name,
             dir,
             exe_file,
-            package,
-            target,
+            target: target.name.to_string(),
             features,
             default_features: config.bin_default_features,
         })
@@ -105,8 +103,10 @@ impl std::fmt::Debug for BinPackage {
             .field("name", &self.name)
             .field("dir", &self.dir)
             .field("exe_file", &self.exe_file.test_string())
+            .field("target", &self.target)
             .field("features", &self.features)
-            .finish_non_exhaustive()
+            .field("default_features", &self.default_features)
+            .finish()
     }
 }
 
