@@ -1,4 +1,4 @@
-use crate::ext::anyhow::{bail, Context, Result};
+use crate::ext::anyhow::{anyhow, Context, Result};
 use camino::{Utf8Path, Utf8PathBuf};
 
 pub trait PathExt {
@@ -37,23 +37,9 @@ impl PathExt for Utf8Path {
     }
 
     fn unbase(&self, base: &Utf8Path) -> Result<Utf8PathBuf> {
-        let mut self_comp_iter = self.components();
-
-        for base_comp in base.components() {
-            match self_comp_iter.next() {
-                Some(self_comp) if base_comp != self_comp => {
-                    bail!("Cannot remove base {base:?} from {self:?} because base doesn't match")
-                }
-                None => bail!("Cannot remove base {base:?} from {self:?} because base is longer"),
-                _ => {}
-            };
-        }
-        let path = Utf8PathBuf::from_iter(self_comp_iter);
-        Ok(if path == "" {
-            Utf8PathBuf::from(".")
-        } else {
-            path
-        })
+        self.strip_prefix(base)
+            .map(|p| p.to_path_buf())
+            .map_err(|_| anyhow!("Could not remove base {base:?} from {self:?}"))
     }
 }
 
