@@ -104,7 +104,7 @@ impl std::fmt::Debug for LibPackage {
                 &self
                     .path_deps
                     .iter()
-                    .map(|p| p.as_str())
+                    .map(|p| p.test_string())
                     .collect::<Vec<_>>()
                     .join(", "),
             )

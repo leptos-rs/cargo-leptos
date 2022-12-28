@@ -98,7 +98,7 @@ impl std::fmt::Debug for BinPackage {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("BinPackage")
             .field("name", &self.name)
-            .field("dir", &self.dir)
+            .field("dir", &self.dir.test_string())
             .field("exe_file", &self.exe_file.test_string())
             .field("target", &self.target)
             .field("features", &self.features)
@@ -108,7 +108,7 @@ impl std::fmt::Debug for BinPackage {
                 &self
                     .path_deps
                     .iter()
-                    .map(|p| p.as_str())
+                    .map(|p| p.test_string())
                     .collect::<Vec<_>>()
                     .join(", "),
             )
