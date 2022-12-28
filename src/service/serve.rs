@@ -4,7 +4,7 @@ use crate::{
     config::Project,
     ext::anyhow::Result,
     logger::GRAY,
-    signal::{Interrupt, Product, ProductChange, ReloadSignal},
+    signal::{Interrupt, ReloadSignal, ServerRestart},
 };
 use camino::Utf8PathBuf;
 use tokio::{
@@ -16,23 +16,15 @@ use tokio::{
 pub async fn spawn(proj: &Arc<Project>) -> JoinHandle<Result<()>> {
     let mut int = Interrupt::subscribe_shutdown();
     let proj = proj.clone();
-    let mut change = ProductChange::subscribe();
+    let mut change = ServerRestart::subscribe();
     tokio::spawn(async move {
-        // wait for first build to finish even if no products updated
-        select! {
-            _ = change.recv() => {}
-            _ = int.recv() => return Ok(())
-        }
-
         let mut server = ServerProcess::start_new(&proj).await?;
         loop {
             select! {
               res = change.recv() => {
-                if let Ok(set) = res {
-                  if set.contains(&Product::ServerBin) {
+                if let Ok(()) = res {
                       server.restart().await?;
                       ReloadSignal::send_full();
-                  }
                 }
               },
               _ = int.recv() => {

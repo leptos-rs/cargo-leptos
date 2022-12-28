@@ -39,11 +39,11 @@ impl ChangeSet {
     }
 
     pub fn need_server_build(&self) -> bool {
-        self.0.is_empty() || self.0.contains(&Change::BinSource) || self.0.contains(&Change::Conf)
+        self.0.contains(&Change::BinSource) || self.0.contains(&Change::Conf)
     }
 
     pub fn need_front_build(&self) -> bool {
-        self.0.is_empty() || self.0.contains(&Change::LibSource) || self.0.contains(&Change::Conf)
+        self.0.contains(&Change::LibSource) || self.0.contains(&Change::Conf)
     }
 
     pub fn asset_iter(&self) -> impl Iterator<Item = &Watched> {
@@ -54,16 +54,8 @@ impl ChangeSet {
     }
 
     pub fn need_style_build(&self, css_files: bool, css_in_source: bool) -> bool {
-        if self.0.is_empty() {
-            return true;
-        }
-        if css_files && self.0.contains(&Change::Style) {
-            return true;
-        }
-        if css_in_source && self.0.contains(&Change::BinSource) {
-            return true;
-        }
-        false
+        (css_files && self.0.contains(&Change::Style))
+            || (css_in_source && self.0.contains(&Change::LibSource))
     }
 
     pub fn add(&mut self, change: Change) -> bool {

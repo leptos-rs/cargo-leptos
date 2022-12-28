@@ -24,7 +24,7 @@ pub async fn front(proj: &Arc<Project>, changes: &ChangeSet) -> JoinHandle<Resul
     tokio::spawn(async move {
         if !changes.need_front_build() {
             log::trace!("Front no changes to rebuild");
-            return Ok(Outcome::Success(Product::NoChange));
+            return Ok(Outcome::Success(Product::None));
         }
 
         fs::create_dir_all(&proj.site.root_relative_pkg_dir()).await?;
@@ -142,9 +142,9 @@ async fn bindgen(proj: &Project) -> Result<Outcome> {
         if wasm_changed { "changed" } else { "unchanged" }
     );
     if js_changed || wasm_changed {
-        Ok(Outcome::Success(Product::ClientWasm))
+        Ok(Outcome::Success(Product::Front))
     } else {
-        Ok(Outcome::Success(Product::NoChange))
+        Ok(Outcome::Success(Product::None))
     }
 }
 

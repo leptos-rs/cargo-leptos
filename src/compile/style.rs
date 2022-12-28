@@ -27,7 +27,7 @@ pub async fn style(proj: &Arc<Project>, changes: &ChangeSet) -> JoinHandle<Resul
     tokio::spawn(async move {
         if !changes.need_style_build(true, false) {
             log::debug!("Style no build needed {changes:?}");
-            return Ok(Outcome::Success(Product::NoChange));
+            return Ok(Outcome::Success(Product::None));
         }
         Ok(Outcome::Success(build(&proj).await?))
     })
@@ -36,7 +36,7 @@ pub async fn style(proj: &Arc<Project>, changes: &ChangeSet) -> JoinHandle<Resul
 async fn build(proj: &Project) -> Result<Product> {
     let Some(style) = &proj.style else {
         log::trace!("Style not configured");
-        return Ok(Product::NoChange);
+        return Ok(Product::None);
     };
     fs::create_dir_all(style.file.dest.clone().without_last())
         .await
@@ -123,7 +123,7 @@ async fn process_css(proj: &Project, style: &StyleConfig) -> Result<Product> {
         }
         false => {
             log::trace!("Style finished without changes");
-            Product::NoChange
+            Product::None
         }
     };
     Ok(prod)

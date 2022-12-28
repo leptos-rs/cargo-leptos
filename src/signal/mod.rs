@@ -3,7 +3,7 @@ mod product;
 mod reload;
 
 pub use interrupt::Interrupt;
-pub use product::{Outcome, Product, ProductChange, ProductSet};
+pub use product::{Outcome, Product, ProductSet, ServerRestart};
 pub use reload::{ReloadSignal, ReloadType};
 
 #[macro_export]

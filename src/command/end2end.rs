@@ -6,7 +6,7 @@ use tokio::process::Command;
 use crate::config::{Config, Project};
 use crate::ext::anyhow::{anyhow, Context, Result};
 use crate::service::serve;
-use crate::signal::{Interrupt, ProductChange, ProductSet};
+use crate::signal::Interrupt;
 
 pub async fn end2end_all(conf: &Config) -> Result<()> {
     for proj in &conf.projects {
@@ -19,8 +19,6 @@ pub async fn end2end_proj(proj: &Arc<Project>) -> Result<()> {
     if let Some(e2e) = &proj.end2end {
         super::build::build_proj(proj).await.dot()?;
         let server = serve::spawn(proj).await;
-        // the server waits for the first product change before starting
-        ProductChange::send(ProductSet::empty());
         try_run(&e2e.cmd, &e2e.dir)
             .await
             .context(format!("running: {}", &e2e.cmd))?;

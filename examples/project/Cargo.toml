@@ -74,6 +74,7 @@ ssr = [
 assets-dir = "assets"
 # [Optional] Command to use when running end2end tests. It will run in the end2end dir.
 end2end-cmd = "npx playwright test"
+end2end-dir = "end2end"
 
 # Main style file. If scss or sass then it will be compiled to css.
 # the parent folder will be watched for changes

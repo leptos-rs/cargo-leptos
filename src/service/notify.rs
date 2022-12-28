@@ -47,7 +47,6 @@ async fn run(paths: &[Utf8PathBuf], proj: Arc<Project>) {
     let proj = proj.clone();
     std::thread::spawn(move || {
         while let Ok(event) = sync_rx.recv() {
-            log::trace!("Notify received {}", GRAY.paint(format!("{:?}", event)));
             match Watched::try_new(&event) {
                 Ok(Some(watched)) => handle(watched, proj.clone()),
                 Err(e) => log::error!("Notify error {e}"),

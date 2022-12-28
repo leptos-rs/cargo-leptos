@@ -80,12 +80,12 @@ fn test_workspace_project1() {
     let mut command = Command::new("cargo");
     let (_, cargo) = build_cargo_server_cmd("build", &conf.projects[0], &mut command);
 
-    assert_display_snapshot!(cargo, @"cargo build --package=server-package --bin=server-package --target-dir=target/server --no-default-features");
+    assert_display_snapshot!(cargo, @"cargo build --package=server-package --bin=server-package --target-dir=target/server --no-default-features --features=ssr");
 
     let mut command = Command::new("cargo");
     let (_, cargo) = build_cargo_front_cmd("build", true, &conf.projects[0], &mut command);
 
-    assert_display_snapshot!(cargo, @"cargo build --package=front-package --lib --target-dir=target/front --target=wasm32-unknown-unknown --no-default-features");
+    assert_display_snapshot!(cargo, @"cargo build --package=front-package --lib --target-dir=target/front --target=wasm32-unknown-unknown --no-default-features --features=hydrate");
 }
 
 #[test]

@@ -20,7 +20,7 @@ pub async fn assets(
     let proj = proj.clone();
     tokio::spawn(async move {
         let Some(assets) = &proj.assets else {
-             return Ok(Outcome::Success(Product::NoChange));
+             return Ok(Outcome::Success(Product::None));
         };
         let dest_root = &proj.site.root_dir;
 
@@ -43,7 +43,7 @@ pub async fn assets(
             Ok(Outcome::Success(Product::Assets))
         } else {
             log::debug!("Assets finished (no changes)");
-            Ok(Outcome::Success(Product::NoChange))
+            Ok(Outcome::Success(Product::None))
         }
     })
 }

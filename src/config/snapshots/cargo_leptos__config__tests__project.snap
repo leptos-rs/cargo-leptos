@@ -59,7 +59,7 @@ Config {
             end2end: Some(
                  {
                     cmd: "npx playwright test",
-                    dir: "",
+                    dir: "end2end",
                 },
             ),
             assets: Some(

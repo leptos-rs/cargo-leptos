@@ -2,7 +2,7 @@ use crate::config::Project;
 use crate::ext::sync::wait_for_socket;
 use crate::logger::GRAY;
 use crate::signal::Interrupt;
-use crate::signal::{ProductChange, ReloadSignal, ReloadType};
+use crate::signal::{ReloadSignal, ReloadType};
 use axum::{
     extract::ws::{Message, WebSocket, WebSocketUpgrade},
     response::IntoResponse,
@@ -21,8 +21,6 @@ lazy_static::lazy_static! {
 
 pub async fn spawn(proj: &Arc<Project>) -> JoinHandle<()> {
     let proj = proj.clone();
-    let mut int = Interrupt::subscribe_any();
-    let mut prod = ProductChange::subscribe();
 
     let mut site_addr = SITE_ADDR.write().await;
     *site_addr = proj.site.addr;
@@ -33,12 +31,6 @@ pub async fn spawn(proj: &Arc<Project>) -> JoinHandle<()> {
 
     tokio::spawn(async move {
         let _change = ReloadSignal::subscribe();
-
-        // wait for first build to finish even if no products updated
-        select! {
-            _ = prod.recv() => {}
-            _ = int.recv() => return
-        }
 
         let reload_addr = proj.site.reload;
 

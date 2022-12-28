@@ -19,7 +19,7 @@ pub async fn server(proj: &Arc<Project>, changes: &ChangeSet) -> JoinHandle<Resu
 
     tokio::spawn(async move {
         if !changes.need_server_build() {
-            return Ok(Outcome::Success(Product::NoChange));
+            return Ok(Outcome::Success(Product::None));
         }
 
         let (envs, line, process) = server_cargo_process("build", &proj)?;
@@ -36,10 +36,10 @@ pub async fn server(proj: &Arc<Project>, changes: &ChangeSet) -> JoinHandle<Resu
                     .dot()?;
                 if changed {
                     log::debug!("Cargo server bin changed");
-                    Ok(Outcome::Success(Product::ServerBin))
+                    Ok(Outcome::Success(Product::Server))
                 } else {
                     log::debug!("Cargo server bin unchanged");
-                    Ok(Outcome::Success(Product::NoChange))
+                    Ok(Outcome::Success(Product::None))
                 }
             }
             false => Ok(Outcome::Stopped),
