@@ -1,5 +1,7 @@
 use camino::Utf8PathBuf;
 
+use crate::ext::PathBufExt;
+
 use super::ProjectConfig;
 
 pub struct AssetsConfig {
@@ -23,7 +25,7 @@ impl AssetsConfig {
 impl std::fmt::Debug for AssetsConfig {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("AssetsConfig")
-            .field("dir", &self.dir)
+            .field("dir", &self.dir.test_string())
             .finish()
     }
 }
