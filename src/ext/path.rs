@@ -19,6 +19,10 @@ pub trait PathBufExt: PathExt {
     /// returns a platform independent string suitable for testing
     fn test_string(&self) -> String;
 
+    fn starts_with_any(&self, of: &[Utf8PathBuf]) -> bool;
+
+    fn is_ext_any(&self, of: &[&str]) -> bool;
+
     #[cfg(test)]
     fn ls_ascii(&self, indent: usize) -> Result<String>;
 }
@@ -66,6 +70,17 @@ impl PathBufExt for Utf8PathBuf {
         } else {
             s
         }
+    }
+
+    fn is_ext_any(&self, of: &[&str]) -> bool {
+        let Some(ext) = self.extension() else {
+            return false
+        };
+        of.contains(&ext)
+    }
+
+    fn starts_with_any(&self, of: &[Utf8PathBuf]) -> bool {
+        of.iter().any(|p| self.starts_with(p))
     }
 
     #[cfg(test)]
@@ -137,8 +152,8 @@ impl PathExt for Utf8PathBuf {
     }
 }
 
-pub fn remove_nested(paths: Vec<Utf8PathBuf>) -> Vec<Utf8PathBuf> {
-    paths.into_iter().fold(vec![], |mut vec, path| {
+pub fn remove_nested(paths: impl Iterator<Item = Utf8PathBuf>) -> Vec<Utf8PathBuf> {
+    paths.fold(vec![], |mut vec, path| {
         for added in vec.iter_mut() {
             // path is a parent folder of added
             if added.starts_with(&path) {

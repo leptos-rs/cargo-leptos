@@ -19,7 +19,7 @@ pub struct LibPackage {
     pub features: Vec<String>,
     pub default_features: bool,
     pub output_name: String,
-    pub path_deps: Vec<Utf8PathBuf>,
+    pub src_paths: Vec<Utf8PathBuf>,
 }
 
 impl LibPackage {
@@ -76,6 +76,8 @@ impl LibPackage {
             SiteFile { dest, site }
         };
 
+        let mut src_deps = metadata.src_path_dependencies(&package.id);
+        src_deps.push(dir.join("src"));
         Ok(Self {
             name,
             dir,
@@ -84,7 +86,7 @@ impl LibPackage {
             features,
             default_features: config.lib_default_features,
             output_name,
-            path_deps: metadata.src_path_dependencies(&package.id),
+            src_paths: src_deps,
         })
     }
 }
@@ -102,7 +104,7 @@ impl std::fmt::Debug for LibPackage {
             .field(
                 "path_deps",
                 &self
-                    .path_deps
+                    .src_paths
                     .iter()
                     .map(|p| p.test_string())
                     .collect::<Vec<_>>()

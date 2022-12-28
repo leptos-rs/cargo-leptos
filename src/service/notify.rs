@@ -4,50 +4,52 @@ use crate::ext::anyhow::{anyhow, Result};
 use crate::signal::Interrupt;
 use crate::WORKING_DIR;
 use crate::{
-    ext::{remove_nested, PathBufExt, PathExt, StrAdditions},
+    ext::{remove_nested, PathBufExt, PathExt},
     logger::GRAY,
 };
 use camino::Utf8PathBuf;
 use itertools::Itertools;
 use notify::{DebouncedEvent, RecursiveMode, Watcher};
+use std::collections::HashSet;
 use std::path::Path;
+use std::sync::Arc;
 use std::{fmt::Display, time::Duration};
 use tokio::task::JoinHandle;
 
-pub async fn spawn(proj: &Project) -> Result<JoinHandle<()>> {
-    let mut paths = vec!["src".to_created_dir()?];
+pub async fn spawn(proj: &Arc<Project>) -> Result<JoinHandle<()>> {
+    let mut set: HashSet<Utf8PathBuf> = HashSet::from_iter(vec![]);
+
+    set.extend(proj.lib.src_paths.clone());
+    set.extend(proj.bin.src_paths.clone());
+
     if let Some(style) = &proj.style {
-        paths.push(style.file.source.clone().without_last());
+        set.insert(style.file.source.clone().without_last());
     }
 
-    let assets_dir = if let Some(assets) = &proj.assets {
-        let assets_root = assets.dir.to_owned();
-        paths.push(assets_root.clone());
-        Some(assets_root)
-    } else {
-        None
-    };
+    if let Some(assets) = &proj.assets {
+        set.insert(assets.dir.clone());
+    }
 
-    let paths = remove_nested(paths);
+    let paths = remove_nested(set.into_iter());
 
     log::info!(
         "Notify watching folders {}",
         GRAY.paint(paths.iter().join(", "))
     );
+    let proj = proj.clone();
 
-    Ok(tokio::spawn(async move {
-        run(&paths, vec![], assets_dir).await
-    }))
+    Ok(tokio::spawn(async move { run(&paths, proj).await }))
 }
 
-async fn run(paths: &[Utf8PathBuf], exclude: Vec<Utf8PathBuf>, assets_dir: Option<Utf8PathBuf>) {
+async fn run(paths: &[Utf8PathBuf], proj: Arc<Project>) {
     let (sync_tx, sync_rx) = std::sync::mpsc::channel::<DebouncedEvent>();
 
+    let proj = proj.clone();
     std::thread::spawn(move || {
         while let Ok(event) = sync_rx.recv() {
             log::trace!("Notify received {}", GRAY.paint(format!("{:?}", event)));
             match Watched::try_new(&event) {
-                Ok(Some(watched)) => handle(watched, &exclude, &assets_dir),
+                Ok(Some(watched)) => handle(watched, proj.clone()),
                 Err(e) => log::error!("Notify error {e}"),
                 _ => log::trace!("Notify not handled {}", GRAY.paint(format!("{:?}", event))),
             }
@@ -69,44 +71,57 @@ async fn run(paths: &[Utf8PathBuf], exclude: Vec<Utf8PathBuf>, assets_dir: Optio
     }
 }
 
-fn handle(watched: Watched, exclude: &[Utf8PathBuf], assets_dir: &Option<Utf8PathBuf>) {
-    if let Some(path) = watched.path() {
-        if exclude.contains(path) {
-            log::trace!("Notify excluded {}", GRAY.paint(path.as_str()));
-            return;
-        }
-    }
-
+fn handle(watched: Watched, proj: Arc<Project>) {
     log::trace!(
         "Notify handle {}",
         GRAY.paint(format!("{:?}", watched.path()))
     );
 
-    if let Some(assets_dir) = assets_dir {
-        match watched.path() {
-            Some(path) if path.starts_with(assets_dir) => {
-                log::debug!("Notify asset change {}", GRAY.paint(watched.to_string()));
-                Interrupt::send(Change::Asset(watched));
-                return;
-            }
-            _ => {}
+    let Some(path) = watched.path() else {
+        Interrupt::send_all_changed();
+        return
+    };
+
+    let mut changes = Vec::new();
+
+    if let Some(assets) = &proj.assets {
+        if path.starts_with(&assets.dir) {
+            log::debug!("Notify asset change {}", GRAY.paint(watched.to_string()));
+            changes.push(Change::Asset(watched.clone()));
         }
     }
 
-    match watched.path_ext() {
-        Some("rs") => {
-            log::debug!("Notify source change {}", GRAY.paint(watched.to_string()));
-            Interrupt::send(Change::Source);
-        }
-        Some(ext) if ["scss", "sass", "css"].contains(&ext.to_lowercase().as_str()) => {
+    if path.starts_with_any(&proj.lib.src_paths) && path.is_ext_any(&["rs"]) {
+        log::debug!(
+            "Notify lib source change {}",
+            GRAY.paint(watched.to_string())
+        );
+        changes.push(Change::LibSource);
+    }
+
+    if path.starts_with_any(&proj.bin.src_paths) && path.is_ext_any(&["rs"]) {
+        log::debug!(
+            "Notify bin source change {}",
+            GRAY.paint(watched.to_string())
+        );
+        changes.push(Change::BinSource);
+    }
+
+    if let Some(style) = &proj.style {
+        let src = style.file.source.clone().without_last();
+        if path.starts_with(src) && path.is_ext_any(&["scss", "sass", "css"]) {
             log::debug!("Notify style change {}", GRAY.paint(watched.to_string()));
-            Interrupt::send(Change::Style);
+            changes.push(Change::Style)
         }
-        _ => log::trace!(
-            "Notify path ext '{:?}' not matching in: {:?}",
-            watched.path_ext(),
-            watched.path()
-        ),
+    }
+
+    if !changes.is_empty() {
+        Interrupt::send(&changes);
+    } else {
+        log::trace!(
+            "Notify changed but not watched: {}",
+            GRAY.paint(watched.to_string())
+        );
     }
 }
 
@@ -166,6 +181,13 @@ impl Watched {
             Self::Rename(fr, to) => fr.starts_with(path) || to.starts_with(path),
             Self::Rescan => false,
         }
+    }
+
+    pub fn path_starts_with_any(&self, paths: &[&Utf8PathBuf]) -> bool {
+        paths
+            .iter()
+            .find(|path| self.path_starts_with(path))
+            .is_some()
     }
 }
 

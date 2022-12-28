@@ -18,7 +18,8 @@ pub struct BinPackage {
     pub target: String,
     pub features: Vec<String>,
     pub default_features: bool,
-    pub path_deps: Vec<Utf8PathBuf>,
+    /// all source paths, including path dependencies'
+    pub src_paths: Vec<Utf8PathBuf>,
 }
 
 impl BinPackage {
@@ -82,6 +83,8 @@ impl BinPackage {
                 .with_extension(file_ext)
         };
 
+        let mut src_paths = metadata.src_path_dependencies(&package.id);
+        src_paths.push(dir.join("src"));
         Ok(Self {
             name,
             dir,
@@ -89,7 +92,7 @@ impl BinPackage {
             target: target.name.to_string(),
             features,
             default_features: config.bin_default_features,
-            path_deps: metadata.src_path_dependencies(&package.id),
+            src_paths,
         })
     }
 }
@@ -106,7 +109,7 @@ impl std::fmt::Debug for BinPackage {
             .field(
                 "path_deps",
                 &self
-                    .path_deps
+                    .src_paths
                     .iter()
                     .map(|p| p.test_string())
                     .collect::<Vec<_>>()

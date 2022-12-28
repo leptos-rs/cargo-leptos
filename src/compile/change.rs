@@ -4,8 +4,10 @@ use crate::service::notify::Watched;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Change {
-    /// sent when a source file is changed
-    Source,
+    /// sent when a bin target source file is changed
+    BinSource,
+    /// sent when a lib target source file is changed
+    LibSource,
     /// sent when an asset file changed
     Asset(Watched),
     /// sent when a style file changed
@@ -20,7 +22,8 @@ pub struct ChangeSet(Vec<Change>);
 impl ChangeSet {
     pub fn all_changes() -> Self {
         Self(vec![
-            Change::Source,
+            Change::BinSource,
+            Change::LibSource,
             Change::Style,
             Change::Conf,
             Change::Asset(Watched::Rescan),
@@ -36,11 +39,11 @@ impl ChangeSet {
     }
 
     pub fn need_server_build(&self) -> bool {
-        self.0.is_empty() || self.0.contains(&Change::Source) || self.0.contains(&Change::Conf)
+        self.0.is_empty() || self.0.contains(&Change::BinSource) || self.0.contains(&Change::Conf)
     }
 
     pub fn need_front_build(&self) -> bool {
-        self.need_server_build()
+        self.0.is_empty() || self.0.contains(&Change::LibSource) || self.0.contains(&Change::Conf)
     }
 
     pub fn asset_iter(&self) -> impl Iterator<Item = &Watched> {
@@ -57,7 +60,7 @@ impl ChangeSet {
         if css_files && self.0.contains(&Change::Style) {
             return true;
         }
-        if css_in_source && self.0.contains(&Change::Source) {
+        if css_in_source && self.0.contains(&Change::BinSource) {
             return true;
         }
         false

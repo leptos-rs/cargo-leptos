@@ -7,7 +7,7 @@ use tokio::{
 use crate::compile::{Change, ChangeSet};
 
 lazy_static::lazy_static! {
-  static ref ANY_INTERRUPT: broadcast::Sender<()> = broadcast::channel(1).0;
+  static ref ANY_INTERRUPT: broadcast::Sender<()> = broadcast::channel(10).0;
   static ref SHUTDOWN: broadcast::Sender<()> = broadcast::channel(1).0;
 
   static ref SHUTDOWN_REQUESTED: RwLock<bool> = RwLock::new(false);
@@ -39,9 +39,19 @@ impl Interrupt {
         log::trace!("Interrupt source changed cleared");
     }
 
-    pub fn send(change: Change) {
+    pub fn send_all_changed() {
         let mut ch = SOURCE_CHANGES.blocking_write();
-        let did_change = ch.add(change);
+        *ch = ChangeSet::all_changes();
+        drop(ch);
+        Self::send_any()
+    }
+
+    pub fn send(changes: &[Change]) {
+        let mut ch = SOURCE_CHANGES.blocking_write();
+        let mut did_change = false;
+        for change in changes {
+            did_change |= ch.add(change.clone());
+        }
         drop(ch);
 
         if did_change {
