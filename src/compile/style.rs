@@ -2,11 +2,11 @@ use std::sync::Arc;
 
 use super::ChangeSet;
 use crate::{
-    config::Project,
+    config::{Project, StyleConfig},
     ext::exe::Exe,
     ext::{
         anyhow::{anyhow, bail, Context, Result},
-        path::PathBufExt,
+        PathBufExt,
     },
     fs,
     logger::GRAY,
@@ -27,39 +27,36 @@ pub async fn style(proj: &Arc<Project>, changes: &ChangeSet) -> JoinHandle<Resul
     tokio::spawn(async move {
         if !changes.need_style_build(true, false) {
             log::debug!("Style no build needed {changes:?}");
-            return Ok(Outcome::Success(Product::NoChange));
+            return Ok(Outcome::Success(Product::None));
         }
         Ok(Outcome::Success(build(&proj).await?))
     })
 }
 
 async fn build(proj: &Project) -> Result<Product> {
-    let style_file = match &proj.paths.style_file {
-        Some(f) => f,
-        None => {
-            log::trace!("Style no style_file configured");
-            return Ok(Product::NoChange);
-        }
+    let Some(style) = &proj.style else {
+        log::trace!("Style not configured");
+        return Ok(Product::None);
     };
-    fs::create_dir_all(style_file.dest.clone().without_last())
+    fs::create_dir_all(style.file.dest.clone().without_last())
         .await
         .dot()?;
 
-    log::debug!("Style found: {style_file}");
+    log::debug!("Style found: {}", &style.file);
 
-    match style_file.source.extension() {
-        Some("sass") | Some("scss") => compile_sass(&style_file, proj.optimise_front())
+    match style.file.source.extension() {
+        Some("sass") | Some("scss") => compile_sass(&style.file, proj.release)
             .await
-            .context(format!("compile sass/scss: {style_file}"))?,
+            .context(format!("compile sass/scss: {}", &style.file))?,
         Some("css") => {
-            fs::copy(&style_file.source, &style_file.dest).await.dot()?;
+            fs::copy(&style.file.source, &style.file.dest).await.dot()?;
         }
-        _ => bail!("Not a css/sass/scss style file: {style_file}"),
+        _ => bail!("Not a css/sass/scss style file: {}", &style.file),
     };
 
-    process_css(proj, &style_file)
+    process_css(proj, &style)
         .await
-        .context(format!("process css {style_file}"))
+        .context(format!("process css {}", &style.file))
 }
 
 async fn compile_sass(style_file: &SourcedSiteFile, optimise: bool) -> Result<()> {
@@ -90,43 +87,43 @@ fn browser_lists(query: &str) -> Result<Option<Browsers>> {
     Browsers::from_browserslist([query]).context(format!("Error in browserlist query: {query}"))
 }
 
-async fn process_css(proj: &Project, style_file: &SourcedSiteFile) -> Result<Product> {
-    let browsers = browser_lists(&proj.config.browserquery).context("leptos.style.browserquery")?;
+async fn process_css(proj: &Project, style: &StyleConfig) -> Result<Product> {
+    let browsers = browser_lists(&style.browserquery).context("leptos.style.browserquery")?;
 
-    let css = fs::read_to_string(&style_file.dest).await?;
+    let css = fs::read_to_string(&style.file.dest).await?;
 
-    let mut style =
+    let mut stylesheet =
         StyleSheet::parse(&css, ParserOptions::default()).map_err(|e| anyhow!("{e}"))?;
 
-    if proj.optimise_front() {
-        style.minify(MinifyOptions::default())?;
+    if proj.release {
+        stylesheet.minify(MinifyOptions::default())?;
     }
 
     let options = PrinterOptions::<'_> {
         targets: browsers,
-        minify: proj.optimise_front(),
+        minify: proj.release,
         ..Default::default()
     };
 
-    let style_output = style.to_css(options)?;
+    let style_output = stylesheet.to_css(options)?;
 
     let bytes = style_output.code.as_bytes();
 
     let prod = match proj
         .site
-        .updated_with(&style_file.as_site_file(), bytes)
+        .updated_with(&style.file.as_site_file(), bytes)
         .await?
     {
         true => {
             log::trace!(
                 "Style finished with changes {}",
-                GRAY.paint(&style_file.to_string())
+                GRAY.paint(&style.file.to_string())
             );
             Product::Style
         }
         false => {
             log::trace!("Style finished without changes");
-            Product::NoChange
+            Product::None
         }
     };
     Ok(prod)

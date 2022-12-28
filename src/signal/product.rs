@@ -4,7 +4,7 @@ use std::{collections::HashSet, fmt};
 use tokio::sync::broadcast;
 
 lazy_static::lazy_static! {
-  static ref PRODUCT_CHANGE_CHANNEL: broadcast::Sender::<ProductSet> = broadcast::channel::<ProductSet>(1).0;
+  static ref SERVER_RESTART_CHANNEL: broadcast::Sender::<()> = broadcast::channel::<()>(1).0;
 }
 
 #[derive(Debug, PartialEq, Eq, Hash)]
@@ -15,11 +15,11 @@ pub enum Outcome {
 
 #[derive(Debug, Display, Clone, PartialEq, Eq, Hash)]
 pub enum Product {
-    ServerBin,
-    ClientWasm,
+    Server,
+    Front,
     Style,
     Assets,
-    NoChange,
+    None,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -33,7 +33,7 @@ impl ProductSet {
     pub fn from(vec: Vec<Outcome>) -> Self {
         Self(HashSet::from_iter(vec.into_iter().filter_map(
             |entry| match entry {
-                Outcome::Success(Product::NoChange) => None,
+                Outcome::Success(Product::None) => None,
                 Outcome::Success(v) => Some(v),
                 _ => None,
             },
@@ -51,6 +51,10 @@ impl ProductSet {
     pub fn contains(&self, product: &Product) -> bool {
         self.0.contains(product)
     }
+
+    pub fn contains_any(&self, of: &[Product]) -> bool {
+        of.iter().any(|p| self.0.contains(p))
+    }
 }
 
 impl fmt::Display for ProductSet {
@@ -67,15 +71,16 @@ impl fmt::Display for ProductSet {
     }
 }
 
-pub struct ProductChange {}
+pub struct ServerRestart {}
 
-impl ProductChange {
-    pub fn subscribe() -> broadcast::Receiver<ProductSet> {
-        PRODUCT_CHANGE_CHANNEL.subscribe()
+impl ServerRestart {
+    pub fn subscribe() -> broadcast::Receiver<()> {
+        SERVER_RESTART_CHANNEL.subscribe()
     }
 
-    pub fn send(set: ProductSet) {
-        if let Err(e) = PRODUCT_CHANGE_CHANNEL.send(set) {
+    pub fn send() {
+        log::trace!("Server restart sent");
+        if let Err(e) = SERVER_RESTART_CHANNEL.send(()) {
             log::error!("Error could not send product changes due to {e}")
         }
     }

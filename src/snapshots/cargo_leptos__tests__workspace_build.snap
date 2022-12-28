@@ -7,10 +7,10 @@ site:
     favicon.ico
     stuff.txt
     pkg:
-      front_package.css
-      front_package.css.map
-      front_package.js
-      front_package.wasm
+      project1.css
+      project1.css.map
+      project1.js
+      project1.wasm
   project2:
     favicon.ico
     pkg:

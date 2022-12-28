@@ -1,19 +1,21 @@
 use std::{
     collections::HashMap,
     fmt::{self, Display},
+    net::SocketAddr,
 };
 
 use camino::{Utf8Path, Utf8PathBuf};
 use tokio::sync::RwLock;
 
-use crate::ext::{
-    anyhow::{Context, Result},
-    fs,
-    path::PathBufExt,
+use crate::{
+    config::ProjectConfig,
+    ext::{
+        anyhow::{Context, Result},
+        fs, PathBufExt,
+    },
 };
 
 #[derive(Clone)]
-#[cfg_attr(not(test), derive(Debug))]
 pub struct SourcedSiteFile {
     /// source file's relative path from the root (workspace or project) directory
     pub source: Utf8PathBuf,
@@ -32,7 +34,6 @@ impl SourcedSiteFile {
     }
 }
 
-#[cfg(test)]
 impl std::fmt::Debug for SourcedSiteFile {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("SourcedSiteFile")
@@ -50,7 +51,6 @@ impl Display for SourcedSiteFile {
 }
 
 #[derive(Clone)]
-#[cfg_attr(not(test), derive(Debug))]
 pub struct SiteFile {
     /// dest file's relative path from the root (workspace or project) directory
     pub dest: Utf8PathBuf,
@@ -64,7 +64,6 @@ impl Display for SiteFile {
     }
 }
 
-#[cfg(test)]
 impl std::fmt::Debug for SiteFile {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("SiteFile")
@@ -75,6 +74,10 @@ impl std::fmt::Debug for SiteFile {
 }
 
 pub struct Site {
+    pub addr: SocketAddr,
+    pub reload: SocketAddr,
+    pub root_dir: Utf8PathBuf,
+    pub pkg_dir: Utf8PathBuf,
     file_reg: RwLock<HashMap<String, u64>>,
     ext_file_reg: RwLock<HashMap<String, u64>>,
 }
@@ -82,6 +85,10 @@ pub struct Site {
 impl fmt::Debug for Site {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Site")
+            .field("addr", &self.addr)
+            .field("reload", &self.reload)
+            .field("root_dir", &self.root_dir)
+            .field("pkg_dir", &self.pkg_dir)
             .field("file_reg", &self.file_reg.blocking_read())
             .field("ext_file_reg", &self.ext_file_reg.blocking_read())
             .finish()
@@ -89,13 +96,22 @@ impl fmt::Debug for Site {
 }
 
 impl Site {
-    pub fn new() -> Self {
+    pub fn new(config: &ProjectConfig) -> Self {
+        let mut reload = config.site_addr.clone();
+        reload.set_port(config.reload_port);
         Self {
+            addr: config.site_addr.clone(),
+            reload,
+            root_dir: config.site_root.clone(),
+            pkg_dir: config.site_pkg_dir.clone(),
             file_reg: Default::default(),
             ext_file_reg: Default::default(),
         }
     }
 
+    pub fn root_relative_pkg_dir(&self) -> Utf8PathBuf {
+        self.root_dir.join(&self.pkg_dir)
+    }
     /// check if the file changed
     pub async fn did_external_file_change(&self, to: &Utf8Path) -> Result<bool> {
         let new_hash = file_hash(to).await.dot()?;

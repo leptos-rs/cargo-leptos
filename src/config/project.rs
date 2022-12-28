@@ -1,196 +1,73 @@
-use std::{net::SocketAddr, sync::Arc};
-
 use crate::{
-    ext::{
-        anyhow::{anyhow, Error, Result},
-        path::{PathBufExt, PathExt},
-    },
+    config::lib_package::LibPackage,
+    ext::{anyhow::Result, PackageExt, PathBufExt, PathExt},
     logger::GRAY,
     service::site::Site,
     Opts,
 };
-use anyhow::{bail, ensure};
+use anyhow::ensure;
 use camino::{Utf8Path, Utf8PathBuf};
-use cargo_metadata::{Metadata, MetadataCommand, Package, Target};
+use cargo_metadata::{Metadata, MetadataCommand, Package};
 use serde::Deserialize;
+use std::{net::SocketAddr, sync::Arc};
 
 use super::{
+    assets::AssetsConfig,
+    bin_package::BinPackage,
     dotenvs::{find_env_file, overlay_env},
-    paths::ProjectPaths,
+    end2end::End2EndConfig,
+    style::StyleConfig,
 };
 
-#[cfg_attr(not(test), derive(Debug))]
+#[derive(Debug)]
 pub struct Project {
     pub name: String,
-    pub config: ProjectConfig,
-    pub front_package: Package,
-    pub front_profile: String,
-    pub server_package: Package,
-    pub server_target: Target,
-    pub server_profile: String,
+    pub lib: LibPackage,
+    pub bin: BinPackage,
+    pub style: Option<StyleConfig>,
     pub watch: bool,
+    pub release: bool,
     pub site: Arc<Site>,
-    pub paths: ProjectPaths,
+    pub end2end: Option<End2EndConfig>,
+    pub assets: Option<AssetsConfig>,
 }
 
-#[cfg(test)]
-impl std::fmt::Debug for Project {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Project")
-            .field("name", &self.name)
-            .field("config", &self.config)
-            .field("front_package", &format!("{} ..", self.front_package.name))
-            .field("front_profile", &self.front_profile)
-            .field(
-                "server_package",
-                &format!("{} ..", self.server_package.name),
-            )
-            .field(
-                "server_target",
-                &format!(
-                    "{} ({}) ..",
-                    &self.server_target.name,
-                    self.server_target.crate_types.join(", ")
-                ),
-            )
-            .field("server_profile", &self.server_profile)
-            .field("watch", &self.watch)
-            .field("site", &self.site)
-            .field("paths", &self.paths)
-            .finish_non_exhaustive()
-    }
-}
-
-trait PackageExt {
-    fn has_bin_target(&self) -> bool;
-    fn bin_targets(&self) -> Box<dyn Iterator<Item = &Target> + '_>;
-    fn cdylib_target(&self) -> Option<&Target>;
-    fn target_list(&self) -> String;
-}
-
-impl PackageExt for Package {
-    fn has_bin_target(&self) -> bool {
-        self.targets.iter().find(|t| t.is_bin()).is_some()
-    }
-
-    fn bin_targets(&self) -> Box<dyn Iterator<Item = &Target> + '_> {
-        Box::new(self.targets.iter().filter(|t| t.is_bin()))
-    }
-    fn cdylib_target(&self) -> Option<&Target> {
-        let cdylib: String = "cdylib".to_string();
-        self.targets
-            .iter()
-            .find(|t| t.crate_types.contains(&cdylib))
-    }
-    fn target_list(&self) -> String {
-        self.targets
-            .iter()
-            .map(|t| format!("{} ({})", t.name, t.crate_types.join(", ")))
-            .collect::<Vec<_>>()
-            .join(", ")
-    }
-}
 impl Project {
     pub fn resolve(cli: &Opts, manifest_path: &Utf8Path, watch: bool) -> Result<Vec<Arc<Project>>> {
         let metadata = MetadataCommand::new().manifest_path(manifest_path).exec()?;
 
         let projects = ProjectDefinition::parse(&metadata)?;
-        let packages = metadata.workspace_packages();
 
         let mut resolved = Vec::new();
         for (project, mut config) in projects {
-            let bin_pkg = &project.bin_package;
-            let lib_pkg = &project.lib_package;
-
-            if !cli.bin_features.is_empty() {
-                config.bin_features = cli.bin_features.clone();
-            }
-
-            if !cli.lib_features.is_empty() {
-                config.lib_features = cli.lib_features.clone();
-            }
-
-            log::trace!("bin: {bin_pkg}, lib: {lib_pkg}");
-            log::trace!(
-                "PACKAGES {}",
-                packages
-                    .iter()
-                    .map(|p| p.target_list())
-                    .collect::<Vec<_>>()
-                    .join(": ")
-            );
-            let server = packages
-                .iter()
-                .find(|p| p.name == *bin_pkg && p.has_bin_target())
-                .ok_or_else(|| anyhow!(r#"Could not find the project bin-package "{bin_pkg}""#,))?;
-
-            let front = packages
-                .iter()
-                .find(|p| p.name == *lib_pkg)
-                .ok_or_else(|| anyhow!(r#"Could not find the project lib-package "{lib_pkg}""#,))?;
-
-            let bin_targets = server
-                .targets
-                .iter()
-                .enumerate()
-                .filter(|(_, t)| t.is_bin())
-                .collect::<Vec<(usize, &Target)>>();
-
             if config.output_name.is_empty() {
-                config.output_name = front.name.replace('-', "_");
+                config.output_name = project.name.to_string();
             }
-
-            let server_target_idx = if !&config.bin_target.is_empty() {
-                bin_targets
-                    .iter()
-                    .find(|(_, t)| t.name == config.bin_target)
-                    .ok_or_else(|| target_not_found(config.bin_target.as_str()))?
-                    .0
-            } else if bin_targets.len() == 1 {
-                config.bin_target = bin_targets[0].1.name.to_string();
-                bin_targets[0].0
-            } else if bin_targets.is_empty() {
-                bail!("No bin targets found for member {bin_pkg}");
-            } else {
-                return Err(many_targets_found(bin_pkg));
-            };
-            let profile = if cli.release { "release" } else { "dev" };
-
-            let paths = ProjectPaths::new(&metadata, front, server, &config, cli)?;
 
             let proj = Project {
                 name: project.name.clone(),
-                front_package: (*front).clone(),
-                front_profile: profile.to_string(),
-                config,
-                server_package: (*server).clone(),
-                server_target: server.targets[server_target_idx].clone(),
-                server_profile: profile.to_string(),
+                lib: LibPackage::resolve(cli, &metadata, &project, &config)?,
+                bin: BinPackage::resolve(cli, &metadata, &project, &config)?,
+                style: StyleConfig::new(&config),
                 watch,
-                site: Arc::new(Site::new()),
-                paths,
+                release: cli.release,
+                site: Arc::new(Site::new(&config)),
+                end2end: End2EndConfig::resolve(&config),
+                assets: AssetsConfig::resolve(&config),
             };
             resolved.push(Arc::new(proj));
         }
         Ok(resolved)
     }
 
-    pub fn optimise_front(&self) -> bool {
-        self.front_profile.contains("release")
-    }
-
-    pub fn optimise_server(&self) -> bool {
-        self.server_profile.contains("release")
-    }
-
     /// env vars to use when running external command
     pub fn to_envs(&self) -> Vec<(&'static str, String)> {
         let mut vec = vec![
-            ("OUTPUT_NAME", self.config.output_name.to_string()),
-            ("LEPTOS_SITE_ROOT", self.config.site_root.to_string()),
-            ("LEPTOS_SITE_PKG_DIR", self.config.site_pkg_dir.to_string()),
-            ("LEPTOS_SITE_ADDR", self.config.site_addr.to_string()),
-            ("LEPTOS_RELOAD_PORT", self.config.reload_port.to_string()),
+            ("OUTPUT_NAME", self.lib.output_name.to_string()),
+            ("LEPTOS_SITE_ROOT", self.site.root_dir.to_string()),
+            ("LEPTOS_SITE_PKG_DIR", self.site.pkg_dir.to_string()),
+            ("LEPTOS_SITE_ADDR", self.site.addr.to_string()),
+            ("LEPTOS_RELOAD_PORT", self.site.reload.port().to_string()),
         ];
         if self.watch {
             vec.push(("LEPTOS_WATCH", "ON".to_string()))
@@ -218,7 +95,7 @@ pub struct ProjectConfig {
     /// command for launching end-2-end integration tests
     pub end2end_cmd: Option<String>,
     /// the dir used when launching end-2-end integration tests
-    pub end2end_dir: Option<String>,
+    pub end2end_dir: Option<Utf8PathBuf>,
     #[serde(default = "default_browserquery")]
     pub browserquery: String,
     /// the bin target to use for building the server
@@ -246,43 +123,13 @@ impl ProjectConfig {
         Ok(conf)
     }
 }
-fn default_site_addr() -> SocketAddr {
-    SocketAddr::new([127, 0, 0, 1].into(), 3000)
-}
-
-fn default_pkg_dir() -> Utf8PathBuf {
-    Utf8PathBuf::from("pkg")
-}
-
-fn default_site_root() -> Utf8PathBuf {
-    Utf8PathBuf::from("target/site")
-}
-
-fn default_reload_port() -> u16 {
-    3001
-}
-
-fn default_browserquery() -> String {
-    "defaults".to_string()
-}
-
-fn many_targets_found(pkg: &str) -> Error {
-    anyhow!(
-        r#"Several bin targets found for member "{pkg}", please specify which one to use with: [[workspace.metadata.leptos]] bin-target = "name""#
-    )
-}
-fn target_not_found(target: &str) -> Error {
-    anyhow!(
-        r#"Could not find the target specified: [[workspace.metadata.leptos]] bin-target = "{target}""#,
-    )
-}
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct ProjectDefinition {
     name: String,
-    bin_package: String,
-    lib_package: String,
+    pub bin_package: String,
+    pub lib_package: String,
 }
 impl ProjectDefinition {
     fn from_workspace(
@@ -350,4 +197,24 @@ impl ProjectDefinition {
 
 fn leptos_metadata(metadata: &serde_json::Value) -> Option<&serde_json::Value> {
     metadata.as_object().map(|o| o.get("leptos")).flatten()
+}
+
+fn default_site_addr() -> SocketAddr {
+    SocketAddr::new([127, 0, 0, 1].into(), 3000)
+}
+
+fn default_pkg_dir() -> Utf8PathBuf {
+    Utf8PathBuf::from("pkg")
+}
+
+fn default_site_root() -> Utf8PathBuf {
+    Utf8PathBuf::from("target/site")
+}
+
+fn default_reload_port() -> u16 {
+    3001
+}
+
+fn default_browserquery() -> String {
+    "defaults".to_string()
 }

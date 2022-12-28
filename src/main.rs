@@ -15,8 +15,8 @@ use camino::Utf8PathBuf;
 use clap::{Parser, Subcommand, ValueEnum};
 use command::NewCommand;
 use config::Config;
-use ext::path::PathBufExt;
-use ext::{fs, path, util};
+use ext::fs;
+use ext::PathBufExt;
 use once_cell::sync::OnceCell;
 use signal::Interrupt;
 use std::env;
@@ -37,7 +37,7 @@ pub enum Log {
 pub struct Opts {
     /// Build artifacts in release mode, with optimizations.
     #[arg(short, long)]
-    pub release: bool,
+    release: bool,
 
     /// Which project to use, from a list of projects defined in a workspace
     #[arg(short, long)]
@@ -54,6 +54,12 @@ pub struct Opts {
     /// Verbosity (none: info, errors & warnings, -v: verbose, --vv: very verbose).
     #[arg(short, action = clap::ArgAction::Count)]
     pub verbose: u8,
+}
+
+impl Opts {
+    pub fn profile(&self) -> String {
+        if self.release { "release" } else { "debug" }.to_string()
+    }
 }
 
 #[derive(Debug, Parser)]

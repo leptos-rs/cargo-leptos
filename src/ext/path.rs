@@ -1,4 +1,4 @@
-use crate::ext::anyhow::{bail, Context, Result};
+use crate::ext::anyhow::{anyhow, Context, Result};
 use camino::{Utf8Path, Utf8PathBuf};
 
 pub trait PathExt {
@@ -16,9 +16,12 @@ pub trait PathBufExt: PathExt {
     /// drops the last path component
     fn without_last(self) -> Self;
 
-    #[cfg(test)]
     /// returns a platform independent string suitable for testing
     fn test_string(&self) -> String;
+
+    fn starts_with_any(&self, of: &[Utf8PathBuf]) -> bool;
+
+    fn is_ext_any(&self, of: &[&str]) -> bool;
 
     #[cfg(test)]
     fn ls_ascii(&self, indent: usize) -> Result<String>;
@@ -34,23 +37,9 @@ impl PathExt for Utf8Path {
     }
 
     fn unbase(&self, base: &Utf8Path) -> Result<Utf8PathBuf> {
-        let mut self_comp_iter = self.components();
-
-        for base_comp in base.components() {
-            match self_comp_iter.next() {
-                Some(self_comp) if base_comp != self_comp => {
-                    bail!("Cannot remove base {base:?} from {self:?} because base doesn't match")
-                }
-                None => bail!("Cannot remove base {base:?} from {self:?} because base is longer"),
-                _ => {}
-            };
-        }
-        let path = Utf8PathBuf::from_iter(self_comp_iter);
-        Ok(if path == "" {
-            Utf8PathBuf::from(".")
-        } else {
-            path
-        })
+        self.strip_prefix(base)
+            .map(|p| p.to_path_buf())
+            .map_err(|_| anyhow!("Could not remove base {base:?} from {self:?}"))
     }
 }
 
@@ -60,7 +49,6 @@ impl PathBufExt for Utf8PathBuf {
         self
     }
 
-    #[cfg(test)]
     fn test_string(&self) -> String {
         let s = self.to_string().replace("\\", "/");
         if s.ends_with(".exe") {
@@ -68,6 +56,17 @@ impl PathBufExt for Utf8PathBuf {
         } else {
             s
         }
+    }
+
+    fn is_ext_any(&self, of: &[&str]) -> bool {
+        let Some(ext) = self.extension() else {
+            return false
+        };
+        of.contains(&ext)
+    }
+
+    fn starts_with_any(&self, of: &[Utf8PathBuf]) -> bool {
+        of.iter().any(|p| self.starts_with(p))
     }
 
     #[cfg(test)]
@@ -139,8 +138,8 @@ impl PathExt for Utf8PathBuf {
     }
 }
 
-pub fn remove_nested(paths: Vec<Utf8PathBuf>) -> Vec<Utf8PathBuf> {
-    paths.into_iter().fold(vec![], |mut vec, path| {
+pub fn remove_nested(paths: impl Iterator<Item = Utf8PathBuf>) -> Vec<Utf8PathBuf> {
+    paths.fold(vec![], |mut vec, path| {
         for added in vec.iter_mut() {
             // path is a parent folder of added
             if added.starts_with(&path) {

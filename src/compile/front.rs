@@ -24,10 +24,10 @@ pub async fn front(proj: &Arc<Project>, changes: &ChangeSet) -> JoinHandle<Resul
     tokio::spawn(async move {
         if !changes.need_front_build() {
             log::trace!("Front no changes to rebuild");
-            return Ok(Outcome::Success(Product::NoChange));
+            return Ok(Outcome::Success(Product::None));
         }
 
-        fs::create_dir_all(&proj.paths.site_pkg_dir).await?;
+        fs::create_dir_all(&proj.site.root_relative_pkg_dir()).await?;
 
         let (envs, line, process) = front_cargo_process("build", true, &proj)?;
 
@@ -59,7 +59,7 @@ pub fn build_cargo_front_cmd(
 ) -> (String, String) {
     let mut args = vec![
         cmd.to_string(),
-        format!("--package={}", proj.front_package.name.as_str()),
+        format!("--package={}", proj.lib.name.as_str()),
         "--lib".to_string(),
         "--target-dir=target/front".to_string(),
     ];
@@ -67,17 +67,15 @@ pub fn build_cargo_front_cmd(
         args.push("--target=wasm32-unknown-unknown".to_string());
     }
 
-    if !proj.config.lib_default_features {
+    if !proj.lib.default_features {
         args.push("--no-default-features".to_string());
     }
 
-    if !proj.config.lib_features.is_empty() {
-        args.push(format!("--features={}", proj.config.lib_features.join(",")));
+    if !proj.lib.features.is_empty() {
+        args.push(format!("--features={}", proj.lib.features.join(",")));
     }
-    match proj.front_profile.as_str() {
-        "release" => args.push("--release".to_string()),
-        "dev" => {}
-        prof => args.push(format!("--profile={prof}")),
+    if proj.release {
+        args.push("--release".to_string());
     }
 
     let envs = proj.to_envs();
@@ -94,7 +92,7 @@ pub fn build_cargo_front_cmd(
 }
 
 async fn bindgen(proj: &Project) -> Result<Outcome> {
-    let wasm_file = &proj.paths.wasm_file;
+    let wasm_file = &proj.lib.wasm_file;
     let interrupt = Interrupt::subscribe_any();
 
     // see:
@@ -110,7 +108,7 @@ async fn bindgen(proj: &Project) -> Result<Outcome> {
 
     bindgen.wasm_mut().emit_wasm_file(&wasm_file.dest).dot()?;
     log::trace!("Front wrote wasm to {:?}", wasm_file.dest.as_str());
-    if proj.optimise_front() && !optimize(&wasm_file.dest, interrupt).await.dot()? {
+    if proj.release && !optimize(&wasm_file.dest, interrupt).await.dot()? {
         return Ok(Outcome::Stopped);
     }
 
@@ -127,12 +125,12 @@ async fn bindgen(proj: &Project) -> Result<Outcome> {
 
     let wasm_changed = proj
         .site
-        .did_file_change(&proj.paths.wasm_file.as_site_file())
+        .did_file_change(&proj.lib.wasm_file.as_site_file())
         .await
         .dot()?;
     let js_changed = proj
         .site
-        .updated_with(&proj.paths.js_file, js.as_bytes())
+        .updated_with(&proj.lib.js_file, js.as_bytes())
         .await
         .dot()?;
     log::debug!(
@@ -144,9 +142,9 @@ async fn bindgen(proj: &Project) -> Result<Outcome> {
         if wasm_changed { "changed" } else { "unchanged" }
     );
     if js_changed || wasm_changed {
-        Ok(Outcome::Success(Product::ClientWasm))
+        Ok(Outcome::Success(Product::Front))
     } else {
-        Ok(Outcome::Success(Product::NoChange))
+        Ok(Outcome::Success(Product::None))
     }
 }
 

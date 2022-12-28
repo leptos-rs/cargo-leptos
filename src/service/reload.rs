@@ -2,7 +2,7 @@ use crate::config::Project;
 use crate::ext::sync::wait_for_socket;
 use crate::logger::GRAY;
 use crate::signal::Interrupt;
-use crate::signal::{ProductChange, ReloadSignal, ReloadType};
+use crate::signal::{ReloadSignal, ReloadType};
 use axum::{
     extract::ws::{Message, WebSocket, WebSocketUpgrade},
     response::IntoResponse,
@@ -21,27 +21,18 @@ lazy_static::lazy_static! {
 
 pub async fn spawn(proj: &Arc<Project>) -> JoinHandle<()> {
     let proj = proj.clone();
-    let mut int = Interrupt::subscribe_any();
-    let mut prod = ProductChange::subscribe();
 
     let mut site_addr = SITE_ADDR.write().await;
-    *site_addr = proj.config.site_addr;
-    if let Some(style_file) = &proj.paths.style_file {
+    *site_addr = proj.site.addr;
+    if let Some(style) = &proj.style {
         let mut css_link = CSS_LINK.write().await;
-        *css_link = style_file.site.to_string();
+        *css_link = style.file.site.to_string();
     }
 
     tokio::spawn(async move {
         let _change = ReloadSignal::subscribe();
 
-        // wait for first build to finish even if no products updated
-        select! {
-            _ = prod.recv() => {}
-            _ = int.recv() => return
-        }
-
-        let mut reload_addr = proj.config.site_addr;
-        reload_addr.set_port(proj.config.reload_port);
+        let reload_addr = proj.site.reload;
 
         if TcpStream::connect(&reload_addr).await.is_ok() {
             log::error!(

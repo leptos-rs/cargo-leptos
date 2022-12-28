@@ -14,7 +14,9 @@ opt-level = 'z'
 [[workspace.metadata.leptos]]
 name = "project1"
 bin-package = "server-package"
+bin-features = ["ssr"]
 lib-package = "front-package"
+lib-features = ["hydrate"]
 assets-dir = "project1/assets"
 style-file = "project1/css/main.scss"
 site-root = "target/site/project1"

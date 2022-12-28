@@ -6,7 +6,7 @@ use crate::ext::anyhow::{Context, Result};
 use crate::service::notify::Watched;
 use crate::service::site::SourcedSiteFile;
 use crate::signal::{Outcome, Product};
-use crate::{fs, logger::GRAY, path::PathExt};
+use crate::{ext::PathExt, fs, logger::GRAY};
 use camino::{Utf8Path, Utf8PathBuf};
 use tokio::task::JoinHandle;
 
@@ -19,22 +19,21 @@ pub async fn assets(
 
     let proj = proj.clone();
     tokio::spawn(async move {
-        let src_root = match &proj.paths.assets_dir {
-            Some(dir) => dir,
-            None => return Ok(Outcome::Success(Product::NoChange)),
+        let Some(assets) = &proj.assets else {
+             return Ok(Outcome::Success(Product::None));
         };
-        let dest_root = &proj.paths.site_root;
+        let dest_root = &proj.site.root_dir;
 
         let change = if first_sync {
             log::trace!("Assets starting full resync");
-            resync(&src_root, dest_root).await?;
+            resync(&assets.dir, dest_root).await?;
             true
         } else {
             let mut changed = false;
             for watched in changes.asset_iter() {
                 log::trace!("Assets processing {watched:?}");
                 let change =
-                    update_asset(&proj, watched.clone(), &src_root, dest_root, &[]).await?;
+                    update_asset(&proj, watched.clone(), &assets.dir, dest_root, &[]).await?;
                 changed |= change;
             }
             changed
@@ -44,7 +43,7 @@ pub async fn assets(
             Ok(Outcome::Success(Product::Assets))
         } else {
             log::debug!("Assets finished (no changes)");
-            Ok(Outcome::Success(Product::NoChange))
+            Ok(Outcome::Success(Product::None))
         }
     })
 }

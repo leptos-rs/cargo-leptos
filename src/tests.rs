@@ -1,7 +1,7 @@
 use camino::Utf8PathBuf;
 
 use crate::{
-    ext::{fs, path::PathBufExt},
+    ext::{fs, PathBufExt},
     run, Cli, Commands, Opts,
 };
 
