@@ -1,54 +1,119 @@
-use crate::ext::anyhow::{bail, ensure, Context, Result};
-use std::path::{Path, PathBuf};
+use crate::ext::anyhow::{anyhow, Context, Result};
+use camino::{Utf8Path, Utf8PathBuf};
 
 pub trait PathExt {
-    /// appends to path
-    fn with<P: AsRef<Path>>(&self, append: P) -> PathBuf;
-
     /// converts this absolute path to relative if the start matches
-    fn relative_to(&self, to: impl AsRef<Path>) -> Option<PathBuf>;
+    fn relative_to(&self, to: impl AsRef<Utf8Path>) -> Option<Utf8PathBuf>;
 
     /// removes the src_root from the path and adds the dest_root
-    fn rebase(&self, src_root: &PathBuf, dest_root: &PathBuf) -> Result<PathBuf>;
-    /// As .canonicalize() but returning a contextualized anyhow Result
-    fn to_canonicalized(&self) -> Result<PathBuf>;
-}
-impl PathExt for Path {
-    fn rebase(&self, src_root: &PathBuf, dest_root: &PathBuf) -> Result<PathBuf> {
-        self.to_path_buf().rebase(src_root, dest_root)
-    }
+    fn rebase(&self, src_root: &Utf8Path, dest_root: &Utf8Path) -> Result<Utf8PathBuf>;
 
-    fn relative_to(&self, to: impl AsRef<Path>) -> Option<PathBuf> {
-        self.to_path_buf().relative_to(to)
-    }
-
-    fn to_canonicalized(&self) -> Result<PathBuf> {
-        self.to_path_buf().to_canonicalized()
-    }
-
-    fn with<P: AsRef<Path>>(&self, append: P) -> PathBuf {
-        self.to_path_buf().with(append)
-    }
+    /// removes base from path (making sure they match)
+    fn unbase(&self, base: &Utf8Path) -> Result<Utf8PathBuf>;
 }
 
 pub trait PathBufExt: PathExt {
     /// drops the last path component
-    fn without_last(self) -> PathBuf;
+    fn without_last(self) -> Self;
+
+    /// returns a platform independent string suitable for testing
+    fn test_string(&self) -> String;
+
+    fn starts_with_any(&self, of: &[Utf8PathBuf]) -> bool;
+
+    fn is_ext_any(&self, of: &[&str]) -> bool;
+
+    #[cfg(test)]
+    fn ls_ascii(&self, indent: usize) -> Result<String>;
 }
 
-impl PathBufExt for PathBuf {
-    fn without_last(mut self) -> PathBuf {
+impl PathExt for Utf8Path {
+    fn rebase(&self, src_root: &Utf8Path, dest_root: &Utf8Path) -> Result<Utf8PathBuf> {
+        self.to_path_buf().rebase(src_root, dest_root)
+    }
+
+    fn relative_to(&self, to: impl AsRef<Utf8Path>) -> Option<Utf8PathBuf> {
+        self.to_path_buf().relative_to(to)
+    }
+
+    fn unbase(&self, base: &Utf8Path) -> Result<Utf8PathBuf> {
+        self.strip_prefix(base)
+            .map(|p| p.to_path_buf())
+            .map_err(|_| anyhow!("Could not remove base {base:?} from {self:?}"))
+    }
+}
+
+impl PathBufExt for Utf8PathBuf {
+    fn without_last(mut self) -> Utf8PathBuf {
         self.pop();
         self
     }
-}
-impl PathExt for PathBuf {
-    fn with<P: AsRef<Path>>(&self, append: P) -> PathBuf {
-        let mut new = self.clone();
-        new.push(append);
-        new
+
+    fn test_string(&self) -> String {
+        let s = self.to_string().replace("\\", "/");
+        if s.ends_with(".exe") {
+            s[..s.len() - 4].to_string()
+        } else {
+            s
+        }
     }
-    fn relative_to(&self, to: impl AsRef<Path>) -> Option<PathBuf> {
+
+    fn is_ext_any(&self, of: &[&str]) -> bool {
+        let Some(ext) = self.extension() else {
+            return false
+        };
+        of.contains(&ext)
+    }
+
+    fn starts_with_any(&self, of: &[Utf8PathBuf]) -> bool {
+        of.iter().any(|p| self.starts_with(p))
+    }
+
+    #[cfg(test)]
+    fn ls_ascii(&self, indent: usize) -> Result<String> {
+        let mut entries = self.read_dir_utf8()?;
+        let mut out = Vec::new();
+
+        out.push(format!(
+            "{}{}:",
+            "  ".repeat(indent),
+            self.file_name().unwrap_or_default()
+        ));
+
+        let indent = indent + 1;
+        let mut files = Vec::new();
+        let mut dirs = Vec::new();
+
+        while let Some(Ok(entry)) = entries.next() {
+            let path = entry.path().to_path_buf();
+
+            if entry.file_type()?.is_dir() {
+                dirs.push(path);
+            } else {
+                files.push(path);
+            }
+        }
+
+        dirs.sort();
+        files.sort();
+
+        for file in files {
+            out.push(format!(
+                "{}{}",
+                "  ".repeat(indent),
+                file.file_name().unwrap_or_default()
+            ));
+        }
+
+        for path in dirs {
+            out.push(path.ls_ascii(indent)?);
+        }
+        Ok(out.join("\n"))
+    }
+}
+
+impl PathExt for Utf8PathBuf {
+    fn relative_to(&self, to: impl AsRef<Utf8Path>) -> Option<Utf8PathBuf> {
         let root = to.as_ref();
         if self.is_absolute() && self.starts_with(root) {
             let len = root.components().count();
@@ -57,24 +122,36 @@ impl PathExt for PathBuf {
             None
         }
     }
-    fn rebase(&self, src_root: &PathBuf, dest_root: &PathBuf) -> Result<PathBuf>
+    fn rebase(&self, src_root: &Utf8Path, dest_root: &Utf8Path) -> Result<Utf8PathBuf>
     where
         Self: Sized,
     {
-        ensure!(src_root.is_absolute(), "Not canonicalized: {src_root:?}");
-        ensure!(dest_root.is_absolute(), "Not canonicalized: {dest_root:?}");
-        if let Some(rel) = self.relative_to(src_root) {
-            Ok(dest_root.with(rel))
-        } else {
-            bail!("Could not rebase {self:?} from {src_root:?} to {dest_root:?}")
-        }
+        let unbased = self
+            .unbase(src_root)
+            .dot()
+            .context(format!("Rebase {self} from {src_root} to {dest_root}"))?;
+        Ok(dest_root.join(unbased))
     }
 
-    fn to_canonicalized(&self) -> Result<PathBuf>
-    where
-        Self: Sized,
-    {
-        self.canonicalize()
-            .context(format!("Could not canonicalize {:?}", self))
+    fn unbase(&self, base: &Utf8Path) -> Result<Utf8PathBuf> {
+        self.as_path().unbase(base)
     }
+}
+
+pub fn remove_nested(paths: impl Iterator<Item = Utf8PathBuf>) -> Vec<Utf8PathBuf> {
+    paths.fold(vec![], |mut vec, path| {
+        for added in vec.iter_mut() {
+            // path is a parent folder of added
+            if added.starts_with(&path) {
+                *added = path;
+                return vec;
+            }
+            // path is a sub folder of added
+            if path.starts_with(added) {
+                return vec;
+            }
+        }
+        vec.push(path);
+        vec
+    })
 }

@@ -1,0 +1,80 @@
+---
+source: src/config/tests.rs
+expression: conf
+---
+Config {
+    projects: [
+        Project {
+            name: "example",
+            lib: LibPackage {
+                name: "example",
+                dir: "",
+                wasm_file: SourcedSiteFile {
+                    source: "target/front/wasm32-unknown-unknown/debug/example.wasm",
+                    dest: "target/site/pkg/example.wasm",
+                    site: "pkg/example.wasm",
+                },
+                js_file: SiteFile {
+                    dest: "target/site/pkg/example.js",
+                    site: "pkg/example.js",
+                },
+                features: [
+                    "hydrate",
+                ],
+                default_features: false,
+                output_name: "example",
+                path_deps: "src",
+            },
+            bin: BinPackage {
+                name: "example",
+                dir: "",
+                exe_file: "target/server/debug/example",
+                target: "example",
+                features: [
+                    "ssr",
+                ],
+                default_features: false,
+                path_deps: "src",
+            },
+            style: Some(
+                StyleConfig {
+                    file: SourcedSiteFile {
+                        source: "style/main.scss",
+                        dest: "target/site/pkg/example.css",
+                        site: "pkg/example.css",
+                    },
+                    browserquery: "defaults",
+                },
+            ),
+            watch: true,
+            release: false,
+            site: Site {
+                addr: 127.0.0.1:3000,
+                reload: 127.0.0.1:3001,
+                root_dir: "target/site",
+                pkg_dir: "pkg",
+                file_reg: {},
+                ext_file_reg: {},
+            },
+            end2end: Some(
+                 {
+                    cmd: "npx playwright test",
+                    dir: "end2end",
+                },
+            ),
+            assets: Some(
+                AssetsConfig {
+                    dir: "assets",
+                },
+            ),
+        },
+    ],
+    cli: Opts {
+        release: false,
+        project: None,
+        lib_features: [],
+        bin_features: [],
+        verbose: 0,
+    },
+    watch: true,
+}

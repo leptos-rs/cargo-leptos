@@ -1,0 +1,37 @@
+[package]
+name = "server-package"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+app-package = { path = "../app", default-features = false, features = ["ssr"] }
+leptos = { git = "https://github.com/gbj/leptos", default-features = false, features = [
+  "serde",
+  "ssr",
+] }
+leptos_meta = { git = "https://github.com/gbj/leptos", default-features = false, features = [
+  "ssr",
+] }
+leptos_router = { git = "https://github.com/gbj/leptos", default-features = false, features = [
+  "ssr",
+] }
+leptos_dom = { git = "https://github.com/gbj/leptos", default-features = false, features = [
+  "ssr",
+] }
+
+gloo-net = { version = "0.2", features = ["http"] }
+log = "0.4"
+cfg-if = "1.0"
+leptos_actix = "0.0"
+actix-web = "4"
+actix-files = "0.6"
+futures = "0.3"
+simple_logger = "4.0"
+serde_json = "1.0"
+reqwest = "0.11"
+dotenvy = "0.15"
+
+[features]
+ssr = []

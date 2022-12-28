@@ -6,7 +6,7 @@ use flexi_logger::{
 use once_cell::sync::OnceCell;
 use std::io::Write;
 
-use crate::{ext::util::StrAdditions, Log};
+use crate::{ext::StrAdditions, Log};
 
 // https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797
 lazy_static::lazy_static! {
@@ -51,15 +51,15 @@ impl LogFlag {
     }
 
     fn matches(&self, target: &str) -> bool {
-        if self.is_set(Log::Server) && (target.starts_with("hyper") || target.starts_with("axum")) {
-            true
-        } else if self.is_set(Log::Wasm)
-            && (target.starts_with("wasm") || target.starts_with("walrus"))
-        {
-            true
-        } else {
-            false
-        }
+        self.do_server_log(target) || self.do_wasm_log(target)
+    }
+
+    fn do_server_log(&self, target: &str) -> bool {
+        self.is_set(Log::Server) && (target.starts_with("hyper") || target.starts_with("axum"))
+    }
+
+    fn do_wasm_log(&self, target: &str) -> bool {
+        self.is_set(Log::Wasm) && (target.starts_with("wasm") || target.starts_with("walrus"))
     }
 }
 
@@ -96,7 +96,7 @@ fn format(
 fn split(args: &String) -> (&str, &str) {
     match args.find(' ') {
         Some(i) => (&args[..i], &args[i + 1..]),
-        None => ("", &args),
+        None => ("", args),
     }
 }
 fn dependency<'a>(record: &'a Record<'_>) -> Option<&'a str> {

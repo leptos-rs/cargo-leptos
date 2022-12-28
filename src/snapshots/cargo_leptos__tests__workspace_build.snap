@@ -1,0 +1,20 @@
+---
+source: src/tests.rs
+expression: site_dir.ls_ascii(0).unwrap_or_default()
+---
+site:
+  project1:
+    favicon.ico
+    stuff.txt
+    pkg:
+      project1.css
+      project1.css.map
+      project1.js
+      project1.wasm
+  project2:
+    favicon.ico
+    pkg:
+      project2.css
+      project2.css.map
+      project2.js
+      project2.wasm
