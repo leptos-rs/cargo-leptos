@@ -975,7 +975,7 @@ dependencies = [
 [[package]]
 name = "leptos"
 version = "0.0.21"
-source = "git+https://github.com/gbj/leptos#c24958bec4538334ca7d4f5a87055b42e265da62"
+source = "git+https://github.com/gbj/leptos#a68d276c90f0273999ba52fc2a34268c4453dd1c"
 dependencies = [
  "leptos_config 0.0.21 (git+https://github.com/gbj/leptos)",
  "leptos_core 0.0.21 (git+https://github.com/gbj/leptos)",
@@ -1003,7 +1003,7 @@ dependencies = [
 [[package]]
 name = "leptos_actix"
 version = "0.0.3"
-source = "git+https://github.com/gbj/leptos#c24958bec4538334ca7d4f5a87055b42e265da62"
+source = "git+https://github.com/gbj/leptos#a68d276c90f0273999ba52fc2a34268c4453dd1c"
 dependencies = [
  "actix-web",
  "futures",
@@ -1025,7 +1025,7 @@ dependencies = [
 [[package]]
 name = "leptos_config"
 version = "0.0.21"
-source = "git+https://github.com/gbj/leptos#c24958bec4538334ca7d4f5a87055b42e265da62"
+source = "git+https://github.com/gbj/leptos#a68d276c90f0273999ba52fc2a34268c4453dd1c"
 dependencies = [
  "typed-builder",
 ]
@@ -1047,7 +1047,7 @@ dependencies = [
 [[package]]
 name = "leptos_core"
 version = "0.0.21"
-source = "git+https://github.com/gbj/leptos#c24958bec4538334ca7d4f5a87055b42e265da62"
+source = "git+https://github.com/gbj/leptos#a68d276c90f0273999ba52fc2a34268c4453dd1c"
 dependencies = [
  "leptos_dom 0.0.21 (git+https://github.com/gbj/leptos)",
  "leptos_macro 0.0.21 (git+https://github.com/gbj/leptos)",
@@ -1079,7 +1079,7 @@ dependencies = [
 [[package]]
 name = "leptos_dom"
 version = "0.0.21"
-source = "git+https://github.com/gbj/leptos#c24958bec4538334ca7d4f5a87055b42e265da62"
+source = "git+https://github.com/gbj/leptos#a68d276c90f0273999ba52fc2a34268c4453dd1c"
 dependencies = [
  "cfg-if",
  "futures",
@@ -1118,7 +1118,7 @@ dependencies = [
 [[package]]
 name = "leptos_macro"
 version = "0.0.21"
-source = "git+https://github.com/gbj/leptos#c24958bec4538334ca7d4f5a87055b42e265da62"
+source = "git+https://github.com/gbj/leptos#a68d276c90f0273999ba52fc2a34268c4453dd1c"
 dependencies = [
  "cfg-if",
  "itertools",
@@ -1150,7 +1150,7 @@ dependencies = [
 [[package]]
 name = "leptos_meta"
 version = "0.0.6"
-source = "git+https://github.com/gbj/leptos#c24958bec4538334ca7d4f5a87055b42e265da62"
+source = "git+https://github.com/gbj/leptos#a68d276c90f0273999ba52fc2a34268c4453dd1c"
 dependencies = [
  "cfg-if",
  "leptos 0.0.21 (git+https://github.com/gbj/leptos)",
@@ -1185,7 +1185,7 @@ dependencies = [
 [[package]]
 name = "leptos_reactive"
 version = "0.0.21"
-source = "git+https://github.com/gbj/leptos#c24958bec4538334ca7d4f5a87055b42e265da62"
+source = "git+https://github.com/gbj/leptos#a68d276c90f0273999ba52fc2a34268c4453dd1c"
 dependencies = [
  "base64",
  "cfg-if",
@@ -1235,7 +1235,7 @@ dependencies = [
 [[package]]
 name = "leptos_router"
 version = "0.0.7"
-source = "git+https://github.com/gbj/leptos#c24958bec4538334ca7d4f5a87055b42e265da62"
+source = "git+https://github.com/gbj/leptos#a68d276c90f0273999ba52fc2a34268c4453dd1c"
 dependencies = [
  "bincode",
  "cfg-if",
@@ -1285,7 +1285,7 @@ dependencies = [
 [[package]]
 name = "leptos_server"
 version = "0.0.21"
-source = "git+https://github.com/gbj/leptos#c24958bec4538334ca7d4f5a87055b42e265da62"
+source = "git+https://github.com/gbj/leptos#a68d276c90f0273999ba52fc2a34268c4453dd1c"
 dependencies = [
  "ciborium",
  "form_urlencoded",
@@ -1824,9 +1824,9 @@ checksum = "58bc9567378fc7690d6b2addae4e60ac2eeea07becb2c64b9f218b53865cba2a"
 
 [[package]]
 name = "serde"
-version = "1.0.151"
+version = "1.0.152"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "97fed41fc1a24994d044e6db6935e69511a1153b52c15eb42493b26fa87feba0"
+checksum = "bb7d1f0d3021d347a83e556fc4683dea2ea09d87bccdf88ff5c12545d89d5efb"
 dependencies = [
  "serde_derive",
 ]
@@ -1844,9 +1844,9 @@ dependencies = [
 
 [[package]]
 name = "serde_derive"
-version = "1.0.151"
+version = "1.0.152"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "255abe9a125a985c05190d687b320c12f9b1f0b99445e608c21ba0782c719ad8"
+checksum = "af487d118eecd09402d70a5d72551860e788df87b464af30e5ea6a38c75c541e"
 dependencies = [
  "proc-macro2",
  "quote",
