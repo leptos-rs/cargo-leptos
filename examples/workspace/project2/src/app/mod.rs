@@ -2,8 +2,8 @@ use leptos::*;
 use leptos_meta::*;
 
 #[component]
-pub fn App(cx: Scope) -> Element {
-    provide_context(cx, MetaContext::default());
+pub fn App(cx: Scope) -> impl IntoView {
+    provide_meta_context(cx);
 
     view! {
         cx,

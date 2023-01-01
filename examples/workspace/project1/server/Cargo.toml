@@ -20,11 +20,11 @@ leptos_router = { git = "https://github.com/gbj/leptos", default-features = fals
 leptos_dom = { git = "https://github.com/gbj/leptos", default-features = false, features = [
   "ssr",
 ] }
+leptos_actix = { git = "https://github.com/gbj/leptos"}
 
 gloo-net = { version = "0.2", features = ["http"] }
 log = "0.4"
 cfg-if = "1.0"
-leptos_actix = "0.0"
 actix-web = "4"
 actix-files = "0.6"
 futures = "0.3"
