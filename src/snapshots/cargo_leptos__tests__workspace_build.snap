@@ -5,7 +5,6 @@ expression: site_dir.ls_ascii(0).unwrap_or_default()
 site:
   project1:
     favicon.ico
-    stuff.txt
     pkg:
       project1.css
       project1.css.map
