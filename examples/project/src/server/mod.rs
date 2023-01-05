@@ -1,32 +1,31 @@
-mod actix_integ;
-
 use crate::app::*;
 use actix_files::Files;
 use actix_web::*;
 use leptos::*;
-use std::net;
-
-fn app(cx: leptos::Scope) -> Element {
-    view! { cx, <App /> }
-}
+use leptos_config::get_configuration;
 
 pub async fn run() -> std::io::Result<()> {
     _ = dotenvy::dotenv();
 
-    let addr: net::SocketAddr = std::env::var("LEPTOS_SITE_ADDR").unwrap().parse().unwrap();
-
-    simple_logger::init_with_level(log::Level::Debug).expect("couldn't initialize logging");
-
-    log::info!("serving at {addr}");
-
-    let site_root = std::env::var("LEPTOS_SITE_ROOT").unwrap();
-    let pkg_dir = std::env::var("LEPTOS_SITE_PKG_DIR").unwrap();
-
+    let conf = get_configuration(Some("Cargo.toml")).await.unwrap();
+    let addr = conf.leptos_options.site_address;
     HttpServer::new(move || {
+        let leptos_options = &conf.leptos_options;
+        let site_root = &leptos_options.site_root;
+        let pkg_dir = &leptos_options.site_pkg_dir;
+        let bundle_path = format!("/{site_root}/{pkg_dir}");
+
         App::new()
-            .service(Files::new(&pkg_dir, format!("{site_root}/{pkg_dir}")))
+            .service(Files::new(&bundle_path, format!("./{bundle_path}"))) // used by cargo-leptos. Can be removed if using wasm-pack and cargo run.
+            .route("/api/{tail:.*}", leptos_actix::handle_server_fns())
+            .route(
+                "/{tail:.*}",
+                leptos_actix::render_app_to_stream(
+                    leptos_options.to_owned(),
+                    |cx| view! { cx, <App/> },
+                ),
+            )
             .wrap(middleware::Compress::default())
-            .route("/{tail:.*}", actix_integ::render_app_to_stream(app))
     })
     .bind(&addr)?
     .run()

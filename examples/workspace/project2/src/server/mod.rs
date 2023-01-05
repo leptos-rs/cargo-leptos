@@ -1,12 +1,10 @@
-mod actix_integ;
-
 use crate::app::*;
 use actix_files::Files;
 use actix_web::*;
 use leptos::*;
 use std::net;
 
-fn app(cx: leptos::Scope) -> Element {
+fn app(cx: leptos::Scope) -> impl IntoView {
     view! { cx, <App /> }
 }
 
@@ -23,12 +21,22 @@ pub async fn run() -> std::io::Result<()> {
     let pkg_dir = std::env::var("LEPTOS_SITE_PKG_DIR").unwrap();
 
     HttpServer::new(move || {
+        let leptos_options = LeptosOptions::builder()
+            .output_name("project2")
+            .site_address(addr.clone())
+            .site_root(&site_root)
+            .site_pkg_dir(&pkg_dir)
+            .build();
+
         App::new()
             .service(Files::new(&pkg_dir, format!("{site_root}/{pkg_dir}")))
             .wrap(middleware::Compress::default())
-            .route("/{tail:.*}", actix_integ::render_app_to_stream(app))
+            .route(
+                "/{tail:.*}",
+                leptos_actix::render_app_to_stream(leptos_options, app),
+            )
     })
-    .bind(&addr)?
+    .bind(addr)?
     .run()
     .await
 }
