@@ -10,7 +10,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 app-package = { path = "../app" }
-leptos = { git = "https://github.com/gbj/leptos", default-features = false, features = [
+leptos = { version = "0.1.0-beta", default-features = false, features = [
   "serde",
   "hydrate",
 ] }

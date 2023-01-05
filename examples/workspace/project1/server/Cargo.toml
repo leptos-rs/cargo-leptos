@@ -7,20 +7,20 @@ edition = "2021"
 
 [dependencies]
 app-package = { path = "../app", default-features = false, features = ["ssr"] }
-leptos = { git = "https://github.com/gbj/leptos", default-features = false, features = [
+leptos = { version = "0.1.0-beta", default-features = false, features = [
   "serde",
   "ssr",
 ] }
-leptos_meta = { git = "https://github.com/gbj/leptos", default-features = false, features = [
+leptos_meta = { version = "0.1.0-beta", default-features = false, features = [
   "ssr",
 ] }
-leptos_router = { git = "https://github.com/gbj/leptos", default-features = false, features = [
+leptos_router = { version = "0.1.0-beta", default-features = false, features = [
   "ssr",
 ] }
-leptos_dom = { git = "https://github.com/gbj/leptos", default-features = false, features = [
+leptos_dom = { version = "0.1.0-beta", default-features = false, features = [
   "ssr",
 ] }
-leptos_actix = { git = "https://github.com/gbj/leptos"}
+leptos_actix = "0.1.0-beta"
 
 gloo-net = { version = "0.2", features = ["http"] }
 log = "0.4"
