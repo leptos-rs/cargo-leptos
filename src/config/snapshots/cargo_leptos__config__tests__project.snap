@@ -67,6 +67,7 @@ Config {
                     dir: "assets",
                 },
             ),
+            ..
         },
     ],
     cli: Opts {
@@ -77,4 +78,5 @@ Config {
         verbose: 0,
     },
     watch: true,
+    ..
 }

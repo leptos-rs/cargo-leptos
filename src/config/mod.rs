@@ -9,27 +9,41 @@ mod lib_package;
 mod project;
 mod style;
 
-use std::sync::Arc;
+use std::{fmt::Debug, sync::Arc};
 
 use crate::{
     ext::anyhow::{Context, Result},
     Opts,
 };
 use anyhow::bail;
-use camino::Utf8Path;
+use camino::{Utf8Path, Utf8PathBuf};
+use cargo_metadata::MetadataCommand;
 pub use project::{Project, ProjectConfig};
 pub use style::StyleConfig;
 
-#[derive(Debug)]
 pub struct Config {
+    /// absolute path to the working dir
+    pub working_dir: Utf8PathBuf,
     pub projects: Vec<Arc<Project>>,
     pub cli: Opts,
     pub watch: bool,
 }
 
+impl Debug for Config {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Config")
+            .field("projects", &self.projects)
+            .field("cli", &self.cli)
+            .field("watch", &self.watch)
+            .finish_non_exhaustive()
+    }
+}
+
 impl Config {
     pub fn load(cli: Opts, cwd: &Utf8Path, manifest_path: &Utf8Path, watch: bool) -> Result<Self> {
-        let mut projects = Project::resolve(&cli, cwd, manifest_path, watch).dot()?;
+        let metadata = MetadataCommand::new().manifest_path(manifest_path).exec()?;
+
+        let mut projects = Project::resolve(&cli, cwd, &metadata, watch).dot()?;
 
         if projects.is_empty() {
             bail!("Please define leptos projects in the workspace Cargo.toml sections [[workspace.metadata.leptos]]")
@@ -47,6 +61,7 @@ impl Config {
         }
 
         Ok(Self {
+            working_dir: metadata.workspace_root.clone(),
             projects,
             cli,
             watch,
@@ -55,8 +70,6 @@ impl Config {
 
     #[cfg(test)]
     pub fn test_load(cli: Opts, cwd: &str, manifest_path: &str, watch: bool) -> Self {
-        use camino::Utf8PathBuf;
-
         let manifest_path = Utf8PathBuf::from(manifest_path)
             .canonicalize_utf8()
             .unwrap();

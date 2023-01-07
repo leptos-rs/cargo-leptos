@@ -62,6 +62,7 @@ Config {
                     dir: "project2/src/assets",
                 },
             ),
+            ..
         },
     ],
     cli: Opts {
@@ -72,4 +73,5 @@ Config {
         verbose: 0,
     },
     watch: true,
+    ..
 }

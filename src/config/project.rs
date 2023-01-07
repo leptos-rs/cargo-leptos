@@ -7,9 +7,9 @@ use crate::{
 };
 use anyhow::ensure;
 use camino::{Utf8Path, Utf8PathBuf};
-use cargo_metadata::{Metadata, MetadataCommand, Package};
+use cargo_metadata::{Metadata, Package};
 use serde::Deserialize;
-use std::{net::SocketAddr, sync::Arc};
+use std::{fmt::Debug, net::SocketAddr, sync::Arc};
 
 use super::{
     assets::AssetsConfig,
@@ -19,8 +19,9 @@ use super::{
     style::StyleConfig,
 };
 
-#[derive(Debug)]
 pub struct Project {
+    /// absolute path to the working dir
+    pub working_dir: Utf8PathBuf,
     pub name: String,
     pub lib: LibPackage,
     pub bin: BinPackage,
@@ -32,15 +33,29 @@ pub struct Project {
     pub assets: Option<AssetsConfig>,
 }
 
+impl Debug for Project {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Project")
+            .field("name", &self.name)
+            .field("lib", &self.lib)
+            .field("bin", &self.bin)
+            .field("style", &self.style)
+            .field("watch", &self.watch)
+            .field("release", &self.release)
+            .field("site", &self.site)
+            .field("end2end", &self.end2end)
+            .field("assets", &self.assets)
+            .finish_non_exhaustive()
+    }
+}
+
 impl Project {
     pub fn resolve(
         cli: &Opts,
         cwd: &Utf8Path,
-        manifest_path: &Utf8Path,
+        metadata: &Metadata,
         watch: bool,
     ) -> Result<Vec<Arc<Project>>> {
-        let metadata = MetadataCommand::new().manifest_path(manifest_path).exec()?;
-
         let projects = ProjectDefinition::parse(&metadata)?;
 
         let mut resolved = Vec::new();
@@ -50,6 +65,7 @@ impl Project {
             }
 
             let proj = Project {
+                working_dir: metadata.workspace_root.clone(),
                 name: project.name.clone(),
                 lib: LibPackage::resolve(cli, &metadata, &project, &config)?,
                 bin: BinPackage::resolve(cli, &metadata, &project, &config)?,
