@@ -12,12 +12,15 @@ mod style;
 use std::{fmt::Debug, sync::Arc};
 
 use crate::{
-    ext::anyhow::{Context, Result},
+    ext::{
+        anyhow::{Context, Result},
+        MetadataExt,
+    },
     Opts,
 };
 use anyhow::bail;
 use camino::{Utf8Path, Utf8PathBuf};
-use cargo_metadata::MetadataCommand;
+use cargo_metadata::Metadata;
 pub use project::{Project, ProjectConfig};
 pub use style::StyleConfig;
 
@@ -41,7 +44,7 @@ impl Debug for Config {
 
 impl Config {
     pub fn load(cli: Opts, cwd: &Utf8Path, manifest_path: &Utf8Path, watch: bool) -> Result<Self> {
-        let metadata = MetadataCommand::new().manifest_path(manifest_path).exec()?;
+        let metadata = Metadata::load_cleaned(manifest_path)?;
 
         let mut projects = Project::resolve(&cli, cwd, &metadata, watch).dot()?;
 
