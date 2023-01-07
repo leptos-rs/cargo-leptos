@@ -23,6 +23,8 @@ pub trait PathBufExt: PathExt {
 
     fn is_ext_any(&self, of: &[&str]) -> bool;
 
+    fn resolve_home_dir(self) -> Result<Utf8PathBuf>;
+
     #[cfg(test)]
     fn ls_ascii(&self, indent: usize) -> Result<String>;
 }
@@ -44,6 +46,16 @@ impl PathExt for Utf8Path {
 }
 
 impl PathBufExt for Utf8PathBuf {
+    fn resolve_home_dir(self) -> Result<Utf8PathBuf> {
+        if self.starts_with("~") {
+            let home = std::env::var("HOME").context("Could not resolve $HOME")?;
+            let home = Utf8PathBuf::from(home);
+            Ok(home.join(self.strip_prefix("~").unwrap()))
+        } else {
+            Ok(self)
+        }
+    }
+
     fn without_last(mut self) -> Utf8PathBuf {
         self.pop();
         self

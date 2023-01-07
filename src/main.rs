@@ -10,6 +10,7 @@ pub mod service;
 pub mod signal;
 
 use crate::ext::anyhow::{Context, Result};
+use crate::ext::PathBufExt;
 use crate::logger::GRAY;
 use camino::Utf8PathBuf;
 use clap::{Parser, Subcommand, ValueEnum};
@@ -123,7 +124,9 @@ pub async fn run(args: Cli) -> Result<()> {
     let manifest_path = args
         .manifest_path
         .to_owned()
-        .unwrap_or_else(|| Utf8PathBuf::from("Cargo.toml"));
+        .unwrap_or_else(|| Utf8PathBuf::from("Cargo.toml"))
+        .resolve_home_dir()
+        .context(format!("manifest_path: {:?}", &args.manifest_path))?;
     let cwd = Utf8PathBuf::from_path_buf(std::env::current_dir().unwrap()).unwrap();
     let opts = args.opts().unwrap();
 
