@@ -135,6 +135,8 @@ pub async fn run(args: Cli) -> Result<()> {
         WORKING_DIR.set(path.clone()).unwrap();
     };
 
+    let cwd = Utf8PathBuf::from_path_buf(std::env::current_dir().unwrap()).unwrap();
+
     let opts = args.opts().unwrap();
 
     log::trace!(
@@ -142,7 +144,7 @@ pub async fn run(args: Cli) -> Result<()> {
         GRAY.paint(WORKING_DIR.get().unwrap().as_str())
     );
     let watch = matches!(args.command, Commands::Watch(_));
-    let config = Config::load(opts.clone(), &Utf8PathBuf::from("Cargo.toml"), watch).dot()?;
+    let config = Config::load(opts.clone(), &cwd, &Utf8PathBuf::from("Cargo.toml"), watch).dot()?;
 
     let _monitor = Interrupt::run_ctrl_c_monitor();
     use Commands::{Build, EndToEnd, New, Serve, Test, Watch};

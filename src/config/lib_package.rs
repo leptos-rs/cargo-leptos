@@ -13,7 +13,8 @@ use super::{project::ProjectDefinition, ProjectConfig};
 
 pub struct LibPackage {
     pub name: String,
-    pub dir: Utf8PathBuf,
+    /// absolute dir to package
+    pub abs_dir: Utf8PathBuf,
     pub wasm_file: SourcedSiteFile,
     pub js_file: SiteFile,
     pub features: Vec<String>,
@@ -50,8 +51,8 @@ impl LibPackage {
             vec![]
         };
 
-        let root = metadata.workspace_root.clone();
-        let dir = package.manifest_path.clone().without_last().unbase(&root)?;
+        let abs_dir = package.manifest_path.clone().without_last();
+        let rel_dir = abs_dir.unbase(&metadata.workspace_root)?;
         let profile = cli.profile();
 
         let wasm_file = {
@@ -77,10 +78,10 @@ impl LibPackage {
         };
 
         let mut src_deps = metadata.src_path_dependencies(&package.id);
-        src_deps.push(dir.join("src"));
+        src_deps.push(rel_dir.join("src"));
         Ok(Self {
             name,
-            dir,
+            abs_dir,
             wasm_file,
             js_file,
             features,
@@ -95,7 +96,6 @@ impl std::fmt::Debug for LibPackage {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("LibPackage")
             .field("name", &self.name)
-            .field("dir", &self.dir.test_string())
             .field("wasm_file", &self.wasm_file)
             .field("js_file", &self.js_file)
             .field("features", &self.features)
@@ -110,6 +110,6 @@ impl std::fmt::Debug for LibPackage {
                     .collect::<Vec<_>>()
                     .join(", "),
             )
-            .finish()
+            .finish_non_exhaustive()
     }
 }

@@ -5,43 +5,43 @@ expression: conf
 Config {
     projects: [
         Project {
-            name: "example",
+            name: "project2",
             lib: LibPackage {
-                name: "example",
+                name: "project2",
                 wasm_file: SourcedSiteFile {
-                    source: "target/front/wasm32-unknown-unknown/debug/example.wasm",
-                    dest: "target/site/pkg/example.wasm",
-                    site: "pkg/example.wasm",
+                    source: "target/front/wasm32-unknown-unknown/debug/project2.wasm",
+                    dest: "target/site/project2/pkg/project2.wasm",
+                    site: "pkg/project2.wasm",
                 },
                 js_file: SiteFile {
-                    dest: "target/site/pkg/example.js",
-                    site: "pkg/example.js",
+                    dest: "target/site/project2/pkg/project2.js",
+                    site: "pkg/project2.js",
                 },
                 features: [
                     "hydrate",
                 ],
                 default_features: false,
-                output_name: "example",
-                path_deps: "src",
+                output_name: "project2",
+                path_deps: "project2/src",
                 ..
             },
             bin: BinPackage {
-                name: "example",
-                exe_file: "target/server/debug/example",
-                target: "example",
+                name: "project2",
+                exe_file: "target/server/debug/project2",
+                target: "project2",
                 features: [
                     "ssr",
                 ],
                 default_features: false,
-                path_deps: "src",
+                path_deps: "project2/src",
                 ..
             },
             style: Some(
                 StyleConfig {
                     file: SourcedSiteFile {
-                        source: "style/main.scss",
-                        dest: "target/site/pkg/example.css",
-                        site: "pkg/example.css",
+                        source: "project2/src/main.scss",
+                        dest: "target/site/project2/pkg/project2.css",
+                        site: "pkg/project2.css",
                     },
                     browserquery: "defaults",
                 },
@@ -51,20 +51,15 @@ Config {
             site: Site {
                 addr: 127.0.0.1:3000,
                 reload: 127.0.0.1:3001,
-                root_dir: "target/site",
+                root_dir: "target/site/project2",
                 pkg_dir: "pkg",
                 file_reg: {},
                 ext_file_reg: {},
             },
-            end2end: Some(
-                 {
-                    cmd: "npx playwright test",
-                    dir: "end2end",
-                },
-            ),
+            end2end: None,
             assets: Some(
                 AssetsConfig {
-                    dir: "assets",
+                    dir: "project2/src/assets",
                 },
             ),
         },

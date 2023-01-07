@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::{collections::HashSet};
 
 use camino::{Utf8PathBuf};
 use cargo_metadata::{Metadata, Package, PackageId, Resolve, Target};

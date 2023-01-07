@@ -8,7 +8,6 @@ Config {
             name: "project2",
             lib: LibPackage {
                 name: "project2",
-                dir: "project2",
                 wasm_file: SourcedSiteFile {
                     source: "target/front/wasm32-unknown-unknown/debug/project2.wasm",
                     dest: "target/site/project2/pkg/project2.wasm",
@@ -24,10 +23,10 @@ Config {
                 default_features: false,
                 output_name: "project2",
                 path_deps: "project2/src",
+                ..
             },
             bin: BinPackage {
                 name: "project2",
-                dir: "project2",
                 exe_file: "target/server/debug/project2",
                 target: "project2",
                 features: [
@@ -35,6 +34,7 @@ Config {
                 ],
                 default_features: false,
                 path_deps: "project2/src",
+                ..
             },
             style: Some(
                 StyleConfig {

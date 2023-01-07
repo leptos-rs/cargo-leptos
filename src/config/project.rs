@@ -33,7 +33,12 @@ pub struct Project {
 }
 
 impl Project {
-    pub fn resolve(cli: &Opts, manifest_path: &Utf8Path, watch: bool) -> Result<Vec<Arc<Project>>> {
+    pub fn resolve(
+        cli: &Opts,
+        cwd: &Utf8Path,
+        manifest_path: &Utf8Path,
+        watch: bool,
+    ) -> Result<Vec<Arc<Project>>> {
         let metadata = MetadataCommand::new().manifest_path(manifest_path).exec()?;
 
         let projects = ProjectDefinition::parse(&metadata)?;
@@ -57,7 +62,17 @@ impl Project {
             };
             resolved.push(Arc::new(proj));
         }
-        Ok(resolved)
+
+        let projects_in_cwd = resolved
+            .iter()
+            .filter(|p| p.bin.abs_dir.starts_with(&cwd) || p.lib.abs_dir.starts_with(&cwd))
+            .collect::<Vec<_>>();
+
+        if projects_in_cwd.len() == 1 {
+            Ok(vec![projects_in_cwd[0].clone()])
+        } else {
+            Ok(resolved)
+        }
     }
 
     /// env vars to use when running external command
