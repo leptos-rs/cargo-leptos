@@ -8,6 +8,7 @@ Config {
             name: "project2",
             lib: LibPackage {
                 name: "project2",
+                rel_dir: "project2",
                 wasm_file: SourcedSiteFile {
                     source: "target/front/wasm32-unknown-unknown/debug/project2.wasm",
                     dest: "target/site/project2/pkg/project2.wasm",
@@ -27,6 +28,7 @@ Config {
             },
             bin: BinPackage {
                 name: "project2",
+                rel_dir: "project2",
                 exe_file: "target/server/debug/project2",
                 target: "project2",
                 features: [

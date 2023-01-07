@@ -15,6 +15,7 @@ pub struct LibPackage {
     pub name: String,
     /// absolute dir to package
     pub abs_dir: Utf8PathBuf,
+    pub rel_dir: Utf8PathBuf,
     pub wasm_file: SourcedSiteFile,
     pub js_file: SiteFile,
     pub features: Vec<String>,
@@ -82,6 +83,7 @@ impl LibPackage {
         Ok(Self {
             name,
             abs_dir,
+            rel_dir,
             wasm_file,
             js_file,
             features,
@@ -96,6 +98,7 @@ impl std::fmt::Debug for LibPackage {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("LibPackage")
             .field("name", &self.name)
+            .field("rel_dir", &self.rel_dir)
             .field("wasm_file", &self.wasm_file)
             .field("js_file", &self.js_file)
             .field("features", &self.features)

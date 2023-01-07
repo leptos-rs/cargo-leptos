@@ -38,6 +38,8 @@ fn test_project_dev() {
     LEPTOS_SITE_PKG_DIR=pkg \
     LEPTOS_SITE_ADDR=127.0.0.1:3000 \
     LEPTOS_RELOAD_PORT=3001 \
+    LEPTOS_LIB_DIR=. \
+    LEPTOS_BIN_DIR=. \
     LEPTOS_WATCH=ON",
         envs
     );
@@ -68,16 +70,30 @@ fn test_project_release() {
 
 #[test]
 fn test_workspace_project1() {
+    const ENV_REF: &str = "\
+    OUTPUT_NAME=project1 \
+    LEPTOS_SITE_ROOT=target/site/project1 \
+    LEPTOS_SITE_PKG_DIR=pkg \
+    LEPTOS_SITE_ADDR=127.0.0.1:3000 \
+    LEPTOS_RELOAD_PORT=3001 \
+    LEPTOS_LIB_DIR=project1/front \
+    LEPTOS_BIN_DIR=project1/server \
+    LEPTOS_WATCH=ON";
+
     let cli = dev_opts();
     let conf = Config::test_load(cli, "examples", "examples/workspace/Cargo.toml", true);
 
     let mut command = Command::new("cargo");
-    let (_, cargo) = build_cargo_server_cmd("build", &conf.projects[0], &mut command);
+    let (envs, cargo) = build_cargo_server_cmd("build", &conf.projects[0], &mut command);
+
+    assert_eq!(ENV_REF, envs);
 
     assert_display_snapshot!(cargo, @"cargo build --package=server-package --bin=server-package --target-dir=target/server --no-default-features --features=ssr");
 
     let mut command = Command::new("cargo");
-    let (_, cargo) = build_cargo_front_cmd("build", true, &conf.projects[0], &mut command);
+    let (envs, cargo) = build_cargo_front_cmd("build", true, &conf.projects[0], &mut command);
+
+    assert_eq!(ENV_REF, envs);
 
     assert_display_snapshot!(cargo, @"cargo build --package=front-package --lib --target-dir=target/front --target=wasm32-unknown-unknown --no-default-features --features=hydrate");
 }

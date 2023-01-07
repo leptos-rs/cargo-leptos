@@ -99,8 +99,8 @@ impl Project {
             ("LEPTOS_SITE_PKG_DIR", self.site.pkg_dir.to_string()),
             ("LEPTOS_SITE_ADDR", self.site.addr.to_string()),
             ("LEPTOS_RELOAD_PORT", self.site.reload.port().to_string()),
-            ("LEPTOS_LIB_DIR", self.lib.abs_dir.to_string()),
-            ("LEPTOS_BIN_DIR", self.bin.abs_dir.to_string()),
+            ("LEPTOS_LIB_DIR", self.lib.rel_dir.to_string()),
+            ("LEPTOS_BIN_DIR", self.bin.rel_dir.to_string()),
         ];
         if self.watch {
             vec.push(("LEPTOS_WATCH", "ON".to_string()))

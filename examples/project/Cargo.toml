@@ -108,3 +108,4 @@ lib-features = ["hydrate"]
 #
 # Optional. Defaults to false.
 lib-default-features = false
+env = "dev"

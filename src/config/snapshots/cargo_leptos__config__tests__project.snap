@@ -8,6 +8,7 @@ Config {
             name: "example",
             lib: LibPackage {
                 name: "example",
+                rel_dir: ".",
                 wasm_file: SourcedSiteFile {
                     source: "target/front/wasm32-unknown-unknown/debug/example.wasm",
                     dest: "target/site/pkg/example.wasm",
@@ -22,18 +23,19 @@ Config {
                 ],
                 default_features: false,
                 output_name: "example",
-                path_deps: "src",
+                path_deps: "./src",
                 ..
             },
             bin: BinPackage {
                 name: "example",
+                rel_dir: ".",
                 exe_file: "target/server/debug/example",
                 target: "example",
                 features: [
                     "ssr",
                 ],
                 default_features: false,
-                path_deps: "src",
+                path_deps: "./src",
                 ..
             },
             style: Some(

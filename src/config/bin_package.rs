@@ -14,6 +14,7 @@ use super::{project::ProjectDefinition, ProjectConfig};
 pub struct BinPackage {
     pub name: String,
     pub abs_dir: Utf8PathBuf,
+    pub rel_dir: Utf8PathBuf,
     pub exe_file: Utf8PathBuf,
     pub target: String,
     pub features: Vec<String>,
@@ -88,6 +89,7 @@ impl BinPackage {
         Ok(Self {
             name,
             abs_dir,
+            rel_dir,
             exe_file,
             target: target.name.to_string(),
             features,
@@ -101,6 +103,7 @@ impl std::fmt::Debug for BinPackage {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("BinPackage")
             .field("name", &self.name)
+            .field("rel_dir", &self.rel_dir)
             .field("exe_file", &self.exe_file.test_string())
             .field("target", &self.target)
             .field("features", &self.features)

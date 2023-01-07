@@ -15,7 +15,7 @@ Build tool for [Leptos](https://crates.io/crates/leptos):
 - [Parameters reference](#parameters-reference)
   - [Compilation parameters](#compilation-parameters)
   - [Site parameters](#site-parameters)
-  - [Environment Variables](#environment-variables)
+  - [Environment variables](#environment-variables)
 
 <br/>
 
@@ -194,7 +194,7 @@ end2end-dir = "integration"
 
 <br/>
 
-## Environment Variables
+## Environment variables
 
 The following environment variables are set when compiling the lib (front) or bin (server) and when the server is run.
 
@@ -208,7 +208,11 @@ Echoed from the Leptos config:
 
 Directories used when building:
 
-- LEPTOS_LIB_DIR: The absolute path to the library package
-- LEPTOS_BIN_DIR: The absolute path to the binary package
+- LEPTOS_LIB_DIR: The path (relative to the working directory) to the library package
+- LEPTOS_BIN_DIR: The path (relative to the working directory) to the binary package
 
-Note that the two are set to the same value when running in a single-package config.
+Note when using directories:
+
+- `cargo-leptos` changes the working directory to the project root or if in a workspace, the workspace root before building and running.
+- the two are set to the same value when running in a single-package config.
+- Avoid using them at run-time unless you can guarantee that the entire project struct is available at runtime as well.

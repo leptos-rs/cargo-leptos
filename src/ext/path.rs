@@ -39,9 +39,15 @@ impl PathExt for Utf8Path {
     }
 
     fn unbase(&self, base: &Utf8Path) -> Result<Utf8PathBuf> {
-        self.strip_prefix(base)
+        let path = self
+            .strip_prefix(base)
             .map(|p| p.to_path_buf())
-            .map_err(|_| anyhow!("Could not remove base {base:?} from {self:?}"))
+            .map_err(|_| anyhow!("Could not remove base {base:?} from {self:?}"))?;
+        if path == "" {
+            Ok(Utf8PathBuf::from("."))
+        } else {
+            Ok(path)
+        }
     }
 }
 
