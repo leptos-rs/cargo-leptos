@@ -3,7 +3,7 @@ use std::{collections::HashSet};
 use camino::{Utf8PathBuf, Utf8Path};
 use cargo_metadata::{Metadata, Package, PackageId, Resolve, Target, MetadataCommand};
 use super::anyhow::Result;
-use super::PathExt;
+use super::{PathExt, PathBufExt};
 
 pub trait PackageExt {
     fn has_bin_target(&self) -> bool;
@@ -58,9 +58,13 @@ impl MetadataExt for Metadata {
 
     fn load_cleaned(manifest_path: &Utf8Path) -> Result<Metadata> {
         let mut metadata = MetadataCommand::new().manifest_path(manifest_path).exec()?;
-        if cfg!(windows) {
-            let cleaned = dunce::simplified(metadata.workspace_root.as_ref());
-            metadata.workspace_root = Utf8PathBuf::from_path_buf(cleaned.to_path_buf()).unwrap();    
+        metadata.workspace_root.clean_windows_path();
+        metadata.target_directory.clean_windows_path();
+        for package in &mut metadata.packages {
+            package.manifest_path.clean_windows_path();
+            for dependency in &mut package.dependencies {
+                dependency.path.as_mut().map(|p| p.clean_windows_path());
+            }
         }
         Ok(metadata)
     }
