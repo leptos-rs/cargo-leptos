@@ -81,13 +81,7 @@ impl Project {
 
         let projects_in_cwd = resolved
             .iter()
-            .filter(|p| {
-                println!(
-                    "bin: {}, lib: {}, cwd: {}",
-                    p.bin.abs_dir, p.lib.abs_dir, cwd
-                );
-                p.bin.abs_dir.starts_with(&cwd) || p.lib.abs_dir.starts_with(&cwd)
-            })
+            .filter(|p| p.bin.abs_dir.starts_with(&cwd) || p.lib.abs_dir.starts_with(&cwd))
             .collect::<Vec<_>>();
 
         if projects_in_cwd.len() == 1 {

@@ -129,7 +129,7 @@ pub async fn run(args: Cli) -> Result<()> {
         .context(format!("manifest_path: {:?}", &args.manifest_path))?;
     let mut cwd = Utf8PathBuf::from_path_buf(std::env::current_dir().unwrap()).unwrap();
     cwd.clean_windows_path();
-    println!("Path cwd {cwd:?}");
+
     let opts = args.opts().unwrap();
 
     let watch = matches!(args.command, Commands::Watch(_));

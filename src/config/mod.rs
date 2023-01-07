@@ -73,10 +73,13 @@ impl Config {
 
     #[cfg(test)]
     pub fn test_load(cli: Opts, cwd: &str, manifest_path: &str, watch: bool) -> Self {
+        use crate::ext::PathBufExt;
+
         let manifest_path = Utf8PathBuf::from(manifest_path)
             .canonicalize_utf8()
             .unwrap();
-        let cwd = Utf8PathBuf::from(cwd).canonicalize_utf8().unwrap();
+        let mut cwd = Utf8PathBuf::from(cwd).canonicalize_utf8().unwrap();
+        cwd.clean_windows_path();
         Self::load(cli, &cwd, &manifest_path, watch).unwrap()
     }
 
