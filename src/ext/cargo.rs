@@ -82,7 +82,10 @@ impl MetadataExt for Metadata {
 
     fn src_path_dependencies(&self, id: &PackageId) -> Vec<Utf8PathBuf> {
         let root = &self.workspace_root;
-        self.path_dependencies(id).iter().map(|p| p.unbase(root).unwrap_or_else(|_| p.to_path_buf()).join("src")).collect()
+        self.path_dependencies(id).iter().map(|p| p.unbase(root).unwrap_or_else(|_| {
+            println!("Warning: could not unbase path dependency {:?} from workspace root {:?}",
+                &p, &root);
+            p.to_path_buf()}).join("src")).collect()
     }
 }
 
