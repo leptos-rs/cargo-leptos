@@ -23,7 +23,7 @@ Config {
                 ],
                 default_features: false,
                 output_name: "project2",
-                path_deps: "project2/src",
+                src_paths: "project2/src",
                 ..
             },
             bin: BinPackage {
@@ -35,7 +35,7 @@ Config {
                     "ssr",
                 ],
                 default_features: false,
-                path_deps: "project2/src",
+                src_paths: "project2/src",
                 ..
             },
             style: Some(

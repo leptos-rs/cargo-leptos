@@ -98,14 +98,14 @@ impl std::fmt::Debug for LibPackage {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("LibPackage")
             .field("name", &self.name)
-            .field("rel_dir", &self.rel_dir)
+            .field("rel_dir", &self.rel_dir.test_string())
             .field("wasm_file", &self.wasm_file)
             .field("js_file", &self.js_file)
             .field("features", &self.features)
             .field("default_features", &self.default_features)
             .field("output_name", &self.output_name)
             .field(
-                "path_deps",
+                "src_paths",
                 &self
                     .src_paths
                     .iter()

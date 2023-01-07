@@ -103,13 +103,13 @@ impl std::fmt::Debug for BinPackage {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("BinPackage")
             .field("name", &self.name)
-            .field("rel_dir", &self.rel_dir)
+            .field("rel_dir", &self.rel_dir.test_string())
             .field("exe_file", &self.exe_file.test_string())
             .field("target", &self.target)
             .field("features", &self.features)
             .field("default_features", &self.default_features)
             .field(
-                "path_deps",
+                "src_paths",
                 &self
                     .src_paths
                     .iter()
