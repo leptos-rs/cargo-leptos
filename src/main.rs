@@ -127,7 +127,9 @@ pub async fn run(args: Cli) -> Result<()> {
         .unwrap_or_else(|| Utf8PathBuf::from("Cargo.toml"))
         .resolve_home_dir()
         .context(format!("manifest_path: {:?}", &args.manifest_path))?;
-    let cwd = Utf8PathBuf::from_path_buf(std::env::current_dir().unwrap()).unwrap();
+    let mut cwd = Utf8PathBuf::from_path_buf(std::env::current_dir().unwrap()).unwrap();
+    cwd.clean_windows_path();
+
     let opts = args.opts().unwrap();
 
     let watch = matches!(args.command, Commands::Watch(_));
