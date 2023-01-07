@@ -59,6 +59,7 @@ impl PathBufExt for Utf8PathBuf {
         if cfg!(windows) {
             let cleaned = dunce::simplified(self.as_ref());
             *self = Utf8PathBuf::from_path_buf(cleaned.to_path_buf()).unwrap();
+            println!("cleaned: {:?}", self);
         }
     }
 
