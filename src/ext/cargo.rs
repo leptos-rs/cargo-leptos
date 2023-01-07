@@ -1,8 +1,8 @@
 use std::{collections::HashSet};
 
-use camino::{Utf8PathBuf};
-use cargo_metadata::{Metadata, Package, PackageId, Resolve, Target};
-
+use camino::{Utf8PathBuf, Utf8Path};
+use cargo_metadata::{Metadata, Package, PackageId, Resolve, Target, MetadataCommand};
+use super::anyhow::Result;
 use super::PathExt;
 
 pub trait PackageExt {
@@ -47,6 +47,7 @@ impl PackageExt for Package {
 }
 
 pub trait MetadataExt {
+    fn load_cleaned(manifest_path: &Utf8Path) -> Result<Metadata>;
     fn rel_target_dir(&self) -> Utf8PathBuf;
     fn package_for(&self, id: &PackageId) -> Option<&Package>;
     fn path_dependencies(&self, id: &PackageId) -> Vec<Utf8PathBuf>;
@@ -54,6 +55,16 @@ pub trait MetadataExt {
 }
 
 impl MetadataExt for Metadata {
+
+    fn load_cleaned(manifest_path: &Utf8Path) -> Result<Metadata> {
+        let mut metadata = MetadataCommand::new().manifest_path(manifest_path).exec()?;
+        if cfg!(windows) {
+            let cleaned = dunce::simplified(metadata.workspace_root.as_ref());
+            metadata.workspace_root = Utf8PathBuf::from_path_buf(cleaned.to_path_buf()).unwrap();    
+        }
+        Ok(metadata)
+    }
+
     fn rel_target_dir(&self) -> Utf8PathBuf {
         self.target_directory.clone().unbase(&self.workspace_root).unwrap()
     }

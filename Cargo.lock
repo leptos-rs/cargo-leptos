@@ -256,6 +256,7 @@ dependencies = [
  "derive_more",
  "dirs",
  "dotenvy",
+ "dunce",
  "envy",
  "flate2",
  "flexi_logger",
@@ -745,6 +746,12 @@ checksum = "bde03329ae10e79ede66c9ce4dc930aa8599043b0743008548680f25b91502d6"
 dependencies = [
  "dtoa",
 ]
+
+[[package]]
+name = "dunce"
+version = "1.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0bd4b30a6560bbd9b4620f4de34c3f14f60848e58a9b7216801afcb4c7b31c3c"
 
 [[package]]
 name = "either"
