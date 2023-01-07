@@ -10,20 +10,15 @@ pub mod service;
 pub mod signal;
 
 use crate::ext::anyhow::{Context, Result};
+use crate::ext::PathBufExt;
 use crate::logger::GRAY;
 use camino::Utf8PathBuf;
 use clap::{Parser, Subcommand, ValueEnum};
 use command::NewCommand;
 use config::Config;
 use ext::fs;
-use ext::PathBufExt;
-use once_cell::sync::OnceCell;
 use signal::Interrupt;
 use std::env;
-
-lazy_static::lazy_static! {
-    pub static ref WORKING_DIR: OnceCell<Utf8PathBuf> = OnceCell::new();
-}
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 pub enum Log {
@@ -126,23 +121,24 @@ pub async fn run(args: Cli) -> Result<()> {
         return new.run().await;
     }
 
-    if let Some(path) = &args.manifest_path {
-        let path = Utf8PathBuf::from(path).without_last();
-        std::env::set_current_dir(&path).dot()?;
-        WORKING_DIR.set(path.clone()).unwrap();
-    } else {
-        let path = Utf8PathBuf::from_path_buf(std::env::current_dir().unwrap()).unwrap();
-        WORKING_DIR.set(path.clone()).unwrap();
-    };
+    let manifest_path = args
+        .manifest_path
+        .to_owned()
+        .unwrap_or_else(|| Utf8PathBuf::from("Cargo.toml"))
+        .resolve_home_dir()
+        .context(format!("manifest_path: {:?}", &args.manifest_path))?;
+    let mut cwd = Utf8PathBuf::from_path_buf(std::env::current_dir().unwrap()).unwrap();
+    cwd.clean_windows_path();
 
     let opts = args.opts().unwrap();
 
-    log::trace!(
-        "Path working dir {}",
-        GRAY.paint(WORKING_DIR.get().unwrap().as_str())
-    );
     let watch = matches!(args.command, Commands::Watch(_));
-    let config = Config::load(opts.clone(), &Utf8PathBuf::from("Cargo.toml"), watch).dot()?;
+    let config = Config::load(opts, &cwd, &manifest_path, watch).dot()?;
+    env::set_current_dir(&config.working_dir).dot()?;
+    log::debug!(
+        "Path working dir {}",
+        GRAY.paint(config.working_dir.as_str())
+    );
 
     let _monitor = Interrupt::run_ctrl_c_monitor();
     use Commands::{Build, EndToEnd, New, Serve, Test, Watch};

@@ -1,9 +1,9 @@
-use std::collections::HashSet;
+use std::{collections::HashSet};
 
-use camino::{Utf8PathBuf};
-use cargo_metadata::{Metadata, Package, PackageId, Resolve, Target};
-
-use super::PathExt;
+use camino::{Utf8PathBuf, Utf8Path};
+use cargo_metadata::{Metadata, Package, PackageId, Resolve, Target, MetadataCommand};
+use super::anyhow::Result;
+use super::{PathExt, PathBufExt};
 
 pub trait PackageExt {
     fn has_bin_target(&self) -> bool;
@@ -47,6 +47,7 @@ impl PackageExt for Package {
 }
 
 pub trait MetadataExt {
+    fn load_cleaned(manifest_path: &Utf8Path) -> Result<Metadata>;
     fn rel_target_dir(&self) -> Utf8PathBuf;
     fn package_for(&self, id: &PackageId) -> Option<&Package>;
     fn path_dependencies(&self, id: &PackageId) -> Vec<Utf8PathBuf>;
@@ -54,6 +55,20 @@ pub trait MetadataExt {
 }
 
 impl MetadataExt for Metadata {
+
+    fn load_cleaned(manifest_path: &Utf8Path) -> Result<Metadata> {
+        let mut metadata = MetadataCommand::new().manifest_path(manifest_path).exec()?;
+        metadata.workspace_root.clean_windows_path();
+        metadata.target_directory.clean_windows_path();
+        for package in &mut metadata.packages {
+            package.manifest_path.clean_windows_path();
+            for dependency in &mut package.dependencies {
+                dependency.path.as_mut().map(|p| p.clean_windows_path());
+            }
+        }
+        Ok(metadata)
+    }
+
     fn rel_target_dir(&self) -> Utf8PathBuf {
         self.target_directory.clone().unbase(&self.workspace_root).unwrap()
     }
@@ -82,7 +97,8 @@ impl MetadataExt for Metadata {
 
     fn src_path_dependencies(&self, id: &PackageId) -> Vec<Utf8PathBuf> {
         let root = &self.workspace_root;
-        self.path_dependencies(id).iter().map(|p| p.unbase(root).unwrap_or_else(|_| p.to_path_buf()).join("src")).collect()
+        self.path_dependencies(id).iter().map(|p| p.unbase(root).unwrap_or_else(|_| 
+            p.to_path_buf()).join("src")).collect()
     }
 }
 

@@ -2,7 +2,6 @@ use crate::compile::Change;
 use crate::config::Project;
 use crate::ext::anyhow::{anyhow, Result};
 use crate::signal::Interrupt;
-use crate::WORKING_DIR;
 use crate::{
     ext::{remove_nested, PathBufExt, PathExt},
     logger::GRAY,
@@ -47,7 +46,7 @@ async fn run(paths: &[Utf8PathBuf], proj: Arc<Project>) {
     let proj = proj.clone();
     std::thread::spawn(move || {
         while let Ok(event) = sync_rx.recv() {
-            match Watched::try_new(&event) {
+            match Watched::try_new(&event, &proj) {
                 Ok(Some(watched)) => handle(watched, proj.clone()),
                 Err(e) => log::error!("Notify error {e}"),
                 _ => log::trace!("Notify not handled {}", GRAY.paint(format!("{:?}", event))),
@@ -133,24 +132,24 @@ pub enum Watched {
     Rescan,
 }
 
-fn convert(p: &Path) -> Result<Utf8PathBuf> {
+fn convert(p: &Path, proj: &Project) -> Result<Utf8PathBuf> {
     let p = Utf8PathBuf::from_path_buf(p.to_path_buf())
         .map_err(|e| anyhow!("Could not convert to a Utf8PathBuf: {e:?}"))?;
-    p.unbase(WORKING_DIR.get().unwrap())
+    p.unbase(&proj.working_dir)
 }
 
 impl Watched {
-    fn try_new(event: &DebouncedEvent) -> Result<Option<Self>> {
+    fn try_new(event: &DebouncedEvent, proj: &Project) -> Result<Option<Self>> {
         use DebouncedEvent::{
             Chmod, Create, Error, NoticeRemove, NoticeWrite, Remove, Rename, Rescan, Write,
         };
 
         Ok(match event {
             Chmod(_) | NoticeRemove(_) | NoticeWrite(_) => None,
-            Create(f) => Some(Self::Create(convert(f)?)),
-            Remove(f) => Some(Self::Remove(convert(f)?)),
-            Rename(f, t) => Some(Self::Rename(convert(f)?, convert(t)?)),
-            Write(f) => Some(Self::Write(convert(f)?)),
+            Create(f) => Some(Self::Create(convert(f, proj)?)),
+            Remove(f) => Some(Self::Remove(convert(f, proj)?)),
+            Rename(f, t) => Some(Self::Rename(convert(f, proj)?, convert(t, proj)?)),
+            Write(f) => Some(Self::Write(convert(f, proj)?)),
             Rescan => Some(Self::Rescan),
             Error(e, Some(p)) => {
                 log::error!("Notify error watching {p:?}: {e:?}");

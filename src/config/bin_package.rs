@@ -13,7 +13,8 @@ use super::{project::ProjectDefinition, ProjectConfig};
 
 pub struct BinPackage {
     pub name: String,
-    pub dir: Utf8PathBuf,
+    pub abs_dir: Utf8PathBuf,
+    pub rel_dir: Utf8PathBuf,
     pub exe_file: Utf8PathBuf,
     pub target: String,
     pub features: Vec<String>,
@@ -66,8 +67,8 @@ impl BinPackage {
             return Err(many_targets_found(&name));
         };
 
-        let root = metadata.workspace_root.clone();
-        let dir = package.manifest_path.clone().without_last().unbase(&root)?;
+        let abs_dir = package.manifest_path.clone().without_last();
+        let rel_dir = abs_dir.unbase(&metadata.workspace_root)?;
         let profile = cli.profile();
         let exe_file = {
             let file_ext = if cfg!(target_os = "windows") {
@@ -84,10 +85,11 @@ impl BinPackage {
         };
 
         let mut src_paths = metadata.src_path_dependencies(&package.id);
-        src_paths.push(dir.join("src"));
+        src_paths.push(rel_dir.join("src"));
         Ok(Self {
             name,
-            dir,
+            abs_dir,
+            rel_dir,
             exe_file,
             target: target.name.to_string(),
             features,
@@ -101,13 +103,13 @@ impl std::fmt::Debug for BinPackage {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("BinPackage")
             .field("name", &self.name)
-            .field("dir", &self.dir.test_string())
+            .field("rel_dir", &self.rel_dir.test_string())
             .field("exe_file", &self.exe_file.test_string())
             .field("target", &self.target)
             .field("features", &self.features)
             .field("default_features", &self.default_features)
             .field(
-                "path_deps",
+                "src_paths",
                 &self
                     .src_paths
                     .iter()
@@ -115,7 +117,7 @@ impl std::fmt::Debug for BinPackage {
                     .collect::<Vec<_>>()
                     .join(", "),
             )
-            .finish()
+            .finish_non_exhaustive()
     }
 }
 

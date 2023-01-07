@@ -49,6 +49,7 @@ envy = "0.4"
 flate2 = "1.0"
 zip = { version = "0.6", default-features = false, features = ["deflate"] }
 tar = "0.4"
+dunce = "1.0"
 
 [dev-dependencies]
 insta = { version = "1.23", features = ["yaml"] }

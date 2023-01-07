@@ -9,27 +9,44 @@ mod lib_package;
 mod project;
 mod style;
 
-use std::sync::Arc;
+use std::{fmt::Debug, sync::Arc};
 
 use crate::{
-    ext::anyhow::{Context, Result},
+    ext::{
+        anyhow::{Context, Result},
+        MetadataExt,
+    },
     Opts,
 };
 use anyhow::bail;
-use camino::Utf8Path;
+use camino::{Utf8Path, Utf8PathBuf};
+use cargo_metadata::Metadata;
 pub use project::{Project, ProjectConfig};
 pub use style::StyleConfig;
 
-#[derive(Debug)]
 pub struct Config {
+    /// absolute path to the working dir
+    pub working_dir: Utf8PathBuf,
     pub projects: Vec<Arc<Project>>,
     pub cli: Opts,
     pub watch: bool,
 }
 
+impl Debug for Config {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Config")
+            .field("projects", &self.projects)
+            .field("cli", &self.cli)
+            .field("watch", &self.watch)
+            .finish_non_exhaustive()
+    }
+}
+
 impl Config {
-    pub fn load(cli: Opts, manifest_path: &Utf8Path, watch: bool) -> Result<Self> {
-        let mut projects = Project::resolve(&cli, manifest_path, watch).dot()?;
+    pub fn load(cli: Opts, cwd: &Utf8Path, manifest_path: &Utf8Path, watch: bool) -> Result<Self> {
+        let metadata = Metadata::load_cleaned(manifest_path)?;
+
+        let mut projects = Project::resolve(&cli, cwd, &metadata, watch).dot()?;
 
         if projects.is_empty() {
             bail!("Please define leptos projects in the workspace Cargo.toml sections [[workspace.metadata.leptos]]")
@@ -47,25 +64,28 @@ impl Config {
         }
 
         Ok(Self {
+            working_dir: metadata.workspace_root.clone(),
             projects,
             cli,
             watch,
         })
     }
 
-    fn cwd_project(&self) -> Result<Option<Arc<Project>>> {
-        let cwd = std::env::current_dir()?;
-        Ok(self
-            .projects
-            .iter()
-            .find(|p| p.bin.dir == cwd || p.lib.dir == cwd)
-            .map(|p| p.clone()))
+    #[cfg(test)]
+    pub fn test_load(cli: Opts, cwd: &str, manifest_path: &str, watch: bool) -> Self {
+        use crate::ext::PathBufExt;
+
+        let manifest_path = Utf8PathBuf::from(manifest_path)
+            .canonicalize_utf8()
+            .unwrap();
+        let mut cwd = Utf8PathBuf::from(cwd).canonicalize_utf8().unwrap();
+        cwd.clean_windows_path();
+        Self::load(cli, &cwd, &manifest_path, watch).unwrap()
     }
+
     pub fn current_project(&self) -> Result<Arc<Project>> {
         if self.projects.len() == 1 {
             Ok(self.projects[0].clone())
-        } else if let Some(proj) = self.cwd_project()? {
-            Ok(proj)
         } else {
             bail!("There are several projects available ({}). Please select one of them with the command line parameter --project", names(&self.projects));
         }

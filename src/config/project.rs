@@ -7,9 +7,9 @@ use crate::{
 };
 use anyhow::ensure;
 use camino::{Utf8Path, Utf8PathBuf};
-use cargo_metadata::{Metadata, MetadataCommand, Package};
+use cargo_metadata::{Metadata, Package};
 use serde::Deserialize;
-use std::{net::SocketAddr, sync::Arc};
+use std::{fmt::Debug, net::SocketAddr, sync::Arc};
 
 use super::{
     assets::AssetsConfig,
@@ -19,8 +19,9 @@ use super::{
     style::StyleConfig,
 };
 
-#[derive(Debug)]
 pub struct Project {
+    /// absolute path to the working dir
+    pub working_dir: Utf8PathBuf,
     pub name: String,
     pub lib: LibPackage,
     pub bin: BinPackage,
@@ -32,10 +33,29 @@ pub struct Project {
     pub assets: Option<AssetsConfig>,
 }
 
-impl Project {
-    pub fn resolve(cli: &Opts, manifest_path: &Utf8Path, watch: bool) -> Result<Vec<Arc<Project>>> {
-        let metadata = MetadataCommand::new().manifest_path(manifest_path).exec()?;
+impl Debug for Project {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Project")
+            .field("name", &self.name)
+            .field("lib", &self.lib)
+            .field("bin", &self.bin)
+            .field("style", &self.style)
+            .field("watch", &self.watch)
+            .field("release", &self.release)
+            .field("site", &self.site)
+            .field("end2end", &self.end2end)
+            .field("assets", &self.assets)
+            .finish_non_exhaustive()
+    }
+}
 
+impl Project {
+    pub fn resolve(
+        cli: &Opts,
+        cwd: &Utf8Path,
+        metadata: &Metadata,
+        watch: bool,
+    ) -> Result<Vec<Arc<Project>>> {
         let projects = ProjectDefinition::parse(&metadata)?;
 
         let mut resolved = Vec::new();
@@ -45,6 +65,7 @@ impl Project {
             }
 
             let proj = Project {
+                working_dir: metadata.workspace_root.clone(),
                 name: project.name.clone(),
                 lib: LibPackage::resolve(cli, &metadata, &project, &config)?,
                 bin: BinPackage::resolve(cli, &metadata, &project, &config)?,
@@ -57,7 +78,17 @@ impl Project {
             };
             resolved.push(Arc::new(proj));
         }
-        Ok(resolved)
+
+        let projects_in_cwd = resolved
+            .iter()
+            .filter(|p| p.bin.abs_dir.starts_with(&cwd) || p.lib.abs_dir.starts_with(&cwd))
+            .collect::<Vec<_>>();
+
+        if projects_in_cwd.len() == 1 {
+            Ok(vec![projects_in_cwd[0].clone()])
+        } else {
+            Ok(resolved)
+        }
     }
 
     /// env vars to use when running external command
@@ -68,6 +99,8 @@ impl Project {
             ("LEPTOS_SITE_PKG_DIR", self.site.pkg_dir.to_string()),
             ("LEPTOS_SITE_ADDR", self.site.addr.to_string()),
             ("LEPTOS_RELOAD_PORT", self.site.reload.port().to_string()),
+            ("LEPTOS_LIB_DIR", self.lib.rel_dir.to_string()),
+            ("LEPTOS_BIN_DIR", self.bin.rel_dir.to_string()),
         ];
         if self.watch {
             vec.push(("LEPTOS_WATCH", "ON".to_string()))
@@ -208,7 +241,7 @@ fn default_pkg_dir() -> Utf8PathBuf {
 }
 
 fn default_site_root() -> Utf8PathBuf {
-    Utf8PathBuf::from("target/site")
+    Utf8PathBuf::from("target").join("site")
 }
 
 fn default_reload_port() -> u16 {

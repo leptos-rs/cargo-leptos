@@ -1,5 +1,3 @@
-use camino::Utf8PathBuf;
-
 use super::Config;
 
 fn opts(project: Option<&str>) -> crate::Opts {
@@ -16,7 +14,7 @@ fn opts(project: Option<&str>) -> crate::Opts {
 fn test_project() {
     let cli = opts(None);
 
-    let conf = Config::load(cli, &Utf8PathBuf::from("examples/project/Cargo.toml"), true).unwrap();
+    let conf = Config::test_load(cli, "examples", "examples/project/Cargo.toml", true);
 
     insta::assert_debug_snapshot!(conf);
 }
@@ -25,12 +23,7 @@ fn test_project() {
 fn test_workspace() {
     let cli = opts(None);
 
-    let conf = Config::load(
-        cli,
-        &Utf8PathBuf::from("examples/workspace/Cargo.toml"),
-        true,
-    )
-    .unwrap();
+    let conf = Config::test_load(cli, "examples", "examples/workspace/Cargo.toml", true);
 
     insta::assert_debug_snapshot!(conf);
 }
@@ -39,12 +32,7 @@ fn test_workspace() {
 fn test_workspace_project1() {
     let cli = opts(Some("project1"));
 
-    let conf = Config::load(
-        cli,
-        &Utf8PathBuf::from("examples/workspace/Cargo.toml"),
-        true,
-    )
-    .unwrap();
+    let conf = Config::test_load(cli, "examples", "examples/workspace/Cargo.toml", true);
 
     insta::assert_debug_snapshot!(conf);
 }
@@ -53,12 +41,21 @@ fn test_workspace_project1() {
 fn test_workspace_project2() {
     let cli = opts(Some("project2"));
 
-    let conf = Config::load(
+    let conf = Config::test_load(cli, "examples", "examples/workspace/Cargo.toml", true);
+
+    insta::assert_debug_snapshot!(conf);
+}
+
+#[test]
+fn test_workspace_in_subdir_project2() {
+    let cli = opts(None);
+
+    let conf = Config::test_load(
         cli,
-        &Utf8PathBuf::from("examples/workspace/Cargo.toml"),
+        "examples/workspace/project2",
+        "examples/workspace/Cargo.toml",
         true,
-    )
-    .unwrap();
+    );
 
     insta::assert_debug_snapshot!(conf);
 }
