@@ -241,7 +241,7 @@ fn default_pkg_dir() -> Utf8PathBuf {
 }
 
 fn default_site_root() -> Utf8PathBuf {
-    Utf8PathBuf::from("target/site")
+    Utf8PathBuf::from("target").join("site")
 }
 
 fn default_reload_port() -> u16 {

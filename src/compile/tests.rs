@@ -31,7 +31,17 @@ fn test_project_dev() {
     let mut command = Command::new("cargo");
     let (envs, cargo) = build_cargo_server_cmd("build", &conf.projects[0], &mut command);
 
-    assert_eq!(
+    const ENV_REF: &str = if cfg!(windows) {
+        "\
+    OUTPUT_NAME=example \
+    LEPTOS_SITE_ROOT=target\\site \
+    LEPTOS_SITE_PKG_DIR=pkg \
+    LEPTOS_SITE_ADDR=127.0.0.1:3000 \
+    LEPTOS_RELOAD_PORT=3001 \
+    LEPTOS_LIB_DIR=. \
+    LEPTOS_BIN_DIR=. \
+    LEPTOS_WATCH=ON"
+    } else {
         "\
     OUTPUT_NAME=example \
     LEPTOS_SITE_ROOT=target/site \
@@ -40,9 +50,9 @@ fn test_project_dev() {
     LEPTOS_RELOAD_PORT=3001 \
     LEPTOS_LIB_DIR=. \
     LEPTOS_BIN_DIR=. \
-    LEPTOS_WATCH=ON",
-        envs
-    );
+    LEPTOS_WATCH=ON"
+    };
+    assert_eq!(ENV_REF, envs);
 
     assert_display_snapshot!(cargo, @"cargo build --package=example --bin=example --target-dir=target/server --no-default-features --features=ssr");
 
@@ -70,7 +80,18 @@ fn test_project_release() {
 
 #[test]
 fn test_workspace_project1() {
-    const ENV_REF: &str = "\
+    const ENV_REF: &str = if cfg!(windows) {
+        "\
+    OUTPUT_NAME=project1 \
+    LEPTOS_SITE_ROOT=target\\site\\project1 \
+    LEPTOS_SITE_PKG_DIR=pkg \
+    LEPTOS_SITE_ADDR=127.0.0.1:3000 \
+    LEPTOS_RELOAD_PORT=3001 \
+    LEPTOS_LIB_DIR=project1\\front \
+    LEPTOS_BIN_DIR=project1\\server \
+    LEPTOS_WATCH=ON"
+    } else {
+        "\
     OUTPUT_NAME=project1 \
     LEPTOS_SITE_ROOT=target/site/project1 \
     LEPTOS_SITE_PKG_DIR=pkg \
@@ -78,7 +99,8 @@ fn test_workspace_project1() {
     LEPTOS_RELOAD_PORT=3001 \
     LEPTOS_LIB_DIR=project1/front \
     LEPTOS_BIN_DIR=project1/server \
-    LEPTOS_WATCH=ON";
+    LEPTOS_WATCH=ON"
+    };
 
     let cli = dev_opts();
     let conf = Config::test_load(cli, "examples", "examples/workspace/Cargo.toml", true);
