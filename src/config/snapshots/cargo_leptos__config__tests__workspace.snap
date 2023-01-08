@@ -18,9 +18,7 @@ Config {
                     dest: "target/site/project1/pkg/project1.js",
                     site: "pkg/project1.js",
                 },
-                features: [
-                    "hydrate",
-                ],
+                features: [],
                 default_features: false,
                 output_name: "project1",
                 src_paths: "project1/app/src, project1/front/src",
@@ -31,9 +29,7 @@ Config {
                 rel_dir: "project1/server",
                 exe_file: "target/server/debug/server-package",
                 target: "server-package",
-                features: [
-                    "ssr",
-                ],
+                features: [],
                 default_features: false,
                 src_paths: "project1/app/src, project1/server/src",
                 ..
