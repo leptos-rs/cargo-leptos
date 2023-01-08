@@ -7,6 +7,13 @@ codegen-units = 1
 lto = true
 opt-level = 'z'
 
+[workspace.dependencies]
+leptos = { version = "0.1.0-beta", default-features = false }
+leptos_meta = { version = "0.1.0-beta", default-features = false }
+leptos_router = { version = "0.1.0-beta", default-features = false }
+leptos_dom = { version = "0.1.0-beta", default-features = false }
+leptos_actix = "0.1.0-beta"
+
 # See https://github.com/akesson/cargo-leptos for documentation of all the parameters.
 
 # A leptos project defines which workspace members

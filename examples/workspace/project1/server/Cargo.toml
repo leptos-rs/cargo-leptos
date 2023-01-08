@@ -7,20 +7,11 @@ edition = "2021"
 
 [dependencies]
 app-package = { path = "../app", default-features = false, features = ["ssr"] }
-leptos = { version = "0.1.0-beta", default-features = false, features = [
-  "serde",
-  "ssr",
-] }
-leptos_meta = { version = "0.1.0-beta", default-features = false, features = [
-  "ssr",
-] }
-leptos_router = { version = "0.1.0-beta", default-features = false, features = [
-  "ssr",
-] }
-leptos_dom = { version = "0.1.0-beta", default-features = false, features = [
-  "ssr",
-] }
-leptos_actix = "0.1.0-beta"
+leptos = { workspace = true, features = ["serde", "ssr"] }
+leptos_meta = { workspace = true, features = ["ssr"] }
+leptos_router = { workspace = true, features = ["ssr"] }
+leptos_dom = { workspace = true, features = ["ssr"] }
+leptos_actix.workspace = true
 
 gloo-net = { version = "0.2", features = ["http"] }
 log = "0.4"

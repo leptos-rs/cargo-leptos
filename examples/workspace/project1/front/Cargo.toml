@@ -10,10 +10,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 app-package = { path = "../app" }
-leptos = { version = "0.1.0-beta", default-features = false, features = [
-  "serde",
-  "hydrate",
-] }
+leptos = { workspace = true, features = ["serde", "hydrate"] }
 log = "0.4"
 wasm-bindgen = "0.2"
 console_log = "0.2"
