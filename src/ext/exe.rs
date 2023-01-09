@@ -172,7 +172,7 @@ impl Exe {
 
         let exe = match self {
             Exe::CargoGenerate => {
-                let version = "0.17.4";
+                let version = "0.17.3";
 
                 let target = match (target_os, target_arch) {
                     ("macos", "aarch64") => "aarch64-apple-darwin",
