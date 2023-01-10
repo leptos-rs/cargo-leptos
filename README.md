@@ -22,16 +22,16 @@ Build tool for [Leptos](https://crates.io/crates/leptos):
 # Features
 
 - Parallel build of server and client in watch mode for fast developer feedback.
+- CSS hot-reload (no page-reload, only CSS updated).
 - Build server and client for hydration (client-side rendering mode not supported).
 - Support for both workspace and single-package setup.
 - SCSS compilation using [dart-sass](https://sass-lang.com/dart-sass).
-- CSS transformation and minification using [Lightning CSS](https://lightningcss.dev). See docs for full details.
+- CSS transformation and minification using [Lightning CSS](https://lightningcss.dev).
 - Builds server and client (wasm) binaries using Cargo.
 - Generates JS - Wasm bindings with [wasm-bindgen](https://crates.io/crates/wasm-bindgen)
 - Optimises the wasm with _wasm-opt_ from [Binaryen](https://github.com/WebAssembly/binaryen)
-- Generation of rust code for integrating with a server of choice.
 - `watch` command for automatic rebuilds with browser live-reload.
-- `test` command for running tests. Note that this runs `cargo test` for the two different modes (`hydrate` and `ssr`).
+- `test` command for running tests of the lib and bin packages that makes up the Leptos project.
 - `build` build the server and client.
 - `end2end` command for building, running the server and calling a bash shell hook. The hook would typically launch Playwright or similar.
 - `new` command for creating a new project based on templates, using [cargo-generate](https://cargo-generate.github.io/cargo-generate/index.html). WIP: You'll need to ask on the Leptos [discord](https://discord.gg/YdRAhS7eQB) for the url of a template.
