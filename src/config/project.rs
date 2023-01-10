@@ -94,7 +94,7 @@ impl Project {
     /// env vars to use when running external command
     pub fn to_envs(&self) -> Vec<(&'static str, String)> {
         let mut vec = vec![
-            ("OUTPUT_NAME", self.lib.output_name.to_string()),
+            ("LEPTOS_OUTPUT_NAME", self.lib.output_name.to_string()),
             ("LEPTOS_SITE_ROOT", self.site.root_dir.to_string()),
             ("LEPTOS_SITE_PKG_DIR", self.site.pkg_dir.to_string()),
             ("LEPTOS_SITE_ADDR", self.site.addr.to_string()),

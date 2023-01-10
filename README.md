@@ -139,7 +139,7 @@ any parent directory.
 ```toml
 # Sets the name of the output js, wasm and css files.
 #
-# Optional, defaults to the lib package name or, in a workspace, the project name. Env: OUTPUT_NAME.
+# Optional, defaults to the lib package name or, in a workspace, the project name. Env: LEPTOS_OUTPUT_NAME.
 output-name = "myproj"
 
 # The site root folder is where cargo-leptos generate all output.
@@ -200,7 +200,7 @@ The following environment variables are set when compiling the lib (front) or bi
 
 Echoed from the Leptos config:
 
-- OUTPUT_NAME
+- LEPTOS_OUTPUT_NAME
 - LEPTOS_SITE_ROOT
 - LEPTOS_SITE_PKG_DIR
 - LEPTOS_SITE_ADDR

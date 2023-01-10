@@ -24,7 +24,7 @@ pub fn overlay_env(conf: &mut ProjectConfig, file: &Utf8Path) -> Result<()> {
         let (key, val) = entry?;
 
         match key.as_str() {
-            "OUTPUT_NAME" => conf.output_name = val,
+            "LEPTOS_OUTPUT_NAME" => conf.output_name = val,
             "LEPTOS_SITE_ROOT" => conf.site_root = Utf8PathBuf::from(val),
             "LEPTOS_SITE_PKG_DIR" => conf.site_pkg_dir = Utf8PathBuf::from(val),
             "LEPTOS_STYLE_FILE" => conf.style_file = Some(Utf8PathBuf::from(val)),

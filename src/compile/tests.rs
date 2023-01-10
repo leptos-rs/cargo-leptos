@@ -32,7 +32,7 @@ fn test_project_dev() {
     let (envs, cargo) = build_cargo_server_cmd("build", &conf.projects[0], &mut command);
 
     const ENV_REF: &str = "\
-    OUTPUT_NAME=example \
+    LEPTOS_OUTPUT_NAME=example \
     LEPTOS_SITE_ROOT=target/site \
     LEPTOS_SITE_PKG_DIR=pkg \
     LEPTOS_SITE_ADDR=127.0.0.1:3000 \
@@ -70,7 +70,7 @@ fn test_project_release() {
 fn test_workspace_project1() {
     const ENV_REF: &str = if cfg!(windows) {
         "\
-    OUTPUT_NAME=project1 \
+    LEPTOS_OUTPUT_NAME=project1 \
     LEPTOS_SITE_ROOT=target/site/project1 \
     LEPTOS_SITE_PKG_DIR=pkg \
     LEPTOS_SITE_ADDR=127.0.0.1:3000 \
@@ -80,7 +80,7 @@ fn test_workspace_project1() {
     LEPTOS_WATCH=ON"
     } else {
         "\
-    OUTPUT_NAME=project1 \
+    LEPTOS_OUTPUT_NAME=project1 \
     LEPTOS_SITE_ROOT=target/site/project1 \
     LEPTOS_SITE_PKG_DIR=pkg \
     LEPTOS_SITE_ADDR=127.0.0.1:3000 \
