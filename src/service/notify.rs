@@ -135,7 +135,7 @@ pub enum Watched {
 fn convert(p: &Path, proj: &Project) -> Result<Utf8PathBuf> {
     let p = Utf8PathBuf::from_path_buf(p.to_path_buf())
         .map_err(|e| anyhow!("Could not convert to a Utf8PathBuf: {e:?}"))?;
-    p.unbase(&proj.working_dir)
+    Ok(p.unbase(&proj.working_dir).unwrap_or_else(|_| p))
 }
 
 impl Watched {
