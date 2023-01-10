@@ -8,11 +8,11 @@ lto = true
 opt-level = 'z'
 
 [workspace.dependencies]
-leptos = { path = "../../../leptos_ha/leptos", default-features = false }
-leptos_meta = { path = "../../../leptos_ha/meta", default-features = false }
-leptos_router = { path = "../../../leptos_ha/router", default-features = false }
-leptos_dom = { path = "../../../leptos_ha/leptos_dom", default-features = false }
-leptos_actix = { path = "../../../leptos_ha/integrations/actix" }
+leptos = { git = "https://github.com/leptos-rs/leptos.git", default-features = false }
+leptos_meta = { git = "https://github.com/leptos-rs/leptos.git", default-features = false }
+leptos_router = { git = "https://github.com/leptos-rs/leptos.git", default-features = false }
+leptos_dom = { git = "https://github.com/leptos-rs/leptos.git", default-features = false }
+leptos_actix = { git = "https://github.com/leptos-rs/leptos.git" }
 
 # See https://github.com/akesson/cargo-leptos for documentation of all the parameters.
 
