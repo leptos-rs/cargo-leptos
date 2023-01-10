@@ -1,11 +1,13 @@
 use crate::{
     config::lib_package::LibPackage,
-    ext::{anyhow::Result, PackageExt, PathBufExt, PathExt},
+    ext::{
+        anyhow::{bail, ensure, Result},
+        PackageExt, PathBufExt, PathExt,
+    },
     logger::GRAY,
     service::site::Site,
     Opts,
 };
-use anyhow::ensure;
 use camino::{Utf8Path, Utf8PathBuf};
 use cargo_metadata::{Metadata, Package};
 use serde::Deserialize;
@@ -152,6 +154,12 @@ impl ProjectConfig {
         conf.config_dir = dir.to_path_buf();
         if let Some(file) = find_env_file(dir) {
             overlay_env(&mut conf, &file)?;
+        }
+        if conf.site_root == "/" || conf.site_root == "." {
+            bail!(
+                "site-root cannot be '{}'. All the content is erased when building the site.",
+                conf.site_root
+            );
         }
         Ok(conf)
     }
