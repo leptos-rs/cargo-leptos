@@ -3,7 +3,7 @@
 
 Build tool for [Leptos](https://crates.io/crates/leptos):
 
-[<img src="https://raw.githubusercontent.com/gbj/leptos/main/docs/logos/logo.svg" alt="Leptos Logo" style="width: 40%; height: auto; display: block; margin: auto;">](http://https://crates.io/crates/leptos)
+[<img src="https://raw.githubusercontent.com/gbj/leptos/main/docs/logos/Leptos_logo_RGB.png" alt="Leptos Logo" style="width: 30%; height: auto; display: block; margin: auto;">](http://https://crates.io/crates/leptos)
 
 <br/>
 
