@@ -12,12 +12,17 @@ crate-type = ["cdylib", "rlib"]
 
 
 [dependencies]
-leptos = { version = "0.1.0-beta", default-features = false, features = [
-  "serde",
-] }
-leptos_meta = { version = "0.1.0-beta", default-features = false }
-leptos_config = "0.1.0-beta"
-leptos_router = { version = "0.1.0-beta", default-features = false }
+leptos = { path = "../../../leptos_ha/leptos", default-features = false }
+leptos_meta = { path = "../../../leptos_ha/meta", default-features = false }
+leptos_router = { path = "../../../leptos_ha/router", default-features = false }
+leptos_dom = { path = "../../../leptos_ha/leptos_dom", default-features = false }
+
+# leptos = { version = "0.1.0-beta", default-features = false, features = [
+#   "serde",
+# ] }
+# leptos_meta = { version = "0.1.0-beta", default-features = false }
+# leptos_config = "0.1.0-beta"
+# leptos_router = { version = "0.1.0-beta", default-features = false }
 
 gloo-net = { version = "0.2.5", features = ["http"] }
 log = "0.4.17"
@@ -35,7 +40,8 @@ futures = { version = "0.3.25", optional = true }
 simple_logger = { version = "4.0.0", optional = true }
 serde_json = { version = "1.0.91", optional = true }
 reqwest = { version = "0.11.13", features = ["json"], optional = true }
-leptos_actix = { version = "0.1.0-beta", optional = true }
+leptos_actix = { path = "../../../leptos_ha/integrations/actix", optional = true }
+# leptos_actix = { version = "0.1.0-beta", optional = true }
 dotenvy = { version = "0.15.6", optional = true }
 
 [profile.release]
