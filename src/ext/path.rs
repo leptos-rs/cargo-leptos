@@ -183,3 +183,56 @@ pub fn remove_nested(paths: impl Iterator<Item = Utf8PathBuf>) -> Vec<Utf8PathBu
         vec
     })
 }
+
+/// Extension Safe &str Append
+///
+/// # Arguments
+///
+/// * `path` - Current path to file
+/// * `suffix` - &str to be appened before extension
+///
+/// # Example
+///
+/// ```
+/// let path: Utf8PathBuf = "foo.bar".into();
+/// assert_eq!(append_str_to_filename(path, "_bazz")?.as_str(), "foo_bazz.bar");
+/// let path: Utf8PathBuf = "a".into();
+/// assert_eq!(append_str_to_filename(&path, "b")?.as_str(), "ab");
+/// ```
+pub fn append_str_to_filename(path: &Utf8PathBuf, suffix: &str) -> Result<Utf8PathBuf> {
+    match path.file_stem() {
+        Some(stem) => {
+            let new_filename: Utf8PathBuf = match path.extension() {
+                Some(extension) => {
+                    format!("{stem}{suffix}.{extension}").into()
+                },
+                None => {
+                    format!("{stem}{suffix}").into()
+                }
+            };
+            let mut full_path: Utf8PathBuf = path.parent().unwrap_or("".into()).clone().into();
+            full_path.push(new_filename);
+            Ok(full_path)
+        },
+        None => {
+            Err(anyhow!("no file present in provided path {path:?}"))
+        },
+    }
+}
+
+/// Returns path to pdb and verifies it exists, returns None when file does not exist
+pub fn determine_pdb_filename(path: &Utf8PathBuf) -> Option<Utf8PathBuf> {
+    match path.file_stem() {
+        Some(stem) => {
+            let new_filename: Utf8PathBuf = format!("{stem}.pdb").into();
+            let mut full_path: Utf8PathBuf = path.parent().unwrap_or("".into()).clone().into();
+            full_path.push(new_filename);
+            if full_path.exists() {
+                Some(full_path)
+            } else {
+                None
+            }
+        },
+        None => None,
+    }
+}
