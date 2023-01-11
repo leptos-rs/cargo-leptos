@@ -79,7 +79,11 @@ impl LibPackage {
         };
 
         let mut src_deps = metadata.src_path_dependencies(&package.id);
-        src_deps.push(rel_dir.join("src").unbase(&rel_dir).expect("rel_dir should contain itself, it did not"));
+        if rel_dir == "." {
+            src_deps.push("src".into());
+        } else {
+            src_deps.push(rel_dir.join("src"));
+        }
         Ok(Self {
             name,
             abs_dir,
