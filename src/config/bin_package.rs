@@ -85,7 +85,7 @@ impl BinPackage {
         };
 
         let mut src_paths = metadata.src_path_dependencies(&package.id);
-        src_paths.push(rel_dir.join("src"));
+        src_paths.push(rel_dir.join("src").unbase(&rel_dir).expect("rel_dir should contain itself, it did not"));
         Ok(Self {
             name,
             abs_dir,
