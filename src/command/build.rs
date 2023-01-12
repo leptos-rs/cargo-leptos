@@ -23,9 +23,9 @@ pub async fn build_proj(proj: &Arc<Project>) -> Result<()> {
     }
     let changes = ChangeSet::all_changes();
 
-    compile::server(proj, &changes).await.await??;
     compile::front(proj, &changes).await.await??;
     compile::assets(proj, &changes, true).await.await??;
     compile::style(proj, &changes).await.await??;
+    compile::server(proj, &changes).await.await??;
     Ok(())
 }
