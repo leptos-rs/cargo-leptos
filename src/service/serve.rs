@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::{
     config::Project,
-    ext::anyhow::Result,
+    ext::{fs, anyhow::Result, append_str_to_filename, determine_pdb_filename},
     logger::GRAY,
     signal::{Interrupt, ReloadSignal, ServerRestart},
 };
@@ -70,8 +70,28 @@ impl ServerProcess {
     async fn start(&mut self) -> Result<()> {
         let bin = &self.2;
         let child = if bin.exists() {
-            log::debug!("Serve running {}", GRAY.paint(bin.as_str()));
-            Some(Command::new(bin).envs(self.1.clone()).spawn()?)
+            // solution to allow cargo to overwrite a running binary on some platforms:
+            //   copy cargo's output bin to [filename]_leptos and then run it
+            let new_bin_path = append_str_to_filename(bin, "_leptos")?;
+            log::debug!("Copying server binary {} to {}",
+                GRAY.paint(bin.as_str()),
+                GRAY.paint(new_bin_path.as_str())
+            );
+            fs::copy(bin, &new_bin_path).await?;
+            // also copy the .pdb file if it exists to allow debugging to attach
+            match determine_pdb_filename(bin) {
+                Some(pdb) => {
+                    let new_pdb_path = append_str_to_filename(&pdb, "_leptos")?;
+                    log::debug!("Copying server binary debug info {} to {}",
+                        GRAY.paint(pdb.as_str()),
+                        GRAY.paint(new_pdb_path.as_str())
+                    );
+                    fs::copy(&pdb, &new_pdb_path).await?;
+                },
+                None => {},
+            }
+            log::debug!("Serve running {}", GRAY.paint(new_bin_path.as_str()));
+            Some(Command::new(new_bin_path).envs(self.1.clone()).spawn()?)
         } else {
             log::debug!("Serve no exe found {}", GRAY.paint(bin.as_str()));
             None
