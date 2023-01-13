@@ -3,7 +3,7 @@
 [package]
 name = "cargo-leptos"
 license = "MIT"
-repository = "https://github.com/akesson/cargo-leptos"
+repository = "https://github.com/leptos-rs/cargo-leptos"
 description = "Build tool for Leptos."
 categories = ["development-tools", "wasm", "web-programming"]
 keywords = ["leptos"]

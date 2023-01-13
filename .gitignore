@@ -11,3 +11,5 @@ playwright-report/
 playwright/.cache/
 
 **/.env
+
+.DS_Store
