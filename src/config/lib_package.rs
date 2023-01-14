@@ -44,10 +44,10 @@ impl LibPackage {
             .find(|p| p.name == *name)
             .ok_or_else(|| anyhow!(r#"Could not find the project lib-package "{name}""#,))?;
 
-        let features = if !config.lib_features.is_empty() {
-            config.lib_features.clone()
-        } else if !cli.lib_features.is_empty() {
+        let features = if !cli.lib_features.is_empty() {
             cli.lib_features.clone()
+        } else if !config.lib_features.is_empty() {
+            config.lib_features.clone()
         } else {
             vec![]
         };
