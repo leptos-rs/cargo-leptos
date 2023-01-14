@@ -30,10 +30,10 @@ impl BinPackage {
         project: &ProjectDefinition,
         config: &ProjectConfig,
     ) -> Result<Self> {
-        let features = if !config.bin_features.is_empty() {
-            config.bin_features.clone()
-        } else if !cli.bin_features.is_empty() {
+        let features = if !cli.bin_features.is_empty() {
             cli.bin_features.clone()
+        } else if !config.bin_features.is_empty() {
+            config.bin_features.clone()
         } else {
             vec![]
         };
