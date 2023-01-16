@@ -12,9 +12,13 @@ crate-type = ["cdylib", "rlib"]
 
 
 [dependencies]
-leptos = { git = "https://github.com/leptos-rs/leptos.git", default-features = false }
+leptos = { git = "https://github.com/leptos-rs/leptos.git", default-features = false, features = [
+  "stable",
+] }
 leptos_meta = { git = "https://github.com/leptos-rs/leptos.git", default-features = false }
-leptos_router = { git = "https://github.com/leptos-rs/leptos.git", default-features = false }
+leptos_router = { git = "https://github.com/leptos-rs/leptos.git", default-features = false, features = [
+  "stable",
+] }
 leptos_dom = { git = "https://github.com/leptos-rs/leptos.git", default-features = false }
 
 
