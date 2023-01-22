@@ -77,6 +77,15 @@ impl ServerProcess {
                 GRAY.paint(bin.as_str()),
                 GRAY.paint(new_bin_path.as_str())
             );
+
+            // deleting the old copied binary before overwriting to avoid signing issues on macos
+            if fs::remove_file(&new_bin_path).await.is_ok() {
+                log::debug!(
+                    "Deleted server binary {}",
+                    GRAY.paint(new_bin_path.as_str())
+                );
+            }
+
             fs::copy(bin, &new_bin_path).await?;
             // also copy the .pdb file if it exists to allow debugging to attach
             match determine_pdb_filename(bin) {
