@@ -78,18 +78,19 @@ impl ServerProcess {
     async fn start(&mut self) -> Result<()> {
         let bin = &self.binary;
         let child = if bin.exists() {
-            // solution to allow cargo to overwrite a running binary on some platforms:
-            //   copy cargo's output bin to [filename]_leptos and then run it
-            let new_bin_path = append_str_to_filename(bin, "_leptos")?;
-            log::debug!(
-                "Copying server binary {} to {}",
-                GRAY.paint(bin.as_str()),
-                GRAY.paint(new_bin_path.as_str())
-            );
-            fs::copy(bin, &new_bin_path).await?;
-            // also copy the .pdb file if it exists to allow debugging to attach
-            match determine_pdb_filename(bin) {
-                Some(pdb) => {
+            // windows doesn't like to overwrite a running binary, so we copy it to a new name
+            let bin_path = if cfg!(target_os = "windows") {
+                // solution to allow cargo to overwrite a running binary on some platforms:
+                //   copy cargo's output bin to [filename]_leptos and then run it
+                let new_bin_path = append_str_to_filename(bin, "_leptos")?;
+                log::debug!(
+                    "Copying server binary {} to {}",
+                    GRAY.paint(bin.as_str()),
+                    GRAY.paint(new_bin_path.as_str())
+                );
+                fs::copy(bin, &new_bin_path).await?;
+                // also copy the .pdb file if it exists to allow debugging to attach
+                if let Some(pdb) = determine_pdb_filename(bin) {
                     let new_pdb_path = append_str_to_filename(&pdb, "_leptos")?;
                     log::debug!(
                         "Copying server binary debug info {} to {}",
@@ -98,10 +99,13 @@ impl ServerProcess {
                     );
                     fs::copy(&pdb, &new_pdb_path).await?;
                 }
-                None => {}
-            }
-            log::debug!("Serve running {}", GRAY.paint(new_bin_path.as_str()));
-            Some(Command::new(new_bin_path).envs(self.envs.clone()).spawn()?)
+                new_bin_path
+            } else {
+                bin.clone()
+            };
+
+            log::debug!("Serve running {}", GRAY.paint(bin_path.as_str()));
+            Some(Command::new(bin_path).envs(self.envs.clone()).spawn()?)
         } else {
             log::debug!("Serve no exe found {}", GRAY.paint(bin.as_str()));
             None
