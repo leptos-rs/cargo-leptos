@@ -1,8 +1,9 @@
 use camino::Utf8PathBuf;
 
 use crate::{
+    config::{Cli, Commands, Opts},
     ext::{fs, PathBufExt},
-    run, Cli, Commands, Opts,
+    run,
 };
 
 #[tokio::test]

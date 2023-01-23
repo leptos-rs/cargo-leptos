@@ -3,6 +3,7 @@ mod tests;
 
 mod assets;
 mod bin_package;
+mod cli;
 mod dotenvs;
 mod end2end;
 mod lib_package;
@@ -11,18 +12,17 @@ mod style;
 
 use std::{fmt::Debug, sync::Arc};
 
-use crate::{
-    ext::{
-        anyhow::{Context, Result},
-        MetadataExt,
-    },
-    Opts,
+use crate::ext::{
+    anyhow::{Context, Result},
+    MetadataExt,
 };
 use anyhow::bail;
 use camino::{Utf8Path, Utf8PathBuf};
 use cargo_metadata::Metadata;
 pub use project::{Project, ProjectConfig};
 pub use style::StyleConfig;
+
+pub use self::cli::{Cli, Commands, Log, Opts};
 
 pub struct Config {
     /// absolute path to the working dir

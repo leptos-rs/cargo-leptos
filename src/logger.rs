@@ -6,7 +6,7 @@ use flexi_logger::{
 use once_cell::sync::OnceCell;
 use std::io::Write;
 
-use crate::{ext::StrAdditions, Log};
+use crate::{config::Log, ext::StrAdditions};
 
 // https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797
 lazy_static::lazy_static! {

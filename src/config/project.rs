@@ -6,7 +6,6 @@ use crate::{
     },
     logger::GRAY,
     service::site::Site,
-    Opts,
 };
 use camino::{Utf8Path, Utf8PathBuf};
 use cargo_metadata::{Metadata, Package};
@@ -16,6 +15,7 @@ use std::{fmt::Debug, net::SocketAddr, sync::Arc};
 use super::{
     assets::AssetsConfig,
     bin_package::BinPackage,
+    cli::Opts,
     dotenvs::{find_env_file, overlay_env},
     end2end::End2EndConfig,
     style::StyleConfig,
