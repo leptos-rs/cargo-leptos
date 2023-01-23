@@ -1,10 +1,10 @@
 use crate::{
+    config::Opts,
     ext::{
         anyhow::{anyhow, Result},
         MetadataExt, PathBufExt, PathExt,
     },
     service::site::{SiteFile, SourcedSiteFile},
-    Opts,
 };
 use camino::Utf8PathBuf;
 use cargo_metadata::Metadata;

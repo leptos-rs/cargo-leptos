@@ -2,11 +2,11 @@ use camino::Utf8PathBuf;
 use cargo_metadata::{Metadata, Target};
 
 use crate::{
+    config::Opts,
     ext::{
         anyhow::{anyhow, bail, Error, Result},
         MetadataExt, PackageExt, PathBufExt, PathExt,
     },
-    Opts,
 };
 
 use super::{project::ProjectDefinition, ProjectConfig};

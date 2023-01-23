@@ -1,11 +1,14 @@
-use crate::{compile::front::build_cargo_front_cmd, config::Config};
+use crate::{
+    compile::front::build_cargo_front_cmd,
+    config::{Config, Opts},
+};
 use insta::assert_display_snapshot;
 use tokio::process::Command;
 
 use super::server::build_cargo_server_cmd;
 
-fn release_opts() -> crate::Opts {
-    crate::Opts {
+fn release_opts() -> Opts {
+    Opts {
         release: true,
         project: None,
         verbose: 0,
@@ -13,8 +16,8 @@ fn release_opts() -> crate::Opts {
         lib_features: Vec::new(),
     }
 }
-fn dev_opts() -> crate::Opts {
-    crate::Opts {
+fn dev_opts() -> Opts {
+    Opts {
         release: false,
         project: None,
         verbose: 0,

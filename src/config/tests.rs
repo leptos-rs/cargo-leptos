@@ -1,7 +1,7 @@
 use super::Config;
 
-fn opts(project: Option<&str>) -> crate::Opts {
-    crate::Opts {
+fn opts(project: Option<&str>) -> crate::config::Opts {
+    crate::config::Opts {
         release: false,
         project: project.map(|s| s.to_string()),
         verbose: 0,
