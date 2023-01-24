@@ -70,6 +70,7 @@ Config {
     cli: Opts {
         release: false,
         project: None,
+        features: [],
         lib_features: [],
         bin_features: [],
         verbose: 0,

@@ -68,6 +68,7 @@ Config {
         project: Some(
             "project1",
         ),
+        features: [],
         lib_features: [],
         bin_features: [],
         verbose: 0,
