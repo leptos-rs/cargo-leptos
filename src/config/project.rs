@@ -137,6 +137,8 @@ pub struct ProjectConfig {
     #[serde(default)]
     pub bin_target: String,
     #[serde(default)]
+    pub features: Vec<String>,
+    #[serde(default)]
     pub lib_features: Vec<String>,
     #[serde(default)]
     pub lib_default_features: bool,

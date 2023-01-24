@@ -44,13 +44,16 @@ impl LibPackage {
             .find(|p| p.name == *name)
             .ok_or_else(|| anyhow!(r#"Could not find the project lib-package "{name}""#,))?;
 
-        let features = if !cli.lib_features.is_empty() {
+        let mut features = if !cli.lib_features.is_empty() {
             cli.lib_features.clone()
         } else if !config.lib_features.is_empty() {
             config.lib_features.clone()
         } else {
             vec![]
         };
+
+        features.extend(config.features.clone());
+        features.extend(cli.features.clone());
 
         let abs_dir = package.manifest_path.clone().without_last();
         let rel_dir = abs_dir.unbase(&metadata.workspace_root)?;

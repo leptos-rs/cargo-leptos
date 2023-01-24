@@ -109,6 +109,11 @@ for single-package setups, section `[package.metadata.leptos]`.
 # Optional, only necessary if the bin-package defines more than one target
 bin-target = "my-bin-name"
 
+# The features to use when compiling all targets
+#
+# Optional. Can be extended with the command line parameter --features
+features = []
+
 # The features to use when compiling the bin target
 #
 # Optional. Can be over-ridden with the command line parameter --bin-features

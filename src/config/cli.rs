@@ -20,6 +20,10 @@ pub struct Opts {
     #[arg(short, long)]
     pub project: Option<String>,
 
+    /// The features to use when compiling all targets
+    #[arg(long)]
+    pub features: Vec<String>,
+
     /// The features to use when compiling the lib target
     #[arg(long)]
     pub lib_features: Vec<String>,

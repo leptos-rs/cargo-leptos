@@ -5,6 +5,7 @@ fn opts(project: Option<&str>) -> crate::config::Opts {
         release: false,
         project: project.map(|s| s.to_string()),
         verbose: 0,
+        features: Vec::new(),
         bin_features: Vec::new(),
         lib_features: Vec::new(),
     }

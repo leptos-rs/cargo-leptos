@@ -30,13 +30,16 @@ impl BinPackage {
         project: &ProjectDefinition,
         config: &ProjectConfig,
     ) -> Result<Self> {
-        let features = if !cli.bin_features.is_empty() {
+        let mut features = if !cli.bin_features.is_empty() {
             cli.bin_features.clone()
         } else if !config.bin_features.is_empty() {
             config.bin_features.clone()
         } else {
             vec![]
         };
+
+        features.extend(config.features.clone());
+        features.extend(cli.features.clone());
 
         let name = project.bin_package.clone();
         let packages = metadata.workspace_packages();
