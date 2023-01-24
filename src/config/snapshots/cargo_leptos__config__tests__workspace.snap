@@ -22,6 +22,7 @@ Config {
                 default_features: false,
                 output_name: "project1",
                 src_paths: "project1/app/src, project1/front/src",
+                profile: Debug,
                 ..
             },
             bin: BinPackage {
@@ -32,6 +33,7 @@ Config {
                 features: [],
                 default_features: false,
                 src_paths: "project1/app/src, project1/server/src",
+                profile: Debug,
                 ..
             },
             style: Some(
@@ -82,6 +84,7 @@ Config {
                 default_features: false,
                 output_name: "project2",
                 src_paths: "project2/src",
+                profile: Debug,
                 ..
             },
             bin: BinPackage {
@@ -94,6 +97,7 @@ Config {
                 ],
                 default_features: false,
                 src_paths: "project2/src",
+                profile: Debug,
                 ..
             },
             style: Some(

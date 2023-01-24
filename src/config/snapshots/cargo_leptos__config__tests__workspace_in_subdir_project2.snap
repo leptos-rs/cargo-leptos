@@ -24,6 +24,7 @@ Config {
                 default_features: false,
                 output_name: "project2",
                 src_paths: "project2/src",
+                profile: Debug,
                 ..
             },
             bin: BinPackage {
@@ -36,6 +37,7 @@ Config {
                 ],
                 default_features: false,
                 src_paths: "project2/src",
+                profile: Debug,
                 ..
             },
             style: Some(

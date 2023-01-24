@@ -124,6 +124,16 @@ bin-features = ["ssr"]
 # Optional. Defaults to false.
 bin-default-features = false
 
+# The profile to use for the bin target when compiling for release
+#
+# Optional. Defaults to "release".
+bin-profile-release = "my-release-profile"
+
+# The profile to use for the bin target when compiling for debug
+#
+# Optional. Defaults to "debug".
+bin-profile-debug = "my-debug-profile"
+
 # The features to use when compiling the lib target
 #
 # Optional. Can be over-ridden with the command line parameter --lib-features
@@ -133,6 +143,16 @@ lib-features = ["hydrate"]
 #
 # Optional. Defaults to false.
 lib-default-features = false
+
+# The profile to use for the lib target when compiling for release
+#
+# Optional. Defaults to "release".
+lib-profile-release = "my-release-profile"
+
+# The profile to use for the lib target when compiling for debug
+#
+# Optional. Defaults to "debug".
+lib-profile-debug = "my-debug-profile"
 ```
 
 ## Site parameters

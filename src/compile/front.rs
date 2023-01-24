@@ -74,9 +74,8 @@ pub fn build_cargo_front_cmd(
     if !proj.lib.features.is_empty() {
         args.push(format!("--features={}", proj.lib.features.join(",")));
     }
-    if proj.release {
-        args.push("--release".to_string());
-    }
+
+    proj.lib.profile.add_to_args(&mut args);
 
     let envs = proj.to_envs();
 

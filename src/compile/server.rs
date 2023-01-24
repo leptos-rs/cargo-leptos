@@ -73,9 +73,7 @@ pub fn build_cargo_server_cmd(
         args.push(format!("--features={}", proj.bin.features.join(",")));
     }
 
-    if proj.release {
-        args.push("--release".to_string());
-    }
+    proj.bin.profile.add_to_args(&mut args);
 
     let envs = proj.to_envs();
 
