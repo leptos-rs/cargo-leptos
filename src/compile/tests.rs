@@ -12,6 +12,7 @@ fn release_opts() -> Opts {
         release: true,
         project: None,
         verbose: 0,
+        features: Vec::new(),
         bin_features: Vec::new(),
         lib_features: Vec::new(),
     }
@@ -21,6 +22,7 @@ fn dev_opts() -> Opts {
         release: false,
         project: None,
         verbose: 0,
+        features: Vec::new(),
         bin_features: Vec::new(),
         lib_features: Vec::new(),
     }
