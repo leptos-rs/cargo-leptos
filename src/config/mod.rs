@@ -7,11 +7,13 @@ mod cli;
 mod dotenvs;
 mod end2end;
 mod lib_package;
+mod profile;
 mod project;
 mod style;
 
 use std::{fmt::Debug, sync::Arc};
 
+pub use self::cli::{Cli, Commands, Log, Opts};
 use crate::ext::{
     anyhow::{Context, Result},
     MetadataExt,
@@ -19,10 +21,9 @@ use crate::ext::{
 use anyhow::bail;
 use camino::{Utf8Path, Utf8PathBuf};
 use cargo_metadata::Metadata;
+pub use profile::Profile;
 pub use project::{Project, ProjectConfig};
 pub use style::StyleConfig;
-
-pub use self::cli::{Cli, Commands, Log, Opts};
 
 pub struct Config {
     /// absolute path to the working dir

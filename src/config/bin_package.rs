@@ -9,7 +9,7 @@ use crate::{
     },
 };
 
-use super::{project::ProjectDefinition, ProjectConfig};
+use super::{project::ProjectDefinition, Profile, ProjectConfig};
 
 pub struct BinPackage {
     pub name: String,
@@ -21,6 +21,7 @@ pub struct BinPackage {
     pub default_features: bool,
     /// all source paths, including path dependencies'
     pub src_paths: Vec<Utf8PathBuf>,
+    pub profile: Profile,
 }
 
 impl BinPackage {
@@ -72,7 +73,12 @@ impl BinPackage {
 
         let abs_dir = package.manifest_path.clone().without_last();
         let rel_dir = abs_dir.unbase(&metadata.workspace_root)?;
-        let profile = cli.profile();
+        let profile = Profile::new(
+            cli.release,
+            &config.bin_profile_release,
+            &config.bin_profile_dev,
+        );
+
         let exe_file = {
             let file_ext = if cfg!(target_os = "windows") {
                 "exe"
@@ -82,7 +88,7 @@ impl BinPackage {
             metadata
                 .rel_target_dir()
                 .join("server")
-                .join(&profile)
+                .join(profile.to_string())
                 .join(&name)
                 .with_extension(file_ext)
         };
@@ -102,6 +108,7 @@ impl BinPackage {
             features,
             default_features: config.bin_default_features,
             src_paths,
+            profile,
         })
     }
 }
@@ -124,6 +131,7 @@ impl std::fmt::Debug for BinPackage {
                     .collect::<Vec<_>>()
                     .join(", "),
             )
+            .field("profile", &self.profile)
             .finish_non_exhaustive()
     }
 }

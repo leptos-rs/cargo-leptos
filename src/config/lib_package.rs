@@ -9,7 +9,7 @@ use crate::{
 use camino::Utf8PathBuf;
 use cargo_metadata::Metadata;
 
-use super::{project::ProjectDefinition, ProjectConfig};
+use super::{project::ProjectDefinition, Profile, ProjectConfig};
 
 pub struct LibPackage {
     pub name: String,
@@ -22,6 +22,7 @@ pub struct LibPackage {
     pub default_features: bool,
     pub output_name: String,
     pub src_paths: Vec<Utf8PathBuf>,
+    pub profile: Profile,
 }
 
 impl LibPackage {
@@ -57,14 +58,18 @@ impl LibPackage {
 
         let abs_dir = package.manifest_path.clone().without_last();
         let rel_dir = abs_dir.unbase(&metadata.workspace_root)?;
-        let profile = cli.profile();
+        let profile = Profile::new(
+            cli.release,
+            &config.lib_profile_release,
+            &config.lib_profile_dev,
+        );
 
         let wasm_file = {
             let source = metadata
                 .rel_target_dir()
                 .join("front")
                 .join("wasm32-unknown-unknown")
-                .join(&profile)
+                .join(profile.to_string())
                 .join(&name.replace('-', "_"))
                 .with_extension("wasm");
             let site = config
@@ -97,6 +102,7 @@ impl LibPackage {
             default_features: config.lib_default_features,
             output_name,
             src_paths: src_deps,
+            profile,
         })
     }
 }
@@ -120,6 +126,7 @@ impl std::fmt::Debug for LibPackage {
                     .collect::<Vec<_>>()
                     .join(", "),
             )
+            .field("profile", &self.profile)
             .finish_non_exhaustive()
     }
 }

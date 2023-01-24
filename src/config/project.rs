@@ -148,6 +148,12 @@ pub struct ProjectConfig {
     pub bin_default_features: bool,
     #[serde(skip)]
     pub config_dir: Utf8PathBuf,
+
+    // Profiles
+    pub lib_profile_dev: Option<String>,
+    pub lib_profile_release: Option<String>,
+    pub bin_profile_dev: Option<String>,
+    pub bin_profile_release: Option<String>,
 }
 
 impl ProjectConfig {

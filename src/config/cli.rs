@@ -37,12 +37,6 @@ pub struct Opts {
     pub verbose: u8,
 }
 
-impl Opts {
-    pub fn profile(&self) -> String {
-        if self.release { "release" } else { "debug" }.to_string()
-    }
-}
-
 #[derive(Debug, Parser)]
 #[clap(version)]
 pub struct Cli {
