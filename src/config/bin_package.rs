@@ -22,6 +22,7 @@ pub struct BinPackage {
     /// all source paths, including path dependencies'
     pub src_paths: Vec<Utf8PathBuf>,
     pub profile: Profile,
+    pub target_triple: Option<String>,
 }
 
 impl BinPackage {
@@ -109,6 +110,7 @@ impl BinPackage {
             default_features: config.bin_default_features,
             src_paths,
             profile,
+            target_triple: config.bin_target_triple.clone(),
         })
     }
 }

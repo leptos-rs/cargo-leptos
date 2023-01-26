@@ -136,6 +136,8 @@ pub struct ProjectConfig {
     /// the bin target to use for building the server
     #[serde(default)]
     pub bin_target: String,
+    /// the bin output target triple to use for building the server
+    pub bin_target_triple: Option<String>,
     #[serde(default)]
     pub features: Vec<String>,
     #[serde(default)]
