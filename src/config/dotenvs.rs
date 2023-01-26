@@ -1,28 +1,40 @@
 use super::ProjectConfig;
-use crate::{ext::anyhow::Result, logger::GRAY};
+use crate::ext::anyhow::Result;
 use camino::{Utf8Path, Utf8PathBuf};
-use std::fs;
+use std::{env, fs};
 
-pub fn find_env_file(directory: &Utf8Path) -> Option<Utf8PathBuf> {
+pub fn load_dotenvs(directory: &Utf8Path) -> Result<Option<Vec<(String, String)>>> {
     let candidate = directory.join(".env");
 
     if let Ok(metadata) = fs::metadata(&candidate) {
         if metadata.is_file() {
-            return Some(candidate);
+            let mut dotenvs = vec![];
+            for entry in dotenvy::from_path_iter(&candidate)? {
+                let (key, val) = entry?;
+                dotenvs.push((key, val));
+            }
+
+            return Ok(Some(dotenvs));
         }
     }
 
     if let Some(parent) = directory.parent() {
-        find_env_file(parent)
+        load_dotenvs(parent)
     } else {
-        None
+        Ok(None)
     }
 }
 
-pub fn overlay_env(conf: &mut ProjectConfig, file: &Utf8Path) -> Result<()> {
-    for entry in dotenvy::from_path_iter(file)? {
-        let (key, val) = entry?;
+pub fn overlay_env(conf: &mut ProjectConfig, dotenvs: Option<Vec<(String, String)>>) -> Result<()> {
+    if let Some(dotenvs) = dotenvs {
+        overlay(conf, dotenvs.into_iter())?;
+    }
+    overlay(conf, env::vars())?;
+    Ok(())
+}
 
+fn overlay(conf: &mut ProjectConfig, envs: impl Iterator<Item = (String, String)>) -> Result<()> {
+    for (key, val) in envs {
         match key.as_str() {
             "LEPTOS_OUTPUT_NAME" => conf.output_name = val,
             "LEPTOS_SITE_ROOT" => conf.site_root = Utf8PathBuf::from(val),
@@ -36,15 +48,9 @@ pub fn overlay_env(conf: &mut ProjectConfig, file: &Utf8Path) -> Result<()> {
             "LEPTOS_BROWSERQUERY" => conf.browserquery = val,
             "LEPTOS_BIN_TARGET_TRIPLE" => conf.bin_target_triple = Some(val),
             _ if key.starts_with("LEPTOS_") => {
-                log::warn!(
-                    "Env {key} is not used by cargo-leptos {}",
-                    GRAY.paint(file.as_str())
-                )
+                log::warn!("Env {key} is not used by cargo-leptos")
             }
-            _ => log::debug!(
-                r#"Env unused param "{key} = {val}" {}"#,
-                GRAY.paint(file.as_str())
-            ),
+            _ => {}
         }
     }
     Ok(())
