@@ -64,6 +64,9 @@ pub fn build_cargo_server_cmd(
         format!("--bin={}", proj.bin.target),
         "--target-dir=target/server".to_string(),
     ];
+    if let Some(triple) = &proj.bin.target_triple {
+        args.push(format!("--target={triple}"));
+    }
 
     if !proj.bin.default_features {
         args.push("--no-default-features".to_string());

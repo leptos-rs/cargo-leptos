@@ -101,6 +101,10 @@ The server binary is compiled with the features `--no-default-features --feature
 These parameters are used either in the workspace section `[[workspace.metadata.leptos]]` or the package,
 for single-package setups, section `[package.metadata.leptos]`.
 
+Note that the Cargo Manifest uses the word _target_ with two different meanings.
+As a package's configured `[[bin]]` targets and as the compiled output target triple.
+Here, the latter is referred to as _target-triple_.
+
 ## Compilation parameters
 
 ```toml
@@ -133,6 +137,11 @@ bin-profile-release = "my-release-profile"
 #
 # Optional. Defaults to "debug".
 bin-profile-debug = "my-debug-profile"
+
+# The target triple to use when compiling the bin target
+#
+# Optional. Env: LEPTOS_BIN_TARGET_TRIPLE
+bin-target-triple = "x86_64-unknown-linux-gnu"
 
 # The features to use when compiling the lib target
 #

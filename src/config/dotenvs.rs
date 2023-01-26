@@ -34,6 +34,7 @@ pub fn overlay_env(conf: &mut ProjectConfig, file: &Utf8Path) -> Result<()> {
             "LEPTOS_END2END_CMD" => conf.end2end_cmd = Some(val),
             "LEPTOS_END2END_DIR" => conf.end2end_dir = Some(Utf8PathBuf::from(val)),
             "LEPTOS_BROWSERQUERY" => conf.browserquery = val,
+            "LEPTOS_BIN_TARGET_TRIPLE" => conf.bin_target_triple = Some(val),
             _ if key.starts_with("LEPTOS_") => {
                 log::warn!(
                     "Env {key} is not used by cargo-leptos {}",
