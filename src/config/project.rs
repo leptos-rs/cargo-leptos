@@ -16,7 +16,7 @@ use super::{
     assets::AssetsConfig,
     bin_package::BinPackage,
     cli::Opts,
-    dotenvs::{find_env_file, overlay_env},
+    dotenvs::{load_dotenvs, overlay_env},
     end2end::End2EndConfig,
     style::StyleConfig,
 };
@@ -162,9 +162,8 @@ impl ProjectConfig {
     fn parse(dir: &Utf8Path, metadata: &serde_json::Value) -> Result<Self> {
         let mut conf: ProjectConfig = serde_json::from_value(metadata.clone())?;
         conf.config_dir = dir.to_path_buf();
-        if let Some(file) = find_env_file(dir) {
-            overlay_env(&mut conf, &file)?;
-        }
+        let dotenvs = load_dotenvs(dir)?;
+        overlay_env(&mut conf, dotenvs)?;
         if conf.site_root == "/" || conf.site_root == "." {
             bail!(
                 "site-root cannot be '{}'. All the content is erased when building the site.",
