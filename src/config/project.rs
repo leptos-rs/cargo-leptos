@@ -156,6 +156,7 @@ pub struct ProjectConfig {
     pub bin_profile_release: Option<String>,
 
     //Support for tailwind css library
+    #[serde(default)]
     pub tailwind: bool,
 }
 
