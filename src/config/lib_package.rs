@@ -23,6 +23,7 @@ pub struct LibPackage {
     pub output_name: String,
     pub src_paths: Vec<Utf8PathBuf>,
     pub profile: Profile,
+    pub tailwind: bool,
 }
 
 impl LibPackage {
@@ -103,6 +104,7 @@ impl LibPackage {
             output_name,
             src_paths: src_deps,
             profile,
+            tailwind: config.tailwind,
         })
     }
 }

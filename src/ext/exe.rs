@@ -145,6 +145,7 @@ pub enum Exe {
     CargoGenerate,
     Sass,
     WasmOpt,
+    Tailwind
 }
 
 impl Exe {
@@ -243,6 +244,29 @@ impl Exe {
                     exe,
                     manual:
                         "Try manually installing binaryen: https://github.com/WebAssembly/binaryen",
+                }
+            },
+            Exe::Tailwind => {
+                let version = "v3.2.4";
+                let url = match (target_os, target_arch) {
+                    ("windows", "x86_64") => format!("https://github.com/tailwindlabs/tailwindcss/releases/download/{version}/tailwindcss-windows-x64.exe"),
+                    ("macos", "x86_64") => format!("https://github.com/tailwindlabs/tailwindcss/releases/download/{version}/tailwindcss-macos-x64"),
+                    ("macos", "aarch64") => format!("https://github.com/tailwindlabs/tailwindcss/releases/download/{version}/tailwindcss-macos-arm64"),
+                    ("linux", "x86_64") => format!("https://github.com/tailwindlabs/tailwindcss/releases/download/{version}/tailwindcss-linux-x64"),
+                    ("linux", "aarch64") => format!("https://github.com/tailwindlabs/tailwindcss/releases/download/{version}/tailwindcss-linux-arm64"),
+                    _ => bail!("No sass tar binary found for {target_os} {target_arch}")
+                };
+                let exe = match target_os {
+                    "windows" => "dart-sass/sass.bat".to_string(),
+                    _ => "dart-sass/sass".to_string(),
+                };
+                ExeMeta {
+                    cache_dir: cache_dir.clone(),
+                    name: "sass",
+                    version,
+                    url,
+                    exe,
+                    manual: "Try manually installing sass: https://sass-lang.com/install",
                 }
             }
         };

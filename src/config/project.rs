@@ -154,6 +154,9 @@ pub struct ProjectConfig {
     pub lib_profile_release: Option<String>,
     pub bin_profile_dev: Option<String>,
     pub bin_profile_release: Option<String>,
+
+    //Support for tailwind css library
+    pub tailwind: bool,
 }
 
 impl ProjectConfig {
