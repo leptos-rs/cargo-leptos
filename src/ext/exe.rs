@@ -254,19 +254,22 @@ impl Exe {
                     ("macos", "aarch64") => format!("https://github.com/tailwindlabs/tailwindcss/releases/download/{version}/tailwindcss-macos-arm64"),
                     ("linux", "x86_64") => format!("https://github.com/tailwindlabs/tailwindcss/releases/download/{version}/tailwindcss-linux-x64"),
                     ("linux", "aarch64") => format!("https://github.com/tailwindlabs/tailwindcss/releases/download/{version}/tailwindcss-linux-arm64"),
-                    _ => bail!("No sass tar binary found for {target_os} {target_arch}")
+                    _ => bail!("No tailwind binary found for {target_os} {target_arch}")
                 };
-                let exe = match target_os {
-                    "windows" => "dart-sass/sass.bat".to_string(),
-                    _ => "dart-sass/sass".to_string(),
+                let exe = match (target_os, target_arch) {
+                    ("windows", _) => "tailwindcss/tailwindcss-windows-x64.exe".to_string(),
+                    ("macos", "x86_64") => "tailwindcss/tailwindcss-macos-x64".to_string(),
+                    ("macos", "aarch64") => "tailwindcss/tailwindcss-macos-arm64".to_string(),
+                    ("linux", "x86_64") => "tailwindcss/tailwindcss-linux-x64".to_string(),
+                    (_, _) => "tailwindcss/tailwindcss-linux-arm64".to_string(),
                 };
                 ExeMeta {
                     cache_dir: cache_dir.clone(),
-                    name: "sass",
+                    name: "tailwindcss",
                     version,
                     url,
                     exe,
-                    manual: "Try manually installing sass: https://sass-lang.com/install",
+                    manual: "Try manually installing tailwindcss",
                 }
             }
         };
