@@ -86,10 +86,11 @@ impl BinPackage {
             } else {
                 ""
             };
-            metadata
-                .rel_target_dir()
-                .join("server")
-                .join(profile.to_string())
+            let mut file = metadata.rel_target_dir().join("server");
+            if let Some(triple) = &config.bin_target_triple {
+                file = file.join(triple)
+            };
+            file.join(profile.to_string())
                 .join(&name)
                 .with_extension(file_ext)
         };
