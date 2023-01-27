@@ -5,7 +5,7 @@ use crate::{
     config::Project,
     ext::anyhow::Context,
     service,
-    signal::{Interrupt, Product, ProductSet, ReloadSignal, ServerRestart},
+    signal::{Interrupt, Outcome, Product, ProductSet, ReloadSignal, ServerRestart},
 };
 use anyhow::Result;
 use tokio::try_join;
@@ -48,25 +48,31 @@ pub async fn run_loop(proj: &Arc<Project>) -> Result<()> {
         let (serve, front, assets, style) =
             try_join!(server_hdl, front_hdl, assets_hdl, style_hdl)?;
 
-        let set = ProductSet::from(vec![serve?, front?, assets?, style?]);
+        let outcomes = vec![serve?, front?, assets?, style?];
+        let interrupted = outcomes.iter().any(|outcome| *outcome == Outcome::Stopped);
+        if !interrupted {
+            let set = ProductSet::from(outcomes);
 
-        if set.is_empty() {
-            log::trace!("Build step done with no changes");
+            if set.is_empty() {
+                log::trace!("Build step done with no changes");
+            } else {
+                log::trace!("Build step done with changes: {set}");
+            }
+
+            if set.only_style() {
+                ReloadSignal::send_style();
+                log::info!("Watch updated style")
+            } else if set.contains(&Product::Server) {
+                // send product change, then the server will send the reload once it has restarted
+                ServerRestart::send();
+                log::info!("Watch updated {set}. Server restarting")
+            } else if set.contains_any(&[Product::Front, Product::Assets]) {
+                ReloadSignal::send_full();
+                log::info!("Watch updated {set}")
+            }
+            Interrupt::clear_source_changes().await;
         } else {
-            log::trace!("Build step done with changes: {set}");
+            log::info!("Watch interrupted. Restarting build step.");
         }
-
-        if set.only_style() {
-            ReloadSignal::send_style();
-            log::info!("Watch updated style")
-        } else if set.contains(&Product::Server) {
-            // send product change, then the server will send the reload once it has restarted
-            ServerRestart::send();
-            log::info!("Watch updated {set}. Server restarting")
-        } else if set.contains_any(&[Product::Front, Product::Assets]) {
-            ReloadSignal::send_full();
-            log::info!("Watch updated {set}")
-        }
-        Interrupt::clear_source_changes().await;
     }
 }
