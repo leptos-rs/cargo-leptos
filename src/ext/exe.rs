@@ -3,8 +3,9 @@ use crate::{
     logger::GRAY,
 };
 use axum::body::Bytes;
+use std::fs::OpenOptions;
 use std::{
-    io::Cursor,
+    io::{Cursor, Write},
     path::{Path, PathBuf},
 };
 use zip::ZipArchive;
@@ -75,6 +76,15 @@ impl ExeMeta {
         Ok(())
     }
 
+    async fn write_binary(&self, data: &Bytes) -> Result<()> {
+        let dest_dir = self.get_exe_dir_path().join(PathBuf::from(&self.exe));
+        let mut file = OpenOptions::new().write(true).create(true).open(dest_dir).unwrap();
+        match file.write_all(&data) {
+            Err(e) => panic!("Error writing to binary file: {}", e),
+            Ok(()) => Ok(())
+        }
+    }
+
     async fn download(&self) -> Result<PathBuf> {
         log::info!("Command installing {} ...", self.get_name());
 
@@ -82,8 +92,12 @@ impl ExeMeta {
             .fetch_archive()
             .await
             .context(format!("Could not download {}", self.get_name()))?;
-        self.extract_archive(&data)
+        if self.name == "tailwindcss" {
+            self.write_binary(&data).await.context(format!("Could not write binary {}", self.get_name()))?;
+        } else {
+            self.extract_archive(&data)
             .context(format!("Could not extract {}", self.get_name()))?;
+        }
 
         let binary_path = self.exe_in_cache().context(format!(
             "Binary downloaded and extracted but could still not be found at {:?}",
@@ -257,11 +271,11 @@ impl Exe {
                     _ => bail!("No tailwind binary found for {target_os} {target_arch}")
                 };
                 let exe = match (target_os, target_arch) {
-                    ("windows", _) => "tailwindcss/tailwindcss-windows-x64.exe".to_string(),
-                    ("macos", "x86_64") => "tailwindcss/tailwindcss-macos-x64".to_string(),
-                    ("macos", "aarch64") => "tailwindcss/tailwindcss-macos-arm64".to_string(),
-                    ("linux", "x86_64") => "tailwindcss/tailwindcss-linux-x64".to_string(),
-                    (_, _) => "tailwindcss/tailwindcss-linux-arm64".to_string(),
+                    ("windows", _) => "tailwindcss-windows-x64.exe".to_string(),
+                    ("macos", "x86_64") => "tailwindcss-macos-x64".to_string(),
+                    ("macos", "aarch64") => "tailwindcss-macos-arm64".to_string(),
+                    ("linux", "x86_64") => "tailwindcss-linux-x64".to_string(),
+                    (_, _) => "tailwindcss-linux-arm64".to_string(),
                 };
                 ExeMeta {
                     cache_dir: cache_dir.clone(),
