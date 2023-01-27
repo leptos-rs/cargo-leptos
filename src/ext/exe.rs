@@ -3,7 +3,7 @@ use crate::{
     logger::GRAY,
 };
 use axum::body::Bytes;
-use std::fs::OpenOptions;
+use std::fs::{File, self};
 use std::{
     io::{Cursor, Write},
     path::{Path, PathBuf},
@@ -77,11 +77,12 @@ impl ExeMeta {
     }
 
     async fn write_binary(&self, data: &Bytes) -> Result<()> {
-        let dest_dir = self.get_exe_dir_path().join(PathBuf::from(&self.exe));
-        let mut file = OpenOptions::new().write(true).create(true).open(dest_dir).unwrap();
+        let dest_dir = self.cache_dir.as_path().join(&self.get_name());
+        fs::create_dir_all(&dest_dir).unwrap();
+        let mut file = File::create(&dest_dir.join(Path::new(&self.exe))).unwrap();
         match file.write_all(&data) {
-            Err(e) => panic!("Error writing to binary file: {}", e),
-            Ok(()) => Ok(())
+            Err(err) => panic!("Error writing binary file: {}", err),
+            Ok(()) => Ok(()),
         }
     }
 
