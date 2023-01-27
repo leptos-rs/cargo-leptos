@@ -129,6 +129,7 @@ impl std::fmt::Debug for LibPackage {
                     .join(", "),
             )
             .field("profile", &self.profile)
+            .field("tailwind", &self.tailwind)
             .finish_non_exhaustive()
     }
 }
