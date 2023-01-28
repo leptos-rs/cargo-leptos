@@ -8,11 +8,15 @@ use crate::{
         anyhow::{Context, Result},
         fs,
     },
+    signal::{Interrupt, Outcome},
 };
 
 pub async fn build_all(conf: &Config) -> Result<()> {
     for proj in &conf.projects {
         build_proj(proj).await?;
+        if Interrupt::is_shutdown_requested().await {
+            return Ok(());
+        }
     }
     Ok(())
 }
@@ -23,9 +27,21 @@ pub async fn build_proj(proj: &Arc<Project>) -> Result<()> {
     }
     let changes = ChangeSet::all_changes();
 
-    compile::front(proj, &changes).await.await??;
-    compile::assets(proj, &changes, true).await.await??;
-    compile::style(proj, &changes).await.await??;
-    compile::server(proj, &changes).await.await??;
+    if compile::front(proj, &changes).await.await?? == Outcome::Stopped {
+        return Ok(());
+    }
+
+    if compile::assets(proj, &changes, true).await.await?? == Outcome::Stopped {
+        return Ok(());
+    }
+
+    if compile::style(proj, &changes).await.await?? == Outcome::Stopped {
+        return Ok(());
+    }
+
+    if compile::server(proj, &changes).await.await?? == Outcome::Stopped {
+        return Ok(());
+    }
+
     Ok(())
 }

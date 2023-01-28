@@ -14,6 +14,9 @@ use super::build::build_proj;
 
 pub async fn watch(proj: &Arc<Project>) -> Result<()> {
     build_proj(proj).await?;
+    if Interrupt::is_shutdown_requested().await {
+        return Ok(());
+    }
 
     let _watch = service::notify::spawn(proj).await?;
 
