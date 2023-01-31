@@ -56,7 +56,7 @@ impl ExeMeta {
         Ok(data)
     }
 
-    fn extract_archive(&self, data: &Bytes) -> Result<()> {
+    fn extract_downloaded(&self, data: &Bytes) -> Result<()> {
         let dest_dir = &self.get_exe_dir_path();
 
         if self.url.ends_with(".zip") {
@@ -64,7 +64,7 @@ impl ExeMeta {
         } else if self.url.ends_with(".tar.gz") {
             extract_tar(data, &dest_dir)?;
         } else {
-            bail!("The download URL does not contain either '.tar.gz' or '.zip' extension");
+            self.write_binary(&data).context(format!("Could not write binary {}", self.get_name()))?;
         }
 
         log::debug!(
@@ -76,7 +76,7 @@ impl ExeMeta {
         Ok(())
     }
 
-    async fn write_binary(&self, data: &Bytes) -> Result<()> {
+    fn write_binary(&self, data: &Bytes) -> Result<()> {
         let dest_dir = self.cache_dir.as_path().join(&self.get_name());
         fs::create_dir_all(&dest_dir).unwrap();
         let mut file = File::create(&dest_dir.join(Path::new(&self.exe))).unwrap();
@@ -93,12 +93,9 @@ impl ExeMeta {
             .fetch_archive()
             .await
             .context(format!("Could not download {}", self.get_name()))?;
-        if self.name == "tailwindcss" {
-            self.write_binary(&data).await.context(format!("Could not write binary {}", self.get_name()))?;
-        } else {
-            self.extract_archive(&data)
+           
+        self.extract_downloaded(&data)
             .context(format!("Could not extract {}", self.get_name()))?;
-        }
 
         let binary_path = self.exe_in_cache().context(format!(
             "Binary downloaded and extracted but could still not be found at {:?}",
