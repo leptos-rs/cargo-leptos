@@ -3,8 +3,9 @@ use crate::{
     logger::GRAY,
 };
 use bytes::Bytes;
+use std::fs::{self, File};
 use std::{
-    io::Cursor,
+    io::{Cursor, Write},
     path::{Path, PathBuf},
 };
 use zip::ZipArchive;
@@ -75,13 +76,16 @@ impl<'a> ExeCache<'a> {
         Ok(data)
     }
 
-    fn extract_archive(&self, data: &Bytes) -> Result<()> {
+    fn extract_downloaded(&self, data: &Bytes) -> Result<()> {
+        let dest_dir = &self.exe_in_cache()?;
+
         if self.meta.url.ends_with(".zip") {
-            extract_zip(data, &self.exe_dir)?;
+            extract_zip(data, &dest_dir)?;
         } else if self.meta.url.ends_with(".tar.gz") {
-            extract_tar(data, &self.exe_dir)?;
+            extract_tar(data, &dest_dir)?;
         } else {
-            bail!("The download URL does not end with '.tar.gz' or '.zip'");
+            self.write_binary(&data)
+                .context(format!("Could not write binary {}", self.meta.get_name()))?;
         }
 
         log::debug!(
@@ -93,6 +97,16 @@ impl<'a> ExeCache<'a> {
         Ok(())
     }
 
+    fn write_binary(&self, data: &Bytes) -> Result<()> {
+        let dest_dir = self.exe_dir.as_path().join(&self.meta.get_name());
+        fs::create_dir_all(&dest_dir).unwrap();
+        let mut file = File::create(&dest_dir.join(Path::new(&self.meta.exe))).unwrap();
+        match file.write_all(&data) {
+            Err(err) => panic!("Error writing binary file: {}", err),
+            Ok(()) => Ok(()),
+        }
+    }
+
     async fn download(&self) -> Result<PathBuf> {
         log::info!("Command installing {} ...", self.meta.get_name());
 
@@ -100,7 +114,8 @@ impl<'a> ExeCache<'a> {
             .fetch_archive()
             .await
             .context(format!("Could not download {}", self.meta.get_name()))?;
-        self.extract_archive(&data)
+
+        self.extract_downloaded(&data)
             .context(format!("Could not extract {}", self.meta.get_name()))?;
 
         let binary_path = self.exe_in_cache().context(format!(
@@ -163,6 +178,7 @@ pub enum Exe {
     CargoGenerate,
     Sass,
     WasmOpt,
+    Tailwind,
 }
 
 impl Exe {
@@ -266,6 +282,31 @@ impl Exe {
                     exe,
                     manual:
                         "Try manually installing binaryen: https://github.com/WebAssembly/binaryen",
+                }
+            }
+            Exe::Tailwind => {
+                let version = "v3.2.4";
+                let url = match (target_os, target_arch) {
+                    ("windows", "x86_64") => format!("https://github.com/tailwindlabs/tailwindcss/releases/download/{version}/tailwindcss-windows-x64.exe"),
+                    ("macos", "x86_64") => format!("https://github.com/tailwindlabs/tailwindcss/releases/download/{version}/tailwindcss-macos-x64"),
+                    ("macos", "aarch64") => format!("https://github.com/tailwindlabs/tailwindcss/releases/download/{version}/tailwindcss-macos-arm64"),
+                    ("linux", "x86_64") => format!("https://github.com/tailwindlabs/tailwindcss/releases/download/{version}/tailwindcss-linux-x64"),
+                    ("linux", "aarch64") => format!("https://github.com/tailwindlabs/tailwindcss/releases/download/{version}/tailwindcss-linux-arm64"),
+                    _ => bail!("No tailwind binary found for {target_os} {target_arch}")
+                };
+                let exe = match (target_os, target_arch) {
+                    ("windows", _) => "tailwindcss-windows-x64.exe".to_string(),
+                    ("macos", "x86_64") => "tailwindcss-macos-x64".to_string(),
+                    ("macos", "aarch64") => "tailwindcss-macos-arm64".to_string(),
+                    ("linux", "x86_64") => "tailwindcss-linux-x64".to_string(),
+                    (_, _) => "tailwindcss-linux-arm64".to_string(),
+                };
+                ExeMeta {
+                    name: "tailwindcss",
+                    version,
+                    url,
+                    exe,
+                    manual: "Try manually installing tailwindcss",
                 }
             }
         };

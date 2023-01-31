@@ -25,6 +25,7 @@ Config {
                 output_name: "project2",
                 src_paths: "project2/src",
                 profile: Debug,
+                tailwind: false,
                 ..
             },
             bin: BinPackage {

@@ -16,6 +16,17 @@ async fn download_sass() {
 }
 
 #[tokio::test]
+async fn download_tailwind() {
+    let dir = TempDir::new().unwrap();
+    let meta = Exe::Tailwind.meta_with_dir(dir.path().to_path_buf()).unwrap();
+    let e = meta.from_cache().await;
+    assert!(e.is_ok(), "{e:#?}\n{:#?}\nFiles: \n {}", meta, ls(&dir));
+
+    let e = e.unwrap();
+    assert!(e.exists(), "{:#?}\nFiles: \n{}", meta, ls(&dir))
+}
+
+#[tokio::test]
 async fn download_cargo_generate() {
     let dir = TempDir::new().unwrap();
     let meta = Exe::CargoGenerate.meta().unwrap();
