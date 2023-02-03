@@ -96,7 +96,7 @@ fn absolute_git_url(url: &Option<String>) -> Option<String> {
     match url {
         Some(url) => match url.as_str() {
             "leptos-rs/start" => Some("https://github.com/leptos-rs/start".to_string()),
-            "leptos-rs/start-axum" => Some("https://github.com/leptos-rs/start-axum.git".to_string()),
+            "leptos-rs/start-axum" => Some("https://github.com/leptos-rs/start-axum".to_string()),
             _ => Some(url.to_string()),
         },
         None => None,
