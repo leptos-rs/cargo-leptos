@@ -61,9 +61,11 @@ pub fn build_cargo_server_cmd(
     let mut args = vec![
         cmd.to_string(),
         format!("--package={}", proj.bin.name.as_str()),
-        format!("--bin={}", proj.bin.target),
-        "--target-dir=target/server".to_string(),
     ];
+    if cmd != "test" {
+        args.push(format!("--bin={}", proj.bin.target))
+    }
+    args.push("--target-dir=target/server".to_string());
     if let Some(triple) = &proj.bin.target_triple {
         args.push(format!("--target={triple}"));
     }
