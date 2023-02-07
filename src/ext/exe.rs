@@ -98,8 +98,7 @@ impl ExeMeta {
             Ok(path)
         } else {
             if cfg!(feature="no_downloads"){
-                bail!("{} is required but was not found. Please install
-                       it using your OS's tool of choice", &self.name);
+                bail!("{} is required but was not found. Please install it using your OS's tool of choice", &self.name);
             }
             self.download().await
         }
