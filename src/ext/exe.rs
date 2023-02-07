@@ -97,6 +97,9 @@ impl ExeMeta {
         if let Ok(path) = self.exe_in_cache() {
             Ok(path)
         } else {
+            if cfg!(feature="no_downloads"){
+                bail!("{} is required but was not found. Please install it using your OS's tool of choice", &self.name);
+            }
             self.download().await
         }
     }

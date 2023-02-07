@@ -56,3 +56,4 @@ temp-dir = "0.1"
 
 [features]
 full_tests = []
+no_downloads = []

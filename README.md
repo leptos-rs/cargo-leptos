@@ -35,7 +35,7 @@ Build tool for [Leptos](https://crates.io/crates/leptos):
 - `build` build the server and client.
 - `end2end` command for building, running the server and calling a bash shell hook. The hook would typically launch Playwright or similar.
 - `new` command for creating a new project based on templates, using [cargo-generate](https://cargo-generate.github.io/cargo-generate/index.html). WIP: You'll need to ask on the Leptos [discord](https://discord.gg/YdRAhS7eQB) for the url of a template.
-
+- 'no_downloads' feature to allow user management of optional dependencies
   <br/>
 
 # Getting started
@@ -47,6 +47,12 @@ Install:
 If you for any reason needs the bleeding-edge super fresh version:
 
 > `cargo install --git https://github.com/akesson/cargo-leptos cargo-leptos`
+
+If you wish to handle your own dependencies, or are using Nix or NixOs, you can
+install it with the `no_downloads` feature enabled to prevent cargo-leptos from
+trying to download and install optional deps like dart-sass.
+
+> `cargo install --features no_downloads --locked cargo-leptos`
 
 Help:
 
