@@ -7,7 +7,7 @@ repository = "https://github.com/leptos-rs/cargo-leptos"
 description = "Build tool for Leptos."
 categories = ["development-tools", "wasm", "web-programming"]
 keywords = ["leptos"]
-version = "0.1.6"
+version = "0.1.7"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -15,10 +15,10 @@ edition = "2021"
 [dependencies]
 clap = { version = "4.0", features = ["derive"] }
 serde = { version = "1.0", features = ["derive"] }
-toml = "0.6"
+toml = "0.7"
 anyhow = "1.0"
 log = "0.4"
-flexi_logger = "0.24"
+flexi_logger = "0.25"
 lightningcss = { version = "1.0.0-alpha.39", features = ["browserslist"] }
 tokio = { version = "1.4", default-features = false, features = ["full"] }
 axum = { version = "0.5", features = ["ws"] }
