@@ -10,6 +10,7 @@ mod lib_package;
 mod profile;
 mod project;
 mod style;
+mod tailwind;
 
 use std::{fmt::Debug, sync::Arc};
 
@@ -24,6 +25,7 @@ use cargo_metadata::Metadata;
 pub use profile::Profile;
 pub use project::{Project, ProjectConfig};
 pub use style::StyleConfig;
+pub use tailwind::TailwindConfig;
 
 pub struct Config {
     /// absolute path to the working dir

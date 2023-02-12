@@ -9,7 +9,7 @@ use crate::{
 use camino::Utf8PathBuf;
 use cargo_metadata::Metadata;
 
-use super::{project::ProjectDefinition, Profile, ProjectConfig};
+use super::{project::ProjectDefinition, tailwind::TailwindConfig, Profile, ProjectConfig};
 
 pub struct LibPackage {
     pub name: String,
@@ -23,7 +23,7 @@ pub struct LibPackage {
     pub output_name: String,
     pub src_paths: Vec<Utf8PathBuf>,
     pub profile: Profile,
-    pub tailwind: bool,
+    pub tailwind: Option<TailwindConfig>,
 }
 
 impl LibPackage {
@@ -104,7 +104,7 @@ impl LibPackage {
             output_name,
             src_paths: src_deps,
             profile,
-            tailwind: config.tailwind,
+            tailwind: TailwindConfig::new(config)?,
         })
     }
 }
