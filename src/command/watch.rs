@@ -13,7 +13,13 @@ use tokio::try_join;
 use super::build::build_proj;
 
 pub async fn watch(proj: &Arc<Project>) -> Result<()> {
+    // even if the build fails, we continue
     build_proj(proj).await?;
+
+    // but if ctrl-c is pressed, we stop
+    if Interrupt::is_shutdown_requested().await {
+        return Ok(());
+    }
 
     let _watch = service::notify::spawn(proj).await?;
 

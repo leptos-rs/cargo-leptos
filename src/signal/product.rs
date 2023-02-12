@@ -14,6 +14,12 @@ pub enum Outcome {
     Failed,
 }
 
+impl Outcome {
+    pub fn is_success(&self) -> bool {
+        matches!(self, Outcome::Success(_))
+    }
+}
+
 #[derive(Debug, Display, Clone, PartialEq, Eq, Hash)]
 pub enum Product {
     Server,
