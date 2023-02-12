@@ -170,6 +170,12 @@ impl ProjectConfig {
                 conf.site_root
             );
         }
+        if conf.site_addr.port() == conf.reload_port {
+            bail!(
+                "The site-addr port and reload-port cannot be the same: {}",
+                conf.reload_port
+            );
+        }
         Ok(conf)
     }
 }
