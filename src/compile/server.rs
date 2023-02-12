@@ -4,7 +4,7 @@ use super::ChangeSet;
 use crate::{
     config::Project,
     ext::anyhow::{Context, Result},
-    ext::sync::wait_interruptible,
+    ext::sync::{wait_interruptible, CommandResult},
     logger::GRAY,
     signal::{Interrupt, Outcome, Product},
 };
@@ -25,7 +25,7 @@ pub async fn server(proj: &Arc<Project>, changes: &ChangeSet) -> JoinHandle<Resu
         let (envs, line, process) = server_cargo_process("build", &proj)?;
 
         match wait_interruptible("Cargo", process, Interrupt::subscribe_any()).await? {
-            true => {
+            CommandResult::Success => {
                 log::debug!("Cargo envs: {}", GRAY.paint(envs));
                 log::info!("Cargo finished {}", GRAY.paint(line));
 
@@ -42,7 +42,8 @@ pub async fn server(proj: &Arc<Project>, changes: &ChangeSet) -> JoinHandle<Resu
                     Ok(Outcome::Success(Product::None))
                 }
             }
-            false => Ok(Outcome::Stopped),
+            CommandResult::Interrupted => Ok(Outcome::Stopped),
+            CommandResult::Failure => Ok(Outcome::Failed),
         }
     })
 }

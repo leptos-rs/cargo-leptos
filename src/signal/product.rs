@@ -11,6 +11,7 @@ lazy_static::lazy_static! {
 pub enum Outcome {
     Success(Product),
     Stopped,
+    Failed,
 }
 
 #[derive(Debug, Display, Clone, PartialEq, Eq, Hash)]
