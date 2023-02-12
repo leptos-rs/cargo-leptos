@@ -2,21 +2,27 @@ use crate::ext::anyhow::{bail, Context, Result};
 use std::{net::SocketAddr, time::Duration};
 use tokio::{net::TcpStream, process::Child, sync::broadcast, time::sleep};
 
+pub enum CommandResult {
+    Success,
+    Failure,
+    Interrupted,
+}
+
 /// return false if interrupted or if exit code wasn't success.
 pub async fn wait_interruptible(
     name: &str,
     mut process: Child,
     mut interrupt_rx: broadcast::Receiver<()>,
-) -> Result<bool> {
+) -> Result<CommandResult> {
     tokio::select! {
         res = process.wait() => match res {
             Ok(exit) => {
                 if exit.success() {
                     log::trace!("{name} process finished with success");
-                    Ok(true)
+                    Ok(CommandResult::Success)
                 } else {
                     log::trace!("{name} process finished with code {:?}", exit.code());
-                    Ok(false)
+                    Ok(CommandResult::Failure)
                 }
             }
             Err(e) => bail!("Command failed due to: {e}"),
@@ -24,7 +30,7 @@ pub async fn wait_interruptible(
         _ = interrupt_rx.recv() => {
             process.kill().await.context("Could not kill process")?;
             log::trace!("{name} process interrupted");
-            Ok(false)
+            Ok(CommandResult::Interrupted)
         }
     }
 }

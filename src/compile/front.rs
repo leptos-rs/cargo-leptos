@@ -3,7 +3,7 @@ use std::sync::Arc;
 use super::ChangeSet;
 use crate::config::Project;
 use crate::ext::fs;
-use crate::ext::sync::wait_interruptible;
+use crate::ext::sync::{wait_interruptible, CommandResult};
 use crate::signal::{Interrupt, Outcome, Product};
 use crate::{
     ext::{
@@ -31,8 +31,10 @@ pub async fn front(proj: &Arc<Project>, changes: &ChangeSet) -> JoinHandle<Resul
 
         let (envs, line, process) = front_cargo_process("build", true, &proj)?;
 
-        if !wait_interruptible("Cargo", process, Interrupt::subscribe_any()).await? {
-            return Ok(Outcome::Stopped);
+        match wait_interruptible("Cargo", process, Interrupt::subscribe_any()).await? {
+            CommandResult::Interrupted => return Ok(Outcome::Stopped),
+            CommandResult::Failure => return Ok(Outcome::Failed),
+            _ => {}
         }
         log::debug!("Cargo envs: {}", GRAY.paint(envs));
         log::info!("Cargo finished {}", GRAY.paint(line));
@@ -107,8 +109,12 @@ async fn bindgen(proj: &Project) -> Result<Outcome> {
 
     bindgen.wasm_mut().emit_wasm_file(&wasm_file.dest).dot()?;
     log::trace!("Front wrote wasm to {:?}", wasm_file.dest.as_str());
-    if proj.release && !optimize(&wasm_file.dest, interrupt).await.dot()? {
-        return Ok(Outcome::Stopped);
+    if proj.release {
+        match optimize(&wasm_file.dest, interrupt).await.dot()? {
+            CommandResult::Interrupted => return Ok(Outcome::Stopped),
+            CommandResult::Failure => return Ok(Outcome::Failed),
+            _ => {}
+        }
     }
 
     let module_js = bindgen.local_modules().values().join("\n");
@@ -147,7 +153,7 @@ async fn bindgen(proj: &Project) -> Result<Outcome> {
     }
 }
 
-async fn optimize(file: &Utf8Path, interrupt: broadcast::Receiver<()>) -> Result<bool> {
+async fn optimize(file: &Utf8Path, interrupt: broadcast::Receiver<()>) -> Result<CommandResult> {
     let wasm_opt = Exe::WasmOpt.get().await.dot()?;
 
     let args = [file.as_str(), "-Os", "-o", file.as_str()];

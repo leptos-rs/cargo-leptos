@@ -49,8 +49,16 @@ pub async fn run_loop(proj: &Arc<Project>) -> Result<()> {
             try_join!(server_hdl, front_hdl, assets_hdl, style_hdl)?;
 
         let outcomes = vec![serve?, front?, assets?, style?];
+
+        let failed = outcomes.iter().any(|outcome| *outcome == Outcome::Failed);
         let interrupted = outcomes.iter().any(|outcome| *outcome == Outcome::Stopped);
-        if !interrupted {
+
+        if failed {
+            log::warn!("Build failed");
+            Interrupt::clear_source_changes().await;
+        } else if interrupted {
+            log::info!("Build interrupted. Restarting.");
+        } else {
             let set = ProductSet::from(outcomes);
 
             if set.is_empty() {
@@ -71,8 +79,6 @@ pub async fn run_loop(proj: &Arc<Project>) -> Result<()> {
                 log::info!("Watch updated {set}")
             }
             Interrupt::clear_source_changes().await;
-        } else {
-            log::info!("Watch interrupted. Restarting build step.");
         }
     }
 }
