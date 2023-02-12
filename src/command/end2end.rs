@@ -17,7 +17,10 @@ pub async fn end2end_all(conf: &Config) -> Result<()> {
 
 pub async fn end2end_proj(proj: &Arc<Project>) -> Result<()> {
     if let Some(e2e) = &proj.end2end {
-        super::build::build_proj(proj).await.dot()?;
+        if !super::build::build_proj(proj).await.dot()? {
+            return Ok(());
+        }
+
         let server = serve::spawn(proj).await;
         try_run(&e2e.cmd, &e2e.dir)
             .await
