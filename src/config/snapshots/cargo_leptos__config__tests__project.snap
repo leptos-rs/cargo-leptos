@@ -25,7 +25,7 @@ Config {
                 output_name: "example",
                 src_paths: "src",
                 profile: Debug,
-                tailwind: false,
+                tailwind: None,
                 ..
             },
             bin: BinPackage {
