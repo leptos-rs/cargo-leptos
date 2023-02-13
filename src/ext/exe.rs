@@ -97,7 +97,7 @@ impl ExeMeta {
         if let Ok(path) = self.exe_in_cache() {
             Ok(path)
         } else {
-            if cfg!(feature="no_downloads"){
+            if cfg!(feature = "no_downloads") {
                 bail!("{} is required but was not found. Please install it using your OS's tool of choice", &self.name);
             }
             self.download().await
@@ -201,7 +201,7 @@ impl Exe {
                 }
             }
             Exe::Sass => {
-                let version = "1.57.1";
+                let version = "1.58.0";
                 let url = match (target_os, target_arch) {
                     ("windows", "x86_64") => format!("https://github.com/sass/dart-sass/releases/download/{version}/dart-sass-{version}-windows-x64.zip"),
                     ("macos" | "linux", "x86_64") => format!("https://github.com/sass/dart-sass/releases/download/{version}/dart-sass-{version}-{target_os}-x64.tar.gz"),
