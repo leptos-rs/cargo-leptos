@@ -13,7 +13,7 @@ use super::util::os_arch;
 
 #[derive(Debug)]
 pub struct ExeMeta {
-    cache_dir: PathBuf,
+    cache_dir: Option<PathBuf>,
     name: &'static str,
     version: &'static str,
     url: String,
@@ -31,18 +31,24 @@ impl ExeMeta {
     }
 
     /// Returns an absolute path to be used for the binary.
-    fn get_exe_dir_path(&self) -> PathBuf {
-        self.cache_dir.join(self.get_name())
+    fn get_exe_dir_path(&self) -> Option<PathBuf> {
+        if let Some(cache_dir) = &self.cache_dir {
+            Some(cache_dir.join(self.get_name()))
+        } else {
+            None
+        }
     }
 
-    fn exe_in_cache(&self) -> Result<PathBuf> {
-        let exe_path = self.get_exe_dir_path().join(PathBuf::from(&self.exe));
-
+    fn exe_in_cache(&self) -> Result<Option<PathBuf>> {
+        let exe_path = match self.get_exe_dir_path() {
+            Some(dir_path) => dir_path.join(PathBuf::from(&self.exe)),
+            None => return Ok(None),
+        };
         if !exe_path.exists() {
             bail!("The path {exe_path:?} doesn't exist");
         }
 
-        Ok(exe_path)
+        Ok(Some(exe_path))
     }
 
     async fn fetch_archive(&self) -> Result<Bytes> {
@@ -57,27 +63,27 @@ impl ExeMeta {
 
     fn extract_archive(&self, data: &Bytes) -> Result<()> {
         let dest_dir = &self.get_exe_dir_path();
+        if let Some(dest_dir) = dest_dir {
+            if self.url.ends_with(".zip") {
+                extract_zip(data, &dest_dir)?;
+            } else if self.url.ends_with(".tar.gz") {
+                extract_tar(data, &dest_dir)?;
+            } else {
+                bail!("The download URL does not contain either '.tar.gz' or '.zip' extension");
+            }
 
-        if self.url.ends_with(".zip") {
-            extract_zip(data, &dest_dir)?;
-        } else if self.url.ends_with(".tar.gz") {
-            extract_tar(data, &dest_dir)?;
-        } else {
-            bail!("The download URL does not contain either '.tar.gz' or '.zip' extension");
+            log::debug!(
+                "Install decompressing {} {}",
+                self.name,
+                GRAY.paint(dest_dir.to_string_lossy())
+            );
         }
-
-        log::debug!(
-            "Install decompressing {} {}",
-            self.name,
-            GRAY.paint(dest_dir.to_string_lossy())
-        );
 
         Ok(())
     }
 
     async fn download(&self) -> Result<PathBuf> {
         log::info!("Command installing {} ...", self.get_name());
-
         let data = self
             .fetch_archive()
             .await
@@ -90,11 +96,16 @@ impl ExeMeta {
             self.get_exe_dir_path()
         ))?;
         log::info!("Command {} installed.", self.get_name());
+
+        let Some(binary_path) = binary_path else{
+        bail!("No cache folder to store the download in. Something has gone wrong.")
+        };
+
         Ok(binary_path)
     }
 
     pub async fn from_cache(&self) -> Result<PathBuf> {
-        if let Ok(path) = self.exe_in_cache() {
+        if let Ok(Some(path)) = self.exe_in_cache() {
             Ok(path)
         } else {
             if cfg!(feature = "no_downloads") {
@@ -122,7 +133,7 @@ fn extract_zip(src: &Bytes, dest: &Path) -> Result<()> {
     Ok(())
 }
 
-/// Returns the absolute path to app cache directory.
+/// Returns the absolute path to app cache directory, if it exists.
 ///
 /// May return an error when system cache directory does not exist,
 /// or when it can not create app specific directory.
@@ -132,16 +143,23 @@ fn extract_zip(src: &Bytes, dest: &Path) -> Result<()> {
 /// | Linux    | /home/alice/.cache/NAME           |
 /// | macOS    | /Users/Alice/Library/Caches/NAME  |
 /// | Windows  | C:\Users\Alice\AppData\Local\NAME |
-fn get_cache_dir(name: &str) -> Result<PathBuf> {
+fn get_cache_dir(name: &str) -> Result<Option<PathBuf>> {
+    // If the no_downloads feature is enabled, we don't need a cache dir
+    if cfg!(feature = "no_downloads") {
+        return Ok(None);
+    }
+    // This cache dir is looking for the system cache dir set by the dir crate
     let dir = dirs::cache_dir()
         .ok_or_else(|| anyhow::anyhow!("Cache directory does not exist"))?
         .join(name);
-
     if !dir.exists() {
-        std::fs::create_dir_all(&dir).context(format!("Could not create dir {dir:?}"))?;
+        if cfg!(not(feature = "no_downloads")) {
+            std::fs::create_dir_all(&dir).context(format!("Could not create dir {dir:?}"))?;
+            return Ok(Some(dir));
+        }
     }
 
-    Ok(dir)
+    Ok(None)
 }
 
 pub enum Exe {
@@ -170,7 +188,7 @@ impl Exe {
         Ok(path)
     }
 
-    pub fn meta_with_dir(&self, cache_dir: PathBuf) -> Result<ExeMeta> {
+    pub fn meta_with_dir(&self, cache_dir: Option<PathBuf>) -> Result<ExeMeta> {
         let (target_os, target_arch) = os_arch().unwrap();
 
         let exe = match self {
@@ -191,6 +209,7 @@ impl Exe {
                     _ => "cargo-generate".to_string(),
                 };
                 let url = format!("https://github.com/cargo-generate/cargo-generate/releases/download/v{version}/cargo-generate-v{version}-{target}.tar.gz");
+
                 ExeMeta {
                     cache_dir: cache_dir.clone(),
                     name: "cargo-generate",
@@ -212,6 +231,7 @@ impl Exe {
                     "windows" => "dart-sass/sass.bat".to_string(),
                     _ => "dart-sass/sass".to_string(),
                 };
+
                 ExeMeta {
                     cache_dir: cache_dir.clone(),
                     name: "sass",
@@ -238,6 +258,7 @@ impl Exe {
                     "windows" => format!("binaryen-{version}/bin/wasm-opt.exe"),
                     _ => format!("binaryen-{version}/bin/wasm-opt"),
                 };
+
                 ExeMeta {
                     cache_dir: cache_dir.clone(),
                     name: "wasm-opt",

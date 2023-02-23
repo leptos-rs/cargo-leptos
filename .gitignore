@@ -13,3 +13,8 @@ playwright/.cache/
 **/.env
 
 .DS_Store
+
+.direnv
+.envrc
+flake.nix
+flake.lock
