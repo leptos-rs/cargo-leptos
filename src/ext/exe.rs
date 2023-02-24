@@ -223,7 +223,7 @@ impl Exe {
                 }
             }
             Exe::Sass => {
-                let version = "1.58.0";
+                let version = "1.58.3";
                 let url = match (target_os, target_arch) {
                     ("windows", "x86_64") => format!("https://github.com/sass/dart-sass/releases/download/{version}/dart-sass-{version}-windows-x64.zip"),
                     ("macos" | "linux", "x86_64") => format!("https://github.com/sass/dart-sass/releases/download/{version}/dart-sass-{version}-{target_os}-x64.tar.gz"),
