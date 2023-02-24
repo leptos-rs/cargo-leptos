@@ -9,6 +9,7 @@ Build tool for [Leptos](https://crates.io/crates/leptos):
 
 - [Features](#features)
 - [Getting started](#getting-started)
+  - [Dependencies](#dependencies)
 - [Single-package setup](#single-package-setup)
 - [Workspace setup](#workspace-setup)
 - [Build features](#build-features)
@@ -48,17 +49,31 @@ If you for any reason needs the bleeding-edge super fresh version:
 
 > `cargo install --git https://github.com/akesson/cargo-leptos cargo-leptos`
 
-If you wish to handle your own dependencies, or are using Nix or NixOs, you can
-install it with the `no_downloads` feature enabled to prevent cargo-leptos from
-trying to download and install optional deps like dart-sass.
-
-> `cargo install --features no_downloads --locked cargo-leptos`
-
 Help:
 
 > `cargo leptos --help`
 
 For setting up your project, have a look at the [examples](https://github.com/akesson/cargo-leptos/tree/main/examples)
+
+<br/>
+
+## Dependencies
+
+The dependencies for [sass](https://sass-lang.com/install), [wasm-opt](https://github.com/WebAssembly/binaryen) and
+[cargo-generate](https://github.com/cargo-generate/cargo-generate#installation) are automatically installed in a cache directory
+when they are used if they are not already installed and found by [which](https://crates.io/crates/which).
+Different versions of the dependencies might accumulate in this directory, so feel free to delete it.
+
+| OS      | Example                                   |
+| ------- | ----------------------------------------- |
+| Linux   | /home/alice/.cache/cargo-leptos           |
+| macOS   | /Users/Alice/Library/Caches/cargo-leptos  |
+| Windows | C:\Users\Alice\AppData\Local\cargo-leptos |
+
+If you wish to make it mandatory to install your dependencies, or are using Nix or NixOs, you can
+install it with the `no_downloads` feature enabled to prevent cargo-leptos from trying to download and install them.
+
+> `cargo install --features no_downloads --locked cargo-leptos`
 
 <br/>
 
