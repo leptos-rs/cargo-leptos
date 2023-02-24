@@ -194,6 +194,10 @@ impl Exe {
 
         let exe = match self {
             Exe::CargoGenerate => {
+                // There's a problem with upgrading cargo-generate because the tar file cannot be extracted
+                // due to missing support for https://github.com/alexcrichton/tar-rs/pull/298
+                // The tar extracts ok, but contains a folder `GNUSparseFile.0` which contains a file `cargo-generate`
+                // that has not been fully extracted.
                 let version = "0.17.3";
 
                 let target = match (target_os, target_arch) {
