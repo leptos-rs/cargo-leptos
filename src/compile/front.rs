@@ -103,7 +103,6 @@ async fn bindgen(proj: &Project) -> Result<Outcome> {
         .input_path(&wasm_file.source)
         .web(true)
         .dot()?
-        .omit_imports(true)
         .generate_output()
         .dot()?;
 
@@ -117,16 +116,46 @@ async fn bindgen(proj: &Project) -> Result<Outcome> {
         }
     }
 
+    // Provide snippet files from JS snippets
+    for (path, contents) in bindgen.local_modules().iter() {
+        let path = proj
+            .site
+            .root_dir
+            .join(&proj.site.pkg_dir)
+            .join("snippets")
+            .join(path);
+        fs::create_dir_all(path.parent().unwrap()).await?;
+        fs::write(&path, contents)
+            .await
+            .with_context(|| format!("failed to write `{}`", path))?;
+    }
+
+    // Provide inline JS files
+    for (identifier, list) in bindgen.snippets().iter() {
+        for (i, js) in list.iter().enumerate() {
+            let name = format!("inline{}.js", i);
+            let path = proj
+                .site
+                .root_dir
+                .join(&proj.site.pkg_dir)
+                .join("snippets")
+                .join(identifier)
+                .join(name);
+            fs::create_dir_all(path.parent().unwrap()).await?;
+            fs::write(&path, js)
+                .await
+                .with_context(|| format!("failed to write `{}`", path))?;
+        }
+    }
+
     let module_js = bindgen.local_modules().values().join("\n");
 
-    let snippets = bindgen
-        .snippets()
-        .values()
-        .map(|v| v.join("\n"))
-        .collect::<Vec<_>>()
-        .join("\n");
-
-    let js = snippets + &module_js + bindgen.js();
+    // wasm_bindgen creates snippet files for JS snippets for local imports except for functions
+    // that use the heap. Currently there is no way to distinguish the different functions from here
+    // so we have to put the modules inside the main JS file as a catch all. It is NOT recommended
+    // to use local imports as this will cause resources to load twice (once in the snippet, once
+    // in the main .js file)
+    let js = module_js + bindgen.js();
 
     let wasm_changed = proj
         .site
