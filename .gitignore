@@ -11,5 +11,6 @@ playwright-report/
 playwright/.cache/
 
 **/.env
-
 .DS_Store
+.direnv
+.sass-cache
