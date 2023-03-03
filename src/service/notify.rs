@@ -139,7 +139,7 @@ fn convert(p: &Path, proj: &Project) -> Result<Utf8PathBuf> {
 }
 
 impl Watched {
-    fn try_new(event: &DebouncedEvent, proj: &Project) -> Result<Option<Self>> {
+    pub(crate) fn try_new(event: &DebouncedEvent, proj: &Project) -> Result<Option<Self>> {
         use DebouncedEvent::{
             Chmod, Create, Error, NoticeRemove, NoticeWrite, Remove, Rename, Rescan, Write,
         };
