@@ -2,7 +2,7 @@ use crate::{
     ext::anyhow::{bail, Context, Result},
     logger::GRAY,
 };
-use axum::body::Bytes;
+use bytes::Bytes;
 use std::{
     io::Cursor,
     path::{Path, PathBuf},
@@ -13,7 +13,6 @@ use super::util::os_arch;
 
 #[derive(Debug)]
 pub struct ExeMeta {
-    cache_dir: PathBuf,
     name: &'static str,
     version: &'static str,
     url: String,
@@ -30,13 +29,34 @@ impl ExeMeta {
         format!("{}-{}", &self.name, &self.version)
     }
 
-    /// Returns an absolute path to be used for the binary.
-    fn get_exe_dir_path(&self) -> PathBuf {
-        self.cache_dir.join(self.get_name())
+    async fn cached(&self) -> Result<PathBuf> {
+        let cache_dir = get_cache_dir()?.join(self.get_name());
+        self._with_cache_dir(&cache_dir).await
     }
 
+    async fn _with_cache_dir(&self, cache_dir: &Path) -> Result<PathBuf> {
+        let exe_dir = cache_dir.join(self.get_name());
+        let c = ExeCache {
+            meta: self,
+            exe_dir,
+        };
+        c.get().await
+    }
+
+    #[cfg(test)]
+    pub async fn with_cache_dir(&self, cache_dir: &Path) -> Result<PathBuf> {
+        self._with_cache_dir(cache_dir).await
+    }
+}
+
+pub struct ExeCache<'a> {
+    exe_dir: PathBuf,
+    meta: &'a ExeMeta,
+}
+
+impl<'a> ExeCache<'a> {
     fn exe_in_cache(&self) -> Result<PathBuf> {
-        let exe_path = self.get_exe_dir_path().join(PathBuf::from(&self.exe));
+        let exe_path = self.exe_dir.join(PathBuf::from(&self.meta.exe));
 
         if !exe_path.exists() {
             bail!("The path {exe_path:?} doesn't exist");
@@ -48,58 +68,53 @@ impl ExeMeta {
     async fn fetch_archive(&self) -> Result<Bytes> {
         log::debug!(
             "Install downloading {} {}",
-            self.name,
-            GRAY.paint(&self.url)
+            self.meta.name,
+            GRAY.paint(&self.meta.url)
         );
-        let data = reqwest::get(&self.url).await?.bytes().await?;
+        let data = reqwest::get(&self.meta.url).await?.bytes().await?;
         Ok(data)
     }
 
     fn extract_archive(&self, data: &Bytes) -> Result<()> {
-        let dest_dir = &self.get_exe_dir_path();
-
-        if self.url.ends_with(".zip") {
-            extract_zip(data, &dest_dir)?;
-        } else if self.url.ends_with(".tar.gz") {
-            extract_tar(data, &dest_dir)?;
+        if self.meta.url.ends_with(".zip") {
+            extract_zip(data, &self.exe_dir)?;
+        } else if self.meta.url.ends_with(".tar.gz") {
+            extract_tar(data, &self.exe_dir)?;
         } else {
-            bail!("The download URL does not contain either '.tar.gz' or '.zip' extension");
+            bail!("The download URL does not end with '.tar.gz' or '.zip'");
         }
 
         log::debug!(
             "Install decompressing {} {}",
-            self.name,
-            GRAY.paint(dest_dir.to_string_lossy())
+            self.meta.name,
+            GRAY.paint(self.exe_dir.to_string_lossy())
         );
 
         Ok(())
     }
 
     async fn download(&self) -> Result<PathBuf> {
-        log::info!("Command installing {} ...", self.get_name());
+        log::info!("Command installing {} ...", self.meta.get_name());
 
         let data = self
             .fetch_archive()
             .await
-            .context(format!("Could not download {}", self.get_name()))?;
+            .context(format!("Could not download {}", self.meta.get_name()))?;
         self.extract_archive(&data)
-            .context(format!("Could not extract {}", self.get_name()))?;
+            .context(format!("Could not extract {}", self.meta.get_name()))?;
 
         let binary_path = self.exe_in_cache().context(format!(
             "Binary downloaded and extracted but could still not be found at {:?}",
-            self.get_exe_dir_path()
+            self.exe_dir
         ))?;
-        log::info!("Command {} installed.", self.get_name());
+        log::info!("Command {} installed.", self.meta.get_name());
         Ok(binary_path)
     }
 
-    pub async fn from_cache(&self) -> Result<PathBuf> {
+    async fn get(&self) -> Result<PathBuf> {
         if let Ok(path) = self.exe_in_cache() {
             Ok(path)
         } else {
-            if cfg!(feature = "no_downloads") {
-                bail!("{} is required but was not found. Please install it using your OS's tool of choice", &self.name);
-            }
             self.download().await
         }
     }
@@ -132,10 +147,10 @@ fn extract_zip(src: &Bytes, dest: &Path) -> Result<()> {
 /// | Linux    | /home/alice/.cache/NAME           |
 /// | macOS    | /Users/Alice/Library/Caches/NAME  |
 /// | Windows  | C:\Users\Alice\AppData\Local\NAME |
-fn get_cache_dir(name: &str) -> Result<PathBuf> {
+fn get_cache_dir() -> Result<PathBuf> {
     let dir = dirs::cache_dir()
         .ok_or_else(|| anyhow::anyhow!("Cache directory does not exist"))?
-        .join(name);
+        .join("cargo-leptos");
 
     if !dir.exists() {
         std::fs::create_dir_all(&dir).context(format!("Could not create dir {dir:?}"))?;
@@ -152,29 +167,37 @@ pub enum Exe {
 
 impl Exe {
     pub async fn get(&self) -> Result<PathBuf> {
-        let exe = self.meta()?;
+        let meta = self.meta()?;
 
-        let path = if let Some(path) = exe.from_global_path() {
+        let path = if let Some(path) = meta.from_global_path() {
             path
         } else {
-            exe.from_cache().await.context(exe.manual)?
+            if cfg!(feature = "no_downloads") {
+                bail!("{} is required but was not found. Please install it using your OS's tool of choice", &meta.name);
+            } else {
+                meta.cached().await.context(meta.manual)?
+            }
         };
 
         log::debug!(
             "Command using {} {}. {}",
-            exe.name,
-            exe.version,
+            &meta.name,
+            &meta.version,
             GRAY.paint(path.to_string_lossy())
         );
 
         Ok(path)
     }
 
-    pub fn meta_with_dir(&self, cache_dir: PathBuf) -> Result<ExeMeta> {
+    pub fn meta(&self) -> Result<ExeMeta> {
         let (target_os, target_arch) = os_arch().unwrap();
 
         let exe = match self {
             Exe::CargoGenerate => {
+                // There's a problem with upgrading cargo-generate because the tar file cannot be extracted
+                // due to missing support for https://github.com/alexcrichton/tar-rs/pull/298
+                // The tar extracts ok, but contains a folder `GNUSparseFile.0` which contains a file `cargo-generate`
+                // that has not been fully extracted.
                 let version = "0.17.3";
 
                 let target = match (target_os, target_arch) {
@@ -192,7 +215,6 @@ impl Exe {
                 };
                 let url = format!("https://github.com/cargo-generate/cargo-generate/releases/download/v{version}/cargo-generate-v{version}-{target}.tar.gz");
                 ExeMeta {
-                    cache_dir: cache_dir.clone(),
                     name: "cargo-generate",
                     version,
                     url,
@@ -201,7 +223,7 @@ impl Exe {
                 }
             }
             Exe::Sass => {
-                let version = "1.58.0";
+                let version = "1.58.3";
                 let url = match (target_os, target_arch) {
                     ("windows", "x86_64") => format!("https://github.com/sass/dart-sass/releases/download/{version}/dart-sass-{version}-windows-x64.zip"),
                     ("macos" | "linux", "x86_64") => format!("https://github.com/sass/dart-sass/releases/download/{version}/dart-sass-{version}-{target_os}-x64.tar.gz"),
@@ -213,7 +235,6 @@ impl Exe {
                     _ => "dart-sass/sass".to_string(),
                 };
                 ExeMeta {
-                    cache_dir: cache_dir.clone(),
                     name: "sass",
                     version,
                     url,
@@ -239,7 +260,6 @@ impl Exe {
                     _ => format!("binaryen-{version}/bin/wasm-opt"),
                 };
                 ExeMeta {
-                    cache_dir: cache_dir.clone(),
                     name: "wasm-opt",
                     version,
                     url,
@@ -251,10 +271,5 @@ impl Exe {
         };
 
         Ok(exe)
-    }
-
-    pub fn meta(&self) -> Result<ExeMeta> {
-        let cache_dir = get_cache_dir("cargo-leptos").expect("Can not get cache directory");
-        self.meta_with_dir(cache_dir)
     }
 }
