@@ -104,7 +104,6 @@ async fn bindgen(proj: &Project) -> Result<Outcome> {
         .input_path(&wasm_file.source)
         .web(true)
         .dot()?
-        .omit_imports(true)
         .generate_output()
         .dot()?;
 
