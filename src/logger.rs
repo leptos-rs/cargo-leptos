@@ -28,14 +28,16 @@ pub fn setup(verbose: u8, logs: &[Log]) {
         _ => "trace",
     };
 
-    flexi_logger::Logger::try_with_str(log_level)
-        .unwrap()
-        .filter(Box::new(Filter))
-        .format(format)
-        .start()
-        .unwrap();
+    if LOG_SELECT.get().is_none() {
+        flexi_logger::Logger::try_with_str(log_level)
+            .unwrap()
+            .filter(Box::new(Filter))
+            .format(format)
+            .start()
+            .unwrap();
 
-    LOG_SELECT.set(LogFlag::new(logs)).unwrap();
+        LOG_SELECT.set(LogFlag::new(logs)).unwrap();
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
