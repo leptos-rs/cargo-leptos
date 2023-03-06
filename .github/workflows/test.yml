@@ -29,7 +29,6 @@ jobs:
           with:
             workspaces: |
               .
-              examples/project
               examples/workspace
 
         - name: "Run cargo test --features=full_tests"
