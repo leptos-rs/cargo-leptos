@@ -5,6 +5,7 @@ use super::ChangeSet;
 use crate::config::Project;
 use crate::ext::fs;
 use crate::ext::sync::{wait_interruptible, CommandResult};
+use crate::service::site::SiteFile;
 use crate::signal::{Interrupt, Outcome, Product};
 use crate::{
     ext::{
@@ -13,8 +14,7 @@ use crate::{
     },
     logger::GRAY,
 };
-use camino::Utf8Path;
-use itertools::Itertools;
+use camino::{Utf8Path, Utf8PathBuf};
 use tokio::process::Child;
 use tokio::{process::Command, sync::broadcast, task::JoinHandle};
 use wasm_bindgen_cli_support::Bindgen;
@@ -118,39 +118,24 @@ async fn bindgen(proj: &Project) -> Result<Outcome> {
         }
     }
 
-    let module_js = bindgen.local_modules().values().join("\n");
+    let mut js_changed = false;
 
-    let snippets = values_sorted_by_key(&bindgen.snippets())
-        .iter()
-        .map(|v| v.join("\n"))
-        .collect::<Vec<_>>()
-        .join("\n");
+    js_changed |= write_snippets(proj, bindgen.snippets()).await?;
 
-    let js = snippets + &module_js + bindgen.js();
+    js_changed |= write_modules(proj, bindgen.local_modules()).await?;
 
     let wasm_changed = proj
         .site
         .did_file_change(&proj.lib.wasm_file.as_site_file())
         .await
         .dot()?;
-    let js_changed = proj
+    js_changed |= proj
         .site
-        .updated_with(&proj.lib.js_file, js.as_bytes())
+        .updated_with(&proj.lib.js_file, bindgen.js().as_bytes())
         .await
         .dot()?;
     log::debug!("Front js changed: {js_changed}");
     log::debug!("Front wasm changed: {wasm_changed}");
-
-    log::info!("WASM changed: {wasm_changed}");
-    log::info!("JS changed: {js_changed}");
-    log::info!(
-        "JS_snippet paths {:?}",
-        bindgen.snippets().keys().collect::<Vec<_>>()
-    );
-    log::info!(
-        "JS_module paths {:?}",
-        bindgen.local_modules().keys().collect::<Vec<_>>()
-    );
 
     if js_changed || wasm_changed {
         Ok(Outcome::Success(Product::Front))
@@ -170,8 +155,44 @@ async fn optimize(file: &Utf8Path, interrupt: broadcast::Receiver<()>) -> Result
     wait_interruptible("wasm-opt", process, interrupt).await
 }
 
-fn values_sorted_by_key<T>(map: &HashMap<String, T>) -> Vec<&T> {
-    let mut keys = map.keys().collect::<Vec<_>>();
-    keys.sort();
-    keys.iter().map(|key| map.get(*key).unwrap()).collect()
+async fn write_snippets(proj: &Project, snippets: &HashMap<String, Vec<String>>) -> Result<bool> {
+    let mut js_changed = false;
+
+    // Provide inline JS files
+    for (identifier, list) in snippets.iter() {
+        for (i, js) in list.iter().enumerate() {
+            let name = format!("inline{}.js", i);
+            let site_path = Utf8PathBuf::from("snippets").join(identifier).join(name);
+            let file_path = proj.site.root_relative_pkg_dir().join(&site_path);
+
+            fs::create_dir_all(file_path.parent().unwrap()).await?;
+
+            let site_file = SiteFile {
+                dest: file_path,
+                site: site_path,
+            };
+
+            js_changed |= proj.site.updated_with(&site_file, js.as_bytes()).await?;
+        }
+    }
+    Ok(js_changed)
+}
+
+async fn write_modules(proj: &Project, modules: &HashMap<String, String>) -> Result<bool> {
+    let mut js_changed = false;
+    // Provide snippet files from JS snippets
+    for (path, js) in modules.iter() {
+        let site_path = Utf8PathBuf::from("snippets").join(path);
+        let file_path = proj.site.root_relative_pkg_dir().join(&site_path);
+
+        fs::create_dir_all(file_path.parent().unwrap()).await?;
+
+        let site_file = SiteFile {
+            dest: file_path,
+            site: site_path,
+        };
+
+        js_changed |= proj.site.updated_with(&site_file, js.as_bytes()).await?;
+    }
+    Ok(js_changed)
 }
