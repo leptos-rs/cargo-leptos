@@ -84,6 +84,10 @@ site-pkg-dir = "pkg"
 style-file = "style/main.scss"
 # [Optional] Files in the asset-dir will be copied to the site-root directory
 assets-dir = "assets"
+# JS source dir. `wasm-bindgen` has the option to include JS snippets from JS files
+# with `#[wasm_bindgen(module = "/js/foo.js")]`. A change in any JS file in this dir
+# will trigger a rebuild.
+js-dir = "js"
 # The IP and port (ex: 127.0.0.1:3000) where the server serves the content. Use it in your server setup.
 site-address = "127.0.0.1:3000"
 # The port to use for automatic reload monitoring

@@ -33,6 +33,7 @@ pub struct Project {
     pub site: Arc<Site>,
     pub end2end: Option<End2EndConfig>,
     pub assets: Option<AssetsConfig>,
+    pub js_dir: Utf8PathBuf,
 }
 
 impl Debug for Project {
@@ -66,10 +67,17 @@ impl Project {
                 config.output_name = project.name.to_string();
             }
 
+            let lib = LibPackage::resolve(cli, &metadata, &project, &config)?;
+
+            let js_dir = config
+                .js_dir
+                .clone()
+                .unwrap_or_else(|| Utf8PathBuf::from("src"));
+
             let proj = Project {
                 working_dir: metadata.workspace_root.clone(),
                 name: project.name.clone(),
-                lib: LibPackage::resolve(cli, &metadata, &project, &config)?,
+                lib,
                 bin: BinPackage::resolve(cli, &metadata, &project, &config)?,
                 style: StyleConfig::new(&config),
                 watch,
@@ -77,6 +85,7 @@ impl Project {
                 site: Arc::new(Site::new(&config)),
                 end2end: End2EndConfig::resolve(&config),
                 assets: AssetsConfig::resolve(&config),
+                js_dir,
             };
             resolved.push(Arc::new(proj));
         }
@@ -125,6 +134,8 @@ pub struct ProjectConfig {
     pub style_file: Option<Utf8PathBuf>,
     /// assets dir. content will be copied to the target/site dir
     pub assets_dir: Option<Utf8PathBuf>,
+    /// js dir. changes triggers rebuilds.
+    pub js_dir: Option<Utf8PathBuf>,
     #[serde(default = "default_reload_port")]
     pub reload_port: u16,
     /// command for launching end-2-end integration tests
