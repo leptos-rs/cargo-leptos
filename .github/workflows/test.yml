@@ -28,9 +28,9 @@ jobs:
           uses: Swatinem/rust-cache@v2
           with:
             workspaces: |
-              "."
-              "examples/project"
-              "examples/workspace"
+              .
+              examples/project
+              examples/workspace
 
         - name: "Run cargo test --features=full_tests"
           uses: actions-rs/cargo@v1
