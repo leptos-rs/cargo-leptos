@@ -3,8 +3,8 @@ use crate::{
     logger::GRAY,
 };
 use bytes::Bytes;
-use std::fs::{self, File};
 use std::{
+    fs::{self, File},
     io::{Cursor, Write},
     path::{Path, PathBuf},
 };
