@@ -226,6 +226,13 @@ browserquery = "defaults"
 # Optional. Env: LEPTOS_ASSETS_DIR.
 assets-dir = "assets"
 
+# JS source dir. `wasm-bindgen` has the option to include JS snippets from JS files
+# with `#[wasm_bindgen(module = "/js/foo.js")]`. A change in any JS file in this dir
+# will trigger a rebuild.
+#
+# Optional. Defaults to "src"
+js-dir = "src"
+
 # The IP and port where the server serves the content. Use it in your server setup.
 #
 # Optional, defaults to 127.0.0.1:3000. Env: LEPTOS_SITE_ADDR.

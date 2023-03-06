@@ -20,6 +20,7 @@ pub async fn spawn(proj: &Arc<Project>) -> Result<JoinHandle<()>> {
 
     set.extend(proj.lib.src_paths.clone());
     set.extend(proj.bin.src_paths.clone());
+    set.insert(proj.js_dir.clone());
 
     if let Some(style) = &proj.style {
         set.insert(style.file.source.clone().without_last());
@@ -89,7 +90,10 @@ fn handle(watched: Watched, proj: Arc<Project>) {
         }
     }
 
-    if path.starts_with_any(&proj.lib.src_paths) && path.is_ext_any(&["rs"]) {
+    let lib_rs = path.starts_with_any(&proj.lib.src_paths) && path.is_ext_any(&["rs"]);
+    let lib_js = path.starts_with(&proj.js_dir) && path.is_ext_any(&["js"]);
+
+    if lib_rs || lib_js {
         log::debug!(
             "Notify lib source change {}",
             GRAY.paint(watched.to_string())
