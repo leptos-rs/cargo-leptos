@@ -32,7 +32,7 @@ jobs:
               "examples/project"
               "examples/workspace"
 
-        - name: "Run cargo --features=full_tests"
+        - name: "Run cargo test --features=full_tests"
           uses: actions-rs/cargo@v1
           with:
             command: test
