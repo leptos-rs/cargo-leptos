@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use super::ChangeSet;
@@ -119,9 +120,8 @@ async fn bindgen(proj: &Project) -> Result<Outcome> {
 
     let module_js = bindgen.local_modules().values().join("\n");
 
-    let snippets = bindgen
-        .snippets()
-        .values()
+    let snippets = values_sorted_by_key(&bindgen.snippets())
+        .iter()
         .map(|v| v.join("\n"))
         .collect::<Vec<_>>()
         .join("\n");
@@ -138,14 +138,20 @@ async fn bindgen(proj: &Project) -> Result<Outcome> {
         .updated_with(&proj.lib.js_file, js.as_bytes())
         .await
         .dot()?;
-    log::debug!(
-        "Front js {}",
-        if js_changed { "changed" } else { "unchanged" }
+    log::debug!("Front js changed: {js_changed}");
+    log::debug!("Front wasm changed: {wasm_changed}");
+
+    log::info!("WASM changed: {wasm_changed}");
+    log::info!("JS changed: {js_changed}");
+    log::info!(
+        "JS_snippet paths {:?}",
+        bindgen.snippets().keys().collect::<Vec<_>>()
     );
-    log::debug!(
-        "Front wasm {}",
-        if wasm_changed { "changed" } else { "unchanged" }
+    log::info!(
+        "JS_module paths {:?}",
+        bindgen.local_modules().keys().collect::<Vec<_>>()
     );
+
     if js_changed || wasm_changed {
         Ok(Outcome::Success(Product::Front))
     } else {
@@ -162,4 +168,10 @@ async fn optimize(file: &Utf8Path, interrupt: broadcast::Receiver<()>) -> Result
         .spawn()
         .context("Could not spawn command")?;
     wait_interruptible("wasm-opt", process, interrupt).await
+}
+
+fn values_sorted_by_key<T>(map: &HashMap<String, T>) -> Vec<&T> {
+    let mut keys = map.keys().collect::<Vec<_>>();
+    keys.sort();
+    keys.iter().map(|key| map.get(*key).unwrap()).collect()
 }
