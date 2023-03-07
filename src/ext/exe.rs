@@ -6,12 +6,14 @@ use bytes::Bytes;
 use std::{
     fs::{self, File},
     io::{Cursor, Write},
-    os::unix::prelude::PermissionsExt,
     path::{Path, PathBuf},
 };
 use zip::ZipArchive;
 
 use super::util::os_arch;
+
+#[cfg(target_family = "unix")]
+use std::os::unix::prelude::PermissionsExt;
 
 #[derive(Debug)]
 pub struct ExeMeta {
@@ -103,7 +105,8 @@ impl<'a> ExeCache<'a> {
         file.write_all(&data)
             .context(format!("Error writing binary file: {:?}", path))?;
 
-        if cfg!(target_family = "unix") {
+        #[cfg(target_family = "unix")]
+        {
             let mut perm = fs::metadata(&path)?.permissions();
             // https://chmod-calculator.com
             // read and execute for owner and group
