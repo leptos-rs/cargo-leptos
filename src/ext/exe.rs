@@ -77,12 +77,10 @@ impl<'a> ExeCache<'a> {
     }
 
     fn extract_downloaded(&self, data: &Bytes) -> Result<()> {
-        let dest_dir = &self.exe_in_cache()?;
-
         if self.meta.url.ends_with(".zip") {
-            extract_zip(data, &dest_dir)?;
+            extract_zip(data, &self.exe_dir)?;
         } else if self.meta.url.ends_with(".tar.gz") {
-            extract_tar(data, &dest_dir)?;
+            extract_tar(data, &self.exe_dir)?;
         } else {
             self.write_binary(&data)
                 .context(format!("Could not write binary {}", self.meta.get_name()))?;
@@ -98,9 +96,8 @@ impl<'a> ExeCache<'a> {
     }
 
     fn write_binary(&self, data: &Bytes) -> Result<()> {
-        let dest_dir = self.exe_dir.as_path().join(&self.meta.get_name());
-        fs::create_dir_all(&dest_dir).unwrap();
-        let mut file = File::create(&dest_dir.join(Path::new(&self.meta.exe))).unwrap();
+        fs::create_dir_all(&self.exe_dir).unwrap();
+        let mut file = File::create(&self.exe_dir.join(Path::new(&self.meta.exe))).unwrap();
         match file.write_all(&data) {
             Err(err) => panic!("Error writing binary file: {}", err),
             Ok(()) => Ok(()),

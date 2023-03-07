@@ -44,7 +44,7 @@ Config {
             style: Some(
                 StyleConfig {
                     file: SourcedSiteFile {
-                        source: "style/main.scss",
+                        source: "style/output.css",
                         dest: "target/site/pkg/example.css",
                         site: "pkg/example.css",
                     },
