@@ -103,11 +103,13 @@ impl<'a> ExeCache<'a> {
         file.write_all(&data)
             .context(format!("Error writing binary file: {:?}", path))?;
 
-        let mut perm = fs::metadata(&path)?.permissions();
-        // https://chmod-calculator.com
-        // read and execute for owner and group
-        perm.set_mode(0o550);
-        fs::set_permissions(&path, perm)?;
+        if cfg!(target_family = "unix") {
+            let mut perm = fs::metadata(&path)?.permissions();
+            // https://chmod-calculator.com
+            // read and execute for owner and group
+            perm.set_mode(0o550);
+            fs::set_permissions(&path, perm)?;
+        }
         Ok(())
     }
 
