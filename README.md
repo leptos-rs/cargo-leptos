@@ -219,17 +219,12 @@ style-file = "style/main.scss"
 # The tailwind input file.
 #
 # Optional, Activates the tailwind build
-tailwind-input-file = "my-tailwind-input-file"
-
-# The tailwind output file.
-#
-# Optional, defaults to "style/tailwind.css"
-tailwind-output-file = "style/tailwind.css"
+tailwind-input-file = "style/tailwind.css"
 
 # The tailwind config file
 #
 # Optional, defaults to an auto-generated config
-tailwind-config-file = "./target/tailwind.config.js"
+tailwind-config-file = "./tailwind.config.js"
 
 # The browserlist https://browsersl.ist query used for optimizing the CSS.
 #

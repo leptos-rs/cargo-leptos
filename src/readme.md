@@ -9,9 +9,9 @@ graph TD;
   subgraph Watcher[watch]
     Watch[FS Notifier];
   end
-  Watch-->|"*.rs"| TailW;
+  Watch-->|"*.rs & input.css"| TailW;
   Watch-->|"*.sass & *.scss"| Sass;
-  Watch-->|"*.css"| CSSProc;
+  Watch-->|"*.css"| Append;
   Watch-->|"*.rs"| WASM;
   Watch-->|"*.rs"| BIN;
   Watch-->|"assets/**"| Mirror;
@@ -19,11 +19,13 @@ graph TD;
   subgraph style
     TailW[Tailwind CSS];
     Sass;
-    CSSProc[CSS Processor<br>Lightning CSS]
+    CSSProc[CSS Processor<br>Lightning CSS];
+    Append{{append}};
   end
 
-  TailW --> CSSProc;
-  Sass --> CSSProc;
+  TailW --> Append;
+  Sass --> Append;
+  Append --> CSSProc;
 
   subgraph rust
     WASM[Client WASM];

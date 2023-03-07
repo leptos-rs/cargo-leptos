@@ -133,7 +133,6 @@ pub struct ProjectConfig {
     pub site_pkg_dir: Utf8PathBuf,
     pub style_file: Option<Utf8PathBuf>,
     pub tailwind_input_file: Option<Utf8PathBuf>,
-    pub tailwind_output_file: Option<Utf8PathBuf>,
     pub tailwind_config_file: Option<Utf8PathBuf>,
     /// assets dir. content will be copied to the target/site dir
     pub assets_dir: Option<Utf8PathBuf>,
