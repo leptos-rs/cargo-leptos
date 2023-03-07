@@ -8,13 +8,13 @@ lazy_static::lazy_static! {
 }
 
 #[derive(Debug, PartialEq, Eq, Hash)]
-pub enum Outcome {
-    Success(Product),
+pub enum Outcome<T> {
+    Success(T),
     Stopped,
     Failed,
 }
 
-impl Outcome {
+impl<T> Outcome<T> {
     pub fn is_success(&self) -> bool {
         matches!(self, Outcome::Success(_))
     }
@@ -24,7 +24,7 @@ impl Outcome {
 pub enum Product {
     Server,
     Front,
-    Style,
+    Style(String),
     Assets,
     None,
 }
@@ -37,7 +37,7 @@ impl ProductSet {
         Self(HashSet::new())
     }
 
-    pub fn from(vec: Vec<Outcome>) -> Self {
+    pub fn from(vec: Vec<Outcome<Product>>) -> Self {
         Self(HashSet::from_iter(vec.into_iter().filter_map(
             |entry| match entry {
                 Outcome::Success(Product::None) => None,
@@ -52,7 +52,7 @@ impl ProductSet {
     }
 
     pub fn only_style(&self) -> bool {
-        self.0.contains(&Product::Style) && self.0.len() == 1
+        self.0.len() == 1 && self.0.iter().any(|p| matches!(p, Product::Style(_)))
     }
 
     pub fn contains(&self, product: &Product) -> bool {

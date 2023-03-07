@@ -25,7 +25,12 @@ Config {
                 output_name: "example",
                 src_paths: "src",
                 profile: Debug,
-                tailwind: None,
+                tailwind: Some(
+                    TailwindConfig {
+                        input_file: "style/tailwind.css",
+                        config_file: "./tailwind.config.js",
+                    },
+                ),
                 ..
             },
             bin: BinPackage {
@@ -44,7 +49,7 @@ Config {
             style: Some(
                 StyleConfig {
                     file: SourcedSiteFile {
-                        source: "style/output.css",
+                        source: "style/main.scss",
                         dest: "target/site/pkg/example.css",
                         site: "pkg/example.css",
                     },

@@ -1,76 +1,85 @@
 use anyhow::Result;
-use std::sync::Arc;
-use tokio::process::{Child, Command};
+use tokio::process::Command;
 
 use crate::{
     config::{Project, TailwindConfig},
     ext::{
         anyhow::Context,
         fs,
-        sync::{wait_interruptible, CommandResult},
+        sync::{wait_piped_interruptible, CommandResult, OutputExt},
         Exe,
     },
     logger::GRAY,
-    signal::{Interrupt, Outcome, Product},
+    signal::{Interrupt, Outcome},
 };
 
-use super::ChangeSet;
-
-pub async fn tailwind(proj: &Arc<Project>, changes: &ChangeSet) -> Result<Outcome> {
-    let tw_conf = match (changes.need_front_build(), &proj.lib.tailwind) {
-        (true, Some(tw_conf)) => tw_conf,
-        (_, _) => return Ok(Outcome::Success(Product::None)),
-    };
-
+pub async fn compile_tailwind(
+    _proj: &Project,
+    tw_conf: &TailwindConfig,
+) -> Result<Outcome<String>> {
     if !tw_conf.config_file.exists() {
         create_default_tailwind_config(tw_conf).await?;
     }
 
-    let (line, process) = tailwind_process("build", tw_conf).await?;
+    let (line, process) = tailwind_process("tailwind", tw_conf).await?;
 
-    match wait_interruptible("Tailwind", process, Interrupt::subscribe_any()).await? {
-        CommandResult::Success => {
-            log::info!("Tailwind finished {}", GRAY.paint(line));
+    match wait_piped_interruptible("Tailwind", process, Interrupt::subscribe_any()).await? {
+        CommandResult::Success(output) => {
+            let done = output
+                .stderr()
+                .lines()
+                .last()
+                .map(|l| l.contains("Done"))
+                .unwrap_or(false);
 
-            // TODO: should check for the tailwind output file
-            let changed = proj
-                .site
-                .did_external_file_change(&proj.bin.exe_file)
-                .await
-                .dot()?;
-            if changed {
-                log::debug!("Tailwind style changed");
-                Ok(Outcome::Success(Product::Style))
+            if done {
+                log::info!("Tailwind finished {}", GRAY.paint(line));
+                Ok(Outcome::Success(output.stdout()))
             } else {
-                log::debug!("Tailwind style unchanged");
-                Ok(Outcome::Success(Product::None))
+                log::warn!("Tailwind failed {}", GRAY.paint(line));
+                println!("{}\n{}", output.stdout(), output.stderr());
+                Ok(Outcome::Failed)
             }
         }
         CommandResult::Interrupted => Ok(Outcome::Stopped),
-        CommandResult::Failure => Ok(Outcome::Failed),
+        CommandResult::Failure(output) => {
+            log::warn!("Tailwind failed");
+            if output.has_stdout() {
+                println!("{}", output.stdout());
+            }
+            println!("{}", output.stderr());
+            Ok(Outcome::Failed)
+        }
     }
 }
 
 async fn create_default_tailwind_config(tw_conf: &TailwindConfig) -> Result<()> {
-    let contents = r##"content: { 
-        files: ["./src/**/*.rs"],
-      }"##;
+    let contents = r##"/** @type {import('tailwindcss').Config} */
+    module.exports = {
+      content: { 
+        files: ["*.html", "./src/**/*.rs"],
+      },
+      theme: {
+        extend: {},
+      },
+      plugins: [],
+    }
+    "##;
     fs::write(&tw_conf.config_file, contents).await
 }
 
-pub async fn tailwind_process(cmd: &str, tw_conf: &TailwindConfig) -> Result<(String, Child)> {
+pub async fn tailwind_process(cmd: &str, tw_conf: &TailwindConfig) -> Result<(String, Command)> {
     let tailwind = Exe::Tailwind.get().await.dot()?;
 
     let args: Vec<&str> = vec![
-        "-input",
+        "--input",
         tw_conf.input_file.as_str(),
-        "-output",
-        tw_conf.output_file.as_str(),
-        "-config",
+        "--config",
         tw_conf.config_file.as_str(),
     ];
     let line = format!("{} {}", cmd, args.join(" "));
-    let child = Command::new(tailwind).args(args).spawn()?;
+    let mut command = Command::new(tailwind);
+    command.args(args);
 
-    Ok((line, child))
+    Ok((line, command))
 }

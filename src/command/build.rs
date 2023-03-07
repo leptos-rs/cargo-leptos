@@ -37,9 +37,6 @@ pub async fn build_proj(proj: &Arc<Project>) -> Result<bool> {
     if !compile::style(proj, &changes).await.await??.is_success() {
         return Ok(false);
     }
-    if !compile::tailwind(proj, &changes).await?.is_success() {
-        return Ok(false);
-    }
     if !compile::server(proj, &changes).await.await??.is_success() {
         return Ok(false);
     }

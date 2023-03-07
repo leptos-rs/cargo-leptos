@@ -18,13 +18,10 @@ impl TailwindConfig {
             return Ok(None);
         };
 
-        if !input_file.exists() {
-            bail!("The Cargo.toml `tailwind-input-file` does not exist: {input_file}");
-        }
         let config_file = conf
             .tailwind_config_file
             .clone()
-            .unwrap_or_else(|| Utf8PathBuf::from("./target/tailwind.config.js"));
+            .unwrap_or_else(|| Utf8PathBuf::from("./tailwind.config.js"));
         Ok(Some(Self {
             input_file,
             config_file,

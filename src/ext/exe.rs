@@ -6,6 +6,7 @@ use bytes::Bytes;
 use std::{
     fs::{self, File},
     io::{Cursor, Write},
+    os::unix::prelude::PermissionsExt,
     path::{Path, PathBuf},
 };
 use zip::ZipArchive;
@@ -97,11 +98,17 @@ impl<'a> ExeCache<'a> {
 
     fn write_binary(&self, data: &Bytes) -> Result<()> {
         fs::create_dir_all(&self.exe_dir).unwrap();
-        let mut file = File::create(&self.exe_dir.join(Path::new(&self.meta.exe))).unwrap();
-        match file.write_all(&data) {
-            Err(err) => panic!("Error writing binary file: {}", err),
-            Ok(()) => Ok(()),
-        }
+        let path = self.exe_dir.join(Path::new(&self.meta.exe));
+        let mut file = File::create(&path).unwrap();
+        file.write_all(&data)
+            .context(format!("Error writing binary file: {:?}", path))?;
+
+        let mut perm = fs::metadata(&path)?.permissions();
+        // https://chmod-calculator.com
+        // read and execute for owner and group
+        perm.set_mode(0o550);
+        fs::set_permissions(&path, perm)?;
+        Ok(())
     }
 
     async fn download(&self) -> Result<PathBuf> {
