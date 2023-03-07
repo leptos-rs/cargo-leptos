@@ -2,7 +2,7 @@ use crate::service::site::SourcedSiteFile;
 
 use super::ProjectConfig;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct StyleConfig {
     pub file: SourcedSiteFile,
     pub browserquery: String,

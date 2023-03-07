@@ -14,7 +14,7 @@ pub async fn assets(
     proj: &Arc<Project>,
     changes: &ChangeSet,
     first_sync: bool,
-) -> JoinHandle<Result<Outcome>> {
+) -> JoinHandle<Result<Outcome<Product>>> {
     let changes = changes.clone();
 
     let proj = proj.clone();

@@ -4,12 +4,16 @@ use crate::{
 };
 use bytes::Bytes;
 use std::{
-    io::Cursor,
+    fs::{self, File},
+    io::{Cursor, Write},
     path::{Path, PathBuf},
 };
 use zip::ZipArchive;
 
 use super::util::os_arch;
+
+#[cfg(target_family = "unix")]
+use std::os::unix::prelude::PermissionsExt;
 
 #[derive(Debug)]
 pub struct ExeMeta {
@@ -75,13 +79,14 @@ impl<'a> ExeCache<'a> {
         Ok(data)
     }
 
-    fn extract_archive(&self, data: &Bytes) -> Result<()> {
+    fn extract_downloaded(&self, data: &Bytes) -> Result<()> {
         if self.meta.url.ends_with(".zip") {
             extract_zip(data, &self.exe_dir)?;
         } else if self.meta.url.ends_with(".tar.gz") {
             extract_tar(data, &self.exe_dir)?;
         } else {
-            bail!("The download URL does not end with '.tar.gz' or '.zip'");
+            self.write_binary(&data)
+                .context(format!("Could not write binary {}", self.meta.get_name()))?;
         }
 
         log::debug!(
@@ -93,6 +98,24 @@ impl<'a> ExeCache<'a> {
         Ok(())
     }
 
+    fn write_binary(&self, data: &Bytes) -> Result<()> {
+        fs::create_dir_all(&self.exe_dir).unwrap();
+        let path = self.exe_dir.join(Path::new(&self.meta.exe));
+        let mut file = File::create(&path).unwrap();
+        file.write_all(&data)
+            .context(format!("Error writing binary file: {:?}", path))?;
+
+        #[cfg(target_family = "unix")]
+        {
+            let mut perm = fs::metadata(&path)?.permissions();
+            // https://chmod-calculator.com
+            // read and execute for owner and group
+            perm.set_mode(0o550);
+            fs::set_permissions(&path, perm)?;
+        }
+        Ok(())
+    }
+
     async fn download(&self) -> Result<PathBuf> {
         log::info!("Command installing {} ...", self.meta.get_name());
 
@@ -100,7 +123,8 @@ impl<'a> ExeCache<'a> {
             .fetch_archive()
             .await
             .context(format!("Could not download {}", self.meta.get_name()))?;
-        self.extract_archive(&data)
+
+        self.extract_downloaded(&data)
             .context(format!("Could not extract {}", self.meta.get_name()))?;
 
         let binary_path = self.exe_in_cache().context(format!(
@@ -163,6 +187,7 @@ pub enum Exe {
     CargoGenerate,
     Sass,
     WasmOpt,
+    Tailwind,
 }
 
 impl Exe {
@@ -266,6 +291,31 @@ impl Exe {
                     exe,
                     manual:
                         "Try manually installing binaryen: https://github.com/WebAssembly/binaryen",
+                }
+            }
+            Exe::Tailwind => {
+                let version = "v3.2.4";
+                let url = match (target_os, target_arch) {
+                    ("windows", "x86_64") => format!("https://github.com/tailwindlabs/tailwindcss/releases/download/{version}/tailwindcss-windows-x64.exe"),
+                    ("macos", "x86_64") => format!("https://github.com/tailwindlabs/tailwindcss/releases/download/{version}/tailwindcss-macos-x64"),
+                    ("macos", "aarch64") => format!("https://github.com/tailwindlabs/tailwindcss/releases/download/{version}/tailwindcss-macos-arm64"),
+                    ("linux", "x86_64") => format!("https://github.com/tailwindlabs/tailwindcss/releases/download/{version}/tailwindcss-linux-x64"),
+                    ("linux", "aarch64") => format!("https://github.com/tailwindlabs/tailwindcss/releases/download/{version}/tailwindcss-linux-arm64"),
+                    _ => bail!("No tailwind binary found for {target_os} {target_arch}")
+                };
+                let exe = match (target_os, target_arch) {
+                    ("windows", _) => "tailwindcss-windows-x64.exe".to_string(),
+                    ("macos", "x86_64") => "tailwindcss-macos-x64".to_string(),
+                    ("macos", "aarch64") => "tailwindcss-macos-arm64".to_string(),
+                    ("linux", "x86_64") => "tailwindcss-linux-x64".to_string(),
+                    (_, _) => "tailwindcss-linux-arm64".to_string(),
+                };
+                ExeMeta {
+                    name: "tailwindcss",
+                    version,
+                    url,
+                    exe,
+                    manual: "Try manually installing tailwindcss",
                 }
             }
         };

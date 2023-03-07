@@ -216,6 +216,17 @@ site-pkg-dir = "pkg"
 # Optional. Env: LEPTOS_STYLE_FILE.
 style-file = "style/main.scss"
 
+# The tailwind input file.
+#
+# Optional, Activates the tailwind build
+tailwind-input-file = "style/tailwind.css"
+
+# The tailwind config file.
+#
+# Optional, defaults to "./tailwind.config.js" which if is not present
+# is generated for you
+tailwind-config-file = "./tailwind.config.js"
+
 # The browserlist https://browsersl.ist query used for optimizing the CSS.
 #
 # Optional, defaults to "defaults". Env: LEPTOS_BROWSERQUERY.

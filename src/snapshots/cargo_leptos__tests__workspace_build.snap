@@ -7,7 +7,6 @@ site:
     favicon.ico
     pkg:
       project1.css
-      project1.css.map
       project1.js
       project1.wasm
       snippets:
@@ -17,7 +16,6 @@ site:
     favicon.ico
     pkg:
       project2.css
-      project2.css.map
       project2.js
       project2.wasm
       snippets:
