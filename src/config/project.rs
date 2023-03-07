@@ -132,6 +132,8 @@ pub struct ProjectConfig {
     #[serde(default = "default_pkg_dir")]
     pub site_pkg_dir: Utf8PathBuf,
     pub style_file: Option<Utf8PathBuf>,
+    pub tailwind_input_file: Option<Utf8PathBuf>,
+    pub tailwind_config_file: Option<Utf8PathBuf>,
     /// assets dir. content will be copied to the target/site dir
     pub assets_dir: Option<Utf8PathBuf>,
     /// js dir. changes triggers rebuilds.
@@ -159,6 +161,7 @@ pub struct ProjectConfig {
     pub bin_features: Vec<String>,
     #[serde(default)]
     pub bin_default_features: bool,
+
     #[serde(skip)]
     pub config_dir: Utf8PathBuf,
 

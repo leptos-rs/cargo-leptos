@@ -23,6 +23,7 @@ Config {
                 output_name: "project1",
                 src_paths: "project1/app/src, project1/front/src",
                 profile: Debug,
+                tailwind: None,
                 ..
             },
             bin: BinPackage {
@@ -85,6 +86,7 @@ Config {
                 output_name: "project2",
                 src_paths: "project2/src",
                 profile: Debug,
+                tailwind: None,
                 ..
             },
             bin: BinPackage {

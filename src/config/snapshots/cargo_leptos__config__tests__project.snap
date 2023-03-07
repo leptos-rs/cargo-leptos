@@ -25,6 +25,12 @@ Config {
                 output_name: "example",
                 src_paths: "src",
                 profile: Debug,
+                tailwind: Some(
+                    TailwindConfig {
+                        input_file: "style/tailwind.css",
+                        config_file: "./tailwind.config.js",
+                    },
+                ),
                 ..
             },
             bin: BinPackage {

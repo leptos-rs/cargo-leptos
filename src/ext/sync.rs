@@ -1,28 +1,61 @@
 use crate::ext::anyhow::{bail, Context, Result};
-use std::{net::SocketAddr, time::Duration};
-use tokio::{net::TcpStream, process::Child, sync::broadcast, time::sleep};
+use std::{
+    net::SocketAddr,
+    process::{Output, Stdio},
+    time::Duration,
+};
+use tokio::{
+    net::TcpStream,
+    process::{Child, Command},
+    sync::broadcast,
+    time::sleep,
+};
 
-pub enum CommandResult {
-    Success,
-    Failure,
+pub trait OutputExt {
+    fn stderr(&self) -> String;
+    fn has_stderr(&self) -> bool;
+    fn stdout(&self) -> String;
+    fn has_stdout(&self) -> bool;
+}
+
+impl OutputExt for Output {
+    fn stderr(&self) -> String {
+        String::from_utf8_lossy(&self.stderr).to_string()
+    }
+
+    fn has_stderr(&self) -> bool {
+        println!("stderr: {}\n'{}'", self.stderr.len(), self.stderr());
+        self.stderr.len() > 1
+    }
+
+    fn stdout(&self) -> String {
+        String::from_utf8_lossy(&self.stdout).to_string()
+    }
+
+    fn has_stdout(&self) -> bool {
+        self.stdout.len() > 1
+    }
+}
+pub enum CommandResult<T> {
+    Success(T),
+    Failure(T),
     Interrupted,
 }
 
-/// return false if interrupted or if exit code wasn't success.
 pub async fn wait_interruptible(
     name: &str,
     mut process: Child,
     mut interrupt_rx: broadcast::Receiver<()>,
-) -> Result<CommandResult> {
+) -> Result<CommandResult<()>> {
     tokio::select! {
         res = process.wait() => match res {
             Ok(exit) => {
                 if exit.success() {
                     log::trace!("{name} process finished with success");
-                    Ok(CommandResult::Success)
+                    Ok(CommandResult::Success(()))
                 } else {
                     log::trace!("{name} process finished with code {:?}", exit.code());
-                    Ok(CommandResult::Failure)
+                    Ok(CommandResult::Failure(()))
                 }
             }
             Err(e) => bail!("Command failed due to: {e}"),
@@ -35,6 +68,36 @@ pub async fn wait_interruptible(
     }
 }
 
+pub async fn wait_piped_interruptible(
+    name: &str,
+    mut cmd: Command,
+    mut interrupt_rx: broadcast::Receiver<()>,
+) -> Result<CommandResult<Output>> {
+    // see: https://docs.rs/tokio/latest/tokio/process/index.html
+
+    cmd.kill_on_drop(true);
+    cmd.stdout(Stdio::piped());
+    cmd.stderr(Stdio::piped());
+    let process = cmd.spawn()?;
+    tokio::select! {
+        res = process.wait_with_output() => match res {
+            Ok(output) => {
+                if output.status.success() {
+                    log::trace!("{name} process finished with success");
+                    Ok(CommandResult::Success(output))
+                } else {
+                    log::trace!("{name} process finished with code {:?}", output.status.code());
+                    Ok(CommandResult::Failure(output))
+                }
+            }
+            Err(e) => bail!("Command failed due to: {e}"),
+        },
+        _ = interrupt_rx.recv() => {
+            log::trace!("{name} process interrupted");
+            Ok(CommandResult::Interrupted)
+        }
+    }
+}
 pub async fn wait_for_socket(name: &str, addr: SocketAddr) -> bool {
     let duration = Duration::from_millis(500);
 

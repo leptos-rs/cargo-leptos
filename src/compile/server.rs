@@ -13,7 +13,10 @@ use tokio::{
     task::JoinHandle,
 };
 
-pub async fn server(proj: &Arc<Project>, changes: &ChangeSet) -> JoinHandle<Result<Outcome>> {
+pub async fn server(
+    proj: &Arc<Project>,
+    changes: &ChangeSet,
+) -> JoinHandle<Result<Outcome<Product>>> {
     let proj = proj.clone();
     let changes = changes.clone();
 
@@ -25,7 +28,7 @@ pub async fn server(proj: &Arc<Project>, changes: &ChangeSet) -> JoinHandle<Resu
         let (envs, line, process) = server_cargo_process("build", &proj)?;
 
         match wait_interruptible("Cargo", process, Interrupt::subscribe_any()).await? {
-            CommandResult::Success => {
+            CommandResult::Success(_) => {
                 log::debug!("Cargo envs: {}", GRAY.paint(envs));
                 log::info!("Cargo finished {}", GRAY.paint(line));
 
@@ -43,7 +46,7 @@ pub async fn server(proj: &Arc<Project>, changes: &ChangeSet) -> JoinHandle<Resu
                 }
             }
             CommandResult::Interrupted => Ok(Outcome::Stopped),
-            CommandResult::Failure => Ok(Outcome::Failed),
+            CommandResult::Failure(_) => Ok(Outcome::Failed),
         }
     })
 }

@@ -19,7 +19,10 @@ use tokio::process::Child;
 use tokio::{process::Command, sync::broadcast, task::JoinHandle};
 use wasm_bindgen_cli_support::Bindgen;
 
-pub async fn front(proj: &Arc<Project>, changes: &ChangeSet) -> JoinHandle<Result<Outcome>> {
+pub async fn front(
+    proj: &Arc<Project>,
+    changes: &ChangeSet,
+) -> JoinHandle<Result<Outcome<Product>>> {
     let proj = proj.clone();
     let changes = changes.clone();
     tokio::spawn(async move {
@@ -34,7 +37,7 @@ pub async fn front(proj: &Arc<Project>, changes: &ChangeSet) -> JoinHandle<Resul
 
         match wait_interruptible("Cargo", process, Interrupt::subscribe_any()).await? {
             CommandResult::Interrupted => return Ok(Outcome::Stopped),
-            CommandResult::Failure => return Ok(Outcome::Failed),
+            CommandResult::Failure(_) => return Ok(Outcome::Failed),
             _ => {}
         }
         log::debug!("Cargo envs: {}", GRAY.paint(envs));
@@ -93,7 +96,7 @@ pub fn build_cargo_front_cmd(
     (envs_str, line)
 }
 
-async fn bindgen(proj: &Project) -> Result<Outcome> {
+async fn bindgen(proj: &Project) -> Result<Outcome<Product>> {
     let wasm_file = &proj.lib.wasm_file;
     let interrupt = Interrupt::subscribe_any();
 
@@ -112,7 +115,7 @@ async fn bindgen(proj: &Project) -> Result<Outcome> {
     if proj.release {
         match optimize(&wasm_file.dest, interrupt).await.dot()? {
             CommandResult::Interrupted => return Ok(Outcome::Stopped),
-            CommandResult::Failure => return Ok(Outcome::Failed),
+            CommandResult::Failure(_) => return Ok(Outcome::Failed),
             _ => {}
         }
     }
@@ -143,7 +146,10 @@ async fn bindgen(proj: &Project) -> Result<Outcome> {
     }
 }
 
-async fn optimize(file: &Utf8Path, interrupt: broadcast::Receiver<()>) -> Result<CommandResult> {
+async fn optimize(
+    file: &Utf8Path,
+    interrupt: broadcast::Receiver<()>,
+) -> Result<CommandResult<()>> {
     let wasm_opt = Exe::WasmOpt.get().await.dot()?;
 
     let args = [file.as_str(), "-Os", "-o", file.as_str()];
