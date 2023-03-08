@@ -25,7 +25,6 @@ Config {
                 output_name: "project2",
                 src_paths: "project2/src",
                 profile: Debug,
-                tailwind: None,
                 ..
             },
             bin: BinPackage {
@@ -41,16 +40,21 @@ Config {
                 profile: Debug,
                 ..
             },
-            style: Some(
-                StyleConfig {
-                    file: SourcedSiteFile {
+            style: StyleConfig {
+                file: Some(
+                    SourcedSiteFile {
                         source: "project2/src/main.scss",
                         dest: "target/site/project2/pkg/project2.css",
                         site: "pkg/project2.css",
                     },
-                    browserquery: "defaults",
+                ),
+                browserquery: "defaults",
+                tailwind: None,
+                site_file: SiteFile {
+                    dest: "target/site/project2/pkg/project2.css",
+                    site: "pkg/project2.css",
                 },
-            ),
+            },
             watch: true,
             release: false,
             site: Site {

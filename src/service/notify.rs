@@ -22,8 +22,8 @@ pub async fn spawn(proj: &Arc<Project>) -> Result<JoinHandle<()>> {
     set.extend(proj.bin.src_paths.clone());
     set.insert(proj.js_dir.clone());
 
-    if let Some(style) = &proj.style {
-        set.insert(style.file.source.clone().without_last());
+    if let Some(file) = &proj.style.file {
+        set.insert(file.source.clone().without_last());
     }
 
     if let Some(assets) = &proj.assets {
@@ -109,8 +109,8 @@ fn handle(watched: Watched, proj: Arc<Project>) {
         changes.push(Change::BinSource);
     }
 
-    if let Some(style) = &proj.style {
-        let src = style.file.source.clone().without_last();
+    if let Some(file) = &proj.style.file {
+        let src = file.source.clone().without_last();
         if path.starts_with(src) && path.is_ext_any(&["scss", "sass", "css"]) {
             log::debug!("Notify style change {}", GRAY.paint(watched.to_string()));
             changes.push(Change::Style)

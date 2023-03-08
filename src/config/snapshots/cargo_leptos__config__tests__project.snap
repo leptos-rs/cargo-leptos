@@ -25,12 +25,6 @@ Config {
                 output_name: "example",
                 src_paths: "src",
                 profile: Debug,
-                tailwind: Some(
-                    TailwindConfig {
-                        input_file: "style/tailwind.css",
-                        config_file: "./tailwind.config.js",
-                    },
-                ),
                 ..
             },
             bin: BinPackage {
@@ -46,16 +40,26 @@ Config {
                 profile: Debug,
                 ..
             },
-            style: Some(
-                StyleConfig {
-                    file: SourcedSiteFile {
+            style: StyleConfig {
+                file: Some(
+                    SourcedSiteFile {
                         source: "style/main.scss",
                         dest: "target/site/pkg/example.css",
                         site: "pkg/example.css",
                     },
-                    browserquery: "defaults",
+                ),
+                browserquery: "defaults",
+                tailwind: Some(
+                    TailwindConfig {
+                        input_file: "style/tailwind.css",
+                        config_file: "./tailwind.config.js",
+                    },
+                ),
+                site_file: SiteFile {
+                    dest: "target/site/pkg/example.css",
+                    site: "pkg/example.css",
                 },
-            ),
+            },
             watch: true,
             release: false,
             site: Site {

@@ -24,9 +24,9 @@ pub async fn spawn(proj: &Arc<Project>) -> JoinHandle<()> {
 
     let mut site_addr = SITE_ADDR.write().await;
     *site_addr = proj.site.addr;
-    if let Some(style) = &proj.style {
+    if let Some(file) = &proj.style.file {
         let mut css_link = CSS_LINK.write().await;
-        *css_link = style.file.site.to_string();
+        *css_link = file.site.to_string();
     }
 
     tokio::spawn(async move {
