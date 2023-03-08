@@ -25,7 +25,8 @@ pub async fn style(
     let proj = proj.clone();
 
     tokio::spawn(async move {
-        if !changes.need_style_build(true, false) {
+        let css_in_source = proj.lib.tailwind.is_some();
+        if !changes.need_style_build(true, css_in_source) {
             log::debug!("Style no build needed {changes:?}");
             return Ok(Outcome::Success(Product::None));
         }
