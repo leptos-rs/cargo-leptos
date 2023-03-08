@@ -3,7 +3,7 @@ use camino::Utf8PathBuf;
 use super::ProjectConfig;
 use anyhow::{bail, Result};
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct TailwindConfig {
     pub input_file: Utf8PathBuf,
     pub config_file: Utf8PathBuf,
