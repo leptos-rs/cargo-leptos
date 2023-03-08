@@ -1,6 +1,6 @@
-use std::process::ExitStatus;
 use std::sync::Arc;
 
+use anyhow::bail;
 use camino::Utf8Path;
 use tokio::process::Command;
 
@@ -50,18 +50,15 @@ async fn try_run(cmd: &str, dir: &Utf8Path) -> Result<()> {
         .context(format!("Could not spawn command {cmd:?}"))?;
 
     let mut int = Interrupt::subscribe_any();
-    
-    let result : Option<ExitStatus> = tokio::select! {
-      _ = int.recv() => None,
-     result = process.wait() => Some(result?)
-    };
-    if let Some(exit_status) = result {
-        if let Some(exit_code) = exit_status.code() {
-            if exit_code != 0 {
-                return Err(anyhow!("Command terminated with exit code {}", exit_code))
+
+    tokio::select! {
+          _ = int.recv() => Ok(()),
+          result = process.wait() => {
+            let status = result?;
+            if !status.success() {
+                bail!("Command terminated with exit code {}", status)
             }
+            Ok(())
         }
     }
-    Ok(())
 }
-  
