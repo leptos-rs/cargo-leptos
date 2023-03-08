@@ -17,7 +17,7 @@ pub fn App(cx: Scope) -> impl IntoView {
 }
 
 #[cfg(feature = "hydrate")]
-use leptos::wasm_bindgen::prelude::wasm_bindgen;
+use wasm_bindgen::prelude::wasm_bindgen;
 #[cfg(feature = "hydrate")]
 #[wasm_bindgen(module = "/js/foo.js")]
 extern "C" {
