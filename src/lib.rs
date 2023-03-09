@@ -343,15 +343,4 @@ pub async fn run(args: Cli) -> Result<()> {
 #[test]
 fn update_readme() {
     markdown_includes::update("src/readme.tpl.md", "README.md").unwrap();
-    // let path = std::env::current_dir().unwrap();
-    // let source_path = path.join("src").join("lib.rs");
-    // let mut source = std::fs::File::open(source_path).unwrap();
-    // let new_readme =
-    //     cargo_readme::generate_readme(&path, &mut source, None, true, false, true, true).unwrap();
-
-    // let readme_path = path.join("README.md");
-    // let readme = std::fs::read_to_string(&readme_path).unwrap();
-    // if new_readme != readme {
-    //     std::fs::write(&readme_path, new_readme.as_bytes()).unwrap();
-    // }
 }
