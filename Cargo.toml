@@ -69,7 +69,7 @@ bytes = "1.4"
 [dev-dependencies]
 insta = { version = "1.23", features = ["yaml"] }
 temp-dir = "0.1"
-
+markdown-includes = "0.1"
 [features]
 full_tests = []
 no_downloads = []

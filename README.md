@@ -1,3 +1,23 @@
+<!--
+Please don't edit. This document has been generated from src/readme.tpl.md
+-->
+
+Table of contents
+
+- [Features](#features)
+- [Getting started](#getting-started)
+  - [Dependencies](#dependencies)
+- [Single-package setup](#single-package-setup)
+- [Workspace setup](#workspace-setup)
+- [Build features](#build-features)
+- [Parameters reference](#parameters-reference)
+  - [Compilation parameters](#compilation-parameters)
+  - [Site parameters](#site-parameters)
+  - [Environment variables](#environment-variables)
+  - [End-to-end testing](#end-to-end-testing)
+
+---
+
 [![crates.io](https://img.shields.io/crates/v/cargo-leptos)](https://crates.io/crates/cargo-leptos)
 [![Discord](https://img.shields.io/discord/1031524867910148188?color=%237289DA&label=discord)](https://discord.gg/YdRAhS7eQB)
 
