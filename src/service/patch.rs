@@ -21,15 +21,6 @@ pub async fn spawn(proj: &Arc<Project>, view_macros: &ViewMacros) -> Result<Join
     let mut set: HashSet<Utf8PathBuf> = HashSet::from_iter(vec![]);
 
     set.extend(proj.lib.src_paths.clone());
-    set.extend(proj.bin.src_paths.clone());
-
-    if let Some(style) = &proj.style {
-        set.insert(style.file.source.clone().without_last());
-    }
-
-    if let Some(assets) = &proj.assets {
-        set.insert(assets.dir.clone());
-    }
 
     let paths = remove_nested(set.into_iter());
 
