@@ -342,5 +342,11 @@ pub async fn run(args: Cli) -> Result<()> {
 #[cfg(test)]
 #[test]
 fn update_readme() {
-    markdown_includes::update("src/readme.tpl.md", "README.md").unwrap();
+    use std::path::Path;
+
+    markdown_includes::update(
+        &Path::new("src").join("readme.tpl.md"),
+        Path::new("README.md"),
+    )
+    .unwrap();
 }
