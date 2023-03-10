@@ -1411,7 +1411,7 @@ dependencies = [
 [[package]]
 name = "markdown-includes"
 version = "0.1.0"
-source = "git+https://github.com/akesson/markdown-includes?branch=error-messages#30a0a3ef35ba99ba733b3a939806e5377536ab1f"
+source = "git+https://github.com/akesson/markdown-includes?branch=error-messages#00b7386a01a3aa3ce09cf4af9602284d2d7e4243"
 dependencies = [
  "anyhow",
  "cargo_metadata",
