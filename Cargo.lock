@@ -872,6 +872,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "fs-err"
+version = "2.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0845fa252299212f0389d64ba26f34fa32cfe41588355f21ed507c59a0f64541"
+
+[[package]]
 name = "fsevent"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1405,11 +1411,11 @@ dependencies = [
 [[package]]
 name = "markdown-includes"
 version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9f7384ff8115fe25d737986a6b9b7ae5df8426a15b269d564ff26c5357f9adef"
+source = "git+https://github.com/akesson/markdown-includes?branch=error-messages#30a0a3ef35ba99ba733b3a939806e5377536ab1f"
 dependencies = [
  "anyhow",
  "cargo_metadata",
+ "fs-err",
  "itertools",
  "percent-encoding",
  "pulldown-cmark",
