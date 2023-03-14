@@ -9,6 +9,7 @@ use axum::{
     routing::get,
     Router,
 };
+use camino::Utf8Component;
 use serde::Serialize;
 use std::sync::Arc;
 use std::{fmt::Display, net::SocketAddr};
@@ -26,7 +27,13 @@ pub async fn spawn(proj: &Arc<Project>) -> JoinHandle<()> {
     *site_addr = proj.site.addr;
     if let Some(file) = &proj.style.file {
         let mut css_link = CSS_LINK.write().await;
-        *css_link = file.site.to_string();
+        // Always use `/` as separator in links
+        *css_link = file
+            .site
+            .components()
+            .map(|c| c.as_str())
+            .collect::<Vec<_>>()
+            .join("/");
     }
 
     tokio::spawn(async move {
