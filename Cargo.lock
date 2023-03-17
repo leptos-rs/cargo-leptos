@@ -1327,9 +1327,8 @@ checksum = "884e2677b40cc8c339eaefcb701c32ef1fd2493d71118dc0ca4b6a736c93bd67"
 
 [[package]]
 name = "leptos_hot_reload"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "162e23765d4b75eb12fff30b9d9f18b4fe78130febef911db585a9b374ad7ba6"
+version = "0.2.3"
+source = "git+https://github.com/leptos-rs/leptos#f2ac41225361acaac6e2bb0df59e5471cd439128"
 dependencies = [
  "anyhow",
  "camino",
