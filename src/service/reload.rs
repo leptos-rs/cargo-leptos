@@ -80,7 +80,7 @@ async fn websocket(mut stream: WebSocket) {
                         Ok(ReloadType::Style) => {
                             send(&mut stream, BrowserMessage::css().await).await;
                         },
-                        Err(e) => log::debug!("Reload recive error {e}")
+                        Err(e) => log::debug!("Reload receive error {e}")
                     }
 
                 }
