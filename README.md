@@ -17,6 +17,7 @@ Build tool for [Leptos](https://crates.io/crates/leptos):
   - [Compilation parameters](#compilation-parameters)
   - [Site parameters](#site-parameters)
   - [Environment variables](#environment-variables)
+  - [End-to-end testing](#end-to-end-testing)
 
 <br/>
 
@@ -255,7 +256,7 @@ site-addr = "127.0.0.1:3000"
 # Optional, defaults 3001. Env: LEPTOS_RELOAD_PORT
 reload-port = 3001
 
-# The command used for running end-to-end tests.
+# The command used for running end-to-end tests. See the section about End-to-end testing.
 #
 # Optional. Env: LEPTOS_END2END_CMD.
 end2end-cmd = "npx playwright test"
@@ -290,3 +291,19 @@ Note when using directories:
 - `cargo-leptos` changes the working directory to the project root or if in a workspace, the workspace root before building and running.
 - the two are set to the same value when running in a single-package config.
 - Avoid using them at run-time unless you can guarantee that the entire project struct is available at runtime as well.
+
+## End-to-end testing
+
+`cargo-leptos` provides end-to-end testing support for convenience. It is a simple
+wrapper around a shell command `end2end-cmd` that is executed in a specific directory `end2end-dir`.
+
+The `end2end-cmd` can be any shell command. For running [Playwright](https://playwright.dev) it
+would be `npx playwright test`.
+
+What it does is equivalent to running this manually:
+
+- in a terminal, run `cargo-leptos watch`
+- in a separate terminal, change to the `end2end-dir` and run the `end2end-cmd`.
+
+When testing the setup, please try the above first. If that works but `cargo end-to-end`
+doesn't then please create a GitHub ticket.
