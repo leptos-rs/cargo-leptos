@@ -322,8 +322,8 @@ would be `npx playwright test`.
 
 What it does is equivalent to running this manually:
 
-- in a terminal, run `cargo-leptos watch`
+- in a terminal, run `cargo leptos watch`
 - in a separate terminal, change to the `end2end-dir` and run the `end2end-cmd`.
 
-When testing the setup, please try the above first. If that works but `cargo end-to-end`
+When testing the setup, please try the above first. If that works but `cargo leptos end-to-end`
 doesn't then please create a GitHub ticket.
