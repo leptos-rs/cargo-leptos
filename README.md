@@ -1,20 +1,19 @@
-<!--
-Please don't edit. This document has been generated from src/readme.tpl.md
--->
-
+<!-- 
+Please don't edit. This document has been generated from "src/readme.tpl.md"
+--> 
 Table of contents
 
 - [Features](#features)
 - [Getting started](#getting-started)
-  - [Dependencies](#dependencies)
+    - [Dependencies](#dependencies)
 - [Single-package setup](#single-package-setup)
 - [Workspace setup](#workspace-setup)
 - [Build features](#build-features)
 - [Parameters reference](#parameters-reference)
-  - [Compilation parameters](#compilation-parameters)
-  - [Site parameters](#site-parameters)
-  - [Environment variables](#environment-variables)
-  - [End-to-end testing](#end-to-end-testing)
+    - [Compilation parameters](#compilation-parameters)
+    - [Site parameters](#site-parameters)
+    - [Environment variables](#environment-variables)
+    - [End-to-end testing](#end-to-end-testing)
 
 ---
 
@@ -24,20 +23,6 @@ Table of contents
 Build tool for [Leptos](https://crates.io/crates/leptos):
 
 [<img src="https://raw.githubusercontent.com/gbj/leptos/main/docs/logos/Leptos_logo_RGB.png" alt="Leptos Logo" style="width: 30%; height: auto; display: block; margin: auto;">](http://https://crates.io/crates/leptos)
-
-<br/>
-
-- [Features](#features)
-- [Getting started](#getting-started)
-  - [Dependencies](#dependencies)
-- [Single-package setup](#single-package-setup)
-- [Workspace setup](#workspace-setup)
-- [Build features](#build-features)
-- [Parameters reference](#parameters-reference)
-  - [Compilation parameters](#compilation-parameters)
-  - [Site parameters](#site-parameters)
-  - [Environment variables](#environment-variables)
-  - [End-to-end testing](#end-to-end-testing)
 
 <br/>
 
