@@ -56,7 +56,8 @@ pub async fn compile_tailwind(
 async fn create_default_tailwind_config(tw_conf: &TailwindConfig) -> Result<()> {
     let contents = r##"/** @type {import('tailwindcss').Config} */
     module.exports = {
-      content: { 
+      content: {
+        relative: true,
         files: ["*.html", "./src/**/*.rs"],
       },
       theme: {
