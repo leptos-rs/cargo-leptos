@@ -65,6 +65,7 @@ zip = { version = "0.6", default-features = false, features = ["deflate"] }
 tar = "0.4"
 dunce = "1.0"
 bytes = "1.4"
+leptos_hot_reload = { git = "https://github.com/leptos-rs/leptos", version = "0.2.3" }
 
 [dev-dependencies]
 insta = { version = "1.23", features = ["yaml"] }
