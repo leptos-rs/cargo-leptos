@@ -57,6 +57,7 @@ Config {
             },
             watch: true,
             release: false,
+            hot_reload: false,
             site: Site {
                 addr: 127.0.0.1:3000,
                 reload: 127.0.0.1:3001,
@@ -76,6 +77,7 @@ Config {
     ],
     cli: Opts {
         release: false,
+        hot_reload: false,
         project: Some(
             "project2",
         ),

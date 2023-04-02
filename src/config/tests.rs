@@ -3,6 +3,7 @@ use super::Config;
 fn opts(project: Option<&str>) -> crate::config::Opts {
     crate::config::Opts {
         release: false,
+        hot_reload: false,
         project: project.map(|s| s.to_string()),
         verbose: 0,
         features: Vec::new(),

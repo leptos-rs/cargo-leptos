@@ -30,6 +30,7 @@ pub struct Project {
     pub style: StyleConfig,
     pub watch: bool,
     pub release: bool,
+    pub hot_reload: bool,
     pub site: Arc<Site>,
     pub end2end: Option<End2EndConfig>,
     pub assets: Option<AssetsConfig>,
@@ -45,6 +46,7 @@ impl Debug for Project {
             .field("style", &self.style)
             .field("watch", &self.watch)
             .field("release", &self.release)
+            .field("hot_reload", &self.hot_reload)
             .field("site", &self.site)
             .field("end2end", &self.end2end)
             .field("assets", &self.assets)
@@ -82,6 +84,7 @@ impl Project {
                 style: StyleConfig::new(&config)?,
                 watch,
                 release: cli.release,
+                hot_reload: cli.hot_reload,
                 site: Arc::new(Site::new(&config)),
                 end2end: End2EndConfig::resolve(&config),
                 assets: AssetsConfig::resolve(&config),
