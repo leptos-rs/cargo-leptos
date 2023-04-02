@@ -10,6 +10,7 @@ use super::server::build_cargo_server_cmd;
 fn release_opts() -> Opts {
     Opts {
         release: true,
+        hot_reload: false,
         project: None,
         verbose: 0,
         features: Vec::new(),
@@ -20,6 +21,7 @@ fn release_opts() -> Opts {
 fn dev_opts() -> Opts {
     Opts {
         release: false,
+        hot_reload: false,
         project: None,
         verbose: 0,
         features: Vec::new(),

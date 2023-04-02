@@ -16,6 +16,10 @@ pub struct Opts {
     #[arg(short, long)]
     pub release: bool,
 
+    /// Turn on partial hot-reloading. Requires rust nightly [beta]
+    #[arg(long)]
+    pub hot_reload: bool,
+
     /// Which project to use, from a list of projects defined in a workspace
     #[arg(short, long)]
     pub project: Option<String>,
