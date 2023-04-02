@@ -8,6 +8,7 @@ use crate::{
     signal::{Interrupt, Outcome, Product, ProductSet, ReloadSignal, ServerRestart},
 };
 use anyhow::Result;
+use leptos_hot_reload::ViewMacros;
 use tokio::try_join;
 
 use super::build::build_proj;
@@ -21,7 +22,12 @@ pub async fn watch(proj: &Arc<Project>) -> Result<()> {
         return Ok(());
     }
 
+    // build initial set of view macros for patching
+    let view_macros = ViewMacros::new();
+    view_macros.update_from_paths(&proj.lib.src_paths)?;
+
     let _watch = service::notify::spawn(proj).await?;
+    let _patch = service::patch::spawn(proj, &view_macros).await?;
 
     service::serve::spawn(proj).await;
     service::reload::spawn(proj).await;

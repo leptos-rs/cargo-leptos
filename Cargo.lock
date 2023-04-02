@@ -260,6 +260,7 @@ dependencies = [
  "insta",
  "itertools",
  "lazy_static",
+ "leptos_hot_reload",
  "lightningcss",
  "log",
  "notify",
@@ -1323,6 +1324,23 @@ name = "leb128"
 version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "884e2677b40cc8c339eaefcb701c32ef1fd2493d71118dc0ca4b6a736c93bd67"
+
+[[package]]
+name = "leptos_hot_reload"
+version = "0.2.3"
+source = "git+https://github.com/leptos-rs/leptos#f2ac41225361acaac6e2bb0df59e5471cd439128"
+dependencies = [
+ "anyhow",
+ "camino",
+ "indexmap",
+ "parking_lot",
+ "proc-macro2",
+ "quote",
+ "serde",
+ "syn",
+ "syn-rsx",
+ "walkdir",
+]
 
 [[package]]
 name = "libc"
@@ -2428,6 +2446,18 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
+]
+
+[[package]]
+name = "syn-rsx"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0b7b0f81c7d3e9bbe4b3005599a3e0b0bbb27bd3514f2b0567b478cc548c3736"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+ "thiserror",
 ]
 
 [[package]]

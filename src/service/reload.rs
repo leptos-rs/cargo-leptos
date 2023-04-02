@@ -80,9 +80,11 @@ async fn websocket(mut stream: WebSocket) {
                         Ok(ReloadType::Style) => {
                             send(&mut stream, BrowserMessage::css().await).await;
                         },
-                        Err(e) => log::debug!("Reload receive error {e}")
+                        Ok(ReloadType::ViewPatches(data)) => {
+                            send(&mut stream, BrowserMessage::view(data)).await;
+                        }
+                        Err(e) => log::debug!("Reload recive error {e}")
                     }
-
                 }
                 _ = int.recv(), if Interrupt::is_shutdown_requested().await => {
                     log::trace!("Reload websocket closed");
@@ -119,6 +121,7 @@ async fn send_and_close(mut stream: WebSocket, msg: BrowserMessage) {
 #[derive(Serialize)]
 struct BrowserMessage {
     css: Option<String>,
+    view: Option<String>,
     all: bool,
 }
 
@@ -130,6 +133,15 @@ impl BrowserMessage {
         }
         Self {
             css: Some(link),
+            view: None,
+            all: false,
+        }
+    }
+
+    fn view(data: String) -> Self {
+        Self {
+            css: None,
+            view: Some(data),
             all: false,
         }
     }
@@ -137,6 +149,7 @@ impl BrowserMessage {
     fn all() -> Self {
         Self {
             css: None,
+            view: None,
             all: true,
         }
     }
