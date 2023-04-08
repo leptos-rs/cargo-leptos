@@ -47,7 +47,7 @@ Install:
 
 > `cargo install --locked cargo-leptos`
 
-If you for any reason needs the bleeding-edge super fresh version:
+If you, for any reason, need the bleeding-edge super fresh version:
 
 > `cargo install --git https://github.com/akesson/cargo-leptos cargo-leptos`
 
