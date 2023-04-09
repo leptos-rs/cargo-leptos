@@ -30,7 +30,7 @@ pub async fn spawn(proj: &Arc<Project>) -> Result<JoinHandle<()>> {
         set.insert(assets.dir.clone());
     }
 
-    let paths = remove_nested(set.into_iter());
+    let paths = remove_nested(set.into_iter().filter(|path| Path::new(path).exists()));
 
     log::info!(
         "Notify watching folders {}",
