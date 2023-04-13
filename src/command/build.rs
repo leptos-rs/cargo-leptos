@@ -5,16 +5,25 @@ use crate::{
     compile::ChangeSet,
     config::{Config, Project},
     ext::{
-        anyhow::{Context, Result},
+        anyhow::{anyhow, Context, Result},
         fs,
     },
 };
 
 pub async fn build_all(conf: &Config) -> Result<()> {
+    let mut first_failed_project = None;
+
     for proj in &conf.projects {
-        build_proj(proj).await?;
+        if !build_proj(proj).await? && first_failed_project.is_none() {
+            first_failed_project = Some(proj);
+        }
     }
-    Ok(())
+
+    if let Some(proj) = first_failed_project {
+        Err(anyhow!("Failed to build {}", proj.name))
+    } else {
+        Ok(())
+    }
 }
 
 /// Build the project. Returns true if the build was successful
