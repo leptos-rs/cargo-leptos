@@ -59,15 +59,25 @@ pub async fn run_loop(proj: &Arc<Project>) -> Result<()> {
 
         let changes = Interrupt::get_source_changes().await;
 
+        // spawn separate style-update process
+        tokio::spawn({
+            let changes = changes.to_owned();
+            let proj = Arc::clone(&proj);
+            async move {
+                let style = compile::style(&proj, &changes).await;
+                if let Ok(Outcome::Success(Product::Style(_))) = style {
+                    ReloadSignal::send_style();
+                }
+            }
+        });
+
         let server_hdl = compile::server(proj, &changes).await;
         let front_hdl = compile::front(proj, &changes).await;
         let assets_hdl = compile::assets(proj, &changes, false).await;
-        let style_hdl = compile::style(proj, &changes).await;
 
-        let (serve, front, assets, style) =
-            try_join!(server_hdl, front_hdl, assets_hdl, style_hdl)?;
+        let (serve, front, assets) = try_join!(server_hdl, front_hdl, assets_hdl)?;
 
-        let outcomes = vec![serve?, front?, assets?, style?];
+        let outcomes = vec![serve?, front?, assets?];
 
         let failed = outcomes.iter().any(|outcome| *outcome == Outcome::Failed);
         let interrupted = outcomes.iter().any(|outcome| *outcome == Outcome::Stopped);
