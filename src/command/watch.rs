@@ -65,9 +65,10 @@ pub async fn run_loop(proj: &Arc<Project>) -> Result<()> {
             let proj = Arc::clone(&proj);
             async move {
                 let style = compile::style(&proj, &changes).await;
-                if let Ok(Outcome::Success(Product::Style(_))) = style {
+                if let Ok(Ok(Outcome::Success(Product::Style(_)))) = style.await {
                     ReloadSignal::send_style();
-                    log::info!("Watch updated style")
+                    log::info!("Watch updated style");
+                    Interrupt::clear_source_changes().await;
                 }
             }
         });
