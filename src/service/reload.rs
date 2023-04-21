@@ -9,7 +9,6 @@ use axum::{
     routing::get,
     Router,
 };
-use camino::Utf8Component;
 use serde::Serialize;
 use std::sync::Arc;
 use std::{fmt::Display, net::SocketAddr};
