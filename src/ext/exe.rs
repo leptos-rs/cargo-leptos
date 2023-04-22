@@ -294,7 +294,7 @@ impl Exe {
                 }
             }
             Exe::Tailwind => {
-                let version = "v3.2.4";
+                let version = "v3.3.1";
                 let url = match (target_os, target_arch) {
                     ("windows", "x86_64") => format!("https://github.com/tailwindlabs/tailwindcss/releases/download/{version}/tailwindcss-windows-x64.exe"),
                     ("macos", "x86_64") => format!("https://github.com/tailwindlabs/tailwindcss/releases/download/{version}/tailwindcss-macos-x64"),
