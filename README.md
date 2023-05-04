@@ -49,13 +49,13 @@ Install:
 
 If you, for any reason, need the bleeding-edge super fresh version:
 
-> `cargo install --git https://github.com/akesson/cargo-leptos cargo-leptos`
+> `cargo install --git https://github.com/leptos-rs/cargo-leptos --locked cargo-leptos`
 
 Help:
 
 > `cargo leptos --help`
 
-For setting up your project, have a look at the [examples](https://github.com/akesson/cargo-leptos/tree/main/examples)
+For setting up your project, have a look at the [examples](https://github.com/leptos-rs/cargo-leptos/tree/main/examples)
 
 <br/>
 

@@ -59,7 +59,7 @@ ssr = [
 
 
 [package.metadata.leptos]
-# See https://github.com/akesson/cargo-leptos for documentation of all the parameters.
+# See https://github.com/leptos-rs/cargo-leptos for documentation of all the parameters.
 
 # [Optional] Files in the asset_dir will be copied to the target/site directory
 assets-dir = "src/assets"

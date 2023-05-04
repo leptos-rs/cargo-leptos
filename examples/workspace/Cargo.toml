@@ -16,7 +16,7 @@ leptos_router = { version = "0.3", default-features = false, features = [
 leptos_dom = { version = "0.3", default-features = false }
 leptos_actix = { version = "0.3" }
 
-# See https://github.com/akesson/cargo-leptos for documentation of all the parameters.
+# See https://github.com/leptos-rs/cargo-leptos for documentation of all the parameters.
 
 # A leptos project defines which workspace members
 # that are used together frontend (lib) & server (bin)
