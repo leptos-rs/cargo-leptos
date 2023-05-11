@@ -36,7 +36,7 @@ log = "0.4"
 flexi_logger = "0.25"
 lightningcss = { version = "1.0.0-alpha.40", features = ["browserslist"] }
 tokio = { version = "1.4", default-features = false, features = ["full"] }
-axum = { version = "0.5", features = ["ws"] }
+axum = { version = "0.6", features = ["ws"] }
 # not using notify 5.0 because it uses Crossbeam which has an issue with tokio
 notify = "4.0"
 lazy_static = "1.4"
@@ -65,7 +65,7 @@ zip = { version = "0.6", default-features = false, features = ["deflate"] }
 tar = "0.4"
 dunce = "1.0"
 bytes = "1.4"
-leptos_hot_reload = { git = "https://github.com/leptos-rs/leptos", version = "0.2.3" }
+leptos_hot_reload = { git = "https://github.com/leptos-rs/leptos", version = "0.3.0-alpha" }
 
 [dev-dependencies]
 insta = { version = "1.23", features = ["yaml"] }
