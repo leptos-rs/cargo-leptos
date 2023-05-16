@@ -1,9 +1,9 @@
-use std::{collections::HashSet};
+use std::collections::HashSet;
 
-use camino::{Utf8PathBuf, Utf8Path};
-use cargo_metadata::{Metadata, Package, PackageId, Resolve, Target, MetadataCommand};
 use super::anyhow::Result;
-use super::{PathExt, PathBufExt};
+use super::{PathBufExt, PathExt};
+use camino::{Utf8Path, Utf8PathBuf};
+use cargo_metadata::{Metadata, MetadataCommand, Package, PackageId, Resolve, Target};
 
 pub trait PackageExt {
     fn has_bin_target(&self) -> bool;
@@ -55,7 +55,6 @@ pub trait MetadataExt {
 }
 
 impl MetadataExt for Metadata {
-
     fn load_cleaned(manifest_path: &Utf8Path) -> Result<Metadata> {
         let mut metadata = MetadataCommand::new().manifest_path(manifest_path).exec()?;
         metadata.workspace_root.clean_windows_path();
@@ -70,7 +69,10 @@ impl MetadataExt for Metadata {
     }
 
     fn rel_target_dir(&self) -> Utf8PathBuf {
-        self.target_directory.clone().unbase(&self.workspace_root).unwrap()
+        self.target_directory
+            .clone()
+            .unbase(&self.workspace_root)
+            .unwrap()
     }
 
     fn package_for(&self, id: &PackageId) -> Option<&Package> {
@@ -78,7 +80,7 @@ impl MetadataExt for Metadata {
     }
 
     fn path_dependencies(&self, id: &PackageId) -> Vec<Utf8PathBuf> {
-        let Some(resolve) = &self.resolve else {   
+        let Some(resolve) = &self.resolve else {
              return vec![]
         };
         let mut found = vec![];
@@ -97,8 +99,14 @@ impl MetadataExt for Metadata {
 
     fn src_path_dependencies(&self, id: &PackageId) -> Vec<Utf8PathBuf> {
         let root = &self.workspace_root;
-        self.path_dependencies(id).iter().map(|p| p.unbase(root).unwrap_or_else(|_| 
-            p.to_path_buf()).join("src")).collect()
+        self.path_dependencies(id)
+            .iter()
+            .map(|p| {
+                p.unbase(root)
+                    .unwrap_or_else(|_| p.to_path_buf())
+                    .join("src")
+            })
+            .collect()
     }
 }
 
@@ -112,7 +120,7 @@ impl ResolveExt for Resolve {
             if set.insert(node.id.clone()) {
                 for dep in &node.deps {
                     self.deps_for(&dep.pkg, set);
-                }    
+                }
             }
         }
     }
