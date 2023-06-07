@@ -13,6 +13,7 @@ use crate::{
 use lightningcss::{
     stylesheet::{MinifyOptions, ParserOptions, PrinterOptions, StyleSheet},
     targets::Browsers,
+    targets::Targets,
 };
 use std::sync::Arc;
 use tokio::task::JoinHandle;
@@ -99,7 +100,7 @@ async fn process_css(proj: &Project, css: String) -> Result<Product> {
     }
 
     let options = PrinterOptions::<'_> {
-        targets: browsers,
+        targets: Targets::from(browsers),
         minify: proj.release,
         ..Default::default()
     };
