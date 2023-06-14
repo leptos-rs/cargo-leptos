@@ -1,6 +1,5 @@
 ---
 source: src/tests.rs
-assertion_line: 24
 expression: site_dir.ls_ascii(0).unwrap_or_default()
 ---
 site:
@@ -11,7 +10,7 @@ site:
       project1.js
       project1.wasm
       snippets:
-        leptos_reactive-c89b6b77c7066735:
+        leptos_reactive-f7acfdcc44aba8c4:
           inline0.js
   project2:
     favicon.ico
@@ -20,5 +19,5 @@ site:
       project2.js
       project2.wasm
       snippets:
-        leptos_reactive-c89b6b77c7066735:
+        leptos_reactive-f7acfdcc44aba8c4:
           inline0.js
