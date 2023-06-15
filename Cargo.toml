@@ -9,10 +9,10 @@ rust-toolchain-version = "1.67.1"
 ci = ["github"]
 # Target platforms to build apps for (Rust target-triple syntax)
 targets = [
-	"x86_64-unknown-linux-gnu",
-	"x86_64-apple-darwin",
-	"x86_64-pc-windows-msvc",
-	"aarch64-apple-darwin",
+  "x86_64-unknown-linux-gnu",
+  "x86_64-apple-darwin",
+  "x86_64-pc-windows-msvc",
+  "aarch64-apple-darwin",
 ]
 
 [package]
@@ -30,7 +30,6 @@ edition = "2021"
 [dependencies]
 clap = { version = "4.0", features = ["derive"] }
 serde = { version = "1.0", features = ["derive"] }
-toml = "0.7"
 anyhow = "1.0"
 log = "0.4"
 flexi_logger = "0.25"
@@ -40,7 +39,6 @@ axum = { version = "0.6", features = ["ws"] }
 # not using notify 5.0 because it uses Crossbeam which has an issue with tokio
 notify = "4.0"
 lazy_static = "1.4"
-regex = "1.7"
 which = "4.3"
 cargo_metadata = { version = "0.15", features = ["builder"] }
 serde_json = "1.0"
@@ -49,17 +47,16 @@ ansi_term = "0.12"
 once_cell = "1.16"
 seahash = "4.1"
 reqwest = { version = "0.11", features = [
-	"blocking",
-	"__tls",
-	"default-tls",
-	"native-tls-crate",
+  "blocking",
+  "__tls",
+  "default-tls",
+  "native-tls-crate",
 ], default-features = false }
 dirs = "4.0"
 camino = "1.1"
 dotenvy = "0.15"
 itertools = "0.10"
 derive_more = "0.99"
-envy = "0.4"
 flate2 = "1.0"
 zip = { version = "0.6", default-features = false, features = ["deflate"] }
 tar = "0.4"
