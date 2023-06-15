@@ -61,7 +61,7 @@ impl Project {
         metadata: &Metadata,
         watch: bool,
     ) -> Result<Vec<Arc<Project>>> {
-        let projects = ProjectDefinition::parse(&metadata)?;
+        let projects = ProjectDefinition::parse(metadata)?;
 
         let mut resolved = Vec::new();
         for (project, mut config) in projects {
@@ -69,7 +69,7 @@ impl Project {
                 config.output_name = project.name.to_string();
             }
 
-            let lib = LibPackage::resolve(cli, &metadata, &project, &config)?;
+            let lib = LibPackage::resolve(cli, metadata, &project, &config)?;
 
             let js_dir = config
                 .js_dir
@@ -80,7 +80,7 @@ impl Project {
                 working_dir: metadata.workspace_root.clone(),
                 name: project.name.clone(),
                 lib,
-                bin: BinPackage::resolve(cli, &metadata, &project, &config)?,
+                bin: BinPackage::resolve(cli, metadata, &project, &config)?,
                 style: StyleConfig::new(&config)?,
                 watch,
                 release: cli.release,
@@ -95,7 +95,7 @@ impl Project {
 
         let projects_in_cwd = resolved
             .iter()
-            .filter(|p| p.bin.abs_dir.starts_with(&cwd) || p.lib.abs_dir.starts_with(&cwd))
+            .filter(|p| p.bin.abs_dir.starts_with(cwd) || p.lib.abs_dir.starts_with(cwd))
             .collect::<Vec<_>>();
 
         if projects_in_cwd.len() == 1 {
@@ -269,7 +269,7 @@ impl ProjectDefinition {
 }
 
 fn leptos_metadata(metadata: &serde_json::Value) -> Option<&serde_json::Value> {
-    metadata.as_object().map(|o| o.get("leptos")).flatten()
+    metadata.as_object().and_then(|o| o.get("leptos"))
 }
 
 fn default_site_addr() -> SocketAddr {

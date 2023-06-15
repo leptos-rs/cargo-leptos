@@ -97,10 +97,10 @@ impl fmt::Debug for Site {
 
 impl Site {
     pub fn new(config: &ProjectConfig) -> Self {
-        let mut reload = config.site_addr.clone();
+        let mut reload = config.site_addr;
         reload.set_port(config.reload_port);
         Self {
-            addr: config.site_addr.clone(),
+            addr: config.site_addr,
             reload,
             root_dir: config.site_root.clone(),
             pkg_dir: config.site_pkg_dir.clone(),
@@ -174,7 +174,7 @@ impl Site {
         if let Some(hash) = self.file_reg.read().await.get(site.as_str()).copied() {
             Ok(Some(hash))
         } else if dest.exists() {
-            Ok(Some(file_hash(&dest).await?))
+            Ok(Some(file_hash(dest).await?))
         } else {
             Ok(None)
         }
