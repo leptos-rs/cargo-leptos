@@ -23,6 +23,10 @@ pub fn os_arch() -> Result<(&'static str, &'static str)> {
     Ok((target_os, target_arch))
 }
 
+pub fn is_linux_musl_env() -> bool {
+    cfg!(target_os = "linux") && cfg!(target_env = "musl")
+}
+
 pub trait StrAdditions {
     fn with(&self, append: &str) -> String;
     fn pad_left_to(&self, len: usize) -> Cow<str>;
