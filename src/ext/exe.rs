@@ -10,7 +10,7 @@ use std::{
 };
 use zip::ZipArchive;
 
-use super::util::os_arch;
+use super::util::{is_linux_musl_env, os_arch};
 
 #[cfg(target_family = "unix")]
 use std::os::unix::prelude::PermissionsExt;
@@ -249,11 +249,20 @@ impl Exe {
             }
             Exe::Sass => {
                 let version = "1.58.3";
-                let url = match (target_os, target_arch) {
-                    ("windows", "x86_64") => format!("https://github.com/sass/dart-sass/releases/download/{version}/dart-sass-{version}-windows-x64.zip"),
-                    ("macos" | "linux", "x86_64") => format!("https://github.com/sass/dart-sass/releases/download/{version}/dart-sass-{version}-{target_os}-x64.tar.gz"),
-                    ("macos" | "linux", "aarch64") => format!("https://github.com/sass/dart-sass/releases/download/{version}/dart-sass-{version}-{target_os}-arm64.tar.gz"),
-                    _ => bail!("No sass tar binary found for {target_os} {target_arch}")
+                let is_musl_env = is_linux_musl_env();
+                let url = if is_musl_env {
+                    match target_arch {
+                        "x86_64" => format!("https://github.com/dart-musl/dart-sass/releases/download/{version}/dart-sass-{version}-linux-x64.tar.gz"),
+                        "aarch64" => format!("https://github.com/dart-musl/dart-sass/releases/download/{version}/dart-sass-{version}-linux-arm64.tar.gz"),
+                        _ => bail!("No sass tar binary found for linux-musl {target_arch}")
+                    }
+                } else {
+                    match (target_os, target_arch) {
+                        ("windows", "x86_64") => format!("https://github.com/sass/dart-sass/releases/download/{version}/dart-sass-{version}-windows-x64.zip"),
+                        ("macos" | "linux", "x86_64") => format!("https://github.com/sass/dart-sass/releases/download/{version}/dart-sass-{version}-{target_os}-x64.tar.gz"),
+                        ("macos" | "linux", "aarch64") => format!("https://github.com/sass/dart-sass/releases/download/{version}/dart-sass-{version}-{target_os}-arm64.tar.gz"),
+                        _ => bail!("No sass tar binary found for {target_os} {target_arch}")
+                    }
                 };
                 let exe = match target_os {
                     "windows" => "dart-sass/sass.bat".to_string(),
