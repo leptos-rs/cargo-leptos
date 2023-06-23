@@ -47,13 +47,13 @@ pub async fn run(args: Cli) -> Result<()> {
     );
 
     let _monitor = Interrupt::run_ctrl_c_monitor();
-    use Commands::{Build, EndToEnd, New, Serve, Test, Watch};
     match args.command {
-        New(_) => panic!(),
-        Build(_) => command::build_all(&config).await,
-        Serve(_) => command::serve(&config.current_project()?).await,
-        Test(_) => command::test_all(&config).await,
-        EndToEnd(_) => command::end2end_all(&config).await,
-        Watch(_) => command::watch(&config.current_project()?).await,
+        Commands::New(_) => panic!(),
+        Commands::Build(_) => command::build_all(&config).await,
+        Commands::Serve(_) => command::serve(&config.current_project()?).await,
+        Commands::Test(_) => command::test_all(&config).await,
+        Commands::EndToEnd(_) => command::end2end::end2end_all(&config).await,
+        Commands::EndToEndWithWatch(_) => command::end2end::end2end_all_with_watch(&config).await,
+        Commands::Watch(_) => command::watch(&config.current_project()?).await,
     }
 }

@@ -16,18 +16,27 @@ pub async fn end2end_all(conf: &Config) -> Result<()> {
     Ok(())
 }
 
-pub async fn end2end_proj(proj: &Arc<Project>) -> Result<()> {
-    if let Some(e2e) = &proj.end2end {
+pub async fn end2end_all_with_watch(conf: &Config) -> Result<()> {
+    for proj in &conf.projects {
         if !super::build::build_proj(proj).await.dot()? {
             return Ok(());
         }
 
         let server = serve::spawn(proj).await;
+
+        end2end_proj(proj).await?;
+
+        server.await.dot()??;
+    }
+    Ok(())
+}
+
+pub async fn end2end_proj(proj: &Arc<Project>) -> Result<()> {
+    if let Some(e2e) = &proj.end2end {
         try_run(&e2e.cmd, &e2e.dir)
             .await
             .context(format!("running: {}", &e2e.cmd))?;
         Interrupt::request_shutdown().await;
-        server.await.dot()??;
     } else {
         log::info!("end2end the Crate.toml package.metadata.leptos.end2end_cmd parameter not set")
     }

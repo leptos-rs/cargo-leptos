@@ -58,12 +58,14 @@ pub struct Cli {
 
 impl Cli {
     pub fn opts(&self) -> Option<Opts> {
-        use Commands::{Build, EndToEnd, New, Serve, Test, Watch};
         match &self.command {
-            New(_) => None,
-            Build(opts) | Serve(opts) | Test(opts) | EndToEnd(opts) | Watch(opts) => {
-                Some(opts.clone())
-            }
+            Commands::New(_) => None,
+            Commands::Build(opts)
+            | Commands::Serve(opts)
+            | Commands::Test(opts)
+            | Commands::EndToEnd(opts)
+            | Commands::EndToEndWithWatch(opts)
+            | Commands::Watch(opts) => Some(opts.clone()),
         }
     }
 }
@@ -74,8 +76,10 @@ pub enum Commands {
     Build(Opts),
     /// Run the cargo tests for app, client and server.
     Test(Opts),
-    /// Start the server and end-2-end tests.
+    /// Run end-2-end tests.
     EndToEnd(Opts),
+    /// Start the server and end-2-end tests.
+    EndToEndWithWatch(Opts),
     /// Serve. Defaults to hydrate mode.
     Serve(Opts),
     /// Serve and automatically reload when files change.
