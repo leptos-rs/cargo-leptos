@@ -13,3 +13,4 @@ playwright/.cache/
 **/.env
 
 .DS_Store
+.vscode/*
