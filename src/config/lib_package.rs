@@ -70,7 +70,7 @@ impl LibPackage {
                 .join("front")
                 .join("wasm32-unknown-unknown")
                 .join(profile.to_string())
-                .join(&name.replace('-', "_"))
+                .join(name.replace('-', "_"))
                 .with_extension("wasm");
             let site = config
                 .site_pkg_dir

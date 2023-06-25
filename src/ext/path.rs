@@ -78,7 +78,7 @@ impl PathBufExt for Utf8PathBuf {
     }
 
     fn test_string(&self) -> String {
-        let s = self.to_string().replace("\\", "/");
+        let s = self.to_string().replace('\\', "/");
         if s.ends_with(".exe") {
             s[..s.len() - 4].to_string()
         } else {

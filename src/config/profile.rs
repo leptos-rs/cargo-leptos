@@ -25,12 +25,10 @@ impl Profile {
             } else {
                 Self::Release
             }
+        } else if let Some(debug) = debug {
+            Self::Named(debug.clone())
         } else {
-            if let Some(debug) = debug {
-                Self::Named(debug.clone())
-            } else {
-                Self::Debug
-            }
+            Self::Debug
         }
     }
 

@@ -31,7 +31,7 @@ pub async fn style(
             log::debug!("Style no build needed {changes:?}");
             return Ok(Outcome::Success(Product::None));
         }
-        Ok(build(&proj).await?)
+        build(&proj).await
     })
 }
 fn build_sass(proj: &Arc<Project>) -> JoinHandle<Result<Outcome<String>>> {
@@ -47,7 +47,7 @@ fn build_sass(proj: &Arc<Project>) -> JoinHandle<Result<Outcome<String>>> {
             .await
             .dot()?;
         match style_file.source.extension() {
-            Some("sass") | Some("scss") => compile_sass(&style_file, proj.release)
+            Some("sass") | Some("scss") => compile_sass(style_file, proj.release)
                 .await
                 .context(format!("compile sass/scss: {}", &style_file)),
             Some("css") => Ok(Outcome::Success(
@@ -66,7 +66,7 @@ fn build_tailwind(proj: &Arc<Project>) -> JoinHandle<Result<Outcome<String>>> {
             return Ok(Outcome::Success("".to_string()));
         };
         log::trace!("Tailwind config: {:?}", &tw_conf);
-        compile_tailwind(&proj, &tw_conf).await
+        compile_tailwind(&proj, tw_conf).await
     })
 }
 
@@ -82,7 +82,7 @@ async fn build(proj: &Arc<Project>) -> Result<Outcome<Product>> {
         (Failed, _) | (_, Failed) => return Ok(Failed),
         (Success(css), Success(tw)) => format!("{css}\n{tw}"),
     };
-    Ok(Outcome::Success(process_css(&proj, css).await?))
+    Ok(Outcome::Success(process_css(proj, css).await?))
 }
 
 fn browser_lists(query: &str) -> Result<Option<Browsers>> {

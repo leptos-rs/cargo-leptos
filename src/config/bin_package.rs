@@ -106,7 +106,7 @@ impl BinPackage {
             abs_dir,
             rel_dir,
             exe_file,
-            target: target.name.to_string(),
+            target: target.name,
             features,
             default_features: config.bin_default_features,
             src_paths,

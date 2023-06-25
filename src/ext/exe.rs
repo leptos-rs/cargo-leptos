@@ -26,7 +26,7 @@ pub struct ExeMeta {
 
 impl ExeMeta {
     fn from_global_path(&self) -> Option<PathBuf> {
-        which::which(&self.name).ok()
+        which::which(self.name).ok()
     }
 
     fn get_name(&self) -> String {
@@ -85,7 +85,7 @@ impl<'a> ExeCache<'a> {
         } else if self.meta.url.ends_with(".tar.gz") {
             extract_tar(data, &self.exe_dir)?;
         } else {
-            self.write_binary(&data)
+            self.write_binary(data)
                 .context(format!("Could not write binary {}", self.meta.get_name()))?;
         }
 
@@ -102,7 +102,7 @@ impl<'a> ExeCache<'a> {
         fs::create_dir_all(&self.exe_dir).unwrap();
         let path = self.exe_dir.join(Path::new(&self.meta.exe));
         let mut file = File::create(&path).unwrap();
-        file.write_all(&data)
+        file.write_all(data)
             .context(format!("Error writing binary file: {:?}", path))?;
 
         #[cfg(target_family = "unix")]
@@ -196,12 +196,10 @@ impl Exe {
 
         let path = if let Some(path) = meta.from_global_path() {
             path
+        } else if cfg!(feature = "no_downloads") {
+            bail!("{} is required but was not found. Please install it using your OS's tool of choice", &meta.name);
         } else {
-            if cfg!(feature = "no_downloads") {
-                bail!("{} is required but was not found. Please install it using your OS's tool of choice", &meta.name);
-            } else {
-                meta.cached().await.context(meta.manual)?
-            }
+            meta.cached().await.context(meta.manual)?
         };
 
         log::debug!(

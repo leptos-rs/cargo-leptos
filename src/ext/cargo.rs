@@ -15,7 +15,7 @@ pub trait PackageExt {
 
 impl PackageExt for Package {
     fn has_bin_target(&self) -> bool {
-        self.targets.iter().find(|t| t.is_bin()).is_some()
+        self.targets.iter().any(|t| t.is_bin())
     }
 
     fn bin_targets(&self) -> Box<dyn Iterator<Item = &Target> + '_> {
@@ -62,7 +62,7 @@ impl MetadataExt for Metadata {
         for package in &mut metadata.packages {
             package.manifest_path.clean_windows_path();
             for dependency in &mut package.dependencies {
-                dependency.path.as_mut().map(|p| p.clean_windows_path());
+                if let Some(p) = dependency.path.as_mut() { p.clean_windows_path() }
             }
         }
         Ok(metadata)

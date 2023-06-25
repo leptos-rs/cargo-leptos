@@ -67,7 +67,7 @@ impl Config {
         }
 
         Ok(Self {
-            working_dir: metadata.workspace_root.clone(),
+            working_dir: metadata.workspace_root,
             projects,
             cli,
             watch,
