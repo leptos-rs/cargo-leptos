@@ -19,7 +19,7 @@ impl End2EndConfig {
 
         Some(Self {
             cmd: cmd.clone(),
-            dir: dir.clone(),
+            dir,
         })
     }
 }

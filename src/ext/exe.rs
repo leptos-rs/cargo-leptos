@@ -10,7 +10,7 @@ use std::{
 };
 use zip::ZipArchive;
 
-use super::util::os_arch;
+use super::util::{is_linux_musl_env, os_arch};
 
 #[cfg(target_family = "unix")]
 use std::os::unix::prelude::PermissionsExt;
@@ -26,7 +26,7 @@ pub struct ExeMeta {
 
 impl ExeMeta {
     fn from_global_path(&self) -> Option<PathBuf> {
-        which::which(&self.name).ok()
+        which::which(self.name).ok()
     }
 
     fn get_name(&self) -> String {
@@ -85,7 +85,7 @@ impl<'a> ExeCache<'a> {
         } else if self.meta.url.ends_with(".tar.gz") {
             extract_tar(data, &self.exe_dir)?;
         } else {
-            self.write_binary(&data)
+            self.write_binary(data)
                 .context(format!("Could not write binary {}", self.meta.get_name()))?;
         }
 
@@ -102,7 +102,7 @@ impl<'a> ExeCache<'a> {
         fs::create_dir_all(&self.exe_dir).unwrap();
         let path = self.exe_dir.join(Path::new(&self.meta.exe));
         let mut file = File::create(&path).unwrap();
-        file.write_all(&data)
+        file.write_all(data)
             .context(format!("Error writing binary file: {:?}", path))?;
 
         #[cfg(target_family = "unix")]
@@ -196,12 +196,10 @@ impl Exe {
 
         let path = if let Some(path) = meta.from_global_path() {
             path
+        } else if cfg!(feature = "no_downloads") {
+            bail!("{} is required but was not found. Please install it using your OS's tool of choice", &meta.name);
         } else {
-            if cfg!(feature = "no_downloads") {
-                bail!("{} is required but was not found. Please install it using your OS's tool of choice", &meta.name);
-            } else {
-                meta.cached().await.context(meta.manual)?
-            }
+            meta.cached().await.context(meta.manual)?
         };
 
         log::debug!(
@@ -249,11 +247,20 @@ impl Exe {
             }
             Exe::Sass => {
                 let version = "1.58.3";
-                let url = match (target_os, target_arch) {
-                    ("windows", "x86_64") => format!("https://github.com/sass/dart-sass/releases/download/{version}/dart-sass-{version}-windows-x64.zip"),
-                    ("macos" | "linux", "x86_64") => format!("https://github.com/sass/dart-sass/releases/download/{version}/dart-sass-{version}-{target_os}-x64.tar.gz"),
-                    ("macos" | "linux", "aarch64") => format!("https://github.com/sass/dart-sass/releases/download/{version}/dart-sass-{version}-{target_os}-arm64.tar.gz"),
-                    _ => bail!("No sass tar binary found for {target_os} {target_arch}")
+                let is_musl_env = is_linux_musl_env();
+                let url = if is_musl_env {
+                    match target_arch {
+                        "x86_64" => format!("https://github.com/dart-musl/dart-sass/releases/download/{version}/dart-sass-{version}-linux-x64.tar.gz"),
+                        "aarch64" => format!("https://github.com/dart-musl/dart-sass/releases/download/{version}/dart-sass-{version}-linux-arm64.tar.gz"),
+                        _ => bail!("No sass tar binary found for linux-musl {target_arch}")
+                    }
+                } else {
+                    match (target_os, target_arch) {
+                        ("windows", "x86_64") => format!("https://github.com/sass/dart-sass/releases/download/{version}/dart-sass-{version}-windows-x64.zip"),
+                        ("macos" | "linux", "x86_64") => format!("https://github.com/sass/dart-sass/releases/download/{version}/dart-sass-{version}-{target_os}-x64.tar.gz"),
+                        ("macos" | "linux", "aarch64") => format!("https://github.com/sass/dart-sass/releases/download/{version}/dart-sass-{version}-{target_os}-arm64.tar.gz"),
+                        _ => bail!("No sass tar binary found for {target_os} {target_arch}")
+                    }
                 };
                 let exe = match target_os {
                     "windows" => "dart-sass/sass.bat".to_string(),

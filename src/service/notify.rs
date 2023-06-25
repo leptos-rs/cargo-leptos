@@ -139,7 +139,7 @@ pub enum Watched {
 fn convert(p: &Path, proj: &Project) -> Result<Utf8PathBuf> {
     let p = Utf8PathBuf::from_path_buf(p.to_path_buf())
         .map_err(|e| anyhow!("Could not convert to a Utf8PathBuf: {e:?}"))?;
-    Ok(p.unbase(&proj.working_dir).unwrap_or_else(|_| p))
+    Ok(p.unbase(&proj.working_dir).unwrap_or(p))
 }
 
 impl Watched {
@@ -188,8 +188,7 @@ impl Watched {
     pub fn path_starts_with_any(&self, paths: &[&Utf8PathBuf]) -> bool {
         paths
             .iter()
-            .find(|path| self.path_starts_with(path))
-            .is_some()
+            .any(|path| self.path_starts_with(path))
     }
 }
 
