@@ -1351,8 +1351,8 @@ checksum = "884e2677b40cc8c339eaefcb701c32ef1fd2493d71118dc0ca4b6a736c93bd67"
 
 [[package]]
 name = "leptos_hot_reload"
-version = "0.3.0"
-source = "git+https://github.com/leptos-rs/leptos#d45d92433f2d50af18b79691f6f11404db1533b0"
+version = "0.4.0"
+source = "git+https://github.com/leptos-rs/leptos#6b90e1babd425c9a324181c86e3fd1b942c9b10f"
 dependencies = [
  "anyhow",
  "camino",
