@@ -154,6 +154,8 @@ pub struct ProjectConfig {
     pub bin_target: String,
     /// the bin output target triple to use for building the server
     pub bin_target_triple: Option<String>,
+    /// the directory to put the generated server artifacts
+    pub bin_target_dir: Option<String>,
     /// the command to run instead of "cargo" when building the server
     pub bin_cargo_command: Option<String>,
     #[serde(default)]

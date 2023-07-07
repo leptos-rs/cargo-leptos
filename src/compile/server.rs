@@ -69,7 +69,10 @@ pub fn build_cargo_server_cmd(
     if cmd != "test" {
         args.push(format!("--bin={}", proj.bin.target))
     }
-    args.push("--target-dir=target/server".to_string());
+    args.push(format!(
+        "--target-dir={}",
+        proj.bin.target_dir.as_deref().unwrap_or("target/server")
+    ));
     if let Some(triple) = &proj.bin.target_triple {
         args.push(format!("--target={triple}"));
     }
