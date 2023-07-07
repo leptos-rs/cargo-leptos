@@ -37,7 +37,10 @@ Build tool for [Leptos](https://crates.io/crates/leptos):
 - `test` command for running tests of the lib and bin packages that makes up the Leptos project.
 - `build` build the server and client.
 - `end2end` command for building, running the server and calling a bash shell hook. The hook would typically launch Playwright or similar.
-- `new` command for creating a new project based on templates, using [cargo-generate](https://cargo-generate.github.io/cargo-generate/index.html). WIP: You'll need to ask on the Leptos [discord](https://discord.gg/YdRAhS7eQB) for the url of a template.
+- `new` command for creating a new project based on templates, using [cargo-generate](https://cargo-generate.github.io/cargo-generate/index.html). Current templates include
+  - [`https://github.com/leptos-rs/start`](https://github.com/leptos-rs/start): An Actix starter
+  - [`https://github.com/leptos-rs/start-axum`](https://github.com/leptos-rs/start-axum): An Axum starter
+  - [`https://github.com/leptos-rs/start-axum-workspace`](https://github.com/leptos-rs/start-axum-workspace): An Axum starter keeping client and server code in separate crates in a workspace
 - 'no_downloads' feature to allow user management of optional dependencies
   <br/>
 
