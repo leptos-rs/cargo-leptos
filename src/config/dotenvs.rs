@@ -47,6 +47,7 @@ fn overlay(conf: &mut ProjectConfig, envs: impl Iterator<Item = (String, String)
             "LEPTOS_END2END_DIR" => conf.end2end_dir = Some(Utf8PathBuf::from(val)),
             "LEPTOS_BROWSERQUERY" => conf.browserquery = val,
             "LEPTOS_BIN_TARGET_TRIPLE" => conf.bin_target_triple = Some(val),
+            "LEPTOS_BIN_CARGO_COMMAND" => conf.bin_cargo_command = Some(val),
             _ if key.starts_with("LEPTOS_") => {
                 log::warn!("Env {key} is not used by cargo-leptos")
             }

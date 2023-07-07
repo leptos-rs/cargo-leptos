@@ -23,6 +23,7 @@ pub struct BinPackage {
     pub src_paths: Vec<Utf8PathBuf>,
     pub profile: Profile,
     pub target_triple: Option<String>,
+    pub cargo_command: Option<String>,
 }
 
 impl BinPackage {
@@ -112,6 +113,7 @@ impl BinPackage {
             src_paths,
             profile,
             target_triple: config.bin_target_triple.clone(),
+            cargo_command: config.bin_cargo_command.clone(),
         })
     }
 }
