@@ -52,7 +52,7 @@ pub async fn server(
 }
 
 pub fn server_cargo_process(cmd: &str, proj: &Project) -> Result<(String, String, Child)> {
-    let mut command = Command::new("cargo");
+    let mut command = Command::new(proj.bin.cargo_command.as_deref().unwrap_or("cargo"));
     let (envs, line) = build_cargo_server_cmd(cmd, proj, &mut command);
     Ok((envs, line, command.spawn()?))
 }
