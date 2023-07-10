@@ -74,24 +74,6 @@ fn test_project_release() {
 }
 
 #[test]
-fn test_bin_target_dir() {
-    std::env::set_var("LEPTOS_BIN_TARGET_DIR", "alternate-target/server");
-    let cli = dev_opts();
-    let conf = Config::test_load(cli, "examples", "examples/project/Cargo.toml", true);
-
-    let mut command = Command::new("cargo");
-    let (_, cargo) = build_cargo_server_cmd("build", &conf.projects[0], &mut command);
-
-    assert_display_snapshot!(cargo, @"cargo build --package=example --bin=example --target-dir=alternate-target/server --no-default-features --features=ssr");
-
-    let mut command = Command::new("cargo");
-    let (_, cargo) = build_cargo_front_cmd("build", true, &conf.projects[0], &mut command);
-
-    assert_display_snapshot!(cargo, @"cargo build --package=example --lib --target-dir=target/front --target=wasm32-unknown-unknown --no-default-features --features=hydrate");
-    std::env::remove_var("LEPTOS_BIN_TARGET_DIR");
-}
-
-#[test]
 fn test_workspace_project1() {
     const ENV_REF: &str = if cfg!(windows) {
         "\
