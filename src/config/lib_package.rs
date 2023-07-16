@@ -66,6 +66,7 @@ impl LibPackage {
 
         let wasm_file = {
             let source = metadata
+                // Can't use absolute path because the path gets stored in snapshot testing, and it differs between developers
                 .rel_target_dir()
                 .join("wasm32-unknown-unknown")
                 .join(profile.to_string())

@@ -66,6 +66,7 @@ tar = "0.4"
 dunce = "1.0"
 bytes = "1.4"
 leptos_hot_reload = { git = "https://github.com/leptos-rs/leptos", version = "0.4.8" }
+pathdiff = { version = "0.2.1", features = ["camino"] }
 semver = "1.0.18"
 async-trait = "0.1.72"
 
