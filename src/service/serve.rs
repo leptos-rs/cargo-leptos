@@ -105,7 +105,20 @@ impl ServerProcess {
             };
 
             log::debug!("Serve running {}", GRAY.paint(bin_path.as_str()));
-            Some(Command::new(bin_path).envs(self.envs.clone()).spawn()?)
+            let cmd = Some(Command::new(bin_path).envs(self.envs.clone()).spawn()?);
+            let port = self
+                .envs
+                .iter()
+                .find_map(|(k, v)| {
+                    if k == &"LEPTOS_SITE_ADDR" {
+                        Some(v.to_string())
+                    } else {
+                        None
+                    }
+                })
+                .unwrap_or_default();
+            log::info!("Serving at http://{port}");
+            cmd
         } else {
             log::debug!("Serve no exe found {}", GRAY.paint(bin.as_str()));
             None
