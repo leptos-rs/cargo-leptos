@@ -90,7 +90,7 @@ impl BinPackage {
             };
             let mut file = config.bin_target_dir.as_ref()
                 .map(|dir| dir.into())
-                .unwrap_or_else(|| metadata.rel_target_dir().join("server"));
+                .unwrap_or_else(|| metadata.rel_target_dir());
             if let Some(triple) = &config.bin_target_triple {
                 file = file.join(triple)
             };

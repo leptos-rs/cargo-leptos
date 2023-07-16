@@ -67,7 +67,6 @@ impl LibPackage {
         let wasm_file = {
             let source = metadata
                 .rel_target_dir()
-                .join("front")
                 .join("wasm32-unknown-unknown")
                 .join(profile.to_string())
                 .join(name.replace('-', "_"))
