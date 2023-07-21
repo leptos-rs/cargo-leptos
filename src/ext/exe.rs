@@ -7,6 +7,7 @@ use std::{
     fs::{self, File},
     io::{Cursor, Write},
     path::{Path, PathBuf},
+    sync::Once,
 };
 use zip::ZipArchive;
 
@@ -14,6 +15,7 @@ use super::util::{is_linux_musl_env, os_arch};
 
 #[cfg(target_family = "unix")]
 use std::os::unix::prelude::PermissionsExt;
+use log::debug;
 
 #[derive(Debug)]
 pub struct ExeMeta {
@@ -23,6 +25,10 @@ pub struct ExeMeta {
     exe: String,
     manual: &'static str,
 }
+
+/// one-time initialization flag for some debug reporting
+static REPORT_ONCE: Once = Once::new();
+
 
 impl ExeMeta {
 
@@ -181,6 +187,10 @@ fn get_cache_dir() -> Result<PathBuf> {
     if !dir.exists() {
         fs::create_dir_all(&dir).context(format!("Could not create dir {dir:?}"))?;
     }
+
+    REPORT_ONCE.call_once(|| {
+        debug!("Command cache dir: {}", dir.to_string_lossy());
+    });
 
     Ok(dir)
 }
