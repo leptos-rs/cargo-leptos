@@ -12,5 +12,5 @@ async fn main() -> Result<()> {
     }
 
     let args = Cli::parse_from(&args);
-    crate::run(args).await
+    run(args).await
 }

@@ -7,7 +7,12 @@ use std::{
     fs::{self, File},
     io::{Cursor, Write},
     path::{Path, PathBuf},
+    collections::HashMap,
+    sync::Once
 };
+
+use std::env;
+
 use zip::ZipArchive;
 
 use super::util::{is_linux_musl_env, os_arch};
@@ -18,13 +23,33 @@ use std::os::unix::prelude::PermissionsExt;
 #[derive(Debug)]
 pub struct ExeMeta {
     name: &'static str,
-    version: &'static str,
+    version: String,
     url: String,
     exe: String,
     manual: &'static str,
 }
 
+lazy_static::lazy_static!{
+    static ref ON_STARTUP_ONCE: HashMap<Exe, Once> = {
+        let mut onces = HashMap::new();
+        onces.insert(Exe::CargoGenerate, Once::new());
+        onces.insert(Exe::Sass, Once::new());
+        onces.insert(Exe::WasmOpt, Once::new());
+        onces.insert(Exe::Tailwind, Once::new());
+        onces
+    };
+
+    static ref ON_STARTUP_DEBUG_ONCE: Once = Once::new();
+}
+
+const DEFAULT_CARGO_GENERATE_VERSION: &str = "0.17.3";
+const DEFAULT_SASS_VERSION: &str = "1.58.3";
+const DEFAULT_WASM_OPT_VERSION: &str = "version_112";
+const DEFAULT_TAILWIND_VERSION: &str = "v3.3.3";
+
 impl ExeMeta {
+
+    #[allow(clippy::wrong_self_convention)]
     fn from_global_path(&self) -> Option<PathBuf> {
         which::which(self.name).ok()
     }
@@ -75,8 +100,13 @@ impl<'a> ExeCache<'a> {
             self.meta.name,
             GRAY.paint(&self.meta.url)
         );
-        let data = reqwest::get(&self.meta.url).await?.bytes().await?;
-        Ok(data)
+
+        let response = reqwest::get(&self.meta.url).await?;
+
+        match response.status().is_success() {
+            true => Ok(response.bytes().await?),
+            false => bail!("Could not download from {}", self.meta.url),
+        }
     }
 
     fn extract_downloaded(&self, data: &Bytes) -> Result<()> {
@@ -177,12 +207,17 @@ fn get_cache_dir() -> Result<PathBuf> {
         .join("cargo-leptos");
 
     if !dir.exists() {
-        std::fs::create_dir_all(&dir).context(format!("Could not create dir {dir:?}"))?;
+        fs::create_dir_all(&dir).context(format!("Could not create dir {dir:?}"))?;
     }
+
+    ON_STARTUP_DEBUG_ONCE.call_once(|| {
+        log::debug!("Command cache dir: {}", dir.to_string_lossy());
+    });
 
     Ok(dir)
 }
 
+#[derive(Debug, Hash, Eq, PartialEq)]
 pub enum Exe {
     CargoGenerate,
     Sass,
@@ -203,7 +238,7 @@ impl Exe {
         };
 
         log::debug!(
-            "Command using {} {}. {}",
+            "Command using {} {} {}",
             &meta.name,
             &meta.version,
             GRAY.paint(path.to_string_lossy())
@@ -221,7 +256,7 @@ impl Exe {
                 // due to missing support for https://github.com/alexcrichton/tar-rs/pull/298
                 // The tar extracts ok, but contains a folder `GNUSparseFile.0` which contains a file `cargo-generate`
                 // that has not been fully extracted.
-                let version = "0.17.3";
+                let version = self.resolve_version();
 
                 let target = match (target_os, target_arch) {
                     ("macos", "aarch64") => "aarch64-apple-darwin",
@@ -246,7 +281,8 @@ impl Exe {
                 }
             }
             Exe::Sass => {
-                let version = "1.58.3";
+                let version = self.resolve_version();
+
                 let is_musl_env = is_linux_musl_env();
                 let url = if is_musl_env {
                     match target_arch {
@@ -275,7 +311,8 @@ impl Exe {
                 }
             }
             Exe::WasmOpt => {
-                let version = "version_112";
+                let version = self.resolve_version();
+
                 let target = match (target_os, target_arch) {
                     ("linux", _) => "x86_64-linux",
                     ("windows", _) => "x86_64-windows",
@@ -301,7 +338,8 @@ impl Exe {
                 }
             }
             Exe::Tailwind => {
-                let version = "v3.3.1";
+                let version = self.resolve_version();
+
                 let url = match (target_os, target_arch) {
                     ("windows", "x86_64") => format!("https://github.com/tailwindlabs/tailwindcss/releases/download/{version}/tailwindcss-windows-x64.exe"),
                     ("macos", "x86_64") => format!("https://github.com/tailwindlabs/tailwindcss/releases/download/{version}/tailwindcss-macos-x64"),
@@ -329,4 +367,64 @@ impl Exe {
 
         Ok(exe)
     }
+
+    /// Resolve the version of the command.
+    /// Always guaranteed to fall back to the default version in case of any errors.
+    fn resolve_version(&self) -> String {
+        match &self {
+            Exe::CargoGenerate => {
+                let latch = ON_STARTUP_ONCE.get(self);
+                let version = env::var("LEPTOS_CARGO_GENERATE_VERSION")
+                    .unwrap_or_else(|_| DEFAULT_CARGO_GENERATE_VERSION.into());
+
+                if let Some(latch) = latch {
+                    latch.call_once(|| {
+                        log::debug!("Command version for Cargo Generate resolved to {}", version);
+                    })
+                };
+
+                version
+            },
+            Exe::Sass => {
+                let latch = ON_STARTUP_ONCE.get(self);
+                let version = env::var("LEPTOS_SASS_VERSION")
+                    .unwrap_or_else(|_| DEFAULT_SASS_VERSION.into());
+
+                if let Some(latch) = latch {
+                    latch.call_once(|| {
+                        log::debug!("Command version for Sass resolved to {}", version);
+                    })
+                }
+
+                version
+            },
+            Exe::WasmOpt => {
+                let latch = ON_STARTUP_ONCE.get(self);
+                let version = env::var("LEPTOS_WASM_OPT_VERSION")
+                    .unwrap_or_else(|_| DEFAULT_WASM_OPT_VERSION.into());
+
+                if let Some(latch) = latch {
+                    latch.call_once(|| {
+                        log::debug!("Command version for WASM Optimizer resolved to {}", version);
+                    })
+                }
+
+                version
+            },
+            Exe::Tailwind => {
+                let latch = ON_STARTUP_ONCE.get(self);
+                let version = env::var("LEPTOS_TAILWIND_VERSION")
+                    .unwrap_or_else(|_| DEFAULT_TAILWIND_VERSION.into());
+
+                if let Some(latch) = latch {
+                    latch.call_once(|| {
+                        log::debug!("Command version for Tailwind resolved to {}", version);
+                    })
+                }
+                version
+            },
+            // _ => bail!("Unknown command"),
+        }
+    }
+
 }

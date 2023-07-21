@@ -82,7 +82,7 @@ async fn build(proj: &Arc<Project>) -> Result<Outcome<Product>> {
         (Failed, _) | (_, Failed) => return Ok(Failed),
         (Success(css), Success(tw)) => format!("{css}\n{tw}"),
     };
-    Ok(Outcome::Success(process_css(proj, css).await?))
+    Ok(Success(process_css(proj, css).await?))
 }
 
 fn browser_lists(query: &str) -> Result<Option<Browsers>> {
