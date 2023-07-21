@@ -25,6 +25,8 @@ pub struct ExeMeta {
 }
 
 impl ExeMeta {
+
+    #[allow(clippy::wrong_self_convention)]
     fn from_global_path(&self) -> Option<PathBuf> {
         which::which(self.name).ok()
     }
@@ -177,7 +179,7 @@ fn get_cache_dir() -> Result<PathBuf> {
         .join("cargo-leptos");
 
     if !dir.exists() {
-        std::fs::create_dir_all(&dir).context(format!("Could not create dir {dir:?}"))?;
+        fs::create_dir_all(&dir).context(format!("Could not create dir {dir:?}"))?;
     }
 
     Ok(dir)
