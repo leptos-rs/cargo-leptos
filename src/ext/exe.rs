@@ -18,6 +18,7 @@ use super::util::{is_linux_musl_env, os_arch};
 
 #[cfg(target_family = "unix")]
 use std::os::unix::prelude::PermissionsExt;
+use lazy_static::lazy_static;
 
 #[derive(Debug)]
 pub struct ExeMeta {
@@ -28,8 +29,9 @@ pub struct ExeMeta {
     manual: &'static str,
 }
 
-/// one-time initialization flag for some debug reporting
-static ONCE_ON_STARTUP: Once = Once::new();
+lazy_static!{
+    static ref ONCE_ON_STARTUP: Once = Once::new();
+}
 
 const DEFAULT_CARGO_GENERATE_VERSION: &str = "0.17.3";
 const DEFAULT_SASS_VERSION: &str = "1.58.3";
