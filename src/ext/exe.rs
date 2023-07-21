@@ -82,8 +82,13 @@ impl<'a> ExeCache<'a> {
             self.meta.name,
             GRAY.paint(&self.meta.url)
         );
-        let data = reqwest::get(&self.meta.url).await?.bytes().await?;
-        Ok(data)
+
+        let response = reqwest::get(&self.meta.url).await?;
+
+        match response.status().is_success() {
+            true => Ok(response.bytes().await?),
+            false => bail!("Could not download from {}", self.meta.url),
+        }
     }
 
     fn extract_downloaded(&self, data: &Bytes) -> Result<()> {
@@ -312,7 +317,7 @@ impl Exe {
                 }
             }
             Exe::Tailwind => {
-                let version = "v3.3.1";
+                let version = "v3.3.10";
                 let url = match (target_os, target_arch) {
                     ("windows", "x86_64") => format!("https://github.com/tailwindlabs/tailwindcss/releases/download/{version}/tailwindcss-windows-x64.exe"),
                     ("macos", "x86_64") => format!("https://github.com/tailwindlabs/tailwindcss/releases/download/{version}/tailwindcss-macos-x64"),
