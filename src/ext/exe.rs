@@ -9,6 +9,9 @@ use std::{
     path::{Path, PathBuf},
     sync::Once,
 };
+
+use std::env;
+
 use zip::ZipArchive;
 
 use super::util::{is_linux_musl_env, os_arch};
@@ -19,7 +22,7 @@ use std::os::unix::prelude::PermissionsExt;
 #[derive(Debug)]
 pub struct ExeMeta {
     name: &'static str,
-    version: &'static str,
+    version: String,
     url: String,
     exe: String,
     manual: &'static str,
@@ -28,6 +31,10 @@ pub struct ExeMeta {
 /// one-time initialization flag for some debug reporting
 static ONCE_ON_STARTUP: Once = Once::new();
 
+const DEFAULT_CARGO_GENERATE_VERSION: &str = "0.17.3";
+const DEFAULT_SASS_VERSION: &str = "1.58.3";
+const DEFAULT_WASM_OPT_VERSION: &str = "version_112";
+const DEFAULT_TAILWIND_VERSION: &str = "v3.3.3";
 
 impl ExeMeta {
 
@@ -219,7 +226,7 @@ impl Exe {
         };
 
         log::debug!(
-            "Command using {} {}. {}",
+            "Command using {} {} {}",
             &meta.name,
             &meta.version,
             GRAY.paint(path.to_string_lossy())
@@ -237,7 +244,7 @@ impl Exe {
                 // due to missing support for https://github.com/alexcrichton/tar-rs/pull/298
                 // The tar extracts ok, but contains a folder `GNUSparseFile.0` which contains a file `cargo-generate`
                 // that has not been fully extracted.
-                let version = "0.17.3";
+                let version = self.resolve_version()?;
 
                 let target = match (target_os, target_arch) {
                     ("macos", "aarch64") => "aarch64-apple-darwin",
@@ -262,7 +269,8 @@ impl Exe {
                 }
             }
             Exe::Sass => {
-                let version = "1.58.3";
+                let version = self.resolve_version()?
+                    ;
                 let is_musl_env = is_linux_musl_env();
                 let url = if is_musl_env {
                     match target_arch {
@@ -291,7 +299,8 @@ impl Exe {
                 }
             }
             Exe::WasmOpt => {
-                let version = "version_112";
+                let version = self.resolve_version()?;
+
                 let target = match (target_os, target_arch) {
                     ("linux", _) => "x86_64-linux",
                     ("windows", _) => "x86_64-windows",
@@ -317,7 +326,8 @@ impl Exe {
                 }
             }
             Exe::Tailwind => {
-                let version = "v3.3.3";
+                let version = self.resolve_version()?;
+
                 let url = match (target_os, target_arch) {
                     ("windows", "x86_64") => format!("https://github.com/tailwindlabs/tailwindcss/releases/download/{version}/tailwindcss-windows-x64.exe"),
                     ("macos", "x86_64") => format!("https://github.com/tailwindlabs/tailwindcss/releases/download/{version}/tailwindcss-macos-x64"),
@@ -344,5 +354,15 @@ impl Exe {
         };
 
         Ok(exe)
+    }
+
+    fn resolve_version(&self) -> Result<String> {
+        match self {
+            Exe::CargoGenerate => Ok(env::var("LEPTOS_CARGO_GENERATE_VERSION").unwrap_or_else(|_| DEFAULT_CARGO_GENERATE_VERSION.into())),
+            Exe::Sass => Ok(env::var("LEPTOS_SASS_VERSION").unwrap_or_else(|_| DEFAULT_SASS_VERSION.into())),
+            Exe::WasmOpt => Ok(env::var("LEPTOS_WASM_OPT_VERSION").unwrap_or_else(|_| DEFAULT_WASM_OPT_VERSION.into())),
+            Exe::Tailwind => Ok(env::var("LEPTOS_TAILWIND_VERSION").unwrap_or_else(|_| DEFAULT_TAILWIND_VERSION.into())),
+            // _ => bail!("Unknown command"),
+        }
     }
 }
