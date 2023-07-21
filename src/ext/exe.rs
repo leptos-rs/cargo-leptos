@@ -15,7 +15,6 @@ use super::util::{is_linux_musl_env, os_arch};
 
 #[cfg(target_family = "unix")]
 use std::os::unix::prelude::PermissionsExt;
-use log::debug;
 
 #[derive(Debug)]
 pub struct ExeMeta {
@@ -27,7 +26,7 @@ pub struct ExeMeta {
 }
 
 /// one-time initialization flag for some debug reporting
-static REPORT_ONCE: Once = Once::new();
+static ONCE_ON_STARTUP: Once = Once::new();
 
 
 impl ExeMeta {
@@ -188,8 +187,8 @@ fn get_cache_dir() -> Result<PathBuf> {
         fs::create_dir_all(&dir).context(format!("Could not create dir {dir:?}"))?;
     }
 
-    REPORT_ONCE.call_once(|| {
-        debug!("Command cache dir: {}", dir.to_string_lossy());
+    ONCE_ON_STARTUP.call_once(|| {
+        log::debug!("Command cache dir: {}", dir.to_string_lossy());
     });
 
     Ok(dir)
