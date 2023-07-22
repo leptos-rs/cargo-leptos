@@ -47,6 +47,12 @@ const DEFAULT_SASS_VERSION: &str = "1.58.3";
 const DEFAULT_WASM_OPT_VERSION: &str = "version_112";
 const DEFAULT_TAILWIND_VERSION: &str = "v3.3.3";
 
+pub const ENV_VAR_LEPTOS_CARGO_GENERATE_VERSION: &str = "LEPTOS_CARGO_GENERATE_VERSION";
+pub const ENV_VAR_LEPTOS_TAILWIND_VERSION: &str = "LEPTOS_TAILWIND_VERSION";
+pub const ENV_VAR_LEPTOS_SASS_VERSION: &str = "LEPTOS_SASS_VERSION";
+pub const ENV_VAR_LEPTOS_WASM_OPT_VERSION: &str = "LEPTOS_WASM_OPT_VERSION";
+
+
 impl ExeMeta {
 
     #[allow(clippy::wrong_self_convention)]
@@ -374,7 +380,7 @@ impl Exe {
         match &self {
             Exe::CargoGenerate => {
                 let latch = ON_STARTUP_ONCE.get(self);
-                let version = env::var("LEPTOS_CARGO_GENERATE_VERSION")
+                let version = env::var(ENV_VAR_LEPTOS_CARGO_GENERATE_VERSION)
                     .unwrap_or_else(|_| DEFAULT_CARGO_GENERATE_VERSION.into());
 
                 if let Some(latch) = latch {
@@ -387,7 +393,7 @@ impl Exe {
             },
             Exe::Sass => {
                 let latch = ON_STARTUP_ONCE.get(self);
-                let version = env::var("LEPTOS_SASS_VERSION")
+                let version = env::var(ENV_VAR_LEPTOS_SASS_VERSION)
                     .unwrap_or_else(|_| DEFAULT_SASS_VERSION.into());
 
                 if let Some(latch) = latch {
@@ -400,7 +406,7 @@ impl Exe {
             },
             Exe::WasmOpt => {
                 let latch = ON_STARTUP_ONCE.get(self);
-                let version = env::var("LEPTOS_WASM_OPT_VERSION")
+                let version = env::var(ENV_VAR_LEPTOS_WASM_OPT_VERSION)
                     .unwrap_or_else(|_| DEFAULT_WASM_OPT_VERSION.into());
 
                 if let Some(latch) = latch {
@@ -413,7 +419,7 @@ impl Exe {
             },
             Exe::Tailwind => {
                 let latch = ON_STARTUP_ONCE.get(self);
-                let version = env::var("LEPTOS_TAILWIND_VERSION")
+                let version = env::var(ENV_VAR_LEPTOS_TAILWIND_VERSION)
                     .unwrap_or_else(|_| DEFAULT_TAILWIND_VERSION.into());
 
                 if let Some(latch) = latch {
