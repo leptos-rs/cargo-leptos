@@ -7,7 +7,8 @@ use std::{
     fs::{self, File},
     io::{Cursor, Write},
     path::{Path, PathBuf},
-    sync::Once,
+    collections::HashMap,
+    sync::Once
 };
 
 use std::env;
@@ -18,7 +19,6 @@ use super::util::{is_linux_musl_env, os_arch};
 
 #[cfg(target_family = "unix")]
 use std::os::unix::prelude::PermissionsExt;
-use lazy_static::lazy_static;
 
 #[derive(Debug)]
 pub struct ExeMeta {
@@ -29,8 +29,17 @@ pub struct ExeMeta {
     manual: &'static str,
 }
 
-lazy_static!{
-    static ref ONCE_ON_STARTUP: Once = Once::new();
+lazy_static::lazy_static!{
+    static ref ON_STARTUP_ONCE: HashMap<Exe, Once> = {
+        let mut onces = HashMap::new();
+        onces.insert(Exe::CargoGenerate, Once::new());
+        onces.insert(Exe::Sass, Once::new());
+        onces.insert(Exe::WasmOpt, Once::new());
+        onces.insert(Exe::Tailwind, Once::new());
+        onces
+    };
+
+    static ref ON_STARTUP_DEBUG_ONCE: Once = Once::new();
 }
 
 const DEFAULT_CARGO_GENERATE_VERSION: &str = "0.17.3";
@@ -201,13 +210,14 @@ fn get_cache_dir() -> Result<PathBuf> {
         fs::create_dir_all(&dir).context(format!("Could not create dir {dir:?}"))?;
     }
 
-    ONCE_ON_STARTUP.call_once(|| {
+    ON_STARTUP_DEBUG_ONCE.call_once(|| {
         log::debug!("Command cache dir: {}", dir.to_string_lossy());
     });
 
     Ok(dir)
 }
 
+#[derive(Debug, Hash, Eq, PartialEq)]
 pub enum Exe {
     CargoGenerate,
     Sass,
@@ -246,7 +256,7 @@ impl Exe {
                 // due to missing support for https://github.com/alexcrichton/tar-rs/pull/298
                 // The tar extracts ok, but contains a folder `GNUSparseFile.0` which contains a file `cargo-generate`
                 // that has not been fully extracted.
-                let version = self.resolve_version()?;
+                let version = self.resolve_version();
 
                 let target = match (target_os, target_arch) {
                     ("macos", "aarch64") => "aarch64-apple-darwin",
@@ -271,8 +281,8 @@ impl Exe {
                 }
             }
             Exe::Sass => {
-                let version = self.resolve_version()?
-                    ;
+                let version = self.resolve_version();
+
                 let is_musl_env = is_linux_musl_env();
                 let url = if is_musl_env {
                     match target_arch {
@@ -301,7 +311,7 @@ impl Exe {
                 }
             }
             Exe::WasmOpt => {
-                let version = self.resolve_version()?;
+                let version = self.resolve_version();
 
                 let target = match (target_os, target_arch) {
                     ("linux", _) => "x86_64-linux",
@@ -328,7 +338,7 @@ impl Exe {
                 }
             }
             Exe::Tailwind => {
-                let version = self.resolve_version()?;
+                let version = self.resolve_version();
 
                 let url = match (target_os, target_arch) {
                     ("windows", "x86_64") => format!("https://github.com/tailwindlabs/tailwindcss/releases/download/{version}/tailwindcss-windows-x64.exe"),
@@ -358,13 +368,63 @@ impl Exe {
         Ok(exe)
     }
 
-    fn resolve_version(&self) -> Result<String> {
-        match self {
-            Exe::CargoGenerate => Ok(env::var("LEPTOS_CARGO_GENERATE_VERSION").unwrap_or_else(|_| DEFAULT_CARGO_GENERATE_VERSION.into())),
-            Exe::Sass => Ok(env::var("LEPTOS_SASS_VERSION").unwrap_or_else(|_| DEFAULT_SASS_VERSION.into())),
-            Exe::WasmOpt => Ok(env::var("LEPTOS_WASM_OPT_VERSION").unwrap_or_else(|_| DEFAULT_WASM_OPT_VERSION.into())),
-            Exe::Tailwind => Ok(env::var("LEPTOS_TAILWIND_VERSION").unwrap_or_else(|_| DEFAULT_TAILWIND_VERSION.into())),
+    /// Resolve the version of the command.
+    /// Always guaranteed to fall back to the default version in case of any errors.
+    fn resolve_version(&self) -> String {
+        match &self {
+            Exe::CargoGenerate => {
+                let latch = ON_STARTUP_ONCE.get(self);
+                let version = env::var("LEPTOS_CARGO_GENERATE_VERSION")
+                    .unwrap_or_else(|_| DEFAULT_CARGO_GENERATE_VERSION.into());
+
+                if let Some(latch) = latch {
+                    latch.call_once(|| {
+                        log::debug!("Command version for Cargo Generate resolved to {}", version);
+                    })
+                };
+
+                version
+            },
+            Exe::Sass => {
+                let latch = ON_STARTUP_ONCE.get(self);
+                let version = env::var("LEPTOS_SASS_VERSION")
+                    .unwrap_or_else(|_| DEFAULT_SASS_VERSION.into());
+
+                if let Some(latch) = latch {
+                    latch.call_once(|| {
+                        log::debug!("Command version for Sass resolved to {}", version);
+                    })
+                }
+
+                version
+            },
+            Exe::WasmOpt => {
+                let latch = ON_STARTUP_ONCE.get(self);
+                let version = env::var("LEPTOS_WASM_OPT_VERSION")
+                    .unwrap_or_else(|_| DEFAULT_WASM_OPT_VERSION.into());
+
+                if let Some(latch) = latch {
+                    latch.call_once(|| {
+                        log::debug!("Command version for WASM Optimizer resolved to {}", version);
+                    })
+                }
+
+                version
+            },
+            Exe::Tailwind => {
+                let latch = ON_STARTUP_ONCE.get(self);
+                let version = env::var("LEPTOS_TAILWIND_VERSION")
+                    .unwrap_or_else(|_| DEFAULT_TAILWIND_VERSION.into());
+
+                if let Some(latch) = latch {
+                    latch.call_once(|| {
+                        log::debug!("Command version for Tailwind resolved to {}", version);
+                    })
+                }
+                version
+            },
             // _ => bail!("Unknown command"),
         }
     }
+
 }
