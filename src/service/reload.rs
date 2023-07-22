@@ -101,6 +101,7 @@ async fn websocket(mut stream: WebSocket) {
     });
 }
 
+#[allow(clippy::needless_pass_by_ref_mut)]
 async fn send(stream: &mut WebSocket, msg: BrowserMessage) {
     let site_addr = *SITE_ADDR.read().await;
     if !wait_for_socket("Reload", site_addr).await {

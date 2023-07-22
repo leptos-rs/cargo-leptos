@@ -11,9 +11,7 @@ pub struct End2EndConfig {
 
 impl End2EndConfig {
     pub fn resolve(config: &ProjectConfig) -> Option<Self> {
-        let Some(cmd) = &config.end2end_cmd else {
-          return None
-        };
+        let cmd = &config.end2end_cmd.to_owned()?;
 
         let dir = config.end2end_dir.to_owned().unwrap_or_default();
 
