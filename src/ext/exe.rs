@@ -20,6 +20,8 @@ use super::util::{is_linux_musl_env, os_arch};
 #[cfg(target_family = "unix")]
 use std::os::unix::prelude::PermissionsExt;
 
+use semver::Version;
+
 #[derive(Debug)]
 pub struct ExeMeta {
     name: &'static str,
@@ -433,4 +435,98 @@ impl Exe {
         }
     }
 
+    /// Tailwind uses the 'vMaj.Min.Pat' format.
+    /// WASM opt uses 'version_NNN' format.
+    /// We generally want to keep the suffix intact,
+    /// as it carries classifiers, etc, but strip non-ascii
+    /// digits from the prefix.
+    #[inline]
+    fn sanitize_version_prefix(ver_string: &str) -> String {
+        ver_string.chars().skip_while(|c| !c.is_ascii_digit() || *c == '_').collect::<String>()
+    }
+
+    /// Attempts to convert a non-semver version string to a semver one.
+    /// E.g. WASM Opt uses `version_112`, which is not semver even if
+    /// we strip the prefix.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let version = normalize_version("version_112");
+    /// assert_eq!(version, Some("112.0.0".to_string()));
+    /// ```
+    fn normalize_version(ver_string: &str) -> Option<Version> {
+        let ver_string = Self::sanitize_version_prefix(ver_string);
+        match Version::parse(&ver_string) {
+            Ok(v) => Some(v),
+            Err(_) => {
+                match &ver_string.parse::<u64>() {
+                    Ok(num) => Some(Version::new(*num, 0, 0)),
+                    Err(_) => {
+                        match Version::parse(format!("{ver_string}.0").as_str()) {
+                            Ok(v) => Some(v),
+                            Err(e) => {
+                                log::error!("Failed to normalize version {ver_string}: {e}");
+                                None
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use cargo_metadata::semver::Version;
+    use super::*;
+
+    #[test]
+    fn test_sanitize_version_prefix() {
+
+        let version = Exe::sanitize_version_prefix("v1.2.3");
+        assert_eq!(version, "1.2.3");
+        assert!(Version::parse(&version).is_ok());
+        let version = Exe::sanitize_version_prefix("version_1.2.3");
+        assert_eq!(version, "1.2.3");
+        assert!(Version::parse(&version).is_ok());
+    }
+
+    #[test]
+    fn test_normalize_version() {
+        let version = Exe::normalize_version("version_112");
+        assert!(version.is_some_and(|v| {
+            v.major == 112 && v.minor == 0 && v.patch == 0
+        }));
+
+        let version = Exe::normalize_version("v3.3.3");
+        assert!(version.is_some_and(|v| {
+            v.major == 3 && v.minor == 3 && v.patch == 3
+        }));
+
+        let version = Exe::normalize_version("10.0.0");
+        assert!(version.is_some_and(|v| {
+            v.major == 10 && v.minor == 0 && v.patch == 0
+        }));
+    }
+
+    #[test]
+    fn test_incomplete_version_strings() {
+        let version = Exe::normalize_version("5");
+        assert!(version.is_some_and(|v| {
+            v.major == 5 && v.minor == 0 && v.patch == 0
+        }));
+
+        let version = Exe::normalize_version("0.2");
+        assert!(version.is_some_and(|v| {
+            v.major == 0 && v.minor == 2 && v.patch == 0
+        }));
+    }
+
+    #[test]
+    fn test_invalid_versions() {
+        let version = Exe::normalize_version("1a-test");
+        assert_eq!(version, None);
+    }
 }
