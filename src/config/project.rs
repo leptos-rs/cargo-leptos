@@ -30,6 +30,7 @@ pub struct Project {
     pub style: StyleConfig,
     pub watch: bool,
     pub release: bool,
+    pub precompress: bool,
     pub hot_reload: bool,
     pub site: Arc<Site>,
     pub end2end: Option<End2EndConfig>,
@@ -46,6 +47,7 @@ impl Debug for Project {
             .field("style", &self.style)
             .field("watch", &self.watch)
             .field("release", &self.release)
+            .field("precompress", &self.precompress)
             .field("hot_reload", &self.hot_reload)
             .field("site", &self.site)
             .field("end2end", &self.end2end)
@@ -84,6 +86,7 @@ impl Project {
                 style: StyleConfig::new(&config)?,
                 watch,
                 release: cli.release,
+                precompress: cli.precompress,
                 hot_reload: cli.hot_reload,
                 site: Arc::new(Site::new(&config)),
                 end2end: End2EndConfig::resolve(&config),

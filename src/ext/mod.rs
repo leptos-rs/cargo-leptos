@@ -3,6 +3,7 @@ mod tests;
 
 pub mod anyhow;
 mod cargo;
+pub mod compress;
 pub mod exe;
 pub mod fs;
 mod path;
