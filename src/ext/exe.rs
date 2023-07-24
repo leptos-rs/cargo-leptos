@@ -12,6 +12,7 @@ use std::{
 };
 
 use std::env;
+use std::future::IntoFuture;
 
 use zip::ZipArchive;
 
@@ -19,6 +20,10 @@ use super::util::{is_linux_musl_env, os_arch};
 
 #[cfg(target_family = "unix")]
 use std::os::unix::prelude::PermissionsExt;
+use std::time::Duration;
+use itertools::Itertools;
+use log::error;
+use reqwest::ClientBuilder;
 
 use semver::Version;
 
@@ -421,18 +426,90 @@ impl Exe {
             },
             Exe::Tailwind => {
                 let latch = ON_STARTUP_ONCE.get(self);
-                let version = env::var(ENV_VAR_LEPTOS_TAILWIND_VERSION)
+                let mut version = env::var(ENV_VAR_LEPTOS_TAILWIND_VERSION)
                     .unwrap_or_else(|_| DEFAULT_TAILWIND_VERSION.into());
+
+                // get the latest version from github api
+                // cache the last check timestamp
+                // compare with the currently requested version
+                // inform a user if a more recent compatible version is available
+
+                // let v_outer = Arc::new(Mutex::new(RefCell::new(version)));
+                // let v = v_outer.clone();
 
                 if let Some(latch) = latch {
                     latch.call_once(|| {
-                        log::debug!("Command version for Tailwind resolved to {}", version);
-                    })
+                        let (tx, mut rx) = tokio::sync::mpsc::channel(1);
+                        let join = std::thread::spawn(move || async move {
+                            log::error!("Checker is executing");
+                            // let mut binding = v.lock().unwrap();
+                            // let mut unwrapped = binding.get_mut();
+                            let latest = Self::check_latest_version().await;
+                            // if let Some(latest) = latest {
+                            // let mut lock = v.lock().unwrap();
+                            // lock.replace(latest);
+                            // }
+                            tx.send(latest).await.unwrap();
+                        }).join();
+
+                        // match rx.blocking_recv() {
+                        //     Ok(r) if r.is_some() => version = r.unwrap(),
+                        //     Err(e) => log::error!("RX Error {}", e),
+                        //     Ok(_) => (),
+                        // }
+
+                        let sync_code = tokio::spawn( move ||{
+                            let r = rx.blocking_recv();
+                        }).into_future();
+                    });
+
                 }
+
                 version
-            },
-            // _ => bail!("Unknown command"),
+                // _ => bail!("Unknown command"),
+            }
         }
+    }
+
+    async fn check_latest_version() -> Option<String> {
+        let client = ClientBuilder::default()
+            // this github api allows anonymous, but requires a user-agent header be set
+            .user_agent("cargo-leptos")
+            .build()
+            .unwrap_or_default();
+
+        if let Ok(response) = client.get(
+            "https://api.github.com/repos/tailwindlabs/tailwindcss/releases/latest")
+            .send().await {
+
+            if !response.status().is_success() {
+                log::error!("GitHub API request failed: {}", response.status());
+                return None
+            }
+
+            #[derive(serde::Deserialize)]
+            struct Github {
+                tag_name: String
+            }
+
+            let github: Github = match response.json().await {
+                Ok(json) => json,
+                Err(e) => {
+                    log::debug!("Failed to parse the response JSON from the API: {}", e);
+                    return None
+                }
+            };
+
+            log::debug!("Latest version: {}", github.tag_name);
+
+            Some(github.tag_name)
+        } else {
+            log::debug!("Failed to check for the latest version");
+            None
+        }
+
+        // log::debug!("Command version for Tailwind resolved to {}", version);
+
     }
 
     /// Tailwind uses the 'vMaj.Min.Pat' format.

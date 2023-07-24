@@ -51,6 +51,7 @@ reqwest = { version = "0.11", features = [
   "__tls",
   "default-tls",
   "native-tls-crate",
+  "json",
 ], default-features = false }
 dirs = "4.0"
 camino = "1.1"
