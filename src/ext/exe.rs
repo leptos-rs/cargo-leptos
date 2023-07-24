@@ -22,7 +22,7 @@ use std::os::unix::prelude::PermissionsExt;
 use std::sync::atomic::{AtomicBool, Ordering};
 use reqwest::ClientBuilder;
 
-use semver::Version;
+use semver::{Version};
 
 #[derive(Debug)]
 pub struct ExeMeta {
@@ -423,7 +423,7 @@ impl Exe {
             },
             Exe::Tailwind => {
                 let latch = ON_STARTUP_ONCE.get(self);
-                let mut version = env::var(ENV_VAR_LEPTOS_TAILWIND_VERSION)
+                let version = env::var(ENV_VAR_LEPTOS_TAILWIND_VERSION)
                     .unwrap_or_else(|_| DEFAULT_TAILWIND_VERSION.into());
 
                 // get the latest version from github api
@@ -431,8 +431,7 @@ impl Exe {
                 // compare with the currently requested version
                 // inform a user if a more recent compatible version is available
 
-
-                let mut first_run = AtomicBool::new(false);
+                let first_run = AtomicBool::new(false);
                 let (tx, rx) = tokio::sync::oneshot::channel();
 
                 if let Some(latch) = latch {
@@ -441,29 +440,41 @@ impl Exe {
                         tokio::runtime::Handle::current().spawn(async {
                             log::debug!("Command checking for the latest Tailwind version");
                             let latest = Self::check_latest_version().await;
-                            match latest {
-                                Some(latest) => {
-                                    log::debug!("Command latest Tailwind version available is {}", latest);
-                                    tx.send(Some(latest)).unwrap();
-                                },
-                                None => {
-                                    log::debug!("Command latest Tailwind version not available");
-                                    tx.send(None).unwrap();
-                                }
-                            }
+                            tx.send(latest).unwrap();
                         });
                     });
                 }
 
+                // only wait for a receive signal on the first run (i.e. not during the watch/reload)
                 if first_run.load(Ordering::SeqCst) {
-                    if let Ok(Some(v)) = rx.await {
-                        log::debug!("Command received latest Tailwind version: {}", &v);
-                        version = v;
+                    match rx.await {
+                        Ok(Some(latest)) => {
+                            let norm_latest = Self::normalize_version(latest.as_str());
+                            let norm_version = Self::normalize_version(version.clone().as_str());
+                            if norm_latest.is_some() && norm_version.is_some() {
+                                // TODO use the VersionReq for semantic matching
+                                match norm_version.cmp(&norm_latest) {
+                                    core::cmp::Ordering::Greater | core::cmp::Ordering::Equal => {
+                                        log::debug!(
+                                            "Command requested version {} is already same or newer than available version {}",
+                                            version, &latest)
+                                    },
+                                    core::cmp::Ordering::Less => {
+                                        log::info!(
+                                            "Command requested version {}, but a newer version {} is available, consider upgrading",
+                                            version, &latest)
+                                    }
+                                }
+                            }
+                        }
+                        Ok(None) => { /* do nothing, the error will have been logged already */ },
+                        Err(e) => {
+                            log::debug!("Command failed to check for the latest version: {}",  e);
+                        }
                     }
                 }
 
                 version
-                // _ => bail!("Unknown command"),
             }
         }
     }
@@ -480,28 +491,26 @@ impl Exe {
             .send().await {
 
             if !response.status().is_success() {
-                log::error!("GitHub API request failed: {}", response.status());
+                log::error!("Command GitHub API request failed: {}", response.status());
                 return None
             }
 
             #[derive(serde::Deserialize)]
             struct Github {
-                tag_name: String
+                tag_name: String // this is the version number, not the git tag
             }
 
             let github: Github = match response.json().await {
                 Ok(json) => json,
                 Err(e) => {
-                    log::debug!("Failed to parse the response JSON from the API: {}", e);
+                    log::debug!("Command failed to parse the response JSON from the GitHub API: {}", e);
                     return None
                 }
             };
 
-            log::debug!("Latest version: {}", github.tag_name);
-
             Some(github.tag_name)
         } else {
-            log::debug!("Failed to check for the latest version");
+            log::debug!("Command failed to check for the latest version");
             None
         }
 
