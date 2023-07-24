@@ -12,7 +12,6 @@ use std::{
 };
 
 use std::env;
-use std::future::IntoFuture;
 
 use zip::ZipArchive;
 
@@ -20,9 +19,7 @@ use super::util::{is_linux_musl_env, os_arch};
 
 #[cfg(target_family = "unix")]
 use std::os::unix::prelude::PermissionsExt;
-use std::time::Duration;
-use itertools::Itertools;
-use log::error;
+use std::sync::atomic::{AtomicBool, Ordering};
 use reqwest::ClientBuilder;
 
 use semver::Version;
@@ -240,7 +237,7 @@ pub enum Exe {
 
 impl Exe {
     pub async fn get(&self) -> Result<PathBuf> {
-        let meta = self.meta()?;
+        let meta = self.meta().await?;
 
         let path = if let Some(path) = meta.from_global_path() {
             path
@@ -260,7 +257,7 @@ impl Exe {
         Ok(path)
     }
 
-    pub fn meta(&self) -> Result<ExeMeta> {
+    pub async fn meta(&self) -> Result<ExeMeta> {
         let (target_os, target_arch) = os_arch().unwrap();
 
         let exe = match self {
@@ -269,7 +266,7 @@ impl Exe {
                 // due to missing support for https://github.com/alexcrichton/tar-rs/pull/298
                 // The tar extracts ok, but contains a folder `GNUSparseFile.0` which contains a file `cargo-generate`
                 // that has not been fully extracted.
-                let version = self.resolve_version();
+                let version = self.resolve_version().await;
 
                 let target = match (target_os, target_arch) {
                     ("macos", "aarch64") => "aarch64-apple-darwin",
@@ -294,7 +291,7 @@ impl Exe {
                 }
             }
             Exe::Sass => {
-                let version = self.resolve_version();
+                let version = self.resolve_version().await;
 
                 let is_musl_env = is_linux_musl_env();
                 let url = if is_musl_env {
@@ -324,7 +321,7 @@ impl Exe {
                 }
             }
             Exe::WasmOpt => {
-                let version = self.resolve_version();
+                let version = self.resolve_version().await;
 
                 let target = match (target_os, target_arch) {
                     ("linux", _) => "x86_64-linux",
@@ -351,7 +348,7 @@ impl Exe {
                 }
             }
             Exe::Tailwind => {
-                let version = self.resolve_version();
+                let version = self.resolve_version().await;
 
                 let url = match (target_os, target_arch) {
                     ("windows", "x86_64") => format!("https://github.com/tailwindlabs/tailwindcss/releases/download/{version}/tailwindcss-windows-x64.exe"),
@@ -383,7 +380,7 @@ impl Exe {
 
     /// Resolve the version of the command.
     /// Always guaranteed to fall back to the default version in case of any errors.
-    fn resolve_version(&self) -> String {
+    async fn resolve_version(&self) -> String {
         match &self {
             Exe::CargoGenerate => {
                 let latch = ON_STARTUP_ONCE.get(self);
@@ -434,35 +431,35 @@ impl Exe {
                 // compare with the currently requested version
                 // inform a user if a more recent compatible version is available
 
-                // let v_outer = Arc::new(Mutex::new(RefCell::new(version)));
-                // let v = v_outer.clone();
+
+                let mut first_run = AtomicBool::new(false);
+                let (tx, rx) = tokio::sync::oneshot::channel();
 
                 if let Some(latch) = latch {
                     latch.call_once(|| {
-                        let (tx, mut rx) = tokio::sync::mpsc::channel(1);
-                        let join = std::thread::spawn(move || async move {
-                            log::error!("Checker is executing");
-                            // let mut binding = v.lock().unwrap();
-                            // let mut unwrapped = binding.get_mut();
+                        first_run.store(true, Ordering::SeqCst);
+                        tokio::runtime::Handle::current().spawn(async {
+                            log::debug!("Command checking for the latest Tailwind version");
                             let latest = Self::check_latest_version().await;
-                            // if let Some(latest) = latest {
-                            // let mut lock = v.lock().unwrap();
-                            // lock.replace(latest);
-                            // }
-                            tx.send(latest).await.unwrap();
-                        }).join();
-
-                        // match rx.blocking_recv() {
-                        //     Ok(r) if r.is_some() => version = r.unwrap(),
-                        //     Err(e) => log::error!("RX Error {}", e),
-                        //     Ok(_) => (),
-                        // }
-
-                        let sync_code = tokio::spawn( move ||{
-                            let r = rx.blocking_recv();
-                        }).into_future();
+                            match latest {
+                                Some(latest) => {
+                                    log::debug!("Command latest Tailwind version available is {}", latest);
+                                    tx.send(Some(latest)).unwrap();
+                                },
+                                None => {
+                                    log::debug!("Command latest Tailwind version not available");
+                                    tx.send(None).unwrap();
+                                }
+                            }
+                        });
                     });
+                }
 
+                if first_run.load(Ordering::SeqCst) {
+                    if let Ok(Some(v)) = rx.await {
+                        log::debug!("Command received latest Tailwind version: {}", &v);
+                        version = v;
+                    }
                 }
 
                 version
@@ -478,7 +475,7 @@ impl Exe {
             .build()
             .unwrap_or_default();
 
-        if let Ok(response) = client.get(
+        if let Ok(response) = client.get (
             "https://api.github.com/repos/tailwindlabs/tailwindcss/releases/latest")
             .send().await {
 
@@ -524,14 +521,7 @@ impl Exe {
 
     /// Attempts to convert a non-semver version string to a semver one.
     /// E.g. WASM Opt uses `version_112`, which is not semver even if
-    /// we strip the prefix.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// let version = normalize_version("version_112");
-    /// assert_eq!(version, Some("112.0.0".to_string()));
-    /// ```
+    /// we strip the prefix, treat it as `112.0.0`
     fn normalize_version(ver_string: &str) -> Option<Version> {
         let ver_string = Self::sanitize_version_prefix(ver_string);
         match Version::parse(&ver_string) {
@@ -561,7 +551,6 @@ mod tests {
 
     #[test]
     fn test_sanitize_version_prefix() {
-
         let version = Exe::sanitize_version_prefix("v1.2.3");
         assert_eq!(version, "1.2.3");
         assert!(Version::parse(&version).is_ok());
