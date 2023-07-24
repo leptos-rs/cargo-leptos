@@ -513,9 +513,6 @@ impl Exe {
             log::debug!("Command failed to check for the latest version");
             None
         }
-
-        // log::debug!("Command version for Tailwind resolved to {}", version);
-
     }
 
     /// Tailwind uses the 'vMaj.Min.Pat' format.
@@ -542,7 +539,7 @@ impl Exe {
                         match Version::parse(format!("{ver_string}.0").as_str()) {
                             Ok(v) => Some(v),
                             Err(e) => {
-                                log::error!("Failed to normalize version {ver_string}: {e}");
+                                log::error!("Command failed to normalize version {ver_string}: {e}");
                                 None
                             }
                         }
