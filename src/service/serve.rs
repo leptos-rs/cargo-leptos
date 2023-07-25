@@ -36,6 +36,25 @@ pub async fn spawn(proj: &Arc<Project>) -> JoinHandle<Result<()>> {
     })
 }
 
+pub async fn spawn_oneshot(proj: &Arc<Project>) -> JoinHandle<Result<()>> {
+    let mut int = Interrupt::subscribe_shutdown();
+    let proj = proj.clone();
+    tokio::spawn(async move {
+        let mut server = ServerProcess::start_new(&proj).await?;
+        loop {
+            select! {
+              _ = server.wait() => {
+                    return Ok(())
+              },
+              _ = int.recv() => {
+                    server.kill().await;
+                    return Ok(())
+              },
+            }
+        }
+    })
+}
+
 struct ServerProcess {
     process: Option<Child>,
     envs: Vec<(&'static str, String)>,
@@ -72,6 +91,17 @@ impl ServerProcess {
         self.kill().await;
         self.start().await?;
         log::trace!("Serve restarted");
+        Ok(())
+    }
+
+    async fn wait(&mut self) -> Result<()> {
+        if let Some(proc) = self.process.as_mut() {
+            if let Err(e) = proc.wait().await {
+                log::error!("Serve error while waiting for server process to exit: {e}");
+            } else {
+                log::trace!("Serve process exited");
+            }
+        }
         Ok(())
     }
 
