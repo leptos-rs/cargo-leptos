@@ -19,7 +19,6 @@ use super::util::{is_linux_musl_env, os_arch};
 
 #[cfg(target_family = "unix")]
 use std::os::unix::prelude::PermissionsExt;
-use std::sync::atomic::{AtomicBool, Ordering};
 use reqwest::ClientBuilder;
 
 use semver::{Version};
@@ -431,13 +430,13 @@ impl Exe {
                 // compare with the currently requested version
                 // inform a user if a more recent compatible version is available
 
-                let first_run = AtomicBool::new(false);
+                let mut first_run = false;
                 let (tx, rx) = tokio::sync::oneshot::channel();
 
                 if let Some(latch) = latch {
                     latch.call_once(|| {
-                        first_run.store(true, Ordering::SeqCst);
-                        tokio::runtime::Handle::current().spawn(async {
+                        first_run = true;
+                        tokio::spawn(async {
                             log::debug!("Command checking for the latest Tailwind version");
                             let latest = Self::check_latest_version().await;
                             tx.send(latest).unwrap();
@@ -446,7 +445,7 @@ impl Exe {
                 }
 
                 // only wait for a receive signal on the first run (i.e. not during the watch/reload)
-                if first_run.load(Ordering::SeqCst) {
+                if first_run {
                     match rx.await {
                         Ok(Some(latest)) => {
                             let norm_latest = Self::normalize_version(latest.as_str());
