@@ -10,6 +10,7 @@ use super::server::build_cargo_server_cmd;
 fn release_opts() -> Opts {
     Opts {
         release: true,
+        precompress: false, // if set to true, testing could take quite a while longer
         hot_reload: false,
         project: None,
         verbose: 0,
@@ -21,6 +22,7 @@ fn release_opts() -> Opts {
 fn dev_opts() -> Opts {
     Opts {
         release: false,
+        precompress: false,
         hot_reload: false,
         project: None,
         verbose: 0,
