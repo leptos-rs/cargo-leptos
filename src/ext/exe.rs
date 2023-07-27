@@ -261,6 +261,42 @@ impl Exe {
     }
 }
 
+/// Tailwind uses the 'vMaj.Min.Pat' format.
+/// WASM opt uses 'version_NNN' format.
+/// Cargo-generate has the 'vX.Y.Z' format
+/// We generally want to keep the suffix intact,
+/// as it carries classifiers, etc, but strip non-ascii
+/// digits from the prefix.
+#[inline]
+fn sanitize_version_prefix(ver_string: &str) -> String {
+    ver_string.chars().skip_while(|c| !c.is_ascii_digit() || *c == '_').collect::<String>()
+}
+
+/// Attempts to convert a non-semver version string to a semver one.
+/// E.g. WASM Opt uses `version_112`, which is not semver even if
+/// we strip the prefix, treat it as `112.0.0`
+fn normalize_version( ver_string: &str) -> Option<Version> {
+    let ver_string = sanitize_version_prefix(ver_string);
+    match Version::parse(&ver_string) {
+        Ok(v) => Some(v),
+        Err(_) => {
+            match &ver_string.parse::<u64>() {
+                Ok(num) => Some(Version::new(*num, 0, 0)),
+                Err(_) => {
+                    match Version::parse(format!("{ver_string}.0").as_str()) {
+                        Ok(v) => Some(v),
+                        Err(e) => {
+                            log::error!("Command failed to normalize version {ver_string}: {e}");
+                            None
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+
 // fallback to this crate until rust stable includes async traits
 // https://github.com/dtolnay/async-trait
 use async_trait::async_trait;
@@ -426,7 +462,7 @@ impl Command for CommandCargoGenerate {
         };
 
         Ok(format!(
-            "https://github.com/{}/{}/releases/download/v{}/cargo-generate-v{}-{}.tar.gz",
+            "https://github.com/{}/{}/releases/download/{}/cargo-generate-{}-{}.tar.gz",
             self.github_owner(),
             self.github_repo(),
             version, version,
@@ -581,7 +617,7 @@ trait Command {
     /// cache the last check timestamp
     /// compare with the currently requested version
     /// inform a user if a more recent compatible version is available
-    async fn resolve_version(&self) -> String { // 'static self is odd, but required for an async closure below
+    async fn resolve_version(&self) -> String {
         // TODO revisit this logic when implementing the SemVer compatible ranges matching
         // if env var is set, use the requested version and bypass caching logic
         let is_force_pin_version = env::var(self.env_var_version_name()).is_ok();
@@ -601,8 +637,8 @@ trait Command {
 
         match latest {
             Some(latest) => {
-                let norm_latest = self.normalize_version(latest.as_str());
-                let norm_version = self.normalize_version(&version);
+                let norm_latest = normalize_version(latest.as_str());
+                let norm_version = normalize_version(&version);
                 if norm_latest.is_some() && norm_version.is_some() {
                     // TODO use the VersionReq for semantic matching
                     match norm_version.cmp(&norm_latest) {
@@ -625,42 +661,6 @@ trait Command {
 
         version
     }
-
-    /// Attempts to convert a non-semver version string to a semver one.
-    /// E.g. WASM Opt uses `version_112`, which is not semver even if
-    /// we strip the prefix, treat it as `112.0.0`
-    fn normalize_version(&self, ver_string: &str) -> Option<Version> {
-        let ver_string = self.sanitize_version_prefix(ver_string);
-        match Version::parse(&ver_string) {
-            Ok(v) => Some(v),
-            Err(_) => {
-                match &ver_string.parse::<u64>() {
-                    Ok(num) => Some(Version::new(*num, 0, 0)),
-                    Err(_) => {
-                        match Version::parse(format!("{ver_string}.0").as_str()) {
-                            Ok(v) => Some(v),
-                            Err(e) => {
-                                log::error!("Command failed to normalize version {ver_string}: {e}");
-                                None
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    /// Tailwind uses the 'vMaj.Min.Pat' format.
-    /// WASM opt uses 'version_NNN' format.
-    /// Cargo-generate has the 'vX.Y.Z' format
-    /// We generally want to keep the suffix intact,
-    /// as it carries classifiers, etc, but strip non-ascii
-    /// digits from the prefix.
-    #[inline]
-    fn sanitize_version_prefix(&self, ver_string: &str) -> String {
-        ver_string.chars().skip_while(|c| !c.is_ascii_digit() || *c == '_').collect::<String>()
-    }
-
 }
 
 #[cfg(test)]
@@ -670,29 +670,27 @@ mod tests {
 
     #[test]
     fn test_sanitize_version_prefix() {
-        let command = CommandTailwind; // any will do
-        let version = command.sanitize_version_prefix("v1.2.3");
+        let version = sanitize_version_prefix("v1.2.3");
         assert_eq!(version, "1.2.3");
         assert!(Version::parse(&version).is_ok());
-        let version = command.sanitize_version_prefix("version_1.2.3");
+        let version = sanitize_version_prefix("version_1.2.3");
         assert_eq!(version, "1.2.3");
         assert!(Version::parse(&version).is_ok());
     }
 
     #[test]
     fn test_normalize_version() {
-        let command = CommandTailwind; // any will do
-        let version = command.normalize_version("version_112");
+        let version = normalize_version("version_112");
         assert!(version.is_some_and(|v| {
             v.major == 112 && v.minor == 0 && v.patch == 0
         }));
 
-        let version = command.normalize_version("v3.3.3");
+        let version = normalize_version("v3.3.3");
         assert!(version.is_some_and(|v| {
             v.major == 3 && v.minor == 3 && v.patch == 3
         }));
 
-        let version = command.normalize_version("10.0.0");
+        let version = normalize_version("10.0.0");
         assert!(version.is_some_and(|v| {
             v.major == 10 && v.minor == 0 && v.patch == 0
         }));
@@ -700,13 +698,12 @@ mod tests {
 
     #[test]
     fn test_incomplete_version_strings() {
-        let command = CommandTailwind; // any will do
-        let version = command.normalize_version("5");
+        let version = normalize_version("5");
         assert!(version.is_some_and(|v| {
             v.major == 5 && v.minor == 0 && v.patch == 0
         }));
 
-        let version = command.normalize_version("0.2");
+        let version = normalize_version("0.2");
         assert!(version.is_some_and(|v| {
             v.major == 0 && v.minor == 2 && v.patch == 0
         }));
@@ -714,8 +711,7 @@ mod tests {
 
     #[test]
     fn test_invalid_versions() {
-        let command = CommandTailwind; // any will do
-        let version = command.normalize_version("1a-test");
+        let version = normalize_version("1a-test");
         assert_eq!(version, None);
     }
 }
