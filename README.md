@@ -227,9 +227,9 @@ tailwind-input-file = "style/tailwind.css"
 
 # The tailwind config file.
 #
-# Optional, defaults to "./tailwind.config.js" which if is not present
+# Optional, defaults to "tailwind.config.js" which if is not present
 # is generated for you
-tailwind-config-file = "./tailwind.config.js"
+tailwind-config-file = "tailwind.config.js"
 
 # The browserlist https://browsersl.ist query used for optimizing the CSS.
 #
