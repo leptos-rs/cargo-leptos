@@ -2,6 +2,7 @@ use super::ProjectConfig;
 use crate::ext::anyhow::Result;
 use camino::{Utf8Path, Utf8PathBuf};
 use std::{env, fs};
+use crate::ext::exe;
 
 pub fn load_dotenvs(directory: &Utf8Path) -> Result<Option<Vec<(String, String)>>> {
     let candidate = directory.join(".env");
@@ -49,6 +50,12 @@ fn overlay(conf: &mut ProjectConfig, envs: impl Iterator<Item = (String, String)
             "LEPTOS_BIN_TARGET_TRIPLE" => conf.bin_target_triple = Some(val),
             "LEPTOS_BIN_TARGET_DIR" => conf.bin_target_dir = Some(val),
             "LEPTOS_BIN_CARGO_COMMAND" => conf.bin_cargo_command = Some(val),
+            // put these here to suppress the warning, but there's no
+            // good way at the moment to pull the ProjectConfig all the way to Exe
+            exe::ENV_VAR_LEPTOS_TAILWIND_VERSION => {},
+            exe::ENV_VAR_LEPTOS_SASS_VERSION => {},
+            exe::ENV_VAR_LEPTOS_CARGO_GENERATE_VERSION => {},
+            exe::ENV_VAR_LEPTOS_WASM_OPT_VERSION => {},
             _ if key.starts_with("LEPTOS_") => {
                 log::warn!("Env {key} is not used by cargo-leptos")
             }
