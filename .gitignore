@@ -13,3 +13,5 @@ playwright/.cache/
 **/.env
 
 .DS_Store
+
+.idea/
