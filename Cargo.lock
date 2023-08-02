@@ -370,7 +370,6 @@ dependencies = [
  "lightningcss",
  "log",
  "notify",
- "once_cell",
  "reqwest",
  "seahash",
  "semver",

@@ -3,8 +3,8 @@ use flexi_logger::{
     filter::{LogLineFilter, LogLineWriter},
     DeferredNow, Level, Record,
 };
-use once_cell::sync::OnceCell;
 use std::io::Write;
+use std::sync::OnceLock;
 
 use crate::{config::Log, ext::StrAdditions};
 
@@ -18,7 +18,7 @@ lazy_static::lazy_static! {
 
    pub static ref GRAY: ansi_term::Color = Fixed(241);
    pub static ref BOLD: ansi_term::Style = Style::new().bold();
-   static ref LOG_SELECT: OnceCell<LogFlag> = OnceCell::new();
+   static ref LOG_SELECT: OnceLock<LogFlag> = OnceLock::new();
 }
 
 pub fn setup(verbose: u8, logs: &[Log]) {
