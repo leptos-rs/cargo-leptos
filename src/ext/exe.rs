@@ -452,13 +452,23 @@ impl Command for CommandCargoGenerate {
     fn github_repo(&self) -> &'static str { "cargo-generate" }
 
     fn download_url(&self, target_os: &str, target_arch: &str, version: &str) -> Result<String> {
-        let target = match (target_os, target_arch) {
-            ("macos", "aarch64") => "aarch64-apple-darwin",
-            ("linux", "aarch64") => "aarch64-unknown-linux-gnu",
-            ("macos", "x86_64") => "x86_64-apple-darwin",
-            ("windows", "x86_64") => "x86_64-pc-windows-msvc",
-            ("linux", "x86_64") => "x86_64-unknown-linux-gnu",
-            _ => bail!("No cargo-generate tar binary found for {target_os} {target_arch}"),
+        let is_musl_env = is_linux_musl_env();
+        
+        let target = if is_musl_env {
+            match (target_os, target_arch) {
+                ("linux", "aarch64") => "aarch64-unknown-linux-musl",
+                ("linux", "x86_64") => "x86_64-unknown-linux-musl",
+                _ => bail!("No cargo-generate tar binary found for linux-musl {target_arch}"),
+            }
+        } else {
+            match (target_os, target_arch) {
+                ("macos", "aarch64") => "aarch64-apple-darwin",
+                ("linux", "aarch64") => "aarch64-unknown-linux-gnu",
+                ("macos", "x86_64") => "x86_64-apple-darwin",
+                ("windows", "x86_64") => "x86_64-pc-windows-msvc",
+                ("linux", "x86_64") => "x86_64-unknown-linux-gnu",
+                _ => bail!("No cargo-generate tar binary found for {target_os} {target_arch}"),
+            }
         };
 
         Ok(format!(
