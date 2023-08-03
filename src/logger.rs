@@ -7,6 +7,7 @@ use std::io::Write;
 use std::sync::OnceLock;
 
 use crate::{config::Log, ext::StrAdditions};
+use crate::ext::anyhow::Context;
 
 // https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797
 lazy_static::lazy_static! {
@@ -28,16 +29,18 @@ pub fn setup(verbose: u8, logs: &[Log]) {
         _ => "trace",
     };
 
-    if LOG_SELECT.get().is_none() {
+    // OnceLock::get_or_try_init() is more idiomatic, but unstable at the moment
+    _ = LOG_SELECT.get_or_init(|| {
         flexi_logger::Logger::try_with_str(log_level)
+            .with_context(|| "Logger setup failed")
             .unwrap()
             .filter(Box::new(Filter))
             .format(format)
             .start()
             .unwrap();
 
-        LOG_SELECT.set(LogFlag::new(logs)).unwrap();
-    }
+        LogFlag::new(logs)
+    });
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -117,13 +120,14 @@ impl LogLineFilter for Filter {
     fn write(
         &self,
         now: &mut DeferredNow,
-        record: &log::Record,
+        record: &Record,
         log_line_writer: &dyn LogLineWriter,
     ) -> std::io::Result<()> {
         let target = record.target();
         if record.level() == Level::Error
             || target.starts_with("cargo_leptos")
-            || LOG_SELECT.get().unwrap().matches(target)
+            // LOG_SELECT will have been initialized by now, get_or_init() not required
+            || LOG_SELECT.get().is_some_and(|flag| flag.matches(target))
         {
             log_line_writer.write(now, record)?;
         }
