@@ -347,7 +347,7 @@ dependencies = [
 
 [[package]]
 name = "cargo-leptos"
-version = "0.1.12"
+version = "0.1.12-alpha"
 dependencies = [
  "ansi_term",
  "anyhow",
@@ -370,7 +370,6 @@ dependencies = [
  "lightningcss",
  "log",
  "notify",
- "once_cell",
  "reqwest",
  "seahash",
  "semver",
