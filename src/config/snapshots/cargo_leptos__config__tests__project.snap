@@ -52,7 +52,7 @@ Config {
                 tailwind: Some(
                     TailwindConfig {
                         input_file: "style/tailwind.css",
-                        config_file: "./tailwind.config.js",
+                        config_file: "tailwind.config.js",
                     },
                 ),
                 site_file: SiteFile {

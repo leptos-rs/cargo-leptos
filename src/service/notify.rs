@@ -26,6 +26,11 @@ pub async fn spawn(proj: &Arc<Project>) -> Result<JoinHandle<()>> {
         set.insert(file.source.clone().without_last());
     }
 
+    if let Some(tailwind) = &proj.style.tailwind {
+        set.insert(tailwind.config_file.clone());
+        set.insert(tailwind.input_file.clone());
+    }
+
     if let Some(assets) = &proj.assets {
         set.insert(assets.dir.clone());
     }
@@ -33,7 +38,7 @@ pub async fn spawn(proj: &Arc<Project>) -> Result<JoinHandle<()>> {
     let paths = remove_nested(set.into_iter().filter(|path| Path::new(path).exists()));
 
     log::info!(
-        "Notify watching folders {}",
+        "Notify watching paths {}",
         GRAY.paint(paths.iter().join(", "))
     );
     let proj = proj.clone();
@@ -112,6 +117,15 @@ fn handle(watched: Watched, proj: Arc<Project>) {
     if let Some(file) = &proj.style.file {
         let src = file.source.clone().without_last();
         if path.starts_with(src) && path.is_ext_any(&["scss", "sass", "css"]) {
+            log::debug!("Notify style change {}", GRAY.paint(watched.to_string()));
+            changes.push(Change::Style)
+        }
+    }
+
+    if let Some(tailwind) = &proj.style.tailwind {
+        if path.as_path() == tailwind.config_file.as_path()
+            || path.as_path() == tailwind.input_file.as_path()
+        {
             log::debug!("Notify style change {}", GRAY.paint(watched.to_string()));
             changes.push(Change::Style)
         }

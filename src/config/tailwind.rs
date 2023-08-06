@@ -23,7 +23,7 @@ impl TailwindConfig {
         let config_file = conf.config_dir.join(
             conf.tailwind_config_file
                 .clone()
-                .unwrap_or_else(|| Utf8PathBuf::from("./tailwind.config.js")),
+                .unwrap_or_else(|| Utf8PathBuf::from("tailwind.config.js")),
         );
 
         Ok(Some(Self {
