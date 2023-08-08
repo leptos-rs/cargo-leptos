@@ -9,12 +9,13 @@ use tokio::time::Instant;
 
 pub async fn compress_static_files(path: PathBuf) -> Result<()> {
     let start = Instant::now();
+
     tokio::task::spawn_blocking(move || compress_dir_all(path)).await??;
+
     log::info!(
         "Precompression of static files finished after {} ms",
         start.elapsed().as_millis()
     );
-
     Ok(())
 }
 
@@ -31,29 +32,28 @@ fn compress_dir_all(path: PathBuf) -> Result<()> {
         let metadata = fs::metadata(&path)?;
 
         if metadata.is_dir() {
-            compress_dir_all(path)?
+            compress_dir_all(path)?;
         } else {
-            let pstr = path.as_os_str().to_str().unwrap();
+            let pstr = path.to_str().unwrap_or_default();
             if pstr.ends_with(".gz") || pstr.ends_with(".br") {
                 // skip all files that are already compressed
                 continue;
             }
 
             let file = fs::read(&path)?;
-            let pstr = path.to_str();
 
             // gzip
             let mut encoder = gzip::Encoder::new(Vec::new())?;
             encoder.write_all(file.as_ref())?;
             let encoded_data = encoder.finish().into_result()?;
-            let path_gz = format!("{}.gz", pstr.unwrap());
+            let path_gz = format!("{}.gz", pstr);
             fs::write(path_gz, encoded_data)?;
 
             // brotli
-            let path_br = format!("{}.br", pstr.unwrap());
+            let path_br = format!("{}.br", pstr);
             let mut output = File::create(path_br)?;
             let mut reader = BufReader::new(file.as_slice());
-            brotli::BrotliCompress(&mut reader, &mut output, &brotli_params).unwrap();
+            brotli::BrotliCompress(&mut reader, &mut output, &brotli_params)?;
         }
     }
 
