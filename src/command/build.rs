@@ -48,15 +48,15 @@ pub async fn build_proj(proj: &Arc<Project>) -> Result<bool> {
         return Ok(false);
     }
 
-    if proj.release && proj.precompress {
-        // it is important to do the precompression of the static files before building the
-        // server to make it possible to include them as assets into the binary itself
-        if compress::compress_static_files(proj.site.root_dir.clone().into())
+    // it is important to do the precompression of the static files before building the
+    // server to make it possible to include them as assets into the binary itself
+    if proj.release
+        && proj.precompress
+        && compress::compress_static_files(proj.site.root_dir.clone().into())
             .await
             .is_err()
-        {
-            return Ok(false);
-        }
+    {
+        return Ok(false);
     }
 
     if !compile::server(proj, &changes).await.await??.is_success() {
