@@ -6,8 +6,8 @@ use temp_dir::TempDir;
 #[tokio::test]
 async fn download_sass() {
     let dir = TempDir::new().unwrap();
-    let meta = Exe::Sass.meta().unwrap();
-    let e = meta.with_cache_dir(&dir.path().to_path_buf()).await;
+    let meta = Exe::Sass.meta().await.unwrap();
+    let e = meta.with_cache_dir(dir.path()).await;
 
     assert!(e.is_ok(), "{e:#?}\n{:#?}\nFiles: \n {}", meta, ls(&dir));
 
@@ -18,8 +18,8 @@ async fn download_sass() {
 #[tokio::test]
 async fn download_tailwind() {
     let dir = TempDir::new().unwrap();
-    let meta = Exe::Tailwind.meta().unwrap();
-    let e = meta.with_cache_dir(&dir.path().to_path_buf()).await;
+    let meta = Exe::Tailwind.meta().await.unwrap();
+    let e = meta.with_cache_dir(dir.path()).await;
     assert!(e.is_ok(), "{e:#?}\n{:#?}\nFiles: \n {}", meta, ls(&dir));
 
     let e = e.unwrap();
@@ -29,8 +29,8 @@ async fn download_tailwind() {
 #[tokio::test]
 async fn download_cargo_generate() {
     let dir = TempDir::new().unwrap();
-    let meta = Exe::CargoGenerate.meta().unwrap();
-    let e = meta.with_cache_dir(&dir.path().to_path_buf()).await;
+    let meta = Exe::CargoGenerate.meta().await.unwrap();
+    let e = meta.with_cache_dir(dir.path()).await;
 
     assert!(e.is_ok(), "{e:#?}\n{:#?}\nFiles: \n {}", meta, ls(&dir));
 
@@ -41,8 +41,8 @@ async fn download_cargo_generate() {
 #[tokio::test]
 async fn download_wasmopt() {
     let dir = TempDir::new().unwrap();
-    let meta = Exe::WasmOpt.meta().unwrap();
-    let e = meta.with_cache_dir(&dir.path().to_path_buf()).await;
+    let meta = Exe::WasmOpt.meta().await.unwrap();
+    let e = meta.with_cache_dir(dir.path()).await;
 
     assert!(e.is_ok(), "{e:#?}\n{:#?}\nFiles: \n {}", meta, ls(&dir));
 

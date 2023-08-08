@@ -33,12 +33,12 @@ pub trait PathBufExt: PathExt {
 }
 
 impl PathExt for Utf8Path {
-    fn rebase(&self, src_root: &Utf8Path, dest_root: &Utf8Path) -> Result<Utf8PathBuf> {
-        self.to_path_buf().rebase(src_root, dest_root)
-    }
-
     fn relative_to(&self, to: impl AsRef<Utf8Path>) -> Option<Utf8PathBuf> {
         self.to_path_buf().relative_to(to)
+    }
+
+    fn rebase(&self, src_root: &Utf8Path, dest_root: &Utf8Path) -> Result<Utf8PathBuf> {
+        self.to_path_buf().rebase(src_root, dest_root)
     }
 
     fn unbase(&self, base: &Utf8Path) -> Result<Utf8PathBuf> {
@@ -55,23 +55,6 @@ impl PathExt for Utf8Path {
 }
 
 impl PathBufExt for Utf8PathBuf {
-    fn clean_windows_path(&mut self) {
-        if cfg!(windows) {
-            let cleaned = dunce::simplified(self.as_ref());
-            *self = Utf8PathBuf::from_path_buf(cleaned.to_path_buf()).unwrap();
-        }
-    }
-
-    fn resolve_home_dir(self) -> Result<Utf8PathBuf> {
-        if self.starts_with("~") {
-            let home = std::env::var("HOME").context("Could not resolve $HOME")?;
-            let home = Utf8PathBuf::from(home);
-            Ok(home.join(self.strip_prefix("~").unwrap()))
-        } else {
-            Ok(self)
-        }
-    }
-
     fn without_last(mut self) -> Utf8PathBuf {
         self.pop();
         self
@@ -86,6 +69,10 @@ impl PathBufExt for Utf8PathBuf {
         }
     }
 
+    fn starts_with_any(&self, of: &[Utf8PathBuf]) -> bool {
+        of.iter().any(|p| self.starts_with(p))
+    }
+
     fn is_ext_any(&self, of: &[&str]) -> bool {
         let Some(ext) = self.extension() else {
             return false
@@ -93,8 +80,21 @@ impl PathBufExt for Utf8PathBuf {
         of.contains(&ext)
     }
 
-    fn starts_with_any(&self, of: &[Utf8PathBuf]) -> bool {
-        of.iter().any(|p| self.starts_with(p))
+    fn resolve_home_dir(self) -> Result<Utf8PathBuf> {
+        if self.starts_with("~") {
+            let home = std::env::var("HOME").context("Could not resolve $HOME")?;
+            let home = Utf8PathBuf::from(home);
+            Ok(home.join(self.strip_prefix("~").unwrap()))
+        } else {
+            Ok(self)
+        }
+    }
+
+    fn clean_windows_path(&mut self) {
+        if cfg!(windows) {
+            let cleaned = dunce::simplified(self.as_ref());
+            *self = Utf8PathBuf::from_path_buf(cleaned.to_path_buf()).unwrap();
+        }
     }
 
     #[cfg(test)]
@@ -209,7 +209,7 @@ pub fn append_str_to_filename(path: &Utf8PathBuf, suffix: &str) -> Result<Utf8Pa
                 Some(extension) => format!("{stem}{suffix}.{extension}").into(),
                 None => format!("{stem}{suffix}").into(),
             };
-            let mut full_path: Utf8PathBuf = path.parent().unwrap_or("".into()).clone().into();
+            let mut full_path: Utf8PathBuf = path.parent().unwrap_or("".into()).into();
             full_path.push(new_filename);
             Ok(full_path)
         }
@@ -222,7 +222,7 @@ pub fn determine_pdb_filename(path: &Utf8PathBuf) -> Option<Utf8PathBuf> {
     match path.file_stem() {
         Some(stem) => {
             let new_filename: Utf8PathBuf = format!("{stem}.pdb").into();
-            let mut full_path: Utf8PathBuf = path.parent().unwrap_or("".into()).clone().into();
+            let mut full_path: Utf8PathBuf = path.parent().unwrap_or("".into()).into();
             full_path.push(new_filename);
             if full_path.exists() {
                 Some(full_path)

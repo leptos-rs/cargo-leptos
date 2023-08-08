@@ -54,7 +54,7 @@ pub async fn compile_tailwind(
 }
 
 async fn create_default_tailwind_config(tw_conf: &TailwindConfig) -> Result<()> {
-    let contents = r##"/** @type {import('tailwindcss').Config} */
+    let contents = r#"/** @type {import('tailwindcss').Config} */
     module.exports = {
       content: {
         relative: true,
@@ -65,7 +65,7 @@ async fn create_default_tailwind_config(tw_conf: &TailwindConfig) -> Result<()> 
       },
       plugins: [],
     }
-    "##;
+    "#;
     fs::write(&tw_conf.config_file, contents).await
 }
 
