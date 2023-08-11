@@ -162,7 +162,7 @@ bin-profile-release = "my-release-profile"
 # The profile to use for the bin target when compiling for debug
 #
 # Optional. Defaults to "debug".
-bin-profile-debug = "my-debug-profile"
+bin-profile-dev = "my-debug-profile"
 
 # The target triple to use when compiling the bin target
 #
@@ -187,7 +187,7 @@ lib-profile-release = "my-release-profile"
 # The profile to use for the lib target when compiling for debug
 #
 # Optional. Defaults to "debug".
-lib-profile-debug = "my-debug-profile"
+lib-profile-dev = "my-debug-profile"
 ```
 
 ## Site parameters
