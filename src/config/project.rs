@@ -21,6 +21,11 @@ use super::{
     style::StyleConfig,
 };
 
+/// If the site root path starts with this marker, the marker should be replaced with the Cargo target directory
+const CARGO_TARGET_DIR_MARKER: &str = "CARGO_TARGET_DIR";
+/// If the site root path starts with this marker, the marker should be replaced with the Cargo target directory
+const CARGO_BUILD_TARGET_DIR_MARKER: &str = "CARGO_BUILD_TARGET_DIR";
+
 pub struct Project {
     /// absolute path to the working dir
     pub working_dir: Utf8PathBuf,
@@ -185,17 +190,30 @@ impl ProjectConfig {
         conf.config_dir = dir.to_path_buf();
         let dotenvs = load_dotenvs(dir)?;
         overlay_env(&mut conf, dotenvs)?;
-        if conf.site_root == "/" || conf.site_root == "." || conf.site_root == "CARGO_TARGET_DIR" {
+        if conf.site_root == "/"
+            || conf.site_root == "."
+            || conf.site_root == CARGO_TARGET_DIR_MARKER
+            || conf.site_root == CARGO_BUILD_TARGET_DIR_MARKER
+        {
             bail!(
                 "site-root cannot be '{}'. All the content is erased when building the site.",
                 conf.site_root
             );
         }
-        if conf.site_root.starts_with("CARGO_TARGET_DIR") {
+        if conf.site_root.starts_with(CARGO_TARGET_DIR_MARKER) {
             conf.site_root = {
                 let mut path = cargo_metadata.target_directory.clone();
                 // unwrap() should be safe because we just checked
-                let sub = conf.site_root.unbase("CARGO_TARGET_DIR".into()).unwrap();
+                let sub = conf.site_root.unbase(CARGO_TARGET_DIR_MARKER.into()).unwrap();
+                path.push(sub);
+                path
+            };
+        }
+        if conf.site_root.starts_with(CARGO_BUILD_TARGET_DIR_MARKER) {
+            conf.site_root = {
+                let mut path = cargo_metadata.target_directory.clone();
+                // unwrap() should be safe because we just checked
+                let sub = conf.site_root.unbase(CARGO_BUILD_TARGET_DIR_MARKER.into()).unwrap();
                 path.push(sub);
                 path
             };
@@ -296,7 +314,7 @@ fn default_pkg_dir() -> Utf8PathBuf {
 }
 
 fn default_site_root() -> Utf8PathBuf {
-    Utf8PathBuf::from("CARGO_TARGET_DIR").join("site")
+    Utf8PathBuf::from(CARGO_TARGET_DIR_MARKER).join("site")
 }
 
 fn default_reload_port() -> u16 {
