@@ -14,7 +14,8 @@ leptos = { workspace = true, features = ["serde"] }
 leptos_meta.workspace = true
 leptos_router.workspace = true
 
-gloo-net = { version = "0.2", features = ["http"] }
+
+gloo-net = { version = "0.4", features = ["http"] }
 log = "0.4"
 cfg-if = "1.0"
 

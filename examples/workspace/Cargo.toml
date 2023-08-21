@@ -1,5 +1,6 @@
 [workspace]
 members = ["project1/app", "project1/front", "project1/server", "project2"]
+resolver = "2"
 
 # need to be applied only to wasm build
 [profile.release]
@@ -8,13 +9,13 @@ lto = true
 opt-level = 'z'
 
 [workspace.dependencies]
-leptos = { version = "0.3", default-features = false, features = ["stable"] }
-leptos_meta = { version = "0.3", default-features = false }
-leptos_router = { version = "0.3", default-features = false, features = [
-  "stable",
-] }
-leptos_dom = { version = "0.3", default-features = false }
-leptos_actix = { version = "0.3" }
+leptos = { version = "0.4", default-features = false }
+leptos_meta = { version = "0.4", default-features = false }
+leptos_router = { version = "0.4", default-features = false }
+leptos_dom = { version = "0.4", default-features = false }
+leptos_actix = { version = "0.4" }
+
+gloo-net = { version = "0.4", features = ["http"] }
 
 # See https://github.com/leptos-rs/cargo-leptos for documentation of all the parameters.
 
