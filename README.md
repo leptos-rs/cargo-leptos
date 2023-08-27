@@ -253,7 +253,7 @@ js-dir = "src"
 # A change to any file in those directories will trigger a rebuild.
 #
 # Optional.
-additionnal-watch-files = ["additionnal_files", "custom_config.json"]
+watch-additionnal-files = ["additionnal_files", "custom_config.json"]
 
 # The IP and port where the server serves the content. Use it in your server setup.
 #
