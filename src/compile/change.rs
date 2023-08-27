@@ -14,6 +14,8 @@ pub enum Change {
     Style,
     /// Cargo.toml changed
     Conf,
+    /// Additionnal file changed
+    Additionnal,
 }
 
 #[derive(Debug, Default, Clone)]
@@ -39,11 +41,15 @@ impl ChangeSet {
     }
 
     pub fn need_server_build(&self) -> bool {
-        self.0.contains(&Change::BinSource) || self.0.contains(&Change::Conf)
+        self.0.contains(&Change::BinSource)
+            || self.0.contains(&Change::Conf)
+            || self.0.contains(&Change::Additionnal)
     }
 
     pub fn need_front_build(&self) -> bool {
-        self.0.contains(&Change::LibSource) || self.0.contains(&Change::Conf)
+        self.0.contains(&Change::LibSource)
+            || self.0.contains(&Change::Conf)
+            || self.0.contains(&Change::Additionnal)
     }
 
     pub fn asset_iter(&self) -> impl Iterator<Item = &Watched> {

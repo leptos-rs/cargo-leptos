@@ -20,6 +20,7 @@ pub async fn spawn(proj: &Arc<Project>) -> Result<JoinHandle<()>> {
 
     set.extend(proj.lib.src_paths.clone());
     set.extend(proj.bin.src_paths.clone());
+    set.extend(proj.watch_additionnal_files.clone());
     set.insert(proj.js_dir.clone());
 
     if let Some(file) = &proj.style.file {
@@ -83,7 +84,7 @@ fn handle(watched: Watched, proj: Arc<Project>) {
 
     let Some(path) = watched.path() else {
         Interrupt::send_all_changed();
-        return
+        return;
     };
 
     let mut changes = Vec::new();
@@ -129,6 +130,14 @@ fn handle(watched: Watched, proj: Arc<Project>) {
             log::debug!("Notify style change {}", GRAY.paint(watched.to_string()));
             changes.push(Change::Style)
         }
+    }
+
+    if path.starts_with_any(&proj.watch_additionnal_files) {
+        log::debug!(
+            "Notify additionnal file change {}",
+            GRAY.paint(watched.to_string())
+        );
+        changes.push(Change::Additionnal);
     }
 
     if !changes.is_empty() {
@@ -200,9 +209,7 @@ impl Watched {
     }
 
     pub fn path_starts_with_any(&self, paths: &[&Utf8PathBuf]) -> bool {
-        paths
-            .iter()
-            .any(|path| self.path_starts_with(path))
+        paths.iter().any(|path| self.path_starts_with(path))
     }
 }
 
