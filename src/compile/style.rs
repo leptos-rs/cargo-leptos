@@ -91,16 +91,21 @@ fn browser_lists(query: &str) -> Result<Option<Browsers>> {
 
 async fn process_css(proj: &Project, css: String) -> Result<Product> {
     let browsers = browser_lists(&proj.style.browserquery).context("leptos.style.browserquery")?;
+    let targets = Targets::from(browsers);
 
     let mut stylesheet =
         StyleSheet::parse(&css, ParserOptions::default()).map_err(|e| anyhow!("{e}"))?;
 
     if proj.release {
-        stylesheet.minify(MinifyOptions::default())?;
+        let minify_options = MinifyOptions {
+            targets,
+            ..Default::default()
+        };
+        stylesheet.minify(minify_options)?;
     }
 
     let options = PrinterOptions::<'_> {
-        targets: Targets::from(browsers),
+        targets,
         minify: proj.release,
         ..Default::default()
     };

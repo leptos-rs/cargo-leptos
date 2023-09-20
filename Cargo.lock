@@ -617,19 +617,24 @@ dependencies = [
 
 [[package]]
 name = "cssparser"
-version = "0.29.6"
+version = "0.33.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f93d03419cb5950ccfd3daf3ff1c7a36ace64609a1a8746d493df1ca0afde0fa"
+checksum = "9be934d936a0fbed5bcdc01042b770de1398bf79d0e192f49fa7faea0e99281e"
 dependencies = [
  "cssparser-macros",
  "dtoa-short",
  "itoa",
- "matches",
  "phf",
- "proc-macro2",
- "quote",
  "smallvec",
- "syn 1.0.109",
+]
+
+[[package]]
+name = "cssparser-color"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "556c099a61d85989d7af52b692e35a8d68a57e7df8c6d07563dc0778b3960c9f"
+dependencies = [
+ "cssparser",
 ]
 
 [[package]]
@@ -1400,15 +1405,16 @@ checksum = "b4668fb0ea861c1df094127ac5f1da3409a82116a4ba74fca2e58ef927159bb3"
 
 [[package]]
 name = "lightningcss"
-version = "1.0.0-alpha.45"
+version = "1.0.0-alpha.47"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "04f87dd0377974affb751fedb4d394b0fce51829227ec6afe4fa7d51eeb6383b"
+checksum = "6b9e0bcd2b6bb94c671476ae1d4cba1d5da256394ae18e3f656d2d339d577b5a"
 dependencies = [
  "ahash 0.7.6",
  "bitflags 2.4.0",
  "browserslist-rs",
  "const-str",
  "cssparser",
+ "cssparser-color",
  "dashmap",
  "data-encoding",
  "itertools 0.10.5",
@@ -1716,9 +1722,9 @@ checksum = "7f222829ae9293e33a9f5e9f440c6760a3d450a64affe1846486b140db81c1f4"
 
 [[package]]
 name = "parcel_selectors"
-version = "0.26.1"
+version = "0.26.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9b1aa68e6c4bf7a49302b9c711c880c1cc2a7dc5c5184042cc724e4124e0d95f"
+checksum = "5f0fbe4365a6ec3fda13f9551aa5ea9f1e1ee8da513953b153de29ac00cf684a"
 dependencies = [
  "bitflags 2.4.0",
  "cssparser",
