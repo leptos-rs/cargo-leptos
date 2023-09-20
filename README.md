@@ -249,11 +249,11 @@ assets-dir = "assets"
 # Optional. Defaults to "src"
 js-dir = "src"
 
-# Additionnal files your application could depends on.
+# Additional files your application could depends on.
 # A change to any file in those directories will trigger a rebuild.
 #
 # Optional.
-watch-additionnal-files = ["additionnal_files", "custom_config.json"]
+watch-additional-files = ["additional_files", "custom_config.json"]
 
 # The IP and port where the server serves the content. Use it in your server setup.
 #

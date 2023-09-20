@@ -20,7 +20,7 @@ pub async fn spawn(proj: &Arc<Project>) -> Result<JoinHandle<()>> {
 
     set.extend(proj.lib.src_paths.clone());
     set.extend(proj.bin.src_paths.clone());
-    set.extend(proj.watch_additionnal_files.clone());
+    set.extend(proj.watch_additional_files.clone());
     set.insert(proj.js_dir.clone());
 
     if let Some(file) = &proj.style.file {
@@ -132,12 +132,12 @@ fn handle(watched: Watched, proj: Arc<Project>) {
         }
     }
 
-    if path.starts_with_any(&proj.watch_additionnal_files) {
+    if path.starts_with_any(&proj.watch_additional_files) {
         log::debug!(
-            "Notify additionnal file change {}",
+            "Notify additional file change {}",
             GRAY.paint(watched.to_string())
         );
-        changes.push(Change::Additionnal);
+        changes.push(Change::Additional);
     }
 
     if !changes.is_empty() {

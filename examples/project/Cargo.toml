@@ -86,8 +86,8 @@ assets-dir = "assets"
 # with `#[wasm_bindgen(module = "/js/foo.js")]`. A change in any JS file in this dir
 # will trigger a rebuild.
 js-dir = "js"
-# [Optional] Additionnal files to watch
-watch-additionnal-files = ["additionnal_files"]
+# [Optional] Additional files to watch
+watch-additional-files = ["additional_files"]
 # The IP and port (ex: 127.0.0.1:3000) where the server serves the content. Use it in your server setup.
 site-address = "127.0.0.1:3000"
 # The port to use for automatic reload monitoring
