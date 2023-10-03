@@ -21,6 +21,11 @@ use super::{
     style::StyleConfig,
 };
 
+/// If the site root path starts with this marker, the marker should be replaced with the Cargo target directory
+const CARGO_TARGET_DIR_MARKER: &str = "CARGO_TARGET_DIR";
+/// If the site root path starts with this marker, the marker should be replaced with the Cargo target directory
+const CARGO_BUILD_TARGET_DIR_MARKER: &str = "CARGO_BUILD_TARGET_DIR";
+
 pub struct Project {
     /// absolute path to the working dir
     pub working_dir: Utf8PathBuf,
@@ -30,11 +35,13 @@ pub struct Project {
     pub style: StyleConfig,
     pub watch: bool,
     pub release: bool,
+    pub precompress: bool,
     pub hot_reload: bool,
     pub site: Arc<Site>,
     pub end2end: Option<End2EndConfig>,
     pub assets: Option<AssetsConfig>,
     pub js_dir: Utf8PathBuf,
+    pub watch_additional_files: Vec<Utf8PathBuf>,
 }
 
 impl Debug for Project {
@@ -46,6 +53,7 @@ impl Debug for Project {
             .field("style", &self.style)
             .field("watch", &self.watch)
             .field("release", &self.release)
+            .field("precompress", &self.precompress)
             .field("hot_reload", &self.hot_reload)
             .field("site", &self.site)
             .field("end2end", &self.end2end)
@@ -76,6 +84,8 @@ impl Project {
                 .clone()
                 .unwrap_or_else(|| Utf8PathBuf::from("src"));
 
+            let watch_additional_files = config.watch_additional_files.clone().unwrap_or_default();
+
             let proj = Project {
                 working_dir: metadata.workspace_root.clone(),
                 name: project.name.clone(),
@@ -84,11 +94,13 @@ impl Project {
                 style: StyleConfig::new(&config)?,
                 watch,
                 release: cli.release,
+                precompress: cli.precompress,
                 hot_reload: cli.hot_reload,
                 site: Arc::new(Site::new(&config)),
                 end2end: End2EndConfig::resolve(&config),
                 assets: AssetsConfig::resolve(&config),
                 js_dir,
+                watch_additional_files,
             };
             resolved.push(Arc::new(proj));
         }
@@ -141,6 +153,8 @@ pub struct ProjectConfig {
     pub assets_dir: Option<Utf8PathBuf>,
     /// js dir. changes triggers rebuilds.
     pub js_dir: Option<Utf8PathBuf>,
+    /// additional files to watch. changes triggers rebuilds.
+    pub watch_additional_files: Option<Vec<Utf8PathBuf>>,
     #[serde(default = "default_reload_port")]
     pub reload_port: u16,
     /// command for launching end-2-end integration tests
@@ -180,16 +194,38 @@ pub struct ProjectConfig {
 }
 
 impl ProjectConfig {
-    fn parse(dir: &Utf8Path, metadata: &serde_json::Value) -> Result<Self> {
+    fn parse(dir: &Utf8Path, metadata: &serde_json::Value, cargo_metadata: &Metadata) -> Result<Self> {
         let mut conf: ProjectConfig = serde_json::from_value(metadata.clone())?;
         conf.config_dir = dir.to_path_buf();
         let dotenvs = load_dotenvs(dir)?;
         overlay_env(&mut conf, dotenvs)?;
-        if conf.site_root == "/" || conf.site_root == "." {
+        if conf.site_root == "/"
+            || conf.site_root == "."
+            || conf.site_root == CARGO_TARGET_DIR_MARKER
+            || conf.site_root == CARGO_BUILD_TARGET_DIR_MARKER
+        {
             bail!(
                 "site-root cannot be '{}'. All the content is erased when building the site.",
                 conf.site_root
             );
+        }
+        if conf.site_root.starts_with(CARGO_TARGET_DIR_MARKER) {
+            conf.site_root = {
+                let mut path = cargo_metadata.target_directory.clone();
+                // unwrap() should be safe because we just checked
+                let sub = conf.site_root.unbase(CARGO_TARGET_DIR_MARKER.into()).unwrap();
+                path.push(sub);
+                path
+            };
+        }
+        if conf.site_root.starts_with(CARGO_BUILD_TARGET_DIR_MARKER) {
+            conf.site_root = {
+                let mut path = cargo_metadata.target_directory.clone();
+                // unwrap() should be safe because we just checked
+                let sub = conf.site_root.unbase(CARGO_BUILD_TARGET_DIR_MARKER.into()).unwrap();
+                path.push(sub);
+                path
+            };
         }
         if conf.site_addr.port() == conf.reload_port {
             bail!(
@@ -212,11 +248,12 @@ impl ProjectDefinition {
     fn from_workspace(
         metadata: &serde_json::Value,
         dir: &Utf8Path,
+        cargo_metadata: &Metadata,
     ) -> Result<Vec<(Self, ProjectConfig)>> {
         let mut found = Vec::new();
         if let Some(arr) = metadata.as_array() {
             for section in arr {
-                let conf = ProjectConfig::parse(dir, section)?;
+                let conf = ProjectConfig::parse(dir, section, cargo_metadata)?;
                 let def: Self = serde_json::from_value(section.clone())?;
                 found.push((def, conf))
             }
@@ -228,8 +265,9 @@ impl ProjectDefinition {
         package: &Package,
         metadata: &serde_json::Value,
         dir: &Utf8Path,
+        cargo_metadata: &Metadata,
     ) -> Result<(Self, ProjectConfig)> {
-        let conf = ProjectConfig::parse(dir, metadata)?;
+        let conf = ProjectConfig::parse(dir, metadata, cargo_metadata)?;
 
         ensure!(
             package.cdylib_target().is_some(),
@@ -256,7 +294,7 @@ impl ProjectDefinition {
         let workspace_dir = &metadata.workspace_root;
         let mut found: Vec<(Self, ProjectConfig)> =
             if let Some(md) = leptos_metadata(&metadata.workspace_metadata) {
-                Self::from_workspace(md, &Utf8PathBuf::default())?
+                Self::from_workspace(md, &Utf8PathBuf::default(), metadata)?
             } else {
                 Default::default()
             };
@@ -264,8 +302,8 @@ impl ProjectDefinition {
         for package in metadata.workspace_packages() {
             let dir = package.manifest_path.unbase(workspace_dir)?.without_last();
 
-            if let Some(metadata) = leptos_metadata(&package.metadata) {
-                found.push(Self::from_project(package, metadata, &dir)?);
+            if let Some(leptos_metadata) = leptos_metadata(&package.metadata) {
+                found.push(Self::from_project(package, leptos_metadata, &dir, metadata)?);
             }
         }
         Ok(found)
@@ -285,7 +323,7 @@ fn default_pkg_dir() -> Utf8PathBuf {
 }
 
 fn default_site_root() -> Utf8PathBuf {
-    Utf8PathBuf::from("target").join("site")
+    Utf8PathBuf::from(CARGO_TARGET_DIR_MARKER).join("site")
 }
 
 fn default_reload_port() -> u16 {

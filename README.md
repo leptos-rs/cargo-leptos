@@ -36,7 +36,7 @@ Build tool for [Leptos](https://crates.io/crates/leptos):
 - `watch` command for automatic rebuilds with browser live-reload.
 - `test` command for running tests of the lib and bin packages that makes up the Leptos project.
 - `build` build the server and client.
-- `end2end` command for building, running the server and calling a bash shell hook. The hook would typically launch Playwright or similar.
+- `end-to-end` command for building, running the server and calling a bash shell hook. The hook would typically launch Playwright or similar.
 - `new` command for creating a new project based on templates, using [cargo-generate](https://cargo-generate.github.io/cargo-generate/index.html). Current templates include
   - [`https://github.com/leptos-rs/start`](https://github.com/leptos-rs/start): An Actix starter
   - [`https://github.com/leptos-rs/start-axum`](https://github.com/leptos-rs/start-axum): An Axum starter
@@ -162,7 +162,7 @@ bin-profile-release = "my-release-profile"
 # The profile to use for the bin target when compiling for debug
 #
 # Optional. Defaults to "debug".
-bin-profile-debug = "my-debug-profile"
+bin-profile-dev = "my-debug-profile"
 
 # The target triple to use when compiling the bin target
 #
@@ -187,7 +187,7 @@ lib-profile-release = "my-release-profile"
 # The profile to use for the lib target when compiling for debug
 #
 # Optional. Defaults to "debug".
-lib-profile-debug = "my-debug-profile"
+lib-profile-dev = "my-debug-profile"
 ```
 
 ## Site parameters
@@ -206,7 +206,7 @@ output-name = "myproj"
 # NOTE: It is relative to the workspace root when running in a workspace.
 # WARNING: all content of this folder will be erased on a rebuild.
 #
-# Optional, defaults to "target/site". Env: LEPTOS_SITE_ROOT.
+# Optional, defaults to "/site" in the Cargo target directory. Env: LEPTOS_SITE_ROOT.
 site-root = "target/site"
 
 # The site-root relative folder where all compiled output (JS, WASM and CSS) is written.
@@ -248,6 +248,12 @@ assets-dir = "assets"
 #
 # Optional. Defaults to "src"
 js-dir = "src"
+
+# Additional files your application could depends on.
+# A change to any file in those directories will trigger a rebuild.
+#
+# Optional.
+watch-additional-files = ["additional_files", "custom_config.json"]
 
 # The IP and port where the server serves the content. Use it in your server setup.
 #

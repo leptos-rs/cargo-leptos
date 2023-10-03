@@ -10,7 +10,7 @@ Config {
                 name: "front-package",
                 rel_dir: "project1/front",
                 wasm_file: SourcedSiteFile {
-                    source: "target/front/wasm32-unknown-unknown/debug/front_package.wasm",
+                    source: "target/wasm32-unknown-unknown/debug/front_package.wasm",
                     dest: "target/site/project1/pkg/project1.wasm",
                     site: "pkg/project1.wasm",
                 },
@@ -28,7 +28,7 @@ Config {
             bin: BinPackage {
                 name: "server-package",
                 rel_dir: "project1/server",
-                exe_file: "target/server/debug/server-package",
+                exe_file: "target/debug/server-package",
                 target: "server-package",
                 features: [],
                 default_features: false,
@@ -53,6 +53,7 @@ Config {
             },
             watch: true,
             release: false,
+            precompress: false,
             hot_reload: false,
             site: Site {
                 addr: 127.0.0.1:3000,
@@ -76,7 +77,7 @@ Config {
                 name: "project2",
                 rel_dir: "project2",
                 wasm_file: SourcedSiteFile {
-                    source: "target/front/wasm32-unknown-unknown/debug/project2.wasm",
+                    source: "target/wasm32-unknown-unknown/debug/project2.wasm",
                     dest: "target/site/project2/pkg/project2.wasm",
                     site: "pkg/project2.wasm",
                 },
@@ -96,7 +97,7 @@ Config {
             bin: BinPackage {
                 name: "project2",
                 rel_dir: "project2",
-                exe_file: "target/server/debug/project2",
+                exe_file: "target/debug/project2",
                 target: "project2",
                 features: [
                     "ssr",
@@ -123,6 +124,7 @@ Config {
             },
             watch: true,
             release: false,
+            precompress: false,
             hot_reload: false,
             site: Site {
                 addr: 127.0.0.1:3000,
@@ -143,6 +145,7 @@ Config {
     ],
     cli: Opts {
         release: false,
+        precompress: false,
         hot_reload: false,
         project: None,
         features: [],

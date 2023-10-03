@@ -67,7 +67,6 @@ pub fn build_cargo_front_cmd(
         cmd.to_string(),
         format!("--package={}", proj.lib.name.as_str()),
         "--lib".to_string(),
-        "--target-dir=target/front".to_string(),
     ];
     if wasm {
         args.push("--target=wasm32-unknown-unknown".to_string());
