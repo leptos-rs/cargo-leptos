@@ -69,10 +69,7 @@ impl MetadataExt for Metadata {
     }
 
     fn rel_target_dir(&self) -> Utf8PathBuf {
-        self.target_directory
-            .clone()
-            .unbase(&self.workspace_root)
-            .unwrap()
+        pathdiff::diff_utf8_paths(&self.target_directory, &self.workspace_root).unwrap()
     }
 
     fn package_for(&self, id: &PackageId) -> Option<&Package> {

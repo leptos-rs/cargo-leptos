@@ -206,7 +206,7 @@ output-name = "myproj"
 # NOTE: It is relative to the workspace root when running in a workspace.
 # WARNING: all content of this folder will be erased on a rebuild.
 #
-# Optional, defaults to "target/site". Env: LEPTOS_SITE_ROOT.
+# Optional, defaults to "/site" in the Cargo target directory. Env: LEPTOS_SITE_ROOT.
 site-root = "target/site"
 
 # The site-root relative folder where all compiled output (JS, WASM and CSS) is written.
