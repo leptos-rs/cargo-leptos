@@ -41,6 +41,7 @@ pub struct Project {
     pub end2end: Option<End2EndConfig>,
     pub assets: Option<AssetsConfig>,
     pub js_dir: Utf8PathBuf,
+    pub watch_additional_files: Vec<Utf8PathBuf>,
 }
 
 impl Debug for Project {
@@ -83,6 +84,8 @@ impl Project {
                 .clone()
                 .unwrap_or_else(|| Utf8PathBuf::from("src"));
 
+            let watch_additional_files = config.watch_additional_files.clone().unwrap_or_default();
+
             let proj = Project {
                 working_dir: metadata.workspace_root.clone(),
                 name: project.name.clone(),
@@ -97,6 +100,7 @@ impl Project {
                 end2end: End2EndConfig::resolve(&config),
                 assets: AssetsConfig::resolve(&config),
                 js_dir,
+                watch_additional_files,
             };
             resolved.push(Arc::new(proj));
         }
@@ -149,6 +153,8 @@ pub struct ProjectConfig {
     pub assets_dir: Option<Utf8PathBuf>,
     /// js dir. changes triggers rebuilds.
     pub js_dir: Option<Utf8PathBuf>,
+    /// additional files to watch. changes triggers rebuilds.
+    pub watch_additional_files: Option<Vec<Utf8PathBuf>>,
     #[serde(default = "default_reload_port")]
     pub reload_port: u16,
     /// command for launching end-2-end integration tests
