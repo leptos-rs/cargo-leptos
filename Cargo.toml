@@ -22,7 +22,7 @@ repository = "https://github.com/leptos-rs/cargo-leptos"
 description = "Build tool for Leptos."
 categories = ["development-tools", "wasm", "web-programming"]
 keywords = ["leptos"]
-version = "0.1.12-alpha"
+version = "0.2.0"
 edition = "2021"
 rust-version = "1.71"
 
