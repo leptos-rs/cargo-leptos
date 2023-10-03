@@ -16,6 +16,10 @@ pub struct Opts {
     #[arg(short, long)]
     pub release: bool,
 
+    /// Precompress static assets with gzip and brotli. Applies to release builds only.
+    #[arg(short = 'P', long)]
+    pub precompress: bool,
+
     /// Turn on partial hot-reloading. Requires rust nightly [beta]
     #[arg(long)]
     pub hot_reload: bool,
