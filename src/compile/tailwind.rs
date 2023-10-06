@@ -34,7 +34,13 @@ pub async fn compile_tailwind(
 
             if done {
                 log::info!("Tailwind finished {}", GRAY.paint(line));
-                Ok(Outcome::Success(output.stdout()))
+                match fs::read_to_string(&tw_conf.tmp_file).await {
+                    Ok(content) => Ok(Outcome::Success(content)),
+                    Err(e) => {
+                        log::error!("Failed to read tailwind result: {e}");
+                        Ok(Outcome::Failed)
+                    }
+                }
             } else {
                 log::warn!("Tailwind failed {}", GRAY.paint(line));
                 println!("{}\n{}", output.stdout(), output.stderr());
@@ -77,6 +83,8 @@ pub async fn tailwind_process(cmd: &str, tw_conf: &TailwindConfig) -> Result<(St
         tw_conf.input_file.as_str(),
         "--config",
         tw_conf.config_file.as_str(),
+        "--output",
+        tw_conf.tmp_file.as_str(),
     ];
     let line = format!("{} {}", cmd, args.join(" "));
     let mut command = Command::new(tailwind);
