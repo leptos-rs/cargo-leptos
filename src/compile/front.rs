@@ -68,6 +68,11 @@ pub fn build_cargo_front_cmd(
         format!("--package={}", proj.lib.name.as_str()),
         "--lib".to_string(),
     ];
+
+    if let Some(path) = &proj.lib.front_target_path {
+        args.push(format!("--target-dir={path}"))
+    }
+
     if wasm {
         args.push("--target=wasm32-unknown-unknown".to_string());
     }

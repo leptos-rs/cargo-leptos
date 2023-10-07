@@ -22,6 +22,7 @@ pub struct LibPackage {
     pub default_features: bool,
     pub output_name: String,
     pub src_paths: Vec<Utf8PathBuf>,
+    pub front_target_path: Option<Utf8PathBuf>,
     pub profile: Profile,
 }
 
@@ -65,9 +66,11 @@ impl LibPackage {
         );
 
         let wasm_file = {
-            let source = metadata
-                // Can't use absolute path because the path gets stored in snapshot testing, and it differs between developers
-                .rel_target_dir()
+            let mut source = metadata.rel_target_dir();
+            if config.separate_front_target_dir {
+                source = source.join("front");
+            }
+            let source = source
                 .join("wasm32-unknown-unknown")
                 .join(profile.to_string())
                 .join(name.replace('-', "_"))
@@ -92,6 +95,13 @@ impl LibPackage {
         } else {
             src_deps.push(rel_dir.join("src"));
         }
+
+        let front_target_path = if config.separate_front_target_dir {
+            Some(metadata.target_directory.join("front"))
+        } else {
+            None
+        };
+
         Ok(Self {
             name,
             abs_dir,
@@ -102,6 +112,7 @@ impl LibPackage {
             default_features: config.lib_default_features,
             output_name,
             src_paths: src_deps,
+            front_target_path,
             profile,
         })
     }
