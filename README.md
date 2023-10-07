@@ -188,6 +188,11 @@ lib-profile-release = "my-release-profile"
 #
 # Optional. Defaults to "debug".
 lib-profile-dev = "my-debug-profile"
+
+# Fixes cargo bug that prevents incremental compilation (see #203)
+#
+# Optional. Defaults to false
+separate-front-target-dir = true
 ```
 
 ## Site parameters
