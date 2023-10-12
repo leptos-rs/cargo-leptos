@@ -82,3 +82,8 @@ no_downloads = []
 [profile.dist]
 inherits = "release"
 lto = "thin"
+
+[package.metadata.binstall]
+pkg-url = "{ repo }/releases/download/v{ version }/{ name }-{ target }.tar.xz"
+bin-dir = "{ bin }{ binary-ext }"
+pkg-fmt = "tgz"
