@@ -18,6 +18,7 @@ use config::{Cli, Config};
 use ext::fs;
 use signal::Interrupt;
 use std::env;
+use std::path::PathBuf;
 
 pub async fn run(args: Cli) -> Result<()> {
     let verbose = args.opts().map(|o| o.verbose).unwrap_or(0);
@@ -45,6 +46,25 @@ pub async fn run(args: Cli) -> Result<()> {
         "Path working dir {}",
         GRAY.paint(config.working_dir.as_str())
     );
+
+    if config.working_dir.join("package.json").exists() {
+        log::debug!("Path found 'package.json' adding 'node_modules/.bin' to PATH");
+        let node_modules = &config.working_dir.join("node_modules");
+        if node_modules.exists() {
+            match env::var("PATH") {
+                Ok(path) => {
+                    let mut path_dirs: Vec<PathBuf> = env::split_paths(&path).collect();
+                    path_dirs.insert(0, node_modules.join(".bin").into_std_path_buf());
+                    // unwrap is safe, because we got the paths from the actual PATH variable
+                    env::set_var("PATH", env::join_paths(path_dirs).unwrap());
+                },
+                Err(_) => log::warn!("Path PATH environment variable not found, ignoring"),
+            }
+        } else {
+            log::warn!("Path 'node_modules' folder not found, please install the required packages first");
+            log::warn!("Path continuing without using 'node_modules'");
+        }
+    }
 
     let _monitor = Interrupt::run_ctrl_c_monitor();
     use Commands::{Build, EndToEnd, New, Serve, Test, Watch};
