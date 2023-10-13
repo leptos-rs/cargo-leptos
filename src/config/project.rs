@@ -186,6 +186,9 @@ pub struct ProjectConfig {
     #[serde(skip)]
     pub config_dir: Utf8PathBuf,
 
+    #[serde(default)]
+    pub separate_front_target_dir: bool,
+
     // Profiles
     pub lib_profile_dev: Option<String>,
     pub lib_profile_release: Option<String>,
