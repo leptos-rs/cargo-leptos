@@ -53,6 +53,7 @@ Config {
                     TailwindConfig {
                         input_file: "style/tailwind.css",
                         config_file: "tailwind.config.js",
+                        tmp_file: "target/tmp/tailwind.css",
                     },
                 ),
                 site_file: SiteFile {

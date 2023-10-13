@@ -7,6 +7,7 @@ use anyhow::{bail, Result};
 pub struct TailwindConfig {
     pub input_file: Utf8PathBuf,
     pub config_file: Utf8PathBuf,
+    pub tmp_file: Utf8PathBuf,
 }
 
 impl TailwindConfig {
@@ -26,9 +27,12 @@ impl TailwindConfig {
                 .unwrap_or_else(|| Utf8PathBuf::from("tailwind.config.js")),
         );
 
+        let tmp_file = conf.tmp_dir.join("tailwind.css");
+
         Ok(Some(Self {
             input_file,
             config_file,
+            tmp_file,
         }))
     }
 }

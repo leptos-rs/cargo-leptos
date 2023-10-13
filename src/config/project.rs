@@ -185,6 +185,8 @@ pub struct ProjectConfig {
 
     #[serde(skip)]
     pub config_dir: Utf8PathBuf,
+    #[serde(skip)]
+    pub tmp_dir: Utf8PathBuf,
 
     #[serde(default)]
     pub separate_front_target_dir: bool,
@@ -200,6 +202,7 @@ impl ProjectConfig {
     fn parse(dir: &Utf8Path, metadata: &serde_json::Value, cargo_metadata: &Metadata) -> Result<Self> {
         let mut conf: ProjectConfig = serde_json::from_value(metadata.clone())?;
         conf.config_dir = dir.to_path_buf();
+        conf.tmp_dir = cargo_metadata.target_directory.join("tmp").unbase(&cargo_metadata.workspace_root).unwrap();
         let dotenvs = load_dotenvs(dir)?;
         overlay_env(&mut conf, dotenvs)?;
         if conf.site_root == "/"
