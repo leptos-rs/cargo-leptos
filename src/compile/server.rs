@@ -84,6 +84,10 @@ pub fn build_cargo_server_cmd(
         args.push(format!("--features={}", proj.bin.features.join(",")));
     }
 
+    if let Some(cargo_args) = &proj.bin.cargo_args {
+        args.push(format!("{cargo_args}"));
+    }
+
     proj.bin.profile.add_to_args(&mut args);
 
     let envs = proj.to_envs();

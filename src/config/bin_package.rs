@@ -25,6 +25,7 @@ pub struct BinPackage {
     pub target_triple: Option<String>,
     pub target_dir: Option<String>,
     pub cargo_command: Option<String>,
+    pub cargo_args: Option<String>,
 }
 
 impl BinPackage {
@@ -88,7 +89,9 @@ impl BinPackage {
             } else {
                 ""
             };
-            let mut file = config.bin_target_dir.as_ref()
+            let mut file = config
+                .bin_target_dir
+                .as_ref()
                 .map(|dir| dir.into())
                 // Can't use absolute path because the path gets stored in snapshot testing, and it differs between developers
                 .unwrap_or_else(|| metadata.rel_target_dir());
@@ -119,6 +122,7 @@ impl BinPackage {
             target_triple: config.bin_target_triple.clone(),
             target_dir: config.bin_target_dir.clone(),
             cargo_command: config.bin_cargo_command.clone(),
+            cargo_args: config.bin_cargo_args.clone(),
         })
     }
 }
