@@ -72,7 +72,7 @@ fn handle(watched: Watched, proj: Arc<Project>, view_macros: ViewMacros) {
 
     let Some(path) = watched.path() else {
         Interrupt::send_all_changed();
-        return
+        return;
     };
 
     if path.starts_with_any(&proj.lib.src_paths) && path.is_ext_any(&["rs"]) {

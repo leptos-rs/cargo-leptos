@@ -17,6 +17,8 @@ fn release_opts() -> Opts {
         features: Vec::new(),
         bin_features: Vec::new(),
         lib_features: Vec::new(),
+        bin_cargo_args: None,
+        lib_cargo_args: None,
     }
 }
 fn dev_opts() -> Opts {
@@ -29,6 +31,8 @@ fn dev_opts() -> Opts {
         features: Vec::new(),
         bin_features: Vec::new(),
         lib_features: Vec::new(),
+        bin_cargo_args: None,
+        lib_cargo_args: None,
     }
 }
 

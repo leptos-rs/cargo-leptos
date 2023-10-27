@@ -36,9 +36,17 @@ pub struct Opts {
     #[arg(long)]
     pub lib_features: Vec<String>,
 
+    /// The cargo flags to pass to cargo when compiling the lib target
+    #[arg(long)]
+    pub lib_cargo_args: Option<Vec<String>>,
+
     /// The features to use when compiling the bin target
     #[arg(long)]
     pub bin_features: Vec<String>,
+
+    /// The cargo flags to pass to cargo when compiling the bin target
+    #[arg(long)]
+    pub bin_cargo_args: Option<Vec<String>>,
 
     /// Verbosity (none: info, errors & warnings, -v: verbose, --vv: very verbose).
     #[arg(short, action = clap::ArgAction::Count)]

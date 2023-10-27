@@ -6,8 +6,8 @@ use flexi_logger::{
 use std::io::Write;
 use std::sync::OnceLock;
 
-use crate::{config::Log, ext::StrAdditions};
 use crate::ext::anyhow::Context;
+use crate::{config::Log, ext::StrAdditions};
 
 // https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797
 lazy_static::lazy_static! {

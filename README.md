@@ -193,6 +193,16 @@ lib-profile-dev = "my-debug-profile"
 #
 # Optional. Defaults to false
 separate-front-target-dir = true
+
+# Pass additional parameters to the cargo process compiling to WASM
+# 
+# Optional. No default
+lib_cargo-args = ["--timings"]
+
+# Pass additional parameters to the cargo process to build the server
+# 
+# Optional. No default
+bin_cargo-args = ["--timings"]
 ```
 
 ## Site parameters

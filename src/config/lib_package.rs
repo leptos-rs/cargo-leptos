@@ -24,6 +24,7 @@ pub struct LibPackage {
     pub src_paths: Vec<Utf8PathBuf>,
     pub front_target_path: Option<Utf8PathBuf>,
     pub profile: Profile,
+    pub cargo_args: Option<Vec<String>>,
 }
 
 impl LibPackage {
@@ -101,6 +102,7 @@ impl LibPackage {
         } else {
             None
         };
+        let cargo_args = cli.lib_cargo_args.clone();
 
         Ok(Self {
             name,
@@ -114,6 +116,7 @@ impl LibPackage {
             src_paths: src_deps,
             front_target_path,
             profile,
+            cargo_args,
         })
     }
 }

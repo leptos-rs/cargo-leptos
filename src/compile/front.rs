@@ -85,6 +85,13 @@ pub fn build_cargo_front_cmd(
         args.push(format!("--features={}", proj.lib.features.join(",")));
     }
 
+    // Add cargo flags to cargo command
+    if let Some(cargo_args) = &proj.lib.cargo_args {
+        if !cargo_args.is_empty() {
+            args.push(format!("{}", cargo_args.join(" ")))
+        }
+    }
+
     proj.lib.profile.add_to_args(&mut args);
 
     let envs = proj.to_envs();
