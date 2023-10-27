@@ -25,7 +25,7 @@ pub struct BinPackage {
     pub target_triple: Option<String>,
     pub target_dir: Option<String>,
     pub cargo_command: Option<String>,
-    pub cargo_args: Option<String>,
+    pub cargo_args: Option<Vec<String>>,
 }
 
 impl BinPackage {
@@ -122,7 +122,7 @@ impl BinPackage {
             target_triple: config.bin_target_triple.clone(),
             target_dir: config.bin_target_dir.clone(),
             cargo_command: config.bin_cargo_command.clone(),
-            cargo_args: config.bin_cargo_args.clone(),
+            cargo_args: cli.bin_cargo_args.clone(),
         })
     }
 }

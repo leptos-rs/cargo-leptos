@@ -84,10 +84,13 @@ pub fn build_cargo_server_cmd(
         args.push(format!("--features={}", proj.bin.features.join(",")));
     }
 
+    log::debug!("BIN CARGO ARGS: {:?}", &proj.bin.cargo_args);
+    // Add cargo flags to cargo command
     if let Some(cargo_args) = &proj.bin.cargo_args {
-        args.push(format!("{cargo_args}"));
+        if !cargo_args.is_empty() {
+            args.push(format!("{}", cargo_args.join(" ")))
+        }
     }
-
     proj.bin.profile.add_to_args(&mut args);
 
     let envs = proj.to_envs();
