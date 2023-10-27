@@ -1,6 +1,6 @@
 use crate::compile::{front_cargo_process, server_cargo_process};
 use crate::config::{Config, Project};
-use crate::ext::anyhow::{Context, Result, anyhow};
+use crate::ext::anyhow::{anyhow, Context, Result};
 use crate::logger::GRAY;
 
 pub async fn test_all(conf: &Config) -> Result<()> {

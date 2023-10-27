@@ -57,11 +57,13 @@ pub async fn run(args: Cli) -> Result<()> {
                     path_dirs.insert(0, node_modules.join(".bin").into_std_path_buf());
                     // unwrap is safe, because we got the paths from the actual PATH variable
                     env::set_var("PATH", env::join_paths(path_dirs).unwrap());
-                },
+                }
                 Err(_) => log::warn!("Path PATH environment variable not found, ignoring"),
             }
         } else {
-            log::warn!("Path 'node_modules' folder not found, please install the required packages first");
+            log::warn!(
+                "Path 'node_modules' folder not found, please install the required packages first"
+            );
             log::warn!("Path continuing without using 'node_modules'");
         }
     }
