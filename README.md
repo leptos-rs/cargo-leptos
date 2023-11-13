@@ -316,6 +316,14 @@ Note when using directories:
 - the two are set to the same value when running in a single-package config.
 - Avoid using them at run-time unless you can guarantee that the entire project struct is available at runtime as well.
 
+Internally the versions of the external tools called by `cargo-leptos` are hardcoded. Use these environment variables to
+override the versions `cargo-leptos` should use (e.g. `LEPTOS_SASS_VERSION=1.69.5`):
+
+- LEPTOS_CARGO_GENERATE_VERSION
+- LEPTOS_TAILWIND_VERSION
+- LEPTOS_SASS_VERSION
+- LEPTOS_WASM_OPT_VERSION
+
 ## End-to-end testing
 
 `cargo-leptos` provides end-to-end testing support for convenience. It is a simple
