@@ -75,7 +75,7 @@ impl PathBufExt for Utf8PathBuf {
 
     fn is_ext_any(&self, of: &[&str]) -> bool {
         let Some(ext) = self.extension() else {
-            return false
+            return false;
         };
         of.contains(&ext)
     }

@@ -10,10 +10,9 @@ pub struct AssetsConfig {
 
 impl AssetsConfig {
     pub fn resolve(config: &ProjectConfig) -> Option<Self> {
-        let Some(assets_dir) = &config
-            .assets_dir else {
-                return None;
-            };
+        let Some(assets_dir) = &config.assets_dir else {
+            return None;
+        };
 
         Some(Self {
             // relative to the configuration file

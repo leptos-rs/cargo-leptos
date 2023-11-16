@@ -172,12 +172,16 @@ pub struct ProjectConfig {
     pub bin_target_dir: Option<String>,
     /// the command to run instead of "cargo" when building the server
     pub bin_cargo_command: Option<String>,
+    /// cargo flags to pass to cargo when running the server. Overriden by bin_cargo_command
+    pub bin_cargo_args: Option<String>,
     #[serde(default)]
     pub features: Vec<String>,
     #[serde(default)]
     pub lib_features: Vec<String>,
     #[serde(default)]
     pub lib_default_features: bool,
+    /// cargo flags to pass to cargo when building the WASM frontend
+    pub lib_cargo_args: Option<String>,
     #[serde(default)]
     pub bin_features: Vec<String>,
     #[serde(default)]
@@ -199,7 +203,11 @@ pub struct ProjectConfig {
 }
 
 impl ProjectConfig {
-    fn parse(dir: &Utf8Path, metadata: &serde_json::Value, cargo_metadata: &Metadata) -> Result<Self> {
+    fn parse(
+        dir: &Utf8Path,
+        metadata: &serde_json::Value,
+        cargo_metadata: &Metadata,
+    ) -> Result<Self> {
         let mut conf: ProjectConfig = serde_json::from_value(metadata.clone())?;
         conf.config_dir = dir.to_path_buf();
         conf.tmp_dir = cargo_metadata.target_directory.join("tmp");
@@ -219,7 +227,10 @@ impl ProjectConfig {
             conf.site_root = {
                 let mut path = cargo_metadata.target_directory.clone();
                 // unwrap() should be safe because we just checked
-                let sub = conf.site_root.unbase(CARGO_TARGET_DIR_MARKER.into()).unwrap();
+                let sub = conf
+                    .site_root
+                    .unbase(CARGO_TARGET_DIR_MARKER.into())
+                    .unwrap();
                 path.push(sub);
                 path
             };
@@ -228,7 +239,10 @@ impl ProjectConfig {
             conf.site_root = {
                 let mut path = cargo_metadata.target_directory.clone();
                 // unwrap() should be safe because we just checked
-                let sub = conf.site_root.unbase(CARGO_BUILD_TARGET_DIR_MARKER.into()).unwrap();
+                let sub = conf
+                    .site_root
+                    .unbase(CARGO_BUILD_TARGET_DIR_MARKER.into())
+                    .unwrap();
                 path.push(sub);
                 path
             };
@@ -309,7 +323,12 @@ impl ProjectDefinition {
             let dir = package.manifest_path.unbase(workspace_dir)?.without_last();
 
             if let Some(leptos_metadata) = leptos_metadata(&package.metadata) {
-                found.push(Self::from_project(package, leptos_metadata, &dir, metadata)?);
+                found.push(Self::from_project(
+                    package,
+                    leptos_metadata,
+                    &dir,
+                    metadata,
+                )?);
             }
         }
         Ok(found)

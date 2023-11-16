@@ -62,7 +62,9 @@ impl MetadataExt for Metadata {
         for package in &mut metadata.packages {
             package.manifest_path.clean_windows_path();
             for dependency in &mut package.dependencies {
-                if let Some(p) = dependency.path.as_mut() { p.clean_windows_path() }
+                if let Some(p) = dependency.path.as_mut() {
+                    p.clean_windows_path()
+                }
             }
         }
         Ok(metadata)
@@ -78,7 +80,7 @@ impl MetadataExt for Metadata {
 
     fn path_dependencies(&self, id: &PackageId) -> Vec<Utf8PathBuf> {
         let Some(resolve) = &self.resolve else {
-             return vec![]
+            return vec![];
         };
         let mut found = vec![];
 

@@ -140,7 +140,9 @@ async fn clean_dest(dest: &Utf8Path, pkg_dir: &Utf8Path) -> Result<()> {
     let pkg_dir_name = match pkg_dir.file_name() {
         Some(name) => name,
         None => {
-            log::warn!("Assets No site-pkg-dir given, defaulting to 'pkg' for checks what to delete.");
+            log::warn!(
+                "Assets No site-pkg-dir given, defaulting to 'pkg' for checks what to delete."
+            );
             log::warn!("Assets This will probably delete already generated files.");
             "pkg"
         }

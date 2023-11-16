@@ -10,6 +10,8 @@ fn opts(project: Option<&str>) -> crate::config::Opts {
         features: Vec::new(),
         bin_features: Vec::new(),
         lib_features: Vec::new(),
+        bin_cargo_args: None,
+        lib_cargo_args: None,
     }
 }
 

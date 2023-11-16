@@ -193,6 +193,16 @@ lib-profile-dev = "my-debug-profile"
 #
 # Optional. Defaults to false
 separate-front-target-dir = true
+
+# Pass additional parameters to the cargo process compiling to WASM
+# 
+# Optional. No default
+lib_cargo-args = ["--timings"]
+
+# Pass additional parameters to the cargo process to build the server
+# 
+# Optional. No default
+bin_cargo-args = ["--timings"]
 ```
 
 ## Site parameters
@@ -305,6 +315,14 @@ Note when using directories:
 - `cargo-leptos` changes the working directory to the project root or if in a workspace, the workspace root before building and running.
 - the two are set to the same value when running in a single-package config.
 - Avoid using them at run-time unless you can guarantee that the entire project struct is available at runtime as well.
+
+Internally the versions of the external tools called by `cargo-leptos` are hardcoded. Use these environment variables to
+override the versions `cargo-leptos` should use (e.g. `LEPTOS_SASS_VERSION=1.69.5`):
+
+- LEPTOS_CARGO_GENERATE_VERSION
+- LEPTOS_TAILWIND_VERSION
+- LEPTOS_SASS_VERSION
+- LEPTOS_WASM_OPT_VERSION
 
 ## End-to-end testing
 
