@@ -262,7 +262,7 @@ impl ProjectConfig {
         #[allow(deprecated)]
         if conf.separate_front_target_dir.is_some() {
             log::warn!("Depreciated the `separate-front-target-dir` option is deprecated");
-            log::warn!("Depreciated please remove it from your config in your Cargo.toml.")
+            log::warn!("Depreciated please remove it from your config in your Cargo.toml")
         }
 
         Ok(conf)
