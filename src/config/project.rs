@@ -192,8 +192,9 @@ pub struct ProjectConfig {
     #[serde(skip)]
     pub tmp_dir: Utf8PathBuf,
 
-    #[serde(default)]
-    pub separate_front_target_dir: bool,
+    /// Deprecated. Keeping this here to warn users to remove it in case they have it in their config.
+    #[deprecated = "This option is deprecated. Please remove it from your config."]
+    pub separate_front_target_dir: Option<bool>,
 
     // Profiles
     pub lib_profile_dev: Option<String>,
@@ -257,6 +258,13 @@ impl ProjectConfig {
                 conf.reload_port
             );
         }
+
+        #[allow(deprecated)]
+        if conf.separate_front_target_dir.is_some() {
+            log::warn!("Depreciated the `separate-front-target-dir` option is deprecated");
+            log::warn!("Depreciated please remove it from your config in your Cargo.toml.")
+        }
+
         Ok(conf)
     }
 }
