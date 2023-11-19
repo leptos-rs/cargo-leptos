@@ -10,7 +10,7 @@ Config {
                 name: "example",
                 rel_dir: ".",
                 wasm_file: SourcedSiteFile {
-                    source: "target/wasm32-unknown-unknown/debug/example.wasm",
+                    source: "target/front/wasm32-unknown-unknown/debug/example.wasm",
                     dest: "target/site/pkg/example.wasm",
                     site: "pkg/example.wasm",
                 },

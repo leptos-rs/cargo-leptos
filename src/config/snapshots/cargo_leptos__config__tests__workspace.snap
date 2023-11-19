@@ -10,7 +10,7 @@ Config {
                 name: "front-package",
                 rel_dir: "project1/front",
                 wasm_file: SourcedSiteFile {
-                    source: "target/wasm32-unknown-unknown/debug/front_package.wasm",
+                    source: "target/front/wasm32-unknown-unknown/debug/front_package.wasm",
                     dest: "target/site/project1/pkg/project1.wasm",
                     site: "pkg/project1.wasm",
                 },
@@ -77,7 +77,7 @@ Config {
                 name: "project2",
                 rel_dir: "project2",
                 wasm_file: SourcedSiteFile {
-                    source: "target/wasm32-unknown-unknown/debug/project2.wasm",
+                    source: "target/front/wasm32-unknown-unknown/debug/project2.wasm",
                     dest: "target/site/project2/pkg/project2.wasm",
                     site: "pkg/project2.wasm",
                 },

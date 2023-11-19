@@ -60,7 +60,7 @@ fn test_project_dev() {
     let mut command = Command::new("cargo");
     let (_, cargo) = build_cargo_front_cmd("build", true, &conf.projects[0], &mut command);
 
-    assert_display_snapshot!(cargo, @"cargo build --package=example --lib --target=wasm32-unknown-unknown --no-default-features --features=hydrate");
+    assert_display_snapshot!(cargo, @"cargo build --package=example --lib --target-dir=/celPool/celData/Works/projects/cargo-leptos/examples/project/target/front --target=wasm32-unknown-unknown --no-default-features --features=hydrate");
 }
 
 #[test]
@@ -76,7 +76,7 @@ fn test_project_release() {
     let mut command = Command::new("cargo");
     let (_, cargo) = build_cargo_front_cmd("build", true, &conf.projects[0], &mut command);
 
-    assert_display_snapshot!(cargo, @"cargo build --package=example --lib --target=wasm32-unknown-unknown --no-default-features --features=hydrate --release");
+    assert_display_snapshot!(cargo, @"cargo build --package=example --lib --target-dir=/celPool/celData/Works/projects/cargo-leptos/examples/project/target/front --target=wasm32-unknown-unknown --no-default-features --features=hydrate --release");
 }
 
 #[test]
@@ -118,7 +118,7 @@ fn test_workspace_project1() {
 
     assert_eq!(ENV_REF, envs);
 
-    assert_display_snapshot!(cargo, @"cargo build --package=front-package --lib --target=wasm32-unknown-unknown --no-default-features");
+    assert_display_snapshot!(cargo, @"cargo build --package=front-package --lib --target-dir=/celPool/celData/Works/projects/cargo-leptos/examples/workspace/target/front --target=wasm32-unknown-unknown --no-default-features");
 }
 
 #[test]
@@ -134,5 +134,5 @@ fn test_workspace_project2() {
     let mut command = Command::new("cargo");
     let (_, cargo) = build_cargo_front_cmd("build", true, &conf.projects[1], &mut command);
 
-    assert_display_snapshot!(cargo, @"cargo build --package=project2 --lib --target=wasm32-unknown-unknown --no-default-features --features=hydrate");
+    assert_display_snapshot!(cargo, @"cargo build --package=project2 --lib --target-dir=/celPool/celData/Works/projects/cargo-leptos/examples/workspace/target/front --target=wasm32-unknown-unknown --no-default-features --features=hydrate");
 }
