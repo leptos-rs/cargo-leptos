@@ -22,6 +22,7 @@
           buildInputs = [
             openssl
             pkg-config
+            cargo-dist
             llvmPackages_latest.llvm
             llvmPackages_latest.bintools
             zlib.out
