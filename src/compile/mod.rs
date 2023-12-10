@@ -17,7 +17,7 @@ pub use style::style;
 
 use itertools::Itertools;
 
-fn build_cargo_command_string(args: Vec<String>) -> String {
+fn build_cargo_command_string(args: impl IntoIterator<Item = String>) -> String {
     std::iter::once("cargo".to_owned())
         .chain(args.into_iter().map(|arg| {
             if arg.contains(' ') {
