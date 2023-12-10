@@ -136,3 +136,23 @@ fn test_workspace_project2() {
 
     assert_display_snapshot!(cargo, @"cargo build --package=project2 --lib --target-dir=/celPool/celData/Works/projects/cargo-leptos/examples/workspace/target/front --target=wasm32-unknown-unknown --no-default-features --features=hydrate");
 }
+
+#[test]
+fn test_extra_cargo_args() {
+    let cli = Opts {
+        lib_cargo_args: Some(vec!["-j".into(), "8".into()]),
+        bin_cargo_args: Some(vec!["-j".into(), "16".into()]),
+        ..dev_opts()
+    };
+    let conf = Config::test_load(cli, "examples", "examples/project/Cargo.toml", true);
+
+    let mut command = Command::new("cargo");
+    let (_, cargo) = build_cargo_server_cmd("build", &conf.projects[0], &mut command);
+
+    assert_display_snapshot!(cargo, @"cargo build --package=example --bin=example --no-default-features --features=ssr -j 16");
+
+    let mut command = Command::new("cargo");
+    let (_, cargo) = build_cargo_front_cmd("build", true, &conf.projects[0], &mut command);
+
+    assert_display_snapshot!(cargo, @"cargo build --package=example --lib --target-dir=/celPool/celData/Works/projects/cargo-leptos/examples/project/target/front --target=wasm32-unknown-unknown --no-default-features --features=hydrate -j 8");
+}
