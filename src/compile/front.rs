@@ -98,7 +98,7 @@ pub fn build_cargo_front_cmd(
         .join(" ");
 
     command.args(&args).envs(envs);
-    let line = format!("cargo {}", args.join(" "));
+    let line = super::build_cargo_command_string(args);
     (envs_str, line)
 }
 
