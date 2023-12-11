@@ -84,9 +84,7 @@ pub fn build_cargo_front_cmd(
 
     // Add cargo flags to cargo command
     if let Some(cargo_args) = &proj.lib.cargo_args {
-        if !cargo_args.is_empty() {
-            args.push(format!("{}", cargo_args.join(" ")))
-        }
+        args.extend_from_slice(cargo_args);
     }
 
     proj.lib.profile.add_to_args(&mut args);
@@ -100,7 +98,7 @@ pub fn build_cargo_front_cmd(
         .join(" ");
 
     command.args(&args).envs(envs);
-    let line = format!("cargo {}", args.join(" "));
+    let line = super::build_cargo_command_string(args);
     (envs_str, line)
 }
 
