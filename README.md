@@ -197,12 +197,17 @@ separate-front-target-dir = true
 # Pass additional parameters to the cargo process compiling to WASM
 # 
 # Optional. No default
-lib_cargo-args = ["--timings"]
+lib-cargo-args = ["--timings"]
 
 # Pass additional parameters to the cargo process to build the server
 # 
 # Optional. No default
-bin_cargo-args = ["--timings"]
+bin-cargo-args = ["--timings"]
+
+# The command to run instead of "cargo" when building the server
+#
+# Optional. No default. Env: LEPTOS_BIN_CARGO_COMMAND
+bin-cargo-command = "cross"
 ```
 
 ## Site parameters
