@@ -203,6 +203,11 @@ lib-cargo-args = ["--timings"]
 # 
 # Optional. No default
 bin-cargo-args = ["--timings"]
+
+# The command to run instead of "cargo" when building the server
+#
+# Optional. No default. Env: LEPTOS_BIN_CARGO_COMMAND
+bin-cargo-command = "cross"
 ```
 
 ## Site parameters
