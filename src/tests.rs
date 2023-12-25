@@ -1,14 +1,14 @@
 use camino::Utf8PathBuf;
 
 use crate::{
-    config::{Cli, Commands, Opts},
+    config::{BuildOpts, Cli, Commands},
     ext::PathBufExt,
     run,
 };
 
 #[tokio::test]
 async fn workspace_build() {
-    let command = Commands::Build(Opts::default());
+    let command = Commands::Build(BuildOpts::default());
 
     let cli = Cli {
         manifest_path: Some(Utf8PathBuf::from("examples/workspace/Cargo.toml")),

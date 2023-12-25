@@ -18,7 +18,7 @@ pub async fn end2end_all(conf: &Config) -> Result<()> {
 
 pub async fn end2end_proj(proj: &Arc<Project>) -> Result<()> {
     if let Some(e2e) = &proj.end2end {
-        if !super::build::build_proj(proj).await.dot()? {
+        if !super::build::build_proj(proj, false).await.dot()? {
             return Ok(());
         }
 

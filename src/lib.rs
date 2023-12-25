@@ -9,7 +9,7 @@ mod logger;
 pub mod service;
 pub mod signal;
 
-use crate::config::Commands;
+use crate::config::{BuildOpts, Commands};
 use crate::ext::anyhow::{Context, Result};
 use crate::ext::PathBufExt;
 use crate::logger::GRAY;
@@ -72,7 +72,7 @@ pub async fn run(args: Cli) -> Result<()> {
     use Commands::{Build, EndToEnd, New, Serve, Test, Watch};
     match args.command {
         New(_) => panic!(),
-        Build(_) => command::build_all(&config).await,
+        Build(BuildOpts { bin_skip, .. }) => command::build_all(&config, bin_skip).await,
         Serve(_) => command::serve(&config.current_project()?).await,
         Test(_) => command::test_all(&config).await,
         EndToEnd(_) => command::end2end_all(&config).await,

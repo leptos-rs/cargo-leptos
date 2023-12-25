@@ -53,6 +53,84 @@ pub struct Opts {
     pub verbose: u8,
 }
 
+#[derive(Debug, Clone, Parser, PartialEq, Default)]
+pub struct BuildOpts {
+    /// Build artifacts in release mode, with optimizations.
+    #[arg(short, long)]
+    pub release: bool,
+
+    /// Precompress static assets with gzip and brotli. Applies to release builds only.
+    #[arg(short = 'P', long)]
+    pub precompress: bool,
+
+    /// Turn on partial hot-reloading. Requires rust nightly [beta]
+    #[arg(long)]
+    pub hot_reload: bool,
+
+    /// Which project to use, from a list of projects defined in a workspace
+    #[arg(short, long)]
+    pub project: Option<String>,
+
+    /// The features to use when compiling all targets
+    #[arg(long)]
+    pub features: Vec<String>,
+
+    /// The features to use when compiling the lib target
+    #[arg(long)]
+    pub lib_features: Vec<String>,
+
+    /// The cargo flags to pass to cargo when compiling the lib target
+    #[arg(long)]
+    pub lib_cargo_args: Option<Vec<String>>,
+
+    /// The features to use when compiling the bin target
+    #[arg(long)]
+    pub bin_features: Vec<String>,
+
+    /// The cargo flags to pass to cargo when compiling the bin target
+    #[arg(long)]
+    pub bin_cargo_args: Option<Vec<String>>,
+
+    /// Skip building the bin target
+    #[arg(long)]
+    pub bin_skip: bool,
+
+    /// Verbosity (none: info, errors & warnings, -v: verbose, --vv: very verbose).
+    #[arg(short, action = clap::ArgAction::Count)]
+    pub verbose: u8,
+}
+
+impl From<BuildOpts> for Opts {
+    fn from(value: BuildOpts) -> Self {
+        let BuildOpts {
+            release,
+            precompress,
+            hot_reload,
+            project,
+            features,
+            lib_features,
+            lib_cargo_args,
+            bin_features,
+            bin_cargo_args,
+            verbose,
+            ..
+        } = value;
+
+        Self {
+            release,
+            precompress,
+            hot_reload,
+            project,
+            features,
+            lib_features,
+            lib_cargo_args,
+            bin_features,
+            bin_cargo_args,
+            verbose,
+        }
+    }
+}
+
 #[derive(Debug, Parser)]
 #[clap(version)]
 pub struct Cli {
@@ -73,9 +151,8 @@ impl Cli {
         use Commands::{Build, EndToEnd, New, Serve, Test, Watch};
         match &self.command {
             New(_) => None,
-            Build(opts) | Serve(opts) | Test(opts) | EndToEnd(opts) | Watch(opts) => {
-                Some(opts.clone())
-            }
+            Build(build_opts) => Some(build_opts.clone().into()),
+            Serve(opts) | Test(opts) | EndToEnd(opts) | Watch(opts) => Some(opts.clone()),
         }
     }
 }
@@ -83,7 +160,7 @@ impl Cli {
 #[derive(Debug, Subcommand, PartialEq)]
 pub enum Commands {
     /// Build the server (feature ssr) and the client (wasm with feature hydrate).
-    Build(Opts),
+    Build(BuildOpts),
     /// Run the cargo tests for app, client and server.
     Test(Opts),
     /// Start the server and end-2-end tests.
