@@ -317,7 +317,7 @@ impl Command for CommandTailwind {
         "tailwindcss"
     }
     fn default_version(&self) -> &'static str {
-        "v3.3.3"
+        "v3.4.0"
     }
     fn env_var_version_name(&self) -> &'static str {
         ENV_VAR_LEPTOS_TAILWIND_VERSION
