@@ -15,6 +15,7 @@ pub async fn build_all(conf: &Config) -> Result<()> {
     let mut first_failed_project = None;
 
     for proj in &conf.projects {
+        log::debug!("Building project: {}, {}", proj.name, proj.working_dir);
         if !build_proj(proj).await? && first_failed_project.is_none() {
             first_failed_project = Some(proj);
         }

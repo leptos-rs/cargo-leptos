@@ -35,6 +35,7 @@ pub async fn front(
 
         let (envs, line, process) = front_cargo_process("build", true, &proj)?;
 
+        log::debug!("Running {}", GRAY.paint(&line));
         match wait_interruptible("Cargo", process, Interrupt::subscribe_any()).await? {
             CommandResult::Interrupted => return Ok(Outcome::Stopped),
             CommandResult::Failure(_) => return Ok(Outcome::Failed),
