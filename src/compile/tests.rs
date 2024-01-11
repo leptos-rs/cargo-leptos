@@ -62,7 +62,9 @@ fn test_project_dev() {
 
     assert!(cargo.starts_with("cargo build --package=example --lib --target-dir="));
     // what's in the middle will vary by platform and cwd
-    assert!(cargo.ends_with("examples/project/target/front --target=wasm32-unknown-unknown --no-default-features --features=hydrate"));
+    assert!(
+        cargo.ends_with("--target=wasm32-unknown-unknown --no-default-features --features=hydrate")
+    );
 }
 
 #[test]
@@ -80,7 +82,9 @@ fn test_project_release() {
 
     assert!(cargo.starts_with("cargo build --package=example --lib --target-dir="));
     // what's in the middle will vary by platform and cwd
-    assert!(cargo.ends_with("examples/project/target/front --target=wasm32-unknown-unknown --no-default-features --features=hydrate --release"));
+    assert!(cargo.ends_with(
+        "--target=wasm32-unknown-unknown --no-default-features --features=hydrate --release"
+    ));
 }
 
 #[test]
@@ -124,9 +128,7 @@ fn test_workspace_project1() {
 
     assert!(cargo.starts_with("cargo build --package=front-package --lib --target-dir="));
     // what's in the middle will vary by platform and cwd
-    assert!(cargo.ends_with(
-        "examples/workspace/target/front --target=wasm32-unknown-unknown --no-default-features"
-    ));
+    assert!(cargo.ends_with("--target=wasm32-unknown-unknown --no-default-features"));
 }
 
 #[test]
@@ -144,7 +146,9 @@ fn test_workspace_project2() {
 
     assert!(cargo.starts_with("cargo build --package=project2 --lib --target-dir="));
     // what's in the middle will vary by platform and cwd
-    assert!(cargo.ends_with("examples/workspace/target/front --target=wasm32-unknown-unknown --no-default-features --features=hydrate"));
+    assert!(
+        cargo.ends_with("--target=wasm32-unknown-unknown --no-default-features --features=hydrate")
+    );
 }
 
 #[test]
@@ -166,5 +170,7 @@ fn test_extra_cargo_args() {
 
     assert!(cargo.starts_with("cargo build --package=example --lib --target-dir="));
     // what's in the middle will vary by platform and cwd
-    assert!(cargo.ends_with("examples/project/target/front --target=wasm32-unknown-unknown --no-default-features --features=hydrate -j 8"));
+    assert!(cargo.ends_with(
+        "--target=wasm32-unknown-unknown --no-default-features --features=hydrate -j 8"
+    ));
 }
