@@ -92,6 +92,6 @@ pub enum Commands {
     Serve(Opts),
     /// Serve and automatically reload when files change.
     Watch(Opts),
-    /// WIP: Start wizard for creating a new project (using cargo-generate). Ask at Leptos discord before using.
+    /// Start a wizard for creating a new project (using cargo-generate).
     New(NewCommand),
 }
