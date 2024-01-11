@@ -12,9 +12,10 @@ use crate::ext::exe::Exe;
 #[clap(arg_required_else_help(true))]
 #[clap(about)]
 pub struct NewCommand {
-    /// Git repository to clone template from. Can be a URL (like
-    /// `https://github.com/rust-cli/cli-template`), a path (relative or absolute), or an
-    /// `owner/repo` abbreviated GitHub URL (like `rust-cli/cli-template`).
+    /// Git repository to clone template from. Can be a full URL (like
+    /// `https://github.com/leptos-rs/start`), or a shortcut for one of our
+    /// built-in templates: `leptos-rs/start`, `leptos-rs/start-axum`,
+    /// `leptos-rs/start-axum-workspace`, or `leptos-rs/start-aws`.
     #[clap(short, long, group("SpecificPath"))]
     pub git: Option<String>,
 
