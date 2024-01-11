@@ -12,6 +12,7 @@ use axum::{
 use serde::Serialize;
 use std::sync::Arc;
 use std::{fmt::Display, net::SocketAddr};
+use tokio::net::TcpListener;
 use tokio::{net::TcpStream, select, sync::RwLock, task::JoinHandle};
 
 lazy_static::lazy_static! {
@@ -55,11 +56,11 @@ pub async fn spawn(proj: &Arc<Project>) -> JoinHandle<()> {
             GRAY.paint(reload_addr.to_string())
         );
 
-        match axum::Server::bind(&reload_addr)
-            .serve(route.into_make_service())
-            .await
-        {
-            Ok(_) => log::debug!("Reload server stopped"),
+        match TcpListener::bind(&reload_addr).await {
+            Ok(listener) => match axum::serve(listener, route).await {
+                Ok(_) => log::debug!("Reload server stopped"),
+                Err(e) => log::error!("Reload {e}"),
+            },
             Err(e) => log::error!("Reload {e}"),
         }
     })
