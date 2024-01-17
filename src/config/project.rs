@@ -174,6 +174,8 @@ pub struct ProjectConfig {
     pub bin_cargo_command: Option<String>,
     /// cargo flags to pass to cargo when running the server. Overriden by bin_cargo_command
     pub bin_cargo_args: Option<String>,
+    /// An optional override, if you've changed the name of your bin file in your project use this to override the default to the new name.
+    pub bin_exe: Option<String>,
     #[serde(default)]
     pub features: Vec<String>,
     #[serde(default)]
