@@ -98,7 +98,7 @@ impl BinPackage {
             if let Some(triple) = &config.bin_target_triple {
                 file = file.join(triple)
             };
-            let name = if let Some(name) = &config.bin_exe {
+            let name = if let Some(name) = &config.bin_exe_name {
                 name
             } else {
                 &name
