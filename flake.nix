@@ -22,7 +22,6 @@
           buildInputs = [
             openssl
             pkg-config
-            cargo-dist
             cargo-insta
             llvmPackages_latest.llvm
             llvmPackages_latest.bintools
