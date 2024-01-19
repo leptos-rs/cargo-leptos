@@ -18,7 +18,7 @@ windows-archive = ".tar.gz"
 # The archive format to use for non-windows builds (defaults .tar.xz)
 unix-archive = ".tar.gz"
 # Where to host releases
-hosting = ["axodotdev", "github"]
+hosting = ["github"]
 
 [package]
 name = "cargo-leptos"
