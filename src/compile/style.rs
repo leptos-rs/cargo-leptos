@@ -10,7 +10,9 @@ use crate::{
     logger::GRAY,
     signal::{Outcome, Product},
 };
+use camino::Utf8PathBuf;
 use lightningcss::{
+    bundler::{Bundler, FileProvider},
     stylesheet::{MinifyOptions, ParserOptions, PrinterOptions, StyleSheet},
     targets::Browsers,
     targets::Targets,
@@ -34,47 +36,69 @@ pub async fn style(
         build(&proj).await
     })
 }
-fn build_sass(proj: &Arc<Project>) -> JoinHandle<Result<Outcome<String>>> {
-    let proj = proj.clone();
-    tokio::spawn(async move {
-        let Some(style_file) = &proj.style.file else {
-            log::trace!("Style not configured");
-            return Ok(Outcome::Success("".to_string()));
-        };
 
-        log::trace!("Style found: {}", &style_file);
-        fs::create_dir_all(style_file.dest.clone().without_last())
+async fn build_styles(proj: Arc<Project>) -> Result<Outcome<String>> {
+    let Some(style_file) = &proj.style.file else {
+        log::trace!("Style not configured");
+        return Ok(Outcome::Success("".to_string()));
+    };
+
+    log::trace!("Style found: {}", &style_file);
+    fs::create_dir_all(style_file.dest.clone().without_last())
+        .await
+        .dot()?;
+    match style_file.source.extension() {
+        Some("sass") | Some("scss") => compile_sass(style_file, proj.release)
             .await
-            .dot()?;
-        match style_file.source.extension() {
-            Some("sass") | Some("scss") => compile_sass(style_file, proj.release)
-                .await
-                .context(format!("compile sass/scss: {}", &style_file)),
-            Some("css") => Ok(Outcome::Success(
-                fs::read_to_string(&style_file.source).await.dot()?,
-            )),
-            _ => bail!("Not a css/sass/scss style file: {}", &style_file),
+            .context(format!("Compile sass/scss: {}", &style_file)),
+        Some("css") => {
+            let abs_style_path = if style_file.source.is_absolute() {
+                style_file.source.clone()
+            } else {
+                let mut abs_path = proj.lib.abs_dir.clone();
+                abs_path.push(style_file.source.clone());
+                abs_path
+            };
+            bundle_css(&abs_style_path)
         }
-    })
+        _ => bail!("Not a css/sass/scss style file: {}", &style_file),
+    }
 }
 
-fn build_tailwind(proj: &Arc<Project>) -> JoinHandle<Result<Outcome<String>>> {
-    let proj = proj.clone();
-    tokio::spawn(async move {
-        let Some(tw_conf) = proj.style.tailwind.as_ref() else {
-            log::trace!("Tailwind not configured");
-            return Ok(Outcome::Success("".to_string()));
-        };
-        log::trace!("Tailwind config: {:?}", &tw_conf);
-        compile_tailwind(&proj, tw_conf).await
-    })
+fn bundle_css(abs_style_path: &Utf8PathBuf) -> Result<Outcome<String>> {
+    let bundle_options = ParserOptions::default();
+    let file_provider = FileProvider::new();
+
+    let mut bundler = Bundler::new(&file_provider, None, bundle_options);
+    let style_sheet = bundler
+        .bundle(abs_style_path.as_std_path())
+        .map_err(|e| anyhow!("Error bundling css: {:?}\n{:?}", &abs_style_path, e))?;
+    // ^^^ Have to use map_err/anyhow because possible returned error captures bundler
+    // internal state and then early exit via '?' requires FileProvider to be &'static.
+    let css = style_sheet
+        .to_css(PrinterOptions::default())
+        .context(format!("Error rendering bundled css {:?}", &abs_style_path))?
+        .code;
+
+    Ok(Outcome::Success(css))
 }
 
-async fn build(proj: &Arc<Project>) -> Result<Outcome<Product>> {
-    let css_handle = build_sass(proj);
-    let tw_handle = build_tailwind(proj);
-    let css = css_handle.await??;
-    let tw = tw_handle.await??;
+async fn build_tailwind(proj: Arc<Project>) -> Result<Outcome<String>> {
+    let Some(tw_conf) = proj.style.tailwind.as_ref() else {
+        log::trace!("Tailwind not configured");
+        return Ok(Outcome::Success("".to_string()));
+    };
+    log::trace!("Tailwind config: {:?}", &tw_conf);
+    compile_tailwind(&proj, tw_conf).await
+}
+
+async fn build(project: &Arc<Project>) -> Result<Outcome<Product>> {
+    let proj = project.clone();
+    let css_handle = tokio::spawn(async move { build_styles(proj) });
+    let proj = project.clone();
+    let tw_handle = tokio::spawn(async move { build_tailwind(proj) });
+    let css = css_handle.await?.await?;
+    let tw = tw_handle.await?.await?;
 
     use Outcome::*;
     let css = match (css, tw) {
@@ -82,7 +106,7 @@ async fn build(proj: &Arc<Project>) -> Result<Outcome<Product>> {
         (Failed, _) | (_, Failed) => return Ok(Failed),
         (Success(css), Success(tw)) => format!("{css}\n{tw}"),
     };
-    Ok(Success(process_css(proj, css).await?))
+    Ok(Success(process_css(project, css).await?))
 }
 
 fn browser_lists(query: &str) -> Result<Option<Browsers>> {
