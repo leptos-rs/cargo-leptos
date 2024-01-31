@@ -38,6 +38,7 @@ Config {
                 default_features: false,
                 src_paths: "project2/src",
                 profile: Debug,
+                bin_args: None,
                 ..
             },
             style: StyleConfig {

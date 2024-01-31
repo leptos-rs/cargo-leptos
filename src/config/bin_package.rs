@@ -26,6 +26,7 @@ pub struct BinPackage {
     pub target_dir: Option<String>,
     pub cargo_command: Option<String>,
     pub cargo_args: Option<Vec<String>>,
+    pub bin_args: Option<Vec<String>>,
 }
 
 impl BinPackage {
@@ -34,6 +35,7 @@ impl BinPackage {
         metadata: &Metadata,
         project: &ProjectDefinition,
         config: &ProjectConfig,
+        bin_args: Option<&[String]>,
     ) -> Result<Self> {
         let mut features = if !cli.bin_features.is_empty() {
             cli.bin_features.clone()
@@ -128,6 +130,7 @@ impl BinPackage {
             target_dir: config.bin_target_dir.clone(),
             cargo_command: config.bin_cargo_command.clone(),
             cargo_args: cli.bin_cargo_args.clone(),
+            bin_args: bin_args.map(ToOwned::to_owned),
         })
     }
 }
@@ -151,6 +154,7 @@ impl std::fmt::Debug for BinPackage {
                     .join(", "),
             )
             .field("profile", &self.profile)
+            .field("bin_args", &self.bin_args)
             .finish_non_exhaustive()
     }
 }

@@ -59,6 +59,7 @@ struct ServerProcess {
     process: Option<Child>,
     envs: Vec<(&'static str, String)>,
     binary: Utf8PathBuf,
+    bin_args: Option<Vec<String>>,
 }
 
 impl ServerProcess {
@@ -67,6 +68,7 @@ impl ServerProcess {
             process: None,
             envs: proj.to_envs(),
             binary: proj.bin.exe_file.clone(),
+            bin_args: proj.bin.bin_args.clone(),
         }
     }
 
@@ -134,8 +136,18 @@ impl ServerProcess {
                 bin.clone()
             };
 
+            let bin_args = match &self.bin_args {
+                Some(bin_args) => bin_args.as_slice(),
+                None => &[],
+            };
+
             log::debug!("Serve running {}", GRAY.paint(bin_path.as_str()));
-            let cmd = Some(Command::new(bin_path).envs(self.envs.clone()).spawn()?);
+            let cmd = Some(
+                Command::new(bin_path)
+                    .envs(self.envs.clone())
+                    .args(bin_args)
+                    .spawn()?,
+            );
             let port = self
                 .envs
                 .iter()

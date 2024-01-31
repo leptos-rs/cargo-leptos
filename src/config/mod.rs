@@ -46,10 +46,16 @@ impl Debug for Config {
 }
 
 impl Config {
-    pub fn load(cli: Opts, cwd: &Utf8Path, manifest_path: &Utf8Path, watch: bool) -> Result<Self> {
+    pub fn load(
+        cli: Opts,
+        cwd: &Utf8Path,
+        manifest_path: &Utf8Path,
+        watch: bool,
+        bin_args: Option<&[String]>,
+    ) -> Result<Self> {
         let metadata = Metadata::load_cleaned(manifest_path)?;
 
-        let mut projects = Project::resolve(&cli, cwd, &metadata, watch).dot()?;
+        let mut projects = Project::resolve(&cli, cwd, &metadata, watch, bin_args).dot()?;
 
         if projects.is_empty() {
             bail!("Please define leptos projects in the workspace Cargo.toml sections [[workspace.metadata.leptos]]")
@@ -75,7 +81,13 @@ impl Config {
     }
 
     #[cfg(test)]
-    pub fn test_load(cli: Opts, cwd: &str, manifest_path: &str, watch: bool) -> Self {
+    pub fn test_load(
+        cli: Opts,
+        cwd: &str,
+        manifest_path: &str,
+        watch: bool,
+        bin_args: Option<&[String]>,
+    ) -> Self {
         use crate::ext::PathBufExt;
 
         let manifest_path = Utf8PathBuf::from(manifest_path)
@@ -83,7 +95,7 @@ impl Config {
             .unwrap();
         let mut cwd = Utf8PathBuf::from(cwd).canonicalize_utf8().unwrap();
         cwd.clean_windows_path();
-        Self::load(cli, &cwd, &manifest_path, watch).unwrap()
+        Self::load(cli, &cwd, &manifest_path, watch, bin_args).unwrap()
     }
 
     pub fn current_project(&self) -> Result<Arc<Project>> {

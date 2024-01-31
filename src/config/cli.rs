@@ -53,6 +53,15 @@ pub struct Opts {
     pub verbose: u8,
 }
 
+#[derive(Debug, Clone, Parser, PartialEq, Default)]
+pub struct BinOpts {
+    #[command(flatten)]
+    opts: Opts,
+
+    #[arg(trailing_var_arg = true)]
+    bin_args: Vec<String>,
+}
+
 #[derive(Debug, Parser)]
 #[clap(version)]
 pub struct Cli {
@@ -73,9 +82,16 @@ impl Cli {
         use Commands::{Build, EndToEnd, New, Serve, Test, Watch};
         match &self.command {
             New(_) => None,
-            Build(opts) | Serve(opts) | Test(opts) | EndToEnd(opts) | Watch(opts) => {
-                Some(opts.clone())
-            }
+            Serve(bin_opts) | Watch(bin_opts) => Some(bin_opts.opts.clone()),
+            Build(opts) | Test(opts) | EndToEnd(opts) => Some(opts.clone()),
+        }
+    }
+
+    pub fn bin_args(&self) -> Option<&[String]> {
+        use Commands::{Serve, Watch};
+        match &self.command {
+            Serve(bin_opts) | Watch(bin_opts) => Some(bin_opts.bin_args.as_ref()),
+            _ => None,
         }
     }
 }
@@ -89,9 +105,9 @@ pub enum Commands {
     /// Start the server and end-2-end tests.
     EndToEnd(Opts),
     /// Serve. Defaults to hydrate mode.
-    Serve(Opts),
+    Serve(BinOpts),
     /// Serve and automatically reload when files change.
-    Watch(Opts),
+    Watch(BinOpts),
     /// Start a wizard for creating a new project (using cargo-generate).
     New(NewCommand),
 }

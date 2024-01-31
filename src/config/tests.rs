@@ -30,7 +30,7 @@ fn test_project() {
 fn test_workspace() {
     let cli = opts(None);
 
-    let conf = Config::test_load(cli, "examples", "examples/workspace/Cargo.toml", true);
+    let conf = Config::test_load(cli, "examples", "examples/workspace/Cargo.toml", true, None);
 
     insta::assert_debug_snapshot!(conf);
 }
@@ -39,7 +39,7 @@ fn test_workspace() {
 fn test_workspace_project1() {
     let cli = opts(Some("project1"));
 
-    let conf = Config::test_load(cli, "examples", "examples/workspace/Cargo.toml", true);
+    let conf = Config::test_load(cli, "examples", "examples/workspace/Cargo.toml", true, None);
 
     insta::assert_debug_snapshot!(conf);
 }
@@ -48,7 +48,7 @@ fn test_workspace_project1() {
 fn test_workspace_project2() {
     let cli = opts(Some("project2"));
 
-    let conf = Config::test_load(cli, "examples", "examples/workspace/Cargo.toml", true);
+    let conf = Config::test_load(cli, "examples", "examples/workspace/Cargo.toml", true, None);
 
     insta::assert_debug_snapshot!(conf);
 }
@@ -62,6 +62,22 @@ fn test_workspace_in_subdir_project2() {
         "examples/workspace/project2",
         "examples/workspace/Cargo.toml",
         true,
+        None,
+    );
+
+    insta::assert_debug_snapshot!(conf);
+}
+
+#[test]
+fn test_workspace_bin_args_project2() {
+    let cli = opts(Some("project2"));
+
+    let conf = Config::test_load(
+        cli,
+        "examples",
+        "examples/workspace/Cargo.toml",
+        true,
+        Some(&["--".to_string(), "--foo".to_string()]),
     );
 
     insta::assert_debug_snapshot!(conf);

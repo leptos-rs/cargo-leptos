@@ -5,51 +5,60 @@ expression: conf
 Config {
     projects: [
         Project {
-            name: "project1",
+            name: "project2",
             lib: LibPackage {
-                name: "front-package",
-                rel_dir: "project1/front",
+                name: "project2",
+                rel_dir: "project2",
                 wasm_file: SourcedSiteFile {
-                    source: "target/front/wasm32-unknown-unknown/debug/front_package.wasm",
-                    dest: "target/site/project1/pkg/project1.wasm",
-                    site: "pkg/project1.wasm",
+                    source: "target/front/wasm32-unknown-unknown/debug/project2.wasm",
+                    dest: "target/site/project2/pkg/project2.wasm",
+                    site: "pkg/project2.wasm",
                 },
                 js_file: SiteFile {
-                    dest: "target/site/project1/pkg/project1.js",
-                    site: "pkg/project1.js",
+                    dest: "target/site/project2/pkg/project2.js",
+                    site: "pkg/project2.js",
                 },
-                features: [],
+                features: [
+                    "hydrate",
+                ],
                 default_features: false,
-                output_name: "project1",
-                src_paths: "project1/app/src, project1/front/src",
+                output_name: "project2",
+                src_paths: "project2/src",
                 profile: Debug,
                 ..
             },
             bin: BinPackage {
-                name: "server-package",
-                rel_dir: "project1/server",
-                exe_file: "target/debug/server-package",
-                target: "server-package",
-                features: [],
+                name: "project2",
+                rel_dir: "project2",
+                exe_file: "target/debug/project2",
+                target: "project2",
+                features: [
+                    "ssr",
+                ],
                 default_features: false,
-                src_paths: "project1/app/src, project1/server/src",
+                src_paths: "project2/src",
                 profile: Debug,
-                bin_args: None,
+                bin_args: Some(
+                    [
+                        "--",
+                        "--foo",
+                    ],
+                ),
                 ..
             },
             style: StyleConfig {
                 file: Some(
                     SourcedSiteFile {
-                        source: "project1/css/main.scss",
-                        dest: "target/site/project1/pkg/project1.css",
-                        site: "pkg/project1.css",
+                        source: "project2/src/main.scss",
+                        dest: "target/site/project2/pkg/project2.css",
+                        site: "pkg/project2.css",
                     },
                 ),
                 browserquery: "defaults",
                 tailwind: None,
                 site_file: SiteFile {
-                    dest: "target/site/project1/pkg/project1.css",
-                    site: "pkg/project1.css",
+                    dest: "target/site/project2/pkg/project2.css",
+                    site: "pkg/project2.css",
                 },
             },
             watch: true,
@@ -59,7 +68,7 @@ Config {
             site: Site {
                 addr: 127.0.0.1:3000,
                 reload: 127.0.0.1:3001,
-                root_dir: "target/site/project1",
+                root_dir: "target/site/project2",
                 pkg_dir: "pkg",
                 file_reg: {},
                 ext_file_reg: {},
@@ -67,7 +76,7 @@ Config {
             end2end: None,
             assets: Some(
                 AssetsConfig {
-                    dir: "project1/assets",
+                    dir: "project2/src/assets",
                 },
             ),
             ..
@@ -78,7 +87,7 @@ Config {
         precompress: false,
         hot_reload: false,
         project: Some(
-            "project1",
+            "project2",
         ),
         features: [],
         lib_features: [],

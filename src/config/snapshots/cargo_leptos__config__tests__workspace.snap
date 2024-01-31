@@ -34,6 +34,7 @@ Config {
                 default_features: false,
                 src_paths: "project1/app/src, project1/server/src",
                 profile: Debug,
+                bin_args: None,
                 ..
             },
             style: StyleConfig {
@@ -105,6 +106,7 @@ Config {
                 default_features: false,
                 src_paths: "project2/src",
                 profile: Debug,
+                bin_args: None,
                 ..
             },
             style: StyleConfig {
