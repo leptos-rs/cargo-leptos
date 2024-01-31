@@ -48,7 +48,7 @@ pub struct Opts {
     #[arg(long)]
     pub bin_cargo_args: Option<Vec<String>>,
 
-    /// Verbosity (none: info, errors & warnings, -v: verbose, --vv: very verbose).
+    /// Verbosity (none: info, errors & warnings, -v: verbose, -vv: very verbose).
     #[arg(short, action = clap::ArgAction::Count)]
     pub verbose: u8,
 }
