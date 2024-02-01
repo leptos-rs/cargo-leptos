@@ -18,7 +18,7 @@ windows-archive = ".tar.gz"
 # The archive format to use for non-windows builds (defaults .tar.xz)
 unix-archive = ".tar.gz"
 # Where to host releases
-hosting = ["github"]
+hosting = ["axodotdev", "github"]
 
 [package]
 name = "cargo-leptos"
@@ -27,7 +27,7 @@ repository = "https://github.com/leptos-rs/cargo-leptos"
 description = "Build tool for Leptos."
 categories = ["development-tools", "wasm", "web-programming"]
 keywords = ["leptos"]
-version = "0.2.6"
+version = "0.2.7"
 edition = "2021"
 rust-version = "1.71"
 authors = ["Henrik Akesson", "Greg Johnston", "Ben Wishovich"]
