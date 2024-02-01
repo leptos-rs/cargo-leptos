@@ -1,6 +1,7 @@
 use camino::Utf8PathBuf;
 use cargo_metadata::{Metadata, Target};
 
+use super::{project::ProjectDefinition, Profile, ProjectConfig};
 use crate::{
     config::Opts,
     ext::{
@@ -8,9 +9,6 @@ use crate::{
         MetadataExt, PackageExt, PathBufExt, PathExt,
     },
 };
-
-use super::{project::ProjectDefinition, Profile, ProjectConfig};
-
 pub struct BinPackage {
     pub name: String,
     pub abs_dir: Utf8PathBuf,
@@ -82,13 +80,17 @@ impl BinPackage {
             &config.bin_profile_release,
             &config.bin_profile_dev,
         );
-
         let exe_file = {
             let file_ext = if cfg!(target_os = "windows") {
                 "exe"
+            } else if &config.bin_target_triple == &Some("wasm32-wasi".to_string())
+                || &config.bin_target_triple == &Some("wasm32-unknown-unknown".to_string())
+            {
+                "wasm"
             } else {
                 ""
             };
+
             let mut file = config
                 .bin_target_dir
                 .as_ref()

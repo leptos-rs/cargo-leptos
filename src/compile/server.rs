@@ -66,9 +66,19 @@ pub fn build_cargo_server_cmd(
         cmd.to_string(),
         format!("--package={}", proj.bin.name.as_str()),
     ];
-    if cmd != "test" {
+
+    // If we're building the bin target for wasm, we want it to be a lib so it
+    // can be run by wasmtime or spin or wasmer or whatever
+    let server_is_wasm = match &proj.bin.target_triple {
+        Some(t) => t.contains("wasm"),
+        None => false,
+    };
+    if cmd != "test" && !server_is_wasm {
         args.push(format!("--bin={}", proj.bin.target))
+    } else if cmd != "test" && server_is_wasm {
+        args.push("--lib".to_string())
     }
+
     if let Some(target_dir) = &proj.bin.target_dir {
         args.push(format!("--target-dir={target_dir}"));
     }
