@@ -191,7 +191,7 @@ lib-profile-dev = "my-debug-profile"
 
 # Fixes cargo bug that prevents incremental compilation (see #203)
 #
-# Optional. Defaults to false
+# Optional. Defaults to false prior to 0.2.3, unconditionally enabled (with the setting becoming deprecated) since 0.2.3 and #216
 separate-front-target-dir = true
 
 # Pass additional parameters to the cargo process compiling to WASM
