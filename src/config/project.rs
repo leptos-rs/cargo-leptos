@@ -195,7 +195,7 @@ pub struct ProjectConfig {
     pub tmp_dir: Utf8PathBuf,
 
     /// Deprecated. Keeping this here to warn users to remove it in case they have it in their config.
-    #[deprecated = "This option is deprecated. Please remove it from your config."]
+    #[deprecated = "This option is deprecated since cargo-leptos 0.2.3 (when it became unconditionally enabled). You may remove it from your config."]
     pub separate_front_target_dir: Option<bool>,
 
     // Profiles
@@ -259,8 +259,8 @@ impl ProjectConfig {
 
         #[allow(deprecated)]
         if conf.separate_front_target_dir.is_some() {
-            log::warn!("Depreciated the `separate-front-target-dir` option is deprecated");
-            log::warn!("Depreciated please remove it from your config in your Cargo.toml")
+            log::warn!("Deprecated: the `separate-front-target-dir` option is deprecated since cargo-leptos 0.2.3");
+            log::warn!("It is now unconditionally enabled; you can remove it from your Cargo.toml")
         }
 
         Ok(conf)
