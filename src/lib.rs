@@ -38,9 +38,10 @@ pub async fn run(args: Cli) -> Result<()> {
     cwd.clean_windows_path();
 
     let opts = args.opts().unwrap();
+    let bin_args = args.bin_args();
 
     let watch = matches!(args.command, Commands::Watch(_));
-    let config = Config::load(opts, &cwd, &manifest_path, watch).dot()?;
+    let config = Config::load(opts, &cwd, &manifest_path, watch, bin_args).dot()?;
     env::set_current_dir(&config.working_dir).dot()?;
     log::debug!(
         "Path working dir {}",

@@ -68,6 +68,7 @@ impl Project {
         cwd: &Utf8Path,
         metadata: &Metadata,
         watch: bool,
+        bin_args: Option<&[String]>,
     ) -> Result<Vec<Arc<Project>>> {
         let projects = ProjectDefinition::parse(metadata)?;
 
@@ -90,7 +91,7 @@ impl Project {
                 working_dir: metadata.workspace_root.clone(),
                 name: project.name.clone(),
                 lib,
-                bin: BinPackage::resolve(cli, metadata, &project, &config)?,
+                bin: BinPackage::resolve(cli, metadata, &project, &config, bin_args)?,
                 style: StyleConfig::new(&config)?,
                 watch,
                 release: cli.release,
