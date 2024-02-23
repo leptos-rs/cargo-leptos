@@ -19,6 +19,7 @@ fn release_opts() -> Opts {
         lib_features: Vec::new(),
         bin_cargo_args: None,
         lib_cargo_args: None,
+        wasm_debug: false,
     }
 }
 fn dev_opts() -> Opts {
@@ -33,6 +34,7 @@ fn dev_opts() -> Opts {
         lib_features: Vec::new(),
         bin_cargo_args: None,
         lib_cargo_args: None,
+        wasm_debug: false,
     }
 }
 

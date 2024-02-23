@@ -113,6 +113,8 @@ async fn bindgen(proj: &Project) -> Result<Outcome<Product>> {
     // https://github.com/rustwasm/wasm-bindgen/blob/main/crates/cli-support/src/lib.rs#L95
     // https://github.com/rustwasm/wasm-bindgen/blob/main/crates/cli/src/bin/wasm-bindgen.rs#L13
     let mut bindgen = Bindgen::new()
+        .debug(proj.wasm_debug)
+        .keep_debug(proj.wasm_debug)
         .input_path(&wasm_file.source)
         .web(true)
         .dot()?
