@@ -42,6 +42,7 @@ pub struct Project {
     pub assets: Option<AssetsConfig>,
     pub js_dir: Utf8PathBuf,
     pub watch_additional_files: Vec<Utf8PathBuf>,
+    pub hash_file: Utf8PathBuf,
 }
 
 impl Debug for Project {
@@ -87,11 +88,23 @@ impl Project {
 
             let watch_additional_files = config.watch_additional_files.clone().unwrap_or_default();
 
+            let bin = BinPackage::resolve(cli, metadata, &project, &config, bin_args)?;
+
+            let hash_file = metadata
+                .target_directory
+                .join(bin.profile.to_string())
+                .join(
+                    config
+                        .hash_file
+                        .as_ref()
+                        .unwrap_or(&Utf8PathBuf::from("hash.txt".to_string())),
+                );
+
             let proj = Project {
                 working_dir: metadata.workspace_root.clone(),
                 name: project.name.clone(),
                 lib,
-                bin: BinPackage::resolve(cli, metadata, &project, &config, bin_args)?,
+                bin,
                 style: StyleConfig::new(&config)?,
                 watch,
                 release: cli.release,
@@ -102,6 +115,7 @@ impl Project {
                 assets: AssetsConfig::resolve(&config),
                 js_dir,
                 watch_additional_files,
+                hash_file,
             };
             resolved.push(Arc::new(proj));
         }
@@ -148,6 +162,8 @@ pub struct ProjectConfig {
     #[serde(default = "default_pkg_dir")]
     pub site_pkg_dir: Utf8PathBuf,
     pub style_file: Option<Utf8PathBuf>,
+    /// text file where the hashes of the frontend files are stored
+    pub hash_file: Option<Utf8PathBuf>,
     pub tailwind_input_file: Option<Utf8PathBuf>,
     pub tailwind_config_file: Option<Utf8PathBuf>,
     /// assets dir. content will be copied to the target/site dir
