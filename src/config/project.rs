@@ -1,3 +1,4 @@
+use crate::config::hash_file::HashFile;
 use crate::{
     config::lib_package::LibPackage,
     ext::{
@@ -42,7 +43,8 @@ pub struct Project {
     pub assets: Option<AssetsConfig>,
     pub js_dir: Utf8PathBuf,
     pub watch_additional_files: Vec<Utf8PathBuf>,
-    pub hash_file: Utf8PathBuf,
+    pub hash_file: HashFile,
+    pub frontend_files_content_hashes: bool,
 }
 
 impl Debug for Project {
@@ -90,15 +92,11 @@ impl Project {
 
             let bin = BinPackage::resolve(cli, metadata, &project, &config, bin_args)?;
 
-            let hash_file = metadata
-                .target_directory
-                .join(bin.profile.to_string())
-                .join(
-                    config
-                        .hash_file
-                        .as_ref()
-                        .unwrap_or(&Utf8PathBuf::from("hash.txt".to_string())),
-                );
+            let hash_file = HashFile::new(
+                &metadata.target_directory,
+                &bin.profile,
+                config.hash_file.as_ref(),
+            );
 
             let proj = Project {
                 working_dir: metadata.workspace_root.clone(),
@@ -116,6 +114,7 @@ impl Project {
                 js_dir,
                 watch_additional_files,
                 hash_file,
+                frontend_files_content_hashes: config.frontend_files_content_hashes,
             };
             resolved.push(Arc::new(proj));
         }
@@ -142,7 +141,11 @@ impl Project {
             ("LEPTOS_RELOAD_PORT", self.site.reload.port().to_string()),
             ("LEPTOS_LIB_DIR", self.lib.rel_dir.to_string()),
             ("LEPTOS_BIN_DIR", self.bin.rel_dir.to_string()),
+            ("LEPTOS_HASH_FILE_NAME", self.hash_file.rel.to_string()),
         ];
+        if !self.frontend_files_content_hashes {
+            vec.push(("LEPTOS_FRONTEND_FILES_CONTENT_HASHES", "OFF".to_string()))
+        }
         if self.watch {
             vec.push(("LEPTOS_WATCH", "ON".to_string()))
         }
@@ -164,6 +167,9 @@ pub struct ProjectConfig {
     pub style_file: Option<Utf8PathBuf>,
     /// text file where the hashes of the frontend files are stored
     pub hash_file: Option<Utf8PathBuf>,
+    /// whether to hash the frontend files content and add them to the file names
+    #[serde(default = "default_frontend_files_content_hashes")]
+    pub frontend_files_content_hashes: bool,
     pub tailwind_input_file: Option<Utf8PathBuf>,
     pub tailwind_config_file: Option<Utf8PathBuf>,
     /// assets dir. content will be copied to the target/site dir
@@ -384,4 +390,8 @@ fn default_reload_port() -> u16 {
 
 fn default_browserquery() -> String {
     "defaults".to_string()
+}
+
+fn default_frontend_files_content_hashes() -> bool {
+    true
 }

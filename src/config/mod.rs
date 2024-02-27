@@ -11,6 +11,7 @@ mod profile;
 mod project;
 mod style;
 mod tailwind;
+mod hash_file;
 
 use std::{fmt::Debug, sync::Arc};
 

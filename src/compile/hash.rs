@@ -18,7 +18,7 @@ pub fn add_hashes_to_site(proj: &Project) -> Result<()> {
     );
 
     fs::write(
-        &proj.hash_file,
+        &proj.hash_file.abs,
         format!(
             "{}: {}\n{}: {}\n{}: {}\n",
             proj.lib
