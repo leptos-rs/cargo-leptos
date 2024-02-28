@@ -2,11 +2,10 @@ use leptos::*;
 use leptos_meta::*;
 
 #[component]
-pub fn App(cx: Scope) -> impl IntoView {
-    provide_meta_context(cx);
+pub fn App() -> impl IntoView {
+    provide_meta_context();
 
     view! {
-        cx,
         <Stylesheet id="leptos" href="/pkg/example.css" />
         <Title text="Cargo Leptos" />
         <main class="my-0 mx-auto max-w-3xl text-center">

@@ -63,5 +63,10 @@ pub async fn build_proj(proj: &Arc<Project>) -> Result<bool> {
     if !compile::server(proj, &changes).await.await??.is_success() {
         return Ok(false);
     }
+
+    if proj.frontend_files_content_hashes {
+        compile::add_hashes_to_site(proj)?;
+    }
+
     Ok(true)
 }

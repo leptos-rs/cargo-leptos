@@ -12,10 +12,10 @@ crate-type = ["cdylib", "rlib"]
 
 
 [dependencies]
-leptos_router = { version = "0.4", default-features = false }
-leptos = { version = "0.4", default-features = false }
-leptos_meta = { version = "0.4", default-features = false }
-leptos_dom = { version = "0.4", default-features = false }
+leptos_router = { version = "0.6", default-features = false }
+leptos = { version = "0.6", default-features = false }
+leptos_meta = { version = "0.6", default-features = false }
+leptos_dom = { version = "0.6", default-features = false }
 
 
 gloo-net = { version = "0.4", features = ["http"] }
@@ -34,7 +34,7 @@ futures = { version = "0.3.25", optional = true }
 simple_logger = { version = "4.0.0", optional = true }
 serde_json = { version = "1.0.91", optional = true }
 reqwest = { version = "0.11.13", features = ["json"], optional = true }
-leptos_actix = { version = "0.4", optional = true }
+leptos_actix = { version = "0.6", optional = true }
 # leptos_actix = { version = "0.1.0-beta", optional = true }
 dotenvy = { version = "0.15.6", optional = true }
 
@@ -46,25 +46,25 @@ opt-level = 'z'
 [features]
 default = ["ssr"]
 hydrate = [
-  "leptos/hydrate",
-  "leptos_meta/hydrate",
-  "leptos_router/hydrate",
-  "dep:wasm-bindgen",
-  "dep:console_log",
-  "dep:console_error_panic_hook",
+    "leptos/hydrate",
+    "leptos_meta/hydrate",
+    "leptos_router/hydrate",
+    "dep:wasm-bindgen",
+    "dep:console_log",
+    "dep:console_error_panic_hook",
 ]
 ssr = [
-  "leptos/ssr",
-  "leptos_meta/ssr",
-  "leptos_router/ssr",
-  "dep:leptos_actix",
-  "dep:reqwest",
-  "dep:actix-web",
-  "dep:actix-files",
-  "dep:futures",
-  "dep:simple_logger",
-  "dep:serde_json",
-  "dep:dotenvy",
+    "leptos/ssr",
+    "leptos_meta/ssr",
+    "leptos_router/ssr",
+    "dep:leptos_actix",
+    "dep:reqwest",
+    "dep:actix-web",
+    "dep:actix-files",
+    "dep:futures",
+    "dep:simple_logger",
+    "dep:serde_json",
+    "dep:dotenvy",
 ]
 
 
