@@ -416,7 +416,8 @@ impl Command for CommandWasmOpt {
 
     fn download_url(&self, target_os: &str, target_arch: &str, version: &str) -> Result<String> {
         let target = match (target_os, target_arch) {
-            ("linux", _) => "x86_64-linux",
+            ("linux", "aarch64") => "aarch64-linux",
+            ("linux", "x86_64") => "x86_64-linux",
             ("windows", _) => "x86_64-windows",
             ("macos", "aarch64") => "arm64-macos",
             ("macos", "x86_64") => "x86_64-macos",
