@@ -155,6 +155,7 @@ Config {
         lib_cargo_args: None,
         bin_features: [],
         bin_cargo_args: None,
+        wasm_debug: false,
         verbose: 0,
     },
     watch: true,
