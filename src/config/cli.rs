@@ -48,6 +48,10 @@ pub struct Opts {
     #[arg(long)]
     pub bin_cargo_args: Option<Vec<String>>,
 
+    /// Include debug information in Wasm output. Includes source maps and DWARF debug info.
+    #[arg(long)]
+    pub wasm_debug: bool,
+
     /// Verbosity (none: info, errors & warnings, -v: verbose, -vv: very verbose).
     #[arg(short, action = clap::ArgAction::Count)]
     pub verbose: u8,

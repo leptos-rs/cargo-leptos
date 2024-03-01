@@ -12,6 +12,7 @@ fn opts(project: Option<&str>) -> crate::config::Opts {
         lib_features: Vec::new(),
         bin_cargo_args: None,
         lib_cargo_args: None,
+        wasm_debug: false,
     }
 }
 
