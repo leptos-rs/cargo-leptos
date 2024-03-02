@@ -388,7 +388,7 @@ dependencies = [
 
 [[package]]
 name = "cargo-leptos"
-version = "0.2.9"
+version = "0.2.11"
 dependencies = [
  "ansi_term",
  "anyhow",
