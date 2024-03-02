@@ -55,6 +55,7 @@ fn test_project_dev() {
     LEPTOS_LIB_DIR=. \
     LEPTOS_BIN_DIR=. \
     LEPTOS_HASH_FILE_NAME=hash.txt \
+    LEPTOS_FRONTEND_FILE_HASHES=false \
     LEPTOS_WATCH=ON";
     assert_eq!(ENV_REF, envs);
 
@@ -102,6 +103,7 @@ fn test_workspace_project1() {
     LEPTOS_LIB_DIR=project1\\front \
     LEPTOS_BIN_DIR=project1\\server \
     LEPTOS_HASH_FILE_NAME=hash.txt \
+    LEPTOS_FRONTEND_FILE_HASHES=false \
     LEPTOS_WATCH=ON"
     } else {
         "\
@@ -113,6 +115,7 @@ fn test_workspace_project1() {
     LEPTOS_LIB_DIR=project1/front \
     LEPTOS_BIN_DIR=project1/server \
     LEPTOS_HASH_FILE_NAME=hash.txt \
+    LEPTOS_FRONTEND_FILE_HASHES=false \
     LEPTOS_WATCH=ON"
     };
 
