@@ -146,7 +146,7 @@ impl Project {
             ("LEPTOS_HASH_FILE_NAME", self.hash_file.rel.to_string()),
         ];
         if !self.frontend_file_hashes {
-            vec.push(("LEPTOS_FRONTEND_FILE_HASHES", "OFF".to_string()))
+            vec.push(("LEPTOS_FRONTEND_FILE_HASHES", false.to_string()))
         }
         if self.watch {
             vec.push(("LEPTOS_WATCH", "ON".to_string()))
