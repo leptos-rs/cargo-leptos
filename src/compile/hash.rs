@@ -7,6 +7,7 @@ use md5::{Digest, Md5};
 use std::collections::HashMap;
 use std::fs;
 
+///Adds hashes to the filenames of the css, js, and wasm files in the output
 pub fn add_hashes_to_site(proj: &Project) -> Result<()> {
     let files_to_hashes = compute_front_file_hashes(proj).dot()?;
     let renamed_files = rename_files(&files_to_hashes).dot()?;
