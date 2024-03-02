@@ -45,7 +45,7 @@ pub struct Project {
     pub js_dir: Utf8PathBuf,
     pub watch_additional_files: Vec<Utf8PathBuf>,
     pub hash_file: HashFile,
-    pub frontend_file_hashes: bool,
+    pub hash_files: bool,
 }
 
 impl Debug for Project {
@@ -116,7 +116,7 @@ impl Project {
                 js_dir,
                 watch_additional_files,
                 hash_file,
-                frontend_file_hashes: config.frontend_file_hashes,
+                hash_files: config.hash_files,
             };
             resolved.push(Arc::new(proj));
         }
@@ -145,8 +145,8 @@ impl Project {
             ("LEPTOS_BIN_DIR", self.bin.rel_dir.to_string()),
             ("LEPTOS_HASH_FILE_NAME", self.hash_file.rel.to_string()),
         ];
-        if !self.frontend_file_hashes {
-            vec.push(("LEPTOS_FRONTEND_FILE_HASHES", false.to_string()))
+        if !self.hash_files {
+            vec.push(("LEPTOS_HASH_FILES", false.to_string()))
         }
         if self.watch {
             vec.push(("LEPTOS_WATCH", "ON".to_string()))
@@ -170,8 +170,8 @@ pub struct ProjectConfig {
     /// text file where the hashes of the frontend files are stored
     pub hash_file: Option<Utf8PathBuf>,
     /// whether to hash the frontend files content and add them to the file names
-    #[serde(default = "default_frontend_file_hashes")]
-    pub frontend_file_hashes: bool,
+    #[serde(default = "default_hash_files")]
+    pub hash_files: bool,
     pub tailwind_input_file: Option<Utf8PathBuf>,
     pub tailwind_config_file: Option<Utf8PathBuf>,
     /// assets dir. content will be copied to the target/site dir
@@ -394,6 +394,6 @@ fn default_browserquery() -> String {
     "defaults".to_string()
 }
 
-fn default_frontend_file_hashes() -> bool {
+fn default_hash_files() -> bool {
     false
 }
