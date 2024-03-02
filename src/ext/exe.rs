@@ -402,7 +402,7 @@ impl Command for CommandWasmOpt {
         "wasm-opt"
     }
     fn default_version(&self) -> &'static str {
-        "version_112"
+        "version_117"
     }
     fn env_var_version_name(&self) -> &'static str {
         ENV_VAR_LEPTOS_WASM_OPT_VERSION
