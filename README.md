@@ -139,6 +139,16 @@ Here, the latter is referred to as _target-triple_.
 # Optional, only necessary if the bin-package defines more than one target
 bin-target = "my-bin-name"
 
+# Enables additional file hashes on outputted css, js, and wasm files
+#
+# Optional: Defaults to false. Can also be set with the LEPTOS_HASH_FILES=false env var
+hash-files = false
+
+# Sets the name for the file cargo-leptos uses to track the most recent hashes
+#
+# Optional: Defaults to "hash.txt". Can also be set with the LEPTOS_HASH_FILE_NAME="hash.txt" env var
+hash-file-name = false
+
 # The features to use when compiling all targets
 #
 # Optional. Can be extended with the command line parameter --features
