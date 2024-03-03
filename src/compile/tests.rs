@@ -102,7 +102,7 @@ fn test_workspace_project1() {
     LEPTOS_RELOAD_PORT=3001 \
     LEPTOS_LIB_DIR=project1\\front \
     LEPTOS_BIN_DIR=project1\\server \
-    LEPTOS_HASH_FILES=OFF \
+    LEPTOS_HASH_FILES=false \
     LEPTOS_WATCH=ON"
     } else {
         "\
@@ -113,7 +113,7 @@ fn test_workspace_project1() {
     LEPTOS_RELOAD_PORT=3001 \
     LEPTOS_LIB_DIR=project1/front \
     LEPTOS_BIN_DIR=project1/server \
-    LEPTOS_HASH_FILES=OFF \
+    LEPTOS_HASH_FILES=false \
     LEPTOS_WATCH=ON"
     };
 
