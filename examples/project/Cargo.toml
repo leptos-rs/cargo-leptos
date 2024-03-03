@@ -120,5 +120,5 @@ env = "dev"
 
 # Enables additional file hashes on outputted css, js, and wasm files
 #
-# Optional: Defaults to false. Can also be set with the LEPTOS_HASH_FILES=ON/OFF env var
+# Optional: Defaults to false. Can also be set with the LEPTOS_HASH_FILES=false env var
 hash-files = true
