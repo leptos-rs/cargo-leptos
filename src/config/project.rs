@@ -149,7 +149,7 @@ impl Project {
             vec.push(("LEPTOS_HASH_FILE_NAME", self.hash_file.rel.to_string()));
         }
         if self.watch {
-            vec.push(("LEPTOS_WATCH", "ON".to_string()))
+            vec.push(("LEPTOS_WATCH", "true".to_string()))
         }
         vec
     }

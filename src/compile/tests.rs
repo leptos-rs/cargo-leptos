@@ -56,7 +56,7 @@ fn test_project_dev() {
     LEPTOS_BIN_DIR=. \
     LEPTOS_HASH_FILES=true \
     LEPTOS_HASH_FILE_NAME=hash.txt \
-    LEPTOS_WATCH=ON";
+    LEPTOS_WATCH=true";
     assert_eq!(ENV_REF, envs);
 
     assert_display_snapshot!(cargo, @"cargo build --package=example --bin=example --no-default-features --features=ssr");
@@ -103,7 +103,7 @@ fn test_workspace_project1() {
     LEPTOS_LIB_DIR=project1\\front \
     LEPTOS_BIN_DIR=project1\\server \
     LEPTOS_HASH_FILES=false \
-    LEPTOS_WATCH=ON"
+    LEPTOS_WATCH=true"
     } else {
         "\
     LEPTOS_OUTPUT_NAME=project1 \
@@ -114,7 +114,7 @@ fn test_workspace_project1() {
     LEPTOS_LIB_DIR=project1/front \
     LEPTOS_BIN_DIR=project1/server \
     LEPTOS_HASH_FILES=false \
-    LEPTOS_WATCH=ON"
+    LEPTOS_WATCH=true"
     };
 
     let cli = dev_opts();
