@@ -54,7 +54,8 @@ fn test_project_dev() {
     LEPTOS_RELOAD_PORT=3001 \
     LEPTOS_LIB_DIR=. \
     LEPTOS_BIN_DIR=. \
-    LEPTOS_HASH_FILES=false \
+    LEPTOS_HASH_FILES=true \
+    LEPTOS_HASH_FILE_NAME=hash.txt \
     LEPTOS_WATCH=ON";
     assert_eq!(ENV_REF, envs);
 
