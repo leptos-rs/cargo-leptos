@@ -12,10 +12,10 @@ crate-type = ["cdylib", "rlib"]
 
 
 [dependencies]
-leptos_router = { version = "0.6", default-features = false }
-leptos = { version = "0.6", default-features = false }
-leptos_meta = { version = "0.6", default-features = false }
-leptos_dom = { version = "0.6", default-features = false }
+leptos_router = { version = "0.6.7", default-features = false }
+leptos = { version = "0.6.7", default-features = false }
+leptos_meta = { version = "0.6.7", default-features = false }
+leptos_dom = { version = "0.6.7", default-features = false }
 
 
 gloo-net = { version = "0.4", features = ["http"] }
@@ -34,7 +34,7 @@ futures = { version = "0.3.25", optional = true }
 simple_logger = { version = "4.0.0", optional = true }
 serde_json = { version = "1.0.91", optional = true }
 reqwest = { version = "0.11.13", features = ["json"], optional = true }
-leptos_actix = { version = "0.6", optional = true }
+leptos_actix = { version = "0.6.7", optional = true }
 # leptos_actix = { version = "0.1.0-beta", optional = true }
 dotenvy = { version = "0.15.6", optional = true }
 
@@ -117,3 +117,8 @@ lib-features = ["hydrate"]
 # Optional. Defaults to false.
 lib-default-features = false
 env = "dev"
+
+# Enables additional file hashes on outputted css, js, and wasm files
+#
+# Optional: Defaults to false. Can also be set with the LEPTOS_HASH_FILES=ON/OFF env var
+hash-files = true
