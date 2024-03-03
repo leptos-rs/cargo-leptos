@@ -234,7 +234,7 @@ output-name = "myproj"
 
 # The site root folder is where cargo-leptos generate all output.
 # NOTE: It is relative to the workspace root when running in a workspace.
-# WARNING: all content of this folder will be erased on a rebuild.
+# WARNING: all content of this folder will be erased on a rebuild!
 #
 # Optional, defaults to "/site" in the Cargo target directory. Env: LEPTOS_SITE_ROOT.
 site-root = "target/site"
