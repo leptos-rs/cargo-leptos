@@ -143,11 +143,15 @@ impl Project {
             ("LEPTOS_RELOAD_PORT", self.site.reload.port().to_string()),
             ("LEPTOS_LIB_DIR", self.lib.rel_dir.to_string()),
             ("LEPTOS_BIN_DIR", self.bin.rel_dir.to_string()),
-            ("LEPTOS_HASH_FILES", self.hash_files.to_string()),
         ];
-        if self.hash_files {
-            vec.push(("LEPTOS_HASH_FILE_NAME", self.hash_file.rel.to_string()));
-        }
+        vec.push((
+            "LEPTOS_HASH_FILES",
+            if self.hash_files {
+                "ON".to_string()
+            } else {
+                "OFF".to_string()
+            },
+        ));
         if self.watch {
             vec.push(("LEPTOS_WATCH", "ON".to_string()))
         }

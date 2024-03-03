@@ -141,7 +141,7 @@ bin-target = "my-bin-name"
 
 # Enables additional file hashes on outputted css, js, and wasm files
 #
-# Optional: Defaults to false. Can also be set with the LEPTOS_HASH_FILES=false env var
+# Optional: Defaults to false. Can also be set with the LEPTOS_HASH_FILES=ON/OFF env var
 hash-files = false
 
 # Sets the name for the file cargo-leptos uses to track the most recent hashes
