@@ -24,11 +24,11 @@ pub async fn compile_sass(style_file: &SourcedSiteFile, optimise: bool) -> Resul
         GRAY.paint(format!("sass {}", args.join(" ")))
     );
 
-    match wait_piped_interruptible("Tailwind", cmd, Interrupt::subscribe_any()).await? {
+    match wait_piped_interruptible("Dart Sass", cmd, Interrupt::subscribe_any()).await? {
         CommandResult::Success(output) => Ok(Outcome::Success(output.stdout())),
         CommandResult::Interrupted => Ok(Outcome::Stopped),
         CommandResult::Failure(output) => {
-            log::warn!("Tailwind failed with:");
+            log::warn!("Dart Sass failed with:");
             println!("{}", output.stderr());
             Ok(Outcome::Failed)
         }
