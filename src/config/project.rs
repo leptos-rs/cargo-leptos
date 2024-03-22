@@ -198,7 +198,7 @@ pub struct ProjectConfig {
     /// the command to run instead of "cargo" when building the server
     pub bin_cargo_command: Option<String>,
     /// cargo flags to pass to cargo when running the server. Overriden by bin_cargo_command
-    pub bin_cargo_args: Option<String>,
+    pub bin_cargo_args: Option<Vec<String>>,
     /// An optional override, if you've changed the name of your bin file in your project you'll need to set it here as well.
     pub bin_exe_name: Option<String>,
     #[serde(default)]
@@ -208,7 +208,7 @@ pub struct ProjectConfig {
     #[serde(default)]
     pub lib_default_features: bool,
     /// cargo flags to pass to cargo when building the WASM frontend
-    pub lib_cargo_args: Option<String>,
+    pub lib_cargo_args: Option<Vec<String>>,
     #[serde(default)]
     pub bin_features: Vec<String>,
     #[serde(default)]

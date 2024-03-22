@@ -96,7 +96,10 @@ impl LibPackage {
         }
 
         let front_target_path = metadata.target_directory.join("front");
-        let cargo_args = cli.lib_cargo_args.clone();
+        let cargo_args = cli
+            .lib_cargo_args
+            .clone()
+            .or_else(|| config.lib_cargo_args.clone());
 
         Ok(Self {
             name,
