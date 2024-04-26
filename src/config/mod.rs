@@ -6,12 +6,12 @@ mod bin_package;
 mod cli;
 mod dotenvs;
 mod end2end;
+mod hash_file;
 mod lib_package;
 mod profile;
 mod project;
 mod style;
 mod tailwind;
-mod hash_file;
 
 use std::{fmt::Debug, sync::Arc};
 
