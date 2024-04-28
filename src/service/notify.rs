@@ -170,11 +170,10 @@ pub enum Watched {
     Rescan,
 }
 
-fn convert(p: &Utf8PathBuf, proj: &Project) -> Result<Utf8PathBuf> {
-    // let p = Utf8PathBuf::from_path_buf(p.to_path_buf())
-        // .map_err(|e| anyhow!("Could not convert to a Utf8PathBuf: {e:?}"))?;
-        todo!();
-    // Ok(p.unbase(&proj.working_dir).unwrap_or(*p.clone()))
+fn convert(p: &PathBuf, proj: &Project) -> Result<Utf8PathBuf> {
+    let p = Utf8PathBuf::from_path_buf(p.to_path_buf())
+        .map_err(|e| anyhow!("Could not convert to a Utf8PathBuf: {e:?}"))?;
+    Ok(p.unbase(&proj.working_dir)?)
 }
 
 impl Watched {
@@ -192,9 +191,9 @@ impl Watched {
             Modify(ModifyKind::Metadata(MetadataKind::Permissions)) |
             // Create(f) => Some(Self::Create(convert(f, proj)?)),
             // Could use CreateKind::Any - to include Folder/Other
-            Create(CreateKind::File) => Some(Self::Create(convert(&Utf8PathBuf::from_path_buf(event.paths[0].clone()).unwrap(), proj)?)),
+            Create(CreateKind::File) => Some(Self::Create(convert(&event.paths[0].clone(), proj)?)),
             // Remove(f) => Some(Self::Remove(convert(f, proj)?)),
-            Remove(RemoveKind::Any) => Some(Self::Remove(convert(&Utf8PathBuf::from_path_buf(event.paths[0].clone()).unwrap(), proj)?)),
+            Remove(RemoveKind::Any) => Some(Self::Remove(convert(&event.paths[0].clone(), proj)?)),
             // Rename(f, t) => Some(Self::Rename(convert(f, proj)?, convert(t, proj)?)),
             Modify(ModifyKind::Name(RenameMode::Any)) => {
               todo!();
