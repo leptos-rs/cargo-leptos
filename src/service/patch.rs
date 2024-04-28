@@ -8,10 +8,11 @@ use crate::{
 use camino::Utf8PathBuf;
 use itertools::Itertools;
 use leptos_hot_reload::ViewMacros;
-use notify::{DebouncedEvent, RecursiveMode, Watcher};
+// use notify::{DebouncedEvent, RecursiveMode, Watcher};
+use notify::{RecursiveMode, Watcher};
+// use notify_debouncer_mini::DebouncedEvent;
 use std::collections::HashSet;
 use std::sync::Arc;
-use std::time::Duration;
 use tokio::task::JoinHandle;
 
 use super::notify::Watched;
@@ -36,7 +37,7 @@ pub async fn spawn(proj: &Arc<Project>, view_macros: &ViewMacros) -> Result<Join
 }
 
 async fn run(paths: &[Utf8PathBuf], proj: Arc<Project>, view_macros: ViewMacros) {
-    let (sync_tx, sync_rx) = std::sync::mpsc::channel::<DebouncedEvent>();
+    let (sync_tx, sync_rx) = std::sync::mpsc::channel();
 
     let proj = proj.clone();
     std::thread::spawn(move || {
@@ -50,11 +51,19 @@ async fn run(paths: &[Utf8PathBuf], proj: Arc<Project>, view_macros: ViewMacros)
         log::debug!("Notify stopped");
     });
 
-    let mut watcher = notify::watcher(sync_tx, Duration::from_millis(200))
-        .expect("failed to build file system watcher");
+    let mut watcher = notify::recommended_watcher(move |res| {
+        match res {
+            Ok(event) => {
+                // send can fail must handle
+                sync_tx.send(event).expect("failed channel closed");
+            }
+            Err(e) => println!("watch error: {:?}", e),
+        }
+    })
+    .expect("failed to build file system watcher");
 
     for path in paths {
-        if let Err(e) = watcher.watch(path, RecursiveMode::Recursive) {
+        if let Err(e) = watcher.watch(path.as_std_path(), RecursiveMode::Recursive) {
             log::error!("Notify could not watch {path:?} due to {e:?}");
         }
     }

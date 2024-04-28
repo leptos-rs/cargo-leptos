@@ -8,11 +8,14 @@ use crate::{
 };
 use camino::Utf8PathBuf;
 use itertools::Itertools;
-use notify::{DebouncedEvent, RecursiveMode, Watcher};
+// use notify::{DebouncedEvent, RecursiveMode, Watcher};
+use notify::event::CreateKind;
+use notify::{RecursiveMode, Watcher};
 use std::collections::HashSet;
+use std::fmt::Display;
 use std::path::Path;
+use std::path::PathBuf;
 use std::sync::Arc;
-use std::{fmt::Display, time::Duration};
 use tokio::task::JoinHandle;
 
 pub async fn spawn(proj: &Arc<Project>) -> Result<JoinHandle<()>> {
@@ -48,7 +51,7 @@ pub async fn spawn(proj: &Arc<Project>) -> Result<JoinHandle<()>> {
 }
 
 async fn run(paths: &[Utf8PathBuf], proj: Arc<Project>) {
-    let (sync_tx, sync_rx) = std::sync::mpsc::channel::<DebouncedEvent>();
+    let (sync_tx, sync_rx) = std::sync::mpsc::channel();
 
     let proj = proj.clone();
     std::thread::spawn(move || {
@@ -62,11 +65,19 @@ async fn run(paths: &[Utf8PathBuf], proj: Arc<Project>) {
         log::debug!("Notify stopped");
     });
 
-    let mut watcher = notify::watcher(sync_tx, Duration::from_millis(200))
-        .expect("failed to build file system watcher");
+    let mut watcher = notify::recommended_watcher(move |res| {
+        match res {
+            Ok(event) => {
+                // println!("event: {:?}", event);
+                let _ = sync_tx.send(event);
+            }
+            Err(e) => println!("watch error: {:?}", e),
+        }
+    })
+    .expect("failed to build file system watcher");
 
     for path in paths {
-        if let Err(e) = watcher.watch(path, RecursiveMode::Recursive) {
+        if let Err(e) = watcher.watch(path.as_std_path(), RecursiveMode::Recursive) {
             log::error!("Notify could not watch {path:?} due to {e:?}");
         }
     }
@@ -159,33 +170,42 @@ pub enum Watched {
     Rescan,
 }
 
-fn convert(p: &Path, proj: &Project) -> Result<Utf8PathBuf> {
-    let p = Utf8PathBuf::from_path_buf(p.to_path_buf())
-        .map_err(|e| anyhow!("Could not convert to a Utf8PathBuf: {e:?}"))?;
-    Ok(p.unbase(&proj.working_dir).unwrap_or(p))
+fn convert(p: &Utf8PathBuf, proj: &Project) -> Result<Utf8PathBuf> {
+    // let p = Utf8PathBuf::from_path_buf(p.to_path_buf())
+        // .map_err(|e| anyhow!("Could not convert to a Utf8PathBuf: {e:?}"))?;
+        todo!();
+    // Ok(p.unbase(&proj.working_dir).unwrap_or(*p.clone()))
 }
 
 impl Watched {
-    pub(crate) fn try_new(event: &DebouncedEvent, proj: &Project) -> Result<Option<Self>> {
-        use DebouncedEvent::{
-            Chmod, Create, Error, NoticeRemove, NoticeWrite, Remove, Rename, Rescan, Write,
-        };
-
-        Ok(match event {
-            Chmod(_) | NoticeRemove(_) | NoticeWrite(_) => None,
-            Create(f) => Some(Self::Create(convert(f, proj)?)),
-            Remove(f) => Some(Self::Remove(convert(f, proj)?)),
-            Rename(f, t) => Some(Self::Rename(convert(f, proj)?, convert(t, proj)?)),
-            Write(f) => Some(Self::Write(convert(f, proj)?)),
+    pub(crate) fn try_new(event: &notify::Event, proj: &Project) -> Result<Option<Self>> {
+        use notify::event::MetadataKind;
+        use notify::event::ModifyKind;
+        use notify::event::RemoveKind;
+        use notify::event::RenameMode;
+        use notify::EventKind::Create;
+        use notify::EventKind::Modify;
+        use notify::EventKind::Remove;
+        Ok(match event.kind {
+            // Chmod(_) | NoticeRemove(_) | NoticeWrite(_) => None,
+            // Chmod
+            Modify(ModifyKind::Metadata(MetadataKind::Permissions)) |
+            // Create(f) => Some(Self::Create(convert(f, proj)?)),
+            // Could use CreateKind::Any - to include Folder/Other
+            Create(CreateKind::File) => Some(Self::Create(convert(&Utf8PathBuf::from_path_buf(event.paths[0].clone()).unwrap(), proj)?)),
+            // Remove(f) => Some(Self::Remove(convert(f, proj)?)),
+            Remove(RemoveKind::Any) => Some(Self::Remove(convert(&Utf8PathBuf::from_path_buf(event.paths[0].clone()).unwrap(), proj)?)),
+            // Rename(f, t) => Some(Self::Rename(convert(f, proj)?, convert(t, proj)?)),
+            Modify(ModifyKind::Name(RenameMode::Any)) => {
+              todo!();
+              // TODO must sort of what the original f was "to" or "from"
+              // Some(Self::Rename(convert(f, proj)?, convert(t, proj)?)),
+            },
+            Error => {
+              log::error!("{event:?}");
+              None
+            },
             Rescan => Some(Self::Rescan),
-            Error(e, Some(p)) => {
-                log::error!("Notify error watching {p:?}: {e:?}");
-                None
-            }
-            Error(e, None) => {
-                log::error!("Notify error: {e:?}");
-                None
-            }
         })
     }
 
