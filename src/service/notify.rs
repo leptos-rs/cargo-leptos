@@ -8,13 +8,11 @@ use crate::{
 };
 use camino::Utf8PathBuf;
 use itertools::Itertools;
-// use notify::{DebouncedEvent, RecursiveMode, Watcher};
-use notify::event::CreateKind;
+use notify::event::RenameMode;
 use notify::{RecursiveMode, Watcher};
 use std::collections::HashSet;
 use std::fmt::Display;
 use std::path::Path;
-use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::task::JoinHandle;
 
@@ -170,41 +168,60 @@ pub enum Watched {
     Rescan,
 }
 
-fn convert(p: &PathBuf, proj: &Project) -> Result<Utf8PathBuf> {
+fn convert(p: &Path, proj: &Project) -> Result<Utf8PathBuf> {
     let p = Utf8PathBuf::from_path_buf(p.to_path_buf())
         .map_err(|e| anyhow!("Could not convert to a Utf8PathBuf: {e:?}"))?;
-    Ok(p.unbase(&proj.working_dir)?)
+    p.unbase(&proj.working_dir)
 }
 
 impl Watched {
     pub(crate) fn try_new(event: &notify::Event, proj: &Project) -> Result<Option<Self>> {
-        use notify::event::MetadataKind;
+        // use notify::event::MetadataKind;
         use notify::event::ModifyKind;
-        use notify::event::RemoveKind;
-        use notify::event::RenameMode;
+        use notify::EventKind::Access;
+        use notify::EventKind::Any;
         use notify::EventKind::Create;
         use notify::EventKind::Modify;
+        use notify::EventKind::Other;
         use notify::EventKind::Remove;
+
         Ok(match event.kind {
-            // Chmod(_) | NoticeRemove(_) | NoticeWrite(_) => None,
-            // Chmod
-            Modify(ModifyKind::Metadata(MetadataKind::Permissions)) |
-            // Create(f) => Some(Self::Create(convert(f, proj)?)),
-            // Could use CreateKind::Any - to include Folder/Other
-            Create(CreateKind::File) => Some(Self::Create(convert(&event.paths[0].clone(), proj)?)),
-            // Remove(f) => Some(Self::Remove(convert(f, proj)?)),
-            Remove(RemoveKind::Any) => Some(Self::Remove(convert(&event.paths[0].clone(), proj)?)),
-            // Rename(f, t) => Some(Self::Rename(convert(f, proj)?, convert(t, proj)?)),
-            Modify(ModifyKind::Name(RenameMode::Any)) => {
-              todo!();
-              // TODO must sort of what the original f was "to" or "from"
-              // Some(Self::Rename(convert(f, proj)?, convert(t, proj)?)),
-            },
-            Error => {
-              log::error!("{event:?}");
-              None
-            },
-            Rescan => Some(Self::Rescan),
+            Modify(modify_kind) => {
+                match modify_kind {
+                    // RenameModes -- "Any", "Both", "To", "From" and "Other".
+                    // Only "Both" contains two filenames.
+                    ModifyKind::Name(RenameMode::Both) => {
+                        // Convert a variable number of paths.
+                        debug_assert!(event.paths.len() == 2usize, "Rename need two filenames");
+                        Some(Self::Rename(
+                            convert(&event.paths[0], proj)?,
+                            convert(&event.paths[1], proj)?,
+                        ))
+                    }
+                    // Any/Data(_)/Metadata
+                    _ => None,
+                }
+            }
+
+            Create(create_kind) => {
+                match create_kind {
+                    notify::event::CreateKind::File => {
+                        Some(Self::Create(convert(&event.paths[0], proj)?))
+                    }
+                    // Any/Folder/Other
+                    _ => None,
+                }
+            }
+            Remove(remove_kind) => {
+                match remove_kind {
+                    notify::event::RemoveKind::File => {
+                        Some(Self::Remove(convert(&event.paths[0], proj)?))
+                    }
+                    // Any/Folder/Other
+                    _ => None,
+                }
+            }
+            Other | Any | Access(_) => None,
         })
     }
 
