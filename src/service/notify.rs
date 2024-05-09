@@ -191,8 +191,7 @@ impl Watched {
                     // RenameModes -- "Any", "Both", "To", "From" and "Other".
                     // Only "Both" contains two filenames.
                     ModifyKind::Name(RenameMode::Both) => {
-                        // Convert a variable number of paths.
-                        debug_assert!(event.paths.len() == 2usize, "Rename need two filenames");
+                        debug_assert!(event.paths.len() == 2usize, "Rename needs two filenames");
                         Some(Self::Rename(
                             convert(&event.paths[0], proj)?,
                             convert(&event.paths[1], proj)?,
