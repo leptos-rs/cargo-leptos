@@ -176,7 +176,6 @@ fn convert(p: &Path, proj: &Project) -> Result<Utf8PathBuf> {
 
 impl Watched {
     pub(crate) fn try_new(event: &notify::Event, proj: &Project) -> Result<Option<Self>> {
-        // use notify::event::MetadataKind;
         use notify::event::ModifyKind;
         use notify::EventKind::Access;
         use notify::EventKind::Any;
