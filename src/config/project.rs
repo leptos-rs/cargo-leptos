@@ -93,11 +93,7 @@ impl Project {
 
             let bin = BinPackage::resolve(cli, metadata, &project, &config, bin_args)?;
 
-            let hash_file = HashFile::new(
-                &metadata.target_directory,
-                &bin.profile,
-                config.hash_file.as_ref(),
-            );
+            let hash_file = HashFile::new(&bin, config.hash_file_name.as_ref());
 
             let proj = Project {
                 working_dir: metadata.workspace_root.clone(),
@@ -168,7 +164,7 @@ pub struct ProjectConfig {
     pub site_pkg_dir: Utf8PathBuf,
     pub style_file: Option<Utf8PathBuf>,
     /// text file where the hashes of the frontend files are stored
-    pub hash_file: Option<Utf8PathBuf>,
+    pub hash_file_name: Option<Utf8PathBuf>,
     /// whether to hash the frontend files content and add them to the file names
     #[serde(default = "default_hash_files")]
     pub hash_files: bool,

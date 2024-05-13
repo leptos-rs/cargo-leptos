@@ -1,5 +1,6 @@
-use crate::config::Profile;
 use camino::Utf8PathBuf;
+
+use super::bin_package::BinPackage;
 
 pub struct HashFile {
     pub abs: Utf8PathBuf,
@@ -7,16 +8,13 @@ pub struct HashFile {
 }
 
 impl HashFile {
-    pub fn new(
-        target_directory: &Utf8PathBuf,
-        profile: &Profile,
-        rel: Option<&Utf8PathBuf>,
-    ) -> Self {
+    pub fn new(bin: &BinPackage, rel: Option<&Utf8PathBuf>) -> Self {
         let rel = rel
             .cloned()
             .unwrap_or(Utf8PathBuf::from("hash.txt".to_string()));
 
-        let abs = target_directory.join(profile.to_string()).join(&rel);
+        let exe_file_dir = bin.exe_file.parent().unwrap();
+        let abs = bin.abs_dir.join(exe_file_dir).join(&rel);
 
         Self { abs, rel }
     }
