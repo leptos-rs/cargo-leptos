@@ -15,6 +15,8 @@ use crate::{
     logger::GRAY,
 };
 use camino::{Utf8Path, Utf8PathBuf};
+use swc::{config::JsMinifyOptions, try_with_handler, BoolOrDataConfig};
+use swc_common::{FileName, SourceMap, GLOBALS};
 use tokio::process::Child;
 use tokio::{process::Command, sync::broadcast, task::JoinHandle};
 use wasm_bindgen_cli_support::Bindgen;
@@ -144,7 +146,7 @@ async fn bindgen(proj: &Project) -> Result<Outcome<Product>> {
         .dot()?;
     js_changed |= proj
         .site
-        .updated_with(&proj.lib.js_file, bindgen.js().as_bytes())
+        .updated_with(&proj.lib.js_file, minify(bindgen.js())?.as_bytes())
         .await
         .dot()?;
     log::debug!("Front js changed: {js_changed}");
@@ -171,6 +173,33 @@ async fn optimize(
     wait_interruptible("wasm-opt", process, interrupt).await
 }
 
+fn minify<JS: AsRef<str>>(js: JS) -> Result<String> {
+    let cm = Arc::<SourceMap>::default();
+
+    let c = swc::Compiler::new(cm.clone());
+    let output = GLOBALS.set(&Default::default(), || {
+        try_with_handler(cm.clone(), Default::default(), |handler| {
+            let fm = cm.new_source_file(FileName::Anon, js.as_ref().to_string());
+
+            c.minify(
+                fm,
+                handler,
+                &JsMinifyOptions {
+                    compress: BoolOrDataConfig::from_bool(true),
+                    mangle: BoolOrDataConfig::from_bool(true),
+                    // keep_classnames: true,
+                    // keep_fnames: true,
+                    module: true,
+                    ..Default::default()
+                },
+            )
+            .context("failed to minify")
+        })
+    })?;
+
+    Ok(output.code)
+}
+
 async fn write_snippets(proj: &Project, snippets: &HashMap<String, Vec<String>>) -> Result<bool> {
     let mut js_changed = false;
 
@@ -188,7 +217,10 @@ async fn write_snippets(proj: &Project, snippets: &HashMap<String, Vec<String>>)
                 site: site_path,
             };
 
-            js_changed |= proj.site.updated_with(&site_file, js.as_bytes()).await?;
+            js_changed |= proj
+                .site
+                .updated_with(&site_file, minify(js)?.as_bytes())
+                .await?;
         }
     }
     Ok(js_changed)
@@ -208,7 +240,10 @@ async fn write_modules(proj: &Project, modules: &HashMap<String, String>) -> Res
             site: site_path,
         };
 
-        js_changed |= proj.site.updated_with(&site_file, js.as_bytes()).await?;
+        js_changed |= proj
+            .site
+            .updated_with(&site_file, minify(js)?.as_bytes())
+            .await?;
     }
     Ok(js_changed)
 }
