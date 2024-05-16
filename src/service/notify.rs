@@ -258,3 +258,112 @@ impl Display for Watched {
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+
+    use std::fs::File;
+    use std::io::Write;
+    use std::path::Path;
+    use std::path::PathBuf;
+
+    use notify::RecursiveMode;
+    use notify::Watcher;
+
+    use crate::config::Config;
+    use crate::service::notify::Watched;
+    use crate::GRAY;
+
+    fn opts(project: Option<&str>) -> crate::config::Opts {
+        crate::config::Opts {
+            release: false,
+            precompress: false,
+            hot_reload: false,
+            project: project.map(|s| s.to_string()),
+            verbose: 0,
+            features: Vec::new(),
+            bin_features: Vec::new(),
+            lib_features: Vec::new(),
+            bin_cargo_args: None,
+            lib_cargo_args: None,
+            wasm_debug: false,
+        }
+    }
+
+    // Overivew :-
+    //
+    // SETUP: create a file in a valid project.
+    //
+    // 1) Construct watching mechanism.
+    //
+    // 2) Modfify the file.
+    //
+    // 3) Assert the mechanism observed a valid event.
+    //
+    // TEARDOWN: delete the file.
+    #[ignore]
+    #[test]
+    fn change_file_contents() {
+        let cli = opts(Some("project2"));
+        let config =
+            Config::test_load(cli, "examples", "examples/workspace/Cargo.toml", true, None);
+
+        let mut filename = PathBuf::from(&config.working_dir);
+        filename.push("mood.txt");
+        println!("FQN {:#?}", &filename.clone());
+
+        let mut file = File::create(filename.clone()).expect("Could not create test file");
+        file.write_all(b"happy\r\n")
+            .expect("did not initialize file");
+        file.flush().expect("initial flushing failed");
+
+        let (sync_tx,   sync_rx) = std::sync::mpsc::channel();
+        let (response_tx, response_rx) = std::sync::mpsc::channel();
+
+        let handle = std::thread::spawn(move || {
+            while let Ok(event) = sync_rx.recv() {
+                match Watched::try_new(&event, &config.projects[0]) {
+                    Ok(Some(watched)) => {
+                        println!("inside try_new {:#?}", watched);
+                        response_tx
+                            .send(true)
+                            .expect("failed to send passing notification");
+                        // panic!("inside try new");
+                    }
+                    Err(e) => log::error!("Notify error {e}"),
+                    _ => log::trace!("Notify not handled {}", GRAY.paint(format!("{:?}", event))),
+                }
+            }
+        });
+
+        let mut watcher = notify::recommended_watcher(move |res| {
+            match res {
+                Ok(event) => {
+                    // send can fail must handle
+                    println!("recommended watcher");
+                    sync_tx.send(event).expect("failed channel closed");
+                }
+                Err(e) => println!("watch error: {:?}", e),
+            }
+        })
+        .expect("failed to build file system watcher");
+
+        watcher
+            .watch(&filename, RecursiveMode::Recursive)
+            .expect("could not watch {path:?}");
+
+        // Modify file.
+        let rewrite = File::open(filename).expect("could not reopen file");
+        file.write_all(b"grumpy\r\n")
+            .expect("could not actively modify the file");
+        file.flush().expect("second flushing failed");
+
+        // Block awaiting the response from the watching thread.
+        handle.join().unwrap();
+
+        assert_eq!(response_rx.recv(), Ok(true));
+
+        // TEARDOWN - Remove file.
+        todo!("remove mood.txt");
+    }
+}
