@@ -286,6 +286,7 @@ mod test {
             lib_features: Vec::new(),
             bin_cargo_args: None,
             lib_cargo_args: None,
+            js_minify: false,
             wasm_debug: false,
         }
     }
