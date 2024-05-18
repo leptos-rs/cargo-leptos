@@ -262,13 +262,17 @@ impl Display for Watched {
 #[cfg(test)]
 mod test {
 
+    use core::time::Duration;
+    use std::fs::OpenOptions;
+    use std::fs::remove_file;
     use std::fs::File;
     use std::io::Write;
-    use std::path::Path;
     use std::path::PathBuf;
 
     use notify::RecursiveMode;
     use notify::Watcher;
+    use tokio::sync::oneshot;
+    use tokio::time::timeout;
 
     use crate::config::Config;
     use crate::service::notify::Watched;
@@ -303,8 +307,8 @@ mod test {
     //
     // TEARDOWN: delete the file.
     #[ignore]
-    #[test]
-    fn change_file_contents() {
+    #[tokio::test]
+    async fn change_file_contents() {
         let cli = opts(Some("project2"));
         let config =
             Config::test_load(cli, "examples", "examples/workspace/Cargo.toml", true, None);
@@ -317,24 +321,27 @@ mod test {
         file.write_all(b"happy\r\n")
             .expect("did not initialize file");
         file.flush().expect("initial flushing failed");
+        // File::close()
+        drop(file);
 
-        let (sync_tx,   sync_rx) = std::sync::mpsc::channel();
-        let (response_tx, response_rx) = std::sync::mpsc::channel();
+        let (sync_tx, sync_rx) = std::sync::mpsc::channel();
+        let (success_tx, success_rx) = oneshot::channel::<bool>();
 
-        let handle = std::thread::spawn(move || {
+        std::thread::spawn(move || {
+            println!("inside watching thread");
             while let Ok(event) = sync_rx.recv() {
                 match Watched::try_new(&event, &config.projects[0]) {
                     Ok(Some(watched)) => {
                         println!("inside try_new {:#?}", watched);
-                        response_tx
-                            .send(true)
-                            .expect("failed to send passing notification");
-                        // panic!("inside try new");
+                        break;
                     }
                     Err(e) => log::error!("Notify error {e}"),
                     _ => log::trace!("Notify not handled {}", GRAY.paint(format!("{:?}", event))),
                 }
             }
+            success_tx
+                .send(true)
+                .expect("failed to send passing notification");
         });
 
         let mut watcher = notify::recommended_watcher(move |res| {
@@ -354,17 +361,24 @@ mod test {
             .expect("could not watch {path:?}");
 
         // Modify file.
-        let rewrite = File::open(filename).expect("could not reopen file");
-        file.write_all(b"grumpy\r\n")
+        let mut modify_handle = OpenOptions::new().write(true).open(filename.clone()).expect("Could not reopen file");
+        modify_handle.write_all(b"grumpy\r\n")
             .expect("could not actively modify the file");
-        file.flush().expect("second flushing failed");
+        modify_handle.flush().expect("second flushing failed");
 
-        // Block awaiting the response from the watching thread.
-        handle.join().unwrap();
+        // Wait for success or a watchdog timeout.
+        let received_notification = match timeout(Duration::from_millis(500), success_rx).await {
+            Ok(_) => {
+                true
+            }
+            Err(_) => {
+                println!("did not receive value within 500 ms");
+                false
+            }
+        };
+        assert!(received_notification);
 
-        assert_eq!(response_rx.recv(), Ok(true));
-
-        // TEARDOWN - Remove file.
-        todo!("remove mood.txt");
+        // TEARDOWN:
+        remove_file(filename).expect("Could not tear down file.");
     }
 }
