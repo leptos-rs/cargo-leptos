@@ -63,14 +63,12 @@ async fn run(paths: &[Utf8PathBuf], proj: Arc<Project>) {
         log::debug!("Notify stopped");
     });
 
-    let mut watcher = notify::recommended_watcher(move |res| {
-        match res {
-            Ok(event) => {
-                // println!("event: {:?}", event);
-                let _ = sync_tx.send(event);
-            }
-            Err(e) => println!("watch error: {:?}", e),
+    let mut watcher = notify::recommended_watcher(move |res| match res {
+        Ok(event) => {
+            println!("event: {:?}", event);
+            let _ = sync_tx.send(event);
         }
+        Err(e) => println!("watch error: {:?}", e),
     })
     .expect("failed to build file system watcher");
 
@@ -263,12 +261,13 @@ impl Display for Watched {
 mod test {
 
     use core::time::Duration;
-    use std::fs::OpenOptions;
     use std::fs::remove_file;
     use std::fs::File;
+    use std::fs::OpenOptions;
     use std::io::Write;
     use std::path::PathBuf;
 
+    use notify::RecommendedWatcher;
     use notify::RecursiveMode;
     use notify::Watcher;
     use tokio::sync::oneshot;
@@ -344,16 +343,20 @@ mod test {
                 .expect("failed to send passing notification");
         });
 
-        let mut watcher = notify::recommended_watcher(move |res| {
-            match res {
-                Ok(event) => {
-                    // send can fail must handle
-                    println!("recommended watcher");
-                    sync_tx.send(event).expect("failed channel closed");
+        let config = notify::Config::default().with_poll_interval(Duration::from_millis(10));
+        let mut watcher = RecommendedWatcher::new(
+            move |res| {
+                match res {
+                    Ok(event) => {
+                        // send can fail must handle
+                        println!("recommended watcher");
+                        sync_tx.send(event).expect("failed channel closed");
+                    }
+                    Err(e) => println!("watch error: {:?}", e),
                 }
-                Err(e) => println!("watch error: {:?}", e),
-            }
-        })
+            },
+            config,
+        )
         .expect("failed to build file system watcher");
 
         watcher
@@ -361,16 +364,18 @@ mod test {
             .expect("could not watch {path:?}");
 
         // Modify file.
-        let mut modify_handle = OpenOptions::new().write(true).open(filename.clone()).expect("Could not reopen file");
-        modify_handle.write_all(b"grumpy\r\n")
+        let mut modify_handle = OpenOptions::new()
+            .write(true)
+            .open(filename.clone())
+            .expect("Could not reopen file");
+        modify_handle
+            .write_all(b"grumpy\r\n")
             .expect("could not actively modify the file");
         modify_handle.flush().expect("second flushing failed");
 
         // Wait for success or a watchdog timeout.
         let received_notification = match timeout(Duration::from_millis(500), success_rx).await {
-            Ok(_) => {
-                true
-            }
+            Ok(_) => true,
             Err(_) => {
                 println!("did not receive value within 500 ms");
                 false
