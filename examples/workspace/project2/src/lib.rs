@@ -10,6 +10,7 @@ if #[cfg(feature = "hydrate")] {
     pub fn hydrate() {
       use app::*;
       use leptos::*;
+      use leptos::logging::log;
 
       console_error_panic_hook::set_once();
       _ = console_log::init_with_level(log::Level::Debug);
