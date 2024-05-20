@@ -4,8 +4,8 @@ use actix_web::*;
 use leptos::*;
 use leptos_actix::{generate_route_list, LeptosRoutes};
 
-fn app(cx: leptos::Scope) -> impl IntoView {
-    view! { cx, <App /> }
+fn app() -> impl IntoView {
+    view! { <App /> }
 }
 
 pub async fn run() -> std::io::Result<()> {

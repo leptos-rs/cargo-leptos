@@ -16,8 +16,8 @@ if #[cfg(feature = "hydrate")] {
 
       log!("hydrate mode - hydrating");
 
-      leptos::mount_to_body(|cx| {
-          view! { cx,  <App/> }
+      leptos::mount_to_body(|| {
+          view! {  <App/> }
       });
   }
 }
