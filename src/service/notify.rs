@@ -197,10 +197,13 @@ impl Watched {
         Ok(match event.kind {
             Modify(modify_kind) => {
                 match modify_kind {
-                    ModifyKind::Name(RenameMode::Both) => {
+                    ModifyKind::Name(RenameMode::Both)
+                    | ModifyKind::Name(RenameMode::Any)
+                    | ModifyKind::Name(RenameMode::Other) => {
                         // RenameModes are "Any", "Both", "To", "From" and "Other".
                         //
-                        // Only "Both" contains two filenames.
+                        // Only "Both" is guaranteed to contain two filenames.
+                        // "Any" are "Other" are for cross-platform compatibility.
                         //
                         // Here we are considering the less chatty DebouncedEvent.
                         //
@@ -214,9 +217,15 @@ impl Watched {
                         ))
                     }
 
-                    ModifyKind::Data(_) => Some(Self::Write(convert(&event.paths[0], proj)?)),
-                    // Any/Metadata
-                    _ => None,
+                    ModifyKind::Data(_) | ModifyKind::Other | ModifyKind::Any => {
+                        Some(Self::Write(convert(&event.paths[0], proj)?))
+                    }
+
+                    ModifyKind::Metadata(_) => None,
+
+                    ModifyKind::Name(RenameMode::From) | ModifyKind::Name(RenameMode::To) => {
+                        panic!("These events are not possible with debounced notification.");
+                    }
                 }
             }
 
@@ -349,7 +358,7 @@ mod test {
         std::thread::spawn(move || {
             while let Ok(event) = sync_rx.recv() {
                 match Watched::try_new(&event, &config.projects[0]) {
-                    Ok(Some(watched)) => {
+                    Ok(Some(_)) => {
                         break;
                     }
                     Err(e) => log::error!("Notify error {e}"),
