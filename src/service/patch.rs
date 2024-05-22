@@ -10,9 +10,10 @@ use itertools::Itertools;
 use leptos_hot_reload::ViewMacros;
 // use notify::{DebouncedEvent, RecursiveMode, Watcher};
 use notify::{RecursiveMode, Watcher};
-// use notify_debouncer_mini::DebouncedEvent;
+use notify_debouncer_full::{new_debouncer, DebounceEventResult};
 use std::collections::HashSet;
 use std::sync::Arc;
+use std::time::Duration;
 use tokio::task::JoinHandle;
 
 use super::notify::Watched;
@@ -51,19 +52,31 @@ async fn run(paths: &[Utf8PathBuf], proj: Arc<Project>, view_macros: ViewMacros)
         log::debug!("Notify stopped");
     });
 
-    let mut watcher = notify::recommended_watcher(move |res| {
-        match res {
-            Ok(event) => {
-                // send can fail must handle
-                sync_tx.send(event).expect("failed channel closed");
+    let mut debouncer = new_debouncer(
+        Duration::from_millis(200),
+        None,
+        move |res: DebounceEventResult| {
+            match res {
+                Ok(events) => {
+                    // send can fail must handle
+                    // sync_tx.send(event).expect("failed channel closed");
+                    events.iter().for_each(|event| {
+                        sync_tx
+                            .send(event.clone())
+                            .expect("failed to build file system watcher")
+                    });
+                }
+                Err(e) => println!("watch error: {:?}", e),
             }
-            Err(e) => println!("watch error: {:?}", e),
-        }
-    })
+        },
+    )
     .expect("failed to build file system watcher");
 
     for path in paths {
-        if let Err(e) = watcher.watch(path.as_std_path(), RecursiveMode::Recursive) {
+        if let Err(e) = debouncer
+            .watcher()
+            .watch(path.as_std_path(), RecursiveMode::Recursive)
+        {
             log::error!("Notify could not watch {path:?} due to {e:?}");
         }
     }

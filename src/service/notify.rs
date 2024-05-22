@@ -7,9 +7,11 @@ use crate::{
     logger::GRAY,
 };
 use camino::Utf8PathBuf;
+use core::time::Duration;
 use itertools::Itertools;
 use notify::event::RenameMode;
 use notify::{RecursiveMode, Watcher};
+use notify_debouncer_full::{new_debouncer, DebounceEventResult, DebouncedEvent};
 use std::collections::HashSet;
 use std::fmt::Display;
 use std::path::Path;
@@ -49,7 +51,7 @@ pub async fn spawn(proj: &Arc<Project>) -> Result<JoinHandle<()>> {
 }
 
 async fn run(paths: &[Utf8PathBuf], proj: Arc<Project>) {
-    let (sync_tx, sync_rx) = std::sync::mpsc::channel();
+    let (sync_tx, sync_rx) = std::sync::mpsc::channel::<DebouncedEvent>();
 
     let proj = proj.clone();
     std::thread::spawn(move || {
@@ -63,17 +65,28 @@ async fn run(paths: &[Utf8PathBuf], proj: Arc<Project>) {
         log::debug!("Notify stopped");
     });
 
-    let mut watcher = notify::recommended_watcher(move |res| match res {
-        Ok(event) => {
-            println!("event: {:?}", event);
-            let _ = sync_tx.send(event);
-        }
-        Err(e) => println!("watch error: {:?}", e),
-    })
-    .expect("failed to build file system watcher");
+    let mut debouncer = new_debouncer(
+        Duration::from_millis(200),
+        None,
+        move |res: DebounceEventResult| match res {
+            Ok(events) => {
+                println!("event: {:?}", events);
+                events.iter().for_each(|event| {
+                    sync_tx
+                        .send(event.clone())
+                        .expect("failed to build file system watcher")
+                });
+            }
+            Err(e) => println!("watch error: {:?}", e),
+        },
+    )
+    .expect("failed to build file system debouncer/watcher");
 
     for path in paths {
-        if let Err(e) = watcher.watch(path.as_std_path(), RecursiveMode::Recursive) {
+        if let Err(e) = debouncer
+            .watcher()
+            .watch(path.as_std_path(), RecursiveMode::Recursive)
+        {
             log::error!("Notify could not watch {path:?} due to {e:?}");
         }
     }
@@ -173,7 +186,7 @@ fn convert(p: &Path, proj: &Project) -> Result<Utf8PathBuf> {
 }
 
 impl Watched {
-    pub(crate) fn try_new(event: &notify::Event, proj: &Project) -> Result<Option<Self>> {
+    pub(crate) fn try_new(event: &DebouncedEvent, proj: &Project) -> Result<Option<Self>> {
         use notify::event::ModifyKind;
         use notify::EventKind::Access;
         use notify::EventKind::Any;
@@ -185,9 +198,16 @@ impl Watched {
         Ok(match event.kind {
             Modify(modify_kind) => {
                 match modify_kind {
-                    // RenameModes -- "Any", "Both", "To", "From" and "Other".
-                    // Only "Both" contains two filenames.
                     ModifyKind::Name(RenameMode::Both) => {
+                        // RenameModes are "Any", "Both", "To", "From" and "Other".
+                        //
+                        // Only "Both" contains two filenames.
+                        //
+                        // Here we are considering the less chatty DebouncedEvent.
+                        //
+                        // See <https://docs.rs/notify-debouncer-full/latest/notify_debouncer_full/>
+                        //
+                        // "Only emits a single Rename event if the rename From and To events can be matched"
                         debug_assert!(event.paths.len() == 2usize, "Rename needs two filenames");
                         Some(Self::Rename(
                             convert(&event.paths[0], proj)?,
@@ -267,9 +287,10 @@ mod test {
     use std::io::Write;
     use std::path::PathBuf;
 
-    use notify::RecommendedWatcher;
     use notify::RecursiveMode;
     use notify::Watcher;
+    use notify_debouncer_full::new_debouncer;
+    use notify_debouncer_full::DebounceEventResult;
     use tokio::sync::oneshot;
     use tokio::time::timeout;
 
@@ -343,24 +364,29 @@ mod test {
                 .expect("failed to send passing notification");
         });
 
-        let config = notify::Config::default().with_poll_interval(Duration::from_millis(10));
-        let mut watcher = RecommendedWatcher::new(
-            move |res| {
+        let mut debouncer = new_debouncer(
+            Duration::from_millis(400),
+            None,
+            move |res: DebounceEventResult| {
                 match res {
-                    Ok(event) => {
+                    Ok(events) => {
                         // send can fail must handle
                         println!("recommended watcher");
-                        sync_tx.send(event).expect("failed channel closed");
+                        let _ = events.iter().for_each(|event| {
+                            sync_tx
+                                .send(event.clone())
+                                .expect("change_file_contents: failed to build file system watcher")
+                        });
                     }
-                    Err(e) => println!("watch error: {:?}", e),
+                    Err(e) => println!("watch errors: {:?}", e),
                 }
             },
-            config,
         )
         .expect("failed to build file system watcher");
 
-        watcher
-            .watch(&filename, RecursiveMode::Recursive)
+        debouncer
+            .watcher()
+            .watch(&filename, RecursiveMode::NonRecursive)
             .expect("could not watch {path:?}");
 
         // Modify file.
@@ -374,16 +400,17 @@ mod test {
         modify_handle.flush().expect("second flushing failed");
 
         // Wait for success or a watchdog timeout.
-        let received_notification = match timeout(Duration::from_millis(500), success_rx).await {
+        let received_notification = match timeout(Duration::from_millis(800), success_rx).await {
             Ok(_) => true,
             Err(_) => {
-                println!("did not receive value within 500 ms");
+                println!("did not receive value within 800 ms");
                 false
             }
         };
-        assert!(received_notification);
 
-        // TEARDOWN:
+        // TEARDOWN: before assert, as a failing test aborts the test.
         remove_file(filename).expect("Could not tear down file.");
+
+        assert!(received_notification);
     }
 }

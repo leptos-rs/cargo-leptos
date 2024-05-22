@@ -50,6 +50,7 @@ lightningcss = { version = "1.0.0-alpha.57", features = ["browserslist"] }
 flexi_logger = "0.28"
 tokio = { version = "1.4", default-features = false, features = ["full"] }
 axum = { version = "0.7", features = ["ws"] }
+notify-debouncer-full = "0.3.1"
 notify = "6.1"
 lazy_static = "1.4"
 which = "6"
