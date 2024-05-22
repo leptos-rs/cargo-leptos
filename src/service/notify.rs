@@ -70,7 +70,6 @@ async fn run(paths: &[Utf8PathBuf], proj: Arc<Project>) {
         None,
         move |res: DebounceEventResult| match res {
             Ok(events) => {
-                println!("event: {:?}", events);
                 events.iter().for_each(|event| {
                     sync_tx
                         .send(event.clone())
@@ -214,7 +213,9 @@ impl Watched {
                             convert(&event.paths[1], proj)?,
                         ))
                     }
-                    // Any/Data(_)/Metadata
+
+                    ModifyKind::Data(_) => Some(Self::Write(convert(&event.paths[0], proj)?)),
+                    // Any/Metadata
                     _ => None,
                 }
             }
@@ -326,7 +327,6 @@ mod test {
     // 3) Assert the mechanism observed a valid event.
     //
     // TEARDOWN: delete the file.
-    #[ignore]
     #[tokio::test]
     async fn change_file_contents() {
         let cli = opts(Some("project2"));
@@ -335,7 +335,6 @@ mod test {
 
         let mut filename = PathBuf::from(&config.working_dir);
         filename.push("mood.txt");
-        println!("FQN {:#?}", &filename.clone());
 
         let mut file = File::create(filename.clone()).expect("Could not create test file");
         file.write_all(b"happy\r\n")
@@ -348,11 +347,9 @@ mod test {
         let (success_tx, success_rx) = oneshot::channel::<bool>();
 
         std::thread::spawn(move || {
-            println!("inside watching thread");
             while let Ok(event) = sync_rx.recv() {
                 match Watched::try_new(&event, &config.projects[0]) {
                     Ok(Some(watched)) => {
-                        println!("inside try_new {:#?}", watched);
                         break;
                     }
                     Err(e) => log::error!("Notify error {e}"),
@@ -371,7 +368,6 @@ mod test {
                 match res {
                     Ok(events) => {
                         // send can fail must handle
-                        println!("recommended watcher");
                         let _ = events.iter().for_each(|event| {
                             sync_tx
                                 .send(event.clone())

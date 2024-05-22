@@ -8,7 +8,6 @@ use crate::{
 use camino::Utf8PathBuf;
 use itertools::Itertools;
 use leptos_hot_reload::ViewMacros;
-// use notify::{DebouncedEvent, RecursiveMode, Watcher};
 use notify::{RecursiveMode, Watcher};
 use notify_debouncer_full::{new_debouncer, DebounceEventResult};
 use std::collections::HashSet;
