@@ -338,9 +338,9 @@ mod test {
     // TEARDOWN: delete the file.
     #[tokio::test]
     async fn change_file_contents() {
-        let cli = opts(Some("project2"));
+        let cli = opts(Some("notify"));
         let config =
-            Config::test_load(cli, "examples", "examples/workspace/Cargo.toml", true, None);
+            Config::test_load(cli, "examples", "examples/notify/Cargo.toml", true, None);
 
         let mut filename = PathBuf::from(&config.working_dir);
         filename.push("mood.txt");
