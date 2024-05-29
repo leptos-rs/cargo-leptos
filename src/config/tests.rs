@@ -3,6 +3,7 @@ use super::Config;
 fn opts(project: Option<&str>) -> crate::config::Opts {
     crate::config::Opts {
         release: false,
+        js_minify: false,
         precompress: false,
         hot_reload: false,
         project: project.map(|s| s.to_string()),
