@@ -144,11 +144,19 @@ async fn bindgen(proj: &Project) -> Result<Outcome<Product>> {
         .did_file_change(&proj.lib.wasm_file.as_site_file())
         .await
         .dot()?;
-    js_changed |= proj
-        .site
-        .updated_with(&proj.lib.js_file, minify(bindgen.js())?.as_bytes())
-        .await
-        .dot()?;
+
+    js_changed |= if proj.release && proj.js_minify {
+        proj.site
+            .updated_with(&proj.lib.js_file, minify(bindgen.js())?.as_bytes())
+            .await
+            .dot()?
+    } else {
+        proj.site
+            .updated_with(&proj.lib.js_file, bindgen.js().as_bytes())
+            .await
+            .dot()?
+    };
+
     log::debug!("Front js changed: {js_changed}");
     log::debug!("Front wasm changed: {wasm_changed}");
 
@@ -217,10 +225,13 @@ async fn write_snippets(proj: &Project, snippets: &HashMap<String, Vec<String>>)
                 site: site_path,
             };
 
-            js_changed |= proj
-                .site
-                .updated_with(&site_file, minify(js)?.as_bytes())
-                .await?;
+            js_changed |= if proj.release && proj.js_minify {
+                proj.site
+                    .updated_with(&site_file, minify(js)?.as_bytes())
+                    .await?
+            } else {
+                proj.site.updated_with(&site_file, js.as_bytes()).await?
+            }
         }
     }
     Ok(js_changed)
@@ -240,10 +251,13 @@ async fn write_modules(proj: &Project, modules: &HashMap<String, String>) -> Res
             site: site_path,
         };
 
-        js_changed |= proj
-            .site
-            .updated_with(&site_file, minify(js)?.as_bytes())
-            .await?;
+        js_changed |= if proj.release && proj.js_minify {
+            proj.site
+                .updated_with(&site_file, minify(js)?.as_bytes())
+                .await?
+        } else {
+            proj.site.updated_with(&site_file, js.as_bytes()).await?
+        };
     }
     Ok(js_changed)
 }
