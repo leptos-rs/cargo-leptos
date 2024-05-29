@@ -193,7 +193,6 @@ impl Watched {
         use notify::EventKind::Modify;
         use notify::EventKind::Other;
         use notify::EventKind::Remove;
-        println!("try_new() {event:#?}");
         Ok(match event.kind {
             Modify(modify_kind) => {
                 match modify_kind {
