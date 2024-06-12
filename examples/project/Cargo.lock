@@ -768,7 +768,7 @@ dependencies = [
  "console_log",
  "dotenvy",
  "futures",
- "gloo-net 0.4.0",
+ "gloo-net 0.5.0",
  "leptos",
  "leptos_actix",
  "leptos_dom",
@@ -955,27 +955,6 @@ dependencies = [
  "futures-core",
  "futures-sink",
  "gloo-utils 0.1.7",
- "js-sys",
- "pin-project",
- "serde",
- "serde_json",
- "thiserror",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "web-sys",
-]
-
-[[package]]
-name = "gloo-net"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8ac9e8288ae2c632fa9f8657ac70bfe38a1530f345282d7ba66a1f70b72b7dc4"
-dependencies = [
- "futures-channel",
- "futures-core",
- "futures-sink",
- "gloo-utils 0.2.0",
- "http 0.2.12",
  "js-sys",
  "pin-project",
  "serde",

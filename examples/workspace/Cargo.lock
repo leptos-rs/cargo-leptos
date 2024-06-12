@@ -1029,9 +1029,9 @@ dependencies = [
 
 [[package]]
 name = "gloo-net"
-version = "0.4.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8ac9e8288ae2c632fa9f8657ac70bfe38a1530f345282d7ba66a1f70b72b7dc4"
+checksum = "43aaa242d1239a8822c15c645f02166398da4f8b5c4bae795c1f5b44e9eee173"
 dependencies = [
  "futures-channel",
  "futures-core",
@@ -2022,7 +2022,7 @@ dependencies = [
  "console_log 1.0.0",
  "dotenvy",
  "futures",
- "gloo-net 0.4.0",
+ "gloo-net 0.5.0",
  "leptos",
  "leptos_actix",
  "leptos_meta",
@@ -2401,7 +2401,7 @@ dependencies = [
  "cfg-if",
  "dotenvy",
  "futures",
- "gloo-net 0.2.6",
+ "gloo-net 0.5.0",
  "leptos",
  "leptos_actix",
  "leptos_dom",

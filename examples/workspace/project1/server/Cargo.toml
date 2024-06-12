@@ -13,7 +13,7 @@ leptos_router = { workspace = true, features = ["ssr"] }
 leptos_dom = { workspace = true, features = ["ssr"] }
 leptos_actix.workspace = true
 
-gloo-net = { version = "0.2", features = ["http"] }
+gloo-net = { version = "0.5", features = ["http"] }
 log = "0.4"
 cfg-if = "1.0"
 actix-web = "4"
