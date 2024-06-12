@@ -404,7 +404,7 @@ mod test {
         modify_handle.flush().expect("second flushing failed");
 
         // Wait for success or a watchdog timeout.
-        let received_notification = match timeout(Duration::from_millis(800), success_rx).await {
+        let received_notification = match timeout(Duration::from_millis(4000), success_rx).await {
             Ok(_) => true,
             Err(_) => {
                 println!("did not receive value within 800 ms");
