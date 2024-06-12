@@ -2,10 +2,10 @@ use actix_web::*;
 use leptos::*;
 use leptos_actix::{generate_route_list, LeptosRoutes};
 
-fn app(cx: leptos::Scope) -> impl IntoView {
+fn app() -> impl IntoView {
     use app_package::*;
 
-    view! { cx, <App /> }
+    view! { <App /> }
 }
 
 #[actix_web::main]
