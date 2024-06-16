@@ -52,6 +52,7 @@ fn overlay(conf: &mut ProjectConfig, envs: impl Iterator<Item = (String, String)
             "LEPTOS_BIN_TARGET_TRIPLE" => conf.bin_target_triple = Some(val),
             "LEPTOS_BIN_TARGET_DIR" => conf.bin_target_dir = Some(val),
             "LEPTOS_BIN_CARGO_COMMAND" => conf.bin_cargo_command = Some(val),
+            "LEPTOS_JS_MINIFY" => conf.js_minify = val.parse()?,
             // put these here to suppress the warning, but there's no
             // good way at the moment to pull the ProjectConfig all the way to Exe
             exe::ENV_VAR_LEPTOS_TAILWIND_VERSION => {}

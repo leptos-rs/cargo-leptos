@@ -46,6 +46,7 @@ pub struct Project {
     pub watch_additional_files: Vec<Utf8PathBuf>,
     pub hash_file: HashFile,
     pub hash_files: bool,
+    pub js_minify: bool,
 }
 
 impl Debug for Project {
@@ -58,6 +59,7 @@ impl Debug for Project {
             .field("watch", &self.watch)
             .field("release", &self.release)
             .field("precompress", &self.precompress)
+            .field("js_minify", &self.js_minify)
             .field("hot_reload", &self.hot_reload)
             .field("site", &self.site)
             .field("end2end", &self.end2end)
@@ -113,6 +115,7 @@ impl Project {
                 watch_additional_files,
                 hash_file,
                 hash_files: config.hash_files,
+                js_minify: cli.release && cli.js_minify && config.js_minify,
             };
             resolved.push(Arc::new(proj));
         }
@@ -139,6 +142,7 @@ impl Project {
             ("LEPTOS_RELOAD_PORT", self.site.reload.port().to_string()),
             ("LEPTOS_LIB_DIR", self.lib.rel_dir.to_string()),
             ("LEPTOS_BIN_DIR", self.bin.rel_dir.to_string()),
+            ("LEPTOS_JS_MINIFY", self.js_minify.to_string()),
             ("LEPTOS_HASH_FILES", self.hash_files.to_string()),
         ];
         if self.hash_files {
@@ -174,6 +178,8 @@ pub struct ProjectConfig {
     pub assets_dir: Option<Utf8PathBuf>,
     /// js dir. changes triggers rebuilds.
     pub js_dir: Option<Utf8PathBuf>,
+    #[serde(default = "default_js_minify")]
+    pub js_minify: bool,
     /// additional files to watch. changes triggers rebuilds.
     pub watch_additional_files: Option<Vec<Utf8PathBuf>>,
     #[serde(default = "default_reload_port")]
@@ -392,4 +398,8 @@ fn default_browserquery() -> String {
 
 fn default_hash_files() -> bool {
     false
+}
+
+fn default_js_minify() -> bool {
+    true
 }

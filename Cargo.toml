@@ -45,8 +45,9 @@ serde = { version = "1.0", features = ["derive"] }
 anyhow = "1.0"
 libflate = "2"
 log = "0.4"
-flexi_logger = "0.27"
+
 lightningcss = { version = "1.0.0-alpha.57", features = ["browserslist"] }
+flexi_logger = "0.28"
 tokio = { version = "1.4", default-features = false, features = ["full"] }
 axum = { version = "0.7", features = ["ws"] }
 # not using notify 5.0 because it uses Crossbeam which has an issue with tokio
@@ -58,7 +59,7 @@ serde_json = "1.0"
 wasm-bindgen-cli-support = "=0.2.92"
 ansi_term = "0.12"
 
-reqwest = { version = "0.11", features = [
+reqwest = { version = "0.12", features = [
     "blocking",
     "rustls-tls",
     "json",
@@ -80,6 +81,8 @@ semver = "1.0.19"
 async-trait = "0.1.72"
 md-5 = "0.10.6"
 base64ct = { version = "1.6.0", features = ["alloc"] }
+swc = "0.275.1"
+swc_common = "0.33.26"
 
 [dev-dependencies]
 insta = { version = "1.31.0", features = ["yaml"] }
