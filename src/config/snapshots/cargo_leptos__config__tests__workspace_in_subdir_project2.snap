@@ -59,6 +59,7 @@ Config {
             watch: true,
             release: false,
             precompress: false,
+            js_minify: false,
             hot_reload: false,
             site: Site {
                 addr: 127.0.0.1:3000,
@@ -89,6 +90,7 @@ Config {
         bin_cargo_args: None,
         wasm_debug: false,
         verbose: 0,
+        js_minify: false,
     },
     watch: true,
     ..

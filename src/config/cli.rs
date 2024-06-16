@@ -55,6 +55,10 @@ pub struct Opts {
     /// Verbosity (none: info, errors & warnings, -v: verbose, -vv: very verbose).
     #[arg(short, action = clap::ArgAction::Count)]
     pub verbose: u8,
+
+    /// Minify javascript assets with swc. Applies to release builds only.
+    #[arg(long, default_value = "true", value_parser=clap::builder::BoolishValueParser::new(), action = clap::ArgAction::Set)]
+    pub js_minify: bool,
 }
 
 #[derive(Debug, Clone, Parser, PartialEq, Default)]
