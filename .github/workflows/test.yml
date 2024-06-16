@@ -16,7 +16,7 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
         - name: "Checkout repo"
-          uses: actions/checkout@v3
+          uses: actions/checkout@v4
 
         - name: "Install wasm32-unknown-unknown"
           uses: dtolnay/rust-toolchain@stable

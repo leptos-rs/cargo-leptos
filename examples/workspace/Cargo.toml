@@ -9,11 +9,11 @@ lto = true
 opt-level = 'z'
 
 [workspace.dependencies]
-leptos = { version = "0.4", default-features = false }
-leptos_meta = { version = "0.4", default-features = false }
-leptos_router = { version = "0.4", default-features = false }
-leptos_dom = { version = "0.4", default-features = false }
-leptos_actix = { version = "0.4" }
+leptos = { version = "0.6", default-features = false }
+leptos_meta = { version = "0.6", default-features = false }
+leptos_router = { version = "0.6", default-features = false }
+leptos_dom = { version = "0.6", default-features = false }
+leptos_actix = { version = "0.6" }
 
 gloo-net = { version = "0.4", features = ["http"] }
 

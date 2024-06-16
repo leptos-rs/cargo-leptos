@@ -39,13 +39,13 @@ eula = false
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-brotli = "3.3"
+brotli = "6"
 clap = { version = "4.0", features = ["derive"] }
 serde = { version = "1.0", features = ["derive"] }
 anyhow = "1.0"
 libflate = "2"
 log = "0.4"
-flexi_logger = "0.27"
+flexi_logger = "0.28"
 lightningcss = { version = "1.0.0-alpha.47", features = ["browserslist"] }
 tokio = { version = "1.4", default-features = false, features = ["full"] }
 axum = { version = "0.7", features = ["ws"] }
@@ -58,7 +58,7 @@ serde_json = "1.0"
 wasm-bindgen-cli-support = "=0.2.92"
 ansi_term = "0.12"
 
-reqwest = { version = "0.11", features = [
+reqwest = { version = "0.12", features = [
     "blocking",
     "rustls-tls",
     "json",
@@ -67,7 +67,7 @@ seahash = "4.1"
 dirs = "5.0"
 camino = "1.1"
 dotenvy = "0.15"
-itertools = "0.12"
+itertools = "0.13"
 derive_more = "0.99"
 flate2 = "1.0"
 zip = { version = "0.6", default-features = false, features = ["deflate"] }
