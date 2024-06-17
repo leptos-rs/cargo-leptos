@@ -880,7 +880,11 @@ dependencies = [
  "convert_case",
  "proc-macro2",
  "quote",
+<<<<<<< HEAD
  "rustc_version 0.4.0",
+=======
+ "rustc_version",
+>>>>>>> 7933bf0 (Resolving conflicts with HEAD.)
  "syn 2.0.66",
 ]
 
