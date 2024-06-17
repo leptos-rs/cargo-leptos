@@ -81,8 +81,8 @@ semver = "1.0.19"
 async-trait = "0.1.72"
 md-5 = "0.10.6"
 base64ct = { version = "1.6.0", features = ["alloc"] }
-swc = "0.275.1"
-swc_common = "0.33.26"
+swc = "0.278"
+swc_common = "0.34"
 
 [dev-dependencies]
 insta = { version = "1.31.0", features = ["yaml"] }
