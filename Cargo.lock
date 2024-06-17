@@ -2935,6 +2935,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5ee073c9e4cd00e28217186dbe12796d692868f432bf2e97ee73bed0c56dfa01"
 
 [[package]]
+name = "subtle"
+version = "2.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "81cdd64d312baedb58e21336b31bc043b77e01cc99033ce76ef539f78e965ebc"
+
+[[package]]
 name = "supports-color"
 version = "1.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2969,7 +2975,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2ac38cd938ce20693b58b26a5d1926a46074db09cf90a251d83cf17cdaea6031"
 dependencies = [
  "anyhow",
- "base64",
+ "base64 0.21.7",
  "dashmap",
  "either",
  "indexmap 2.2.6",
@@ -3071,7 +3077,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "754058388d4f51df61f9aced73dfca96d81fed1c0a46583dc7b3da07688af80d"
 dependencies = [
  "anyhow",
- "base64",
+ "base64 0.21.7",
  "once_cell",
  "pathdiff",
  "serde",
@@ -3675,7 +3681,7 @@ version = "0.184.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "565a76c4ca47ce31d78301c0beab878e4c2cb4f624691254d834ec8c0e236755"
 dependencies = [
- "base64",
+ "base64 0.21.7",
  "dashmap",
  "indexmap 2.2.6",
  "once_cell",
@@ -3859,12 +3865,6 @@ dependencies = [
  "swc_macros_common",
  "syn 2.0.57",
 ]
-
-[[package]]
-name = "subtle"
-version = "2.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "81cdd64d312baedb58e21336b31bc043b77e01cc99033ce76ef539f78e965ebc"
 
 [[package]]
 name = "syn"

@@ -2,7 +2,7 @@ use crate::{
     compile::front::build_cargo_front_cmd,
     config::{Config, Opts},
 };
-use insta::assert_display_snapshot;
+use insta::assert_snapshot;
 use tokio::process::Command;
 
 use super::server::build_cargo_server_cmd;
@@ -62,7 +62,7 @@ fn test_project_dev() {
     LEPTOS_WATCH=true";
     assert_eq!(ENV_REF, envs);
 
-    assert_display_snapshot!(cargo, @"cargo build --package=example --bin=example --no-default-features --features=ssr");
+    assert_snapshot!(cargo, @"cargo build --package=example --bin=example --no-default-features --features=ssr");
 
     let mut command = Command::new("cargo");
     let (_, cargo) = build_cargo_front_cmd("build", true, &conf.projects[0], &mut command);
@@ -82,7 +82,7 @@ fn test_project_release() {
     let mut command = Command::new("cargo");
     let (_, cargo) = build_cargo_server_cmd("build", &conf.projects[0], &mut command);
 
-    assert_display_snapshot!(cargo, @"cargo build --package=example --bin=example --no-default-features --features=ssr --release");
+    assert_snapshot!(cargo, @"cargo build --package=example --bin=example --no-default-features --features=ssr --release");
 
     let mut command = Command::new("cargo");
     let (_, cargo) = build_cargo_front_cmd("build", true, &conf.projects[0], &mut command);
@@ -130,7 +130,7 @@ fn test_workspace_project1() {
 
     assert_eq!(ENV_REF, envs);
 
-    assert_display_snapshot!(cargo, @"cargo build --package=server-package --bin=server-package --no-default-features");
+    assert_snapshot!(cargo, @"cargo build --package=server-package --bin=server-package --no-default-features");
 
     let mut command = Command::new("cargo");
     let (envs, cargo) = build_cargo_front_cmd("build", true, &conf.projects[0], &mut command);
@@ -150,7 +150,7 @@ fn test_workspace_project2() {
     let mut command = Command::new("cargo");
     let (_, cargo) = build_cargo_server_cmd("build", &conf.projects[1], &mut command);
 
-    assert_display_snapshot!(cargo, @"cargo build --package=project2 --bin=project2 --no-default-features --features=ssr");
+    assert_snapshot!(cargo, @"cargo build --package=project2 --bin=project2 --no-default-features --features=ssr");
 
     let mut command = Command::new("cargo");
     let (_, cargo) = build_cargo_front_cmd("build", true, &conf.projects[1], &mut command);
@@ -174,7 +174,7 @@ fn test_extra_cargo_args() {
     let mut command = Command::new("cargo");
     let (_, cargo) = build_cargo_server_cmd("build", &conf.projects[0], &mut command);
 
-    assert_display_snapshot!(cargo, @"cargo build --package=example --bin=example --no-default-features --features=ssr -j 16");
+    assert_snapshot!(cargo, @"cargo build --package=example --bin=example --no-default-features --features=ssr -j 16");
 
     let mut command = Command::new("cargo");
     let (_, cargo) = build_cargo_front_cmd("build", true, &conf.projects[0], &mut command);

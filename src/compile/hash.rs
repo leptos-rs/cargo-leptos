@@ -53,8 +53,8 @@ fn compute_front_file_hashes(proj: &Project) -> Result<HashMap<Utf8PathBuf, Stri
 
     while let Some(path) = stack.pop() {
         if let Ok(entries) = std::fs::read_dir(path) {
-            for entry in entries {
-                if let Ok(entry) = entry {
+            for entry in entries.flatten() {
+
                     let path = entry.path();
 
                     if path.is_file() {
@@ -69,7 +69,6 @@ fn compute_front_file_hashes(proj: &Project) -> Result<HashMap<Utf8PathBuf, Stri
                     } else if path.is_dir() {
                         stack.push(path);
                     }
-                }
             }
         }
     }
