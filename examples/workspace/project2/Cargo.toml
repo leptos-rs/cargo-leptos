@@ -31,7 +31,7 @@ actix-web = { version = "4", features = ["macros"], optional = true }
 futures = { version = "0.3", optional = true }
 simple_logger = { version = "4.0", optional = true }
 serde_json = { version = "1.0", optional = true }
-reqwest = { version = "0.11", features = ["json"], optional = true }
+reqwest = { version = "0.12", features = ["json"], optional = true }
 dotenvy = { version = "0.15", optional = true }
 
 [features]
