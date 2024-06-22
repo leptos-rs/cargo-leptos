@@ -47,6 +47,7 @@ pub struct Project {
     pub hash_file: HashFile,
     pub hash_files: bool,
     pub js_minify: bool,
+    pub css_minify: bool,
 }
 
 impl Debug for Project {
@@ -60,6 +61,7 @@ impl Debug for Project {
             .field("release", &self.release)
             .field("precompress", &self.precompress)
             .field("js_minify", &self.js_minify)
+            .field("css_minify", &self.css_minify)
             .field("hot_reload", &self.hot_reload)
             .field("site", &self.site)
             .field("end2end", &self.end2end)
@@ -116,6 +118,7 @@ impl Project {
                 hash_file,
                 hash_files: config.hash_files,
                 js_minify: cli.release && cli.js_minify && config.js_minify,
+                css_minify: cli.release && cli.css_minify && config.css_minify,
             };
             resolved.push(Arc::new(proj));
         }
@@ -143,6 +146,7 @@ impl Project {
             ("LEPTOS_LIB_DIR", self.lib.rel_dir.to_string()),
             ("LEPTOS_BIN_DIR", self.bin.rel_dir.to_string()),
             ("LEPTOS_JS_MINIFY", self.js_minify.to_string()),
+            ("LEPTOS_CSS_MINIFY", self.css_minify.to_string()),
             ("LEPTOS_HASH_FILES", self.hash_files.to_string()),
         ];
         if self.hash_files {
@@ -167,6 +171,8 @@ pub struct ProjectConfig {
     #[serde(default = "default_pkg_dir")]
     pub site_pkg_dir: Utf8PathBuf,
     pub style_file: Option<Utf8PathBuf>,
+    #[serde(default = "default_css_minify")]
+    pub css_minify: bool,
     /// text file where the hashes of the frontend files are stored
     pub hash_file_name: Option<Utf8PathBuf>,
     /// whether to hash the frontend files content and add them to the file names
@@ -401,5 +407,9 @@ fn default_hash_files() -> bool {
 }
 
 fn default_js_minify() -> bool {
+    true
+}
+
+fn default_css_minify() -> bool {
     true
 }
