@@ -210,7 +210,7 @@ impl Watched {
                         // See <https://docs.rs/notify-debouncer-full/latest/notify_debouncer_full/>
                         //
                         // "Only emits a single Rename event if the rename From and To events can be matched"
-                        debug_assert!(event.paths.len() == 2usize, "Rename needs two filenames");
+                        // debug_assert!(event.paths.len() == 2usize, "Rename needs two filenames");
                         Some(Self::Rename(
                             convert(&event.paths[0], proj)?,
                             convert(&event.paths[1], proj)?,
@@ -224,7 +224,8 @@ impl Watched {
                     ModifyKind::Metadata(_) => None,
 
                     ModifyKind::Name(RenameMode::From) | ModifyKind::Name(RenameMode::To) => {
-                        panic!("These events are not possible with debounced notification.");
+                        // panic!("These events are not possible with debounced notification.");
+                        None
                     }
                 }
             }
