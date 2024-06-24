@@ -378,8 +378,8 @@ mod test {
                     Ok(Some(_)) => {
                         break;
                     }
-                    Err(e) => log::error!("Notify error {e}"),
-                    _ => log::trace!("Notify not handled {}", GRAY.paint(format!("{:?}", event))),
+                    Err(e) => println!("Notify error {e}"),
+                    _ => println!("Notify not handled {}", GRAY.paint(format!("{:?}", event))),
                 }
             }
             success_tx
@@ -425,7 +425,7 @@ mod test {
         let received_notification = match timeout(Duration::from_millis(4000), success_rx).await {
             Ok(_) => true,
             Err(e) => {
-                println!("did not receive value within 800 ms");
+
                 println!("{:#?}", e);
                 false
             }
