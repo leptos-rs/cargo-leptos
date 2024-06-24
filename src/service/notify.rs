@@ -227,11 +227,13 @@ impl Watched {
                         Some(Self::Write(convert(&event.paths[0], proj)?))
                     },
 
-                    ModifyKind::Metadata(_) => None,
+                    ModifyKind::Metadata(_) => {
+                      Some(Self::Write(Utf8PathBuf::from("rabbit.txt")))
+                    }
 
                     ModifyKind::Name(RenameMode::From) | ModifyKind::Name(RenameMode::To) => {
                         // panic!("These events are not possible with debounced notification.");
-                        None
+                        Some(Self::Write(Utf8PathBuf::from("apple.txt")))
                     }
                 }
             }
@@ -254,7 +256,15 @@ impl Watched {
                     _ => None,
                 }
             }
-            Other | Any | Access(_) => None,
+            Any => {
+              // Experimental looking for missing event.
+              Some(Self::Write(Utf8PathBuf::from("any.txt")))
+            }
+            Other  => {
+              // Experimental looking for missing event.
+              Some(Self::Write(Utf8PathBuf::from("other.txt")))
+            }
+             Access(_) => None,
         })
     }
 
@@ -414,8 +424,9 @@ mod test {
         // Wait for success or a watchdog timeout.
         let received_notification = match timeout(Duration::from_millis(4000), success_rx).await {
             Ok(_) => true,
-            Err(_) => {
+            Err(e) => {
                 println!("did not receive value within 800 ms");
+                println!("{:#?}", e);
                 false
             }
         };
