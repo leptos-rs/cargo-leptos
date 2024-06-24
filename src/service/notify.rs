@@ -375,7 +375,8 @@ mod test {
         std::thread::spawn(move || {
             while let Ok(event) = sync_rx.recv() {
                 match Watched::try_new(&event, &config.projects[0]) {
-                    Ok(Some(_)) => {
+                    Ok(Some(ret)) => {
+                        print!("try new return value {ret}");
                         break;
                     }
                     Err(e) => println!("Notify error {e}"),
@@ -394,6 +395,7 @@ mod test {
                 match res {
                     Ok(events) => {
                         // send can fail must handle
+                        println!("debouncer {:#?}", &events);
                         let _ = events.iter().for_each(|event| {
                             sync_tx
                                 .send(event.clone())
@@ -425,7 +427,7 @@ mod test {
         let received_notification = match timeout(Duration::from_millis(4000), success_rx).await {
             Ok(_) => true,
             Err(e) => {
-
+                println!("did not receive value within 800 ms");
                 println!("{:#?}", e);
                 false
             }
