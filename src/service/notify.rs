@@ -9,7 +9,7 @@ use crate::{
 use camino::Utf8PathBuf;
 use core::time::Duration;
 use itertools::Itertools;
-use notify::event::RenameMode;
+use notify::event::{DataChange, RenameMode};
 use notify::{RecursiveMode, Watcher};
 use notify_debouncer_full::{new_debouncer, DebounceEventResult, DebouncedEvent};
 use std::collections::HashSet;
@@ -217,9 +217,15 @@ impl Watched {
                         ))
                     }
 
-                    ModifyKind::Data(_) | ModifyKind::Other | ModifyKind::Any => {
+                    ModifyKind::Data(DataChange::Any) | ModifyKind::Data(DataChange::Other) | ModifyKind::Any | ModifyKind::Other =>{
+                      // don't assume event.path is valid with Any or Other events.
+                      // experimental supply dummy path
+                      Some(Self::Write(Utf8PathBuf::from("socks.txt")))
+                    },
+
+                    ModifyKind::Data(DataChange::Content) |  ModifyKind::Data(DataChange::Size)  => {
                         Some(Self::Write(convert(&event.paths[0], proj)?))
-                    }
+                    },
 
                     ModifyKind::Metadata(_) => None,
 
