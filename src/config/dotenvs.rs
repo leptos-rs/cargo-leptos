@@ -49,6 +49,8 @@ fn overlay(conf: &mut ProjectConfig, envs: impl Iterator<Item = (String, String)
             "LEPTOS_HASH_FILES" => conf.hash_files = val.parse()?,
             "LEPTOS_HASH_FILE_NAME" => conf.hash_file_name = Some(val.parse()?),
             "LEPTOS_BROWSERQUERY" => conf.browserquery = val,
+            "LEPTOS_BIN_EXE_NAME" => conf.bin_exe_name = Some(val),
+            "LEPTOS_BIN_TARGET" => conf.bin_target = val,
             "LEPTOS_BIN_TARGET_TRIPLE" => conf.bin_target_triple = Some(val),
             "LEPTOS_BIN_TARGET_DIR" => conf.bin_target_dir = Some(val),
             "LEPTOS_BIN_CARGO_COMMAND" => conf.bin_cargo_command = Some(val),
