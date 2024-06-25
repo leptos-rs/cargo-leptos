@@ -136,7 +136,7 @@ Here, the latter is referred to as _target-triple_.
 ```toml
 # Sets the name of the binary target used.
 #
-# Optional, only necessary if the bin-package defines more than one target
+# Optional, only necessary if the bin-package defines more than one target. Can also be set with the LEPTOS_BIN_TARGET=name env var
 bin-target = "my-bin-name"
 
 # Enables additional file hashes on outputted css, js, and wasm files
@@ -205,12 +205,12 @@ lib-profile-dev = "my-debug-profile"
 separate-front-target-dir = true
 
 # Pass additional parameters to the cargo process compiling to WASM
-# 
+#
 # Optional. No default
 lib-cargo-args = ["--timings"]
 
 # Pass additional parameters to the cargo process to build the server
-# 
+#
 # Optional. No default
 bin-cargo-args = ["--timings"]
 
