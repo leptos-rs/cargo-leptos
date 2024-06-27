@@ -11,6 +11,7 @@ fn release_opts() -> Opts {
     Opts {
         release: true,
         js_minify: true,
+        css_minify: true,
         precompress: false, // if set to true, testing could take quite a while longer
         hot_reload: false,
         project: None,
@@ -27,6 +28,7 @@ fn dev_opts() -> Opts {
     Opts {
         release: false,
         js_minify: false,
+        css_minify: false,
         precompress: false,
         hot_reload: false,
         project: None,
@@ -57,6 +59,7 @@ fn test_project_dev() {
     LEPTOS_LIB_DIR=. \
     LEPTOS_BIN_DIR=. \
     LEPTOS_JS_MINIFY=false \
+    LEPTOS_CSS_MINIFY=false \
     LEPTOS_HASH_FILES=true \
     LEPTOS_HASH_FILE_NAME=hash.txt \
     LEPTOS_WATCH=true";
@@ -106,6 +109,7 @@ fn test_workspace_project1() {
     LEPTOS_LIB_DIR=project1\\front \
     LEPTOS_BIN_DIR=project1\\server \
     LEPTOS_JS_MINIFY=false \
+    LEPTOS_CSS_MINIFY=false \
     LEPTOS_HASH_FILES=false \
     LEPTOS_WATCH=true"
     } else {
@@ -118,6 +122,7 @@ fn test_workspace_project1() {
     LEPTOS_LIB_DIR=project1/front \
     LEPTOS_BIN_DIR=project1/server \
     LEPTOS_JS_MINIFY=false \
+    LEPTOS_CSS_MINIFY=false \
     LEPTOS_HASH_FILES=false \
     LEPTOS_WATCH=true"
     };
