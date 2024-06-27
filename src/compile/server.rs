@@ -56,7 +56,7 @@ pub fn server_cargo_process(cmd: &str, proj: &Project) -> Result<(String, String
     let raw_command = proj.bin.cargo_command.as_deref().unwrap_or("cargo");
     let mut command_iter = Shlex::new(raw_command);
 
-    if command_iter.had_error(){
+    if command_iter.had_error{
         panic!("bin-cargo-command cannot contain escaped quotes. Not sure why you'd want to")
     }
 
