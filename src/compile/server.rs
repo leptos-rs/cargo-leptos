@@ -12,6 +12,7 @@ use tokio::{
     process::{Child, Command},
     task::JoinHandle,
 };
+use shlex::Shlex;
 
 pub async fn server(
     proj: &Arc<Project>,
@@ -26,7 +27,7 @@ pub async fn server(
         }
 
         let (envs, line, process) = server_cargo_process("build", &proj)?;
-
+        log::debug!("CARGO SERVER COMMAND: {:?}", process);
         match wait_interruptible("Cargo", process, Interrupt::subscribe_any()).await? {
             CommandResult::Success(_) => {
                 log::debug!("Cargo envs: {}", GRAY.paint(envs));
@@ -52,7 +53,19 @@ pub async fn server(
 }
 
 pub fn server_cargo_process(cmd: &str, proj: &Project) -> Result<(String, String, Child)> {
-    let mut command = Command::new(proj.bin.cargo_command.as_deref().unwrap_or("cargo"));
+    let raw_command = proj.bin.cargo_command.as_deref().unwrap_or("cargo");
+    let mut command_iter = Shlex::new(raw_command);
+
+    if command_iter.had_error(){
+        panic!("bin-cargo-command cannot contain escaped quotes. Not sure why you'd want to")
+    }
+
+    let cargo_command = command_iter.next().expect("Failed to get bin command. This should default to cargo");
+    let mut command: Command = Command::new(cargo_command);
+
+    let args: Vec<String> = command_iter.collect();
+    command.args(args);
+
     let (envs, line) = build_cargo_server_cmd(cmd, proj, &mut command);
     Ok((envs, line, command.spawn()?))
 }

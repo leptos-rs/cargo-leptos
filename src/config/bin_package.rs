@@ -118,6 +118,8 @@ impl BinPackage {
         } else {
             src_paths.push(rel_dir.join("src"));
         }
+
+        log::debug!("BEFORE BIN {:?}", config.bin_cargo_command);
         Ok(Self {
             name,
             abs_dir,
