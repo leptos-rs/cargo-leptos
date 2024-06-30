@@ -54,21 +54,20 @@ fn compute_front_file_hashes(proj: &Project) -> Result<HashMap<Utf8PathBuf, Stri
     while let Some(path) = stack.pop() {
         if let Ok(entries) = std::fs::read_dir(path) {
             for entry in entries.flatten() {
+                let path = entry.path();
 
-                    let path = entry.path();
+                if path.is_file() {
+                    let hash = Base64UrlUnpadded::encode_string(
+                        &Md5::new().chain_update(fs::read(&path)?).finalize(),
+                    );
 
-                    if path.is_file() {
-                        let hash = Base64UrlUnpadded::encode_string(
-                            &Md5::new().chain_update(fs::read(&path)?).finalize(),
-                        );
-
-                        files_to_hashes.insert(
-                            Utf8PathBuf::from_path_buf(path).expect("invalid path"),
-                            hash,
-                        );
-                    } else if path.is_dir() {
-                        stack.push(path);
-                    }
+                    files_to_hashes.insert(
+                        Utf8PathBuf::from_path_buf(path).expect("invalid path"),
+                        hash,
+                    );
+                } else if path.is_dir() {
+                    stack.push(path);
+                }
             }
         }
     }

@@ -1,0 +1,11 @@
+
+html {
+  padding-top: 5rem;
+  background-color: rgb(225, 225, 225);
+}
+@media (prefers-color-scheme: dark) {
+  html {
+    background-color: rgb(25, 25, 25);
+    color: rgb(220, 220, 220);
+  }
+}
