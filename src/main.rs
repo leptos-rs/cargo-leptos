@@ -1,16 +1,30 @@
-use cargo_leptos::{config::Cli, ext::anyhow::Result, run};
+use camino::Utf8PathBuf;
+use cargo_leptos::{config::Cli, ext::anyhow::Result};
 use clap::Parser;
-use std::env;
+use figment::{Figment, providers::{Serialized, Env}};
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let mut args: Vec<String> = env::args().collect();
-    // when running as cargo leptos, the second argument is "leptos" which
-    // clap doesn't expect
-    if args.get(1).map(|a| a == "leptos").unwrap_or(false) {
-        args.remove(1);
-    }
+    // Parse CLI arguments. Override CLI config values with those in
+    // `Config.toml` and `APP_`-prefixed environment variables.
+    let initial_figment = Figment::new()
+    .merge(Serialized::defaults(Cli::parse()))    
+    .merge(Env::prefixed("LEPTOS_"));
 
-    let args = Cli::parse_from(&args);
-    run(args).await
+    //println!("INITIAL {initial_figment:#?}");
+
+    let manifest_path: Utf8PathBuf = initial_figment.extract_inner("manifest_path").expect("manifest_path must be set. This should have defaulted to Cargo.toml");
+    let test = Cli::figment_file(&manifest_path).select("leptos");
+    println!(" TEST{test:#?}");
+    let cli: Cli = initial_figment
+    .merge(Cli::figment_file(&manifest_path).select("leptos"))
+    .extract()?;
+
+    println!("CLI: {cli:#?}");
+
+    // Determine manifest path by determining if we're in a workspace or not
+    //
+    Ok(())
+
+    //run(args).await
 }

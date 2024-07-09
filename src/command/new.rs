@@ -1,14 +1,13 @@
 use crate::ext::anyhow::{Context, Result};
 use clap::Args;
-
 use tokio::process::Command;
-
 use crate::ext::exe::Exe;
+use serde::{Serialize, Deserialize};
 
 // A subset of the cargo-generate commands available.
 // See: https://github.com/cargo-generate/cargo-generate/blob/main/src/args.rs
 
-#[derive(Clone, Debug, Args, PartialEq, Eq)]
+#[derive(Clone, Debug, Args, PartialEq, Eq, Serialize, Deserialize)]
 #[clap(arg_required_else_help(true))]
 #[clap(about)]
 pub struct NewCommand {
@@ -66,7 +65,7 @@ impl NewCommand {
 
     pub fn to_args(&self) -> Vec<String> {
         let mut args = vec![];
-        opt_push(&mut args, "git", &absolute_git_url(&self.git));
+        opt_push(&mut args, "git", &self.git);
         opt_push(&mut args, "branch", &self.branch);
         opt_push(&mut args, "tag", &self.tag);
         opt_push(&mut args, "path", &self.path);
@@ -88,18 +87,5 @@ fn opt_push(args: &mut Vec<String>, name: &str, arg: &Option<String>) {
     if let Some(arg) = arg {
         args.push(format!("--{name}"));
         args.push(arg.clone());
-    }
-}
-
-/// Workaround to support short `new --git leptos-rs/start` command when behind Git proxy.
-/// See https://github.com/cargo-generate/cargo-generate/issues/752.
-fn absolute_git_url(url: &Option<String>) -> Option<String> {
-    match url {
-        Some(url) => match url.as_str() {
-            "leptos-rs/start" => Some("https://github.com/leptos-rs/start".to_string()),
-            "leptos-rs/start-axum" => Some("https://github.com/leptos-rs/start-axum".to_string()),
-            _ => Some(url.to_string()),
-        },
-        None => None,
     }
 }

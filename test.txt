@@ -1,0 +1,1457 @@
+ FOUND Figment {
+    profile: Profile(
+        Uncased {
+            string: "default",
+        },
+    ),
+    metadata: {
+        Tag(Default, 3): Metadata {
+            name: "TOML file",
+            source: Some(
+                File(
+                    "/celCluster/projects/cargo-leptos/./Cargo.toml",
+                ),
+            ),
+            provide_location: Some(
+                Location {
+                    file: "src/config/cli.rs",
+                    line: 99,
+                    col: 32,
+                },
+            ),
+            interpolater: ,
+        },
+    },
+    value: Ok(
+        {
+            Profile(
+                Uncased {
+                    string: "default",
+                },
+            ): {
+                "dependencies": Dict(
+                    {
+                        "ansi_term": String(
+                            "0.12",
+                        ),
+                        "anyhow": String(
+                            "1.0",
+                        ),
+                        "async-trait": String(
+                            "0.1.72",
+                        ),
+                        "axum": Dict(
+                            {
+                                "features": Array(
+                                    [
+                                        String(
+                                            "ws",
+                                        ),
+                                    ],
+                                ),
+                                "version": String(
+                                    "0.7",
+                                ),
+                            },
+                        ),
+                        "base64ct": Dict(
+                            {
+                                "features": Array(
+                                    [
+                                        String(
+                                            "alloc",
+                                        ),
+                                    ],
+                                ),
+                                "version": String(
+                                    "1.6.0",
+                                ),
+                            },
+                        ),
+                        "brotli": String(
+                            "6",
+                        ),
+                        "bytes": String(
+                            "1.4",
+                        ),
+                        "camino": String(
+                            "1.1",
+                        ),
+                        "cargo-manifest": String(
+                            "0.15.0",
+                        ),
+                        "cargo_metadata": Dict(
+                            {
+                                "features": Array(
+                                    [
+                                        String(
+                                            "builder",
+                                        ),
+                                    ],
+                                ),
+                                "version": String(
+                                    "0.18",
+                                ),
+                            },
+                        ),
+                        "clap": Dict(
+                            {
+                                "features": Array(
+                                    [
+                                        String(
+                                            "derive",
+                                        ),
+                                    ],
+                                ),
+                                "version": String(
+                                    "4.0",
+                                ),
+                            },
+                        ),
+                        "derive_more": String(
+                            "0.99",
+                        ),
+                        "dirs": String(
+                            "5.0",
+                        ),
+                        "dotenvy": String(
+                            "0.15",
+                        ),
+                        "dunce": String(
+                            "1.0",
+                        ),
+                        "figment": Dict(
+                            {
+                                "features": Array(
+                                    [
+                                        String(
+                                            "env",
+                                        ),
+                                        String(
+                                            "toml",
+                                        ),
+                                    ],
+                                ),
+                                "version": String(
+                                    "0.10.19",
+                                ),
+                            },
+                        ),
+                        "flate2": String(
+                            "1.0",
+                        ),
+                        "flexi_logger": String(
+                            "0.28",
+                        ),
+                        "itertools": String(
+                            "0.13",
+                        ),
+                        "lazy_static": String(
+                            "1.4",
+                        ),
+                        "leptos_hot_reload": String(
+                            "0.6",
+                        ),
+                        "libflate": String(
+                            "2",
+                        ),
+                        "lightningcss": Dict(
+                            {
+                                "features": Array(
+                                    [
+                                        String(
+                                            "browserslist",
+                                        ),
+                                    ],
+                                ),
+                                "version": String(
+                                    "1.0.0-alpha.57",
+                                ),
+                            },
+                        ),
+                        "log": String(
+                            "0.4",
+                        ),
+                        "md-5": String(
+                            "0.10.6",
+                        ),
+                        "notify": String(
+                            "4.0",
+                        ),
+                        "pathdiff": Dict(
+                            {
+                                "features": Array(
+                                    [
+                                        String(
+                                            "camino",
+                                        ),
+                                    ],
+                                ),
+                                "version": String(
+                                    "0.2.1",
+                                ),
+                            },
+                        ),
+                        "reqwest": Dict(
+                            {
+                                "default-features": Bool(
+                                    false,
+                                ),
+                                "features": Array(
+                                    [
+                                        String(
+                                            "blocking",
+                                        ),
+                                        String(
+                                            "rustls-tls",
+                                        ),
+                                        String(
+                                            "json",
+                                        ),
+                                    ],
+                                ),
+                                "version": String(
+                                    "0.12",
+                                ),
+                            },
+                        ),
+                        "seahash": String(
+                            "4.1",
+                        ),
+                        "semver": String(
+                            "1.0.19",
+                        ),
+                        "serde": Dict(
+                            {
+                                "features": Array(
+                                    [
+                                        String(
+                                            "derive",
+                                        ),
+                                    ],
+                                ),
+                                "version": String(
+                                    "1.0",
+                                ),
+                            },
+                        ),
+                        "serde_json": String(
+                            "1.0",
+                        ),
+                        "shlex": String(
+                            "1.3.0",
+                        ),
+                        "swc": String(
+                            "0.275.1",
+                        ),
+                        "swc_common": String(
+                            "0.33.26",
+                        ),
+                        "tar": String(
+                            "0.4",
+                        ),
+                        "tokio": Dict(
+                            {
+                                "default-features": Bool(
+                                    false,
+                                ),
+                                "features": Array(
+                                    [
+                                        String(
+                                            "full",
+                                        ),
+                                    ],
+                                ),
+                                "version": String(
+                                    "1.4",
+                                ),
+                            },
+                        ),
+                        "wasm-bindgen-cli-support": String(
+                            "=0.2.92",
+                        ),
+                        "which": String(
+                            "6",
+                        ),
+                        "zip": Dict(
+                            {
+                                "default-features": Bool(
+                                    false,
+                                ),
+                                "features": Array(
+                                    [
+                                        String(
+                                            "deflate",
+                                        ),
+                                    ],
+                                ),
+                                "version": String(
+                                    "0.6",
+                                ),
+                            },
+                        ),
+                    },
+                ),
+                "dev-dependencies": Dict(
+                    {
+                        "insta": Dict(
+                            {
+                                "features": Array(
+                                    [
+                                        String(
+                                            "yaml",
+                                        ),
+                                    ],
+                                ),
+                                "version": String(
+                                    "1.31.0",
+                                ),
+                            },
+                        ),
+                        "temp-dir": String(
+                            "0.1",
+                        ),
+                    },
+                ),
+                "features": Dict(
+                    {
+                        "full_tests": Array(
+                            [],
+                        ),
+                        "no_downloads": Array(
+                            [],
+                        ),
+                    },
+                ),
+                "leptos": Dict(
+                    {
+                        "release": Bool(
+                            true,
+                        ),
+                    },
+                ),
+                "package": Dict(
+                    {
+                        "authors": Array(
+                            [
+                                String(
+                                    "Henrik Akesson",
+                                ),
+                                String(
+                                    "Greg Johnston",
+                                ),
+                                String(
+                                    "Ben Wishovich",
+                                ),
+                            ],
+                        ),
+                        "categories": Array(
+                            [
+                                String(
+                                    "development-tools",
+                                ),
+                                String(
+                                    "wasm",
+                                ),
+                                String(
+                                    "web-programming",
+                                ),
+                            ],
+                        ),
+                        "description": String(
+                            "Build tool for Leptos.",
+                        ),
+                        "edition": String(
+                            "2021",
+                        ),
+                        "keywords": Array(
+                            [
+                                String(
+                                    "leptos",
+                                ),
+                            ],
+                        ),
+                        "license": String(
+                            "MIT",
+                        ),
+                        "name": String(
+                            "cargo-leptos",
+                        ),
+                        "repository": String(
+                            "https://github.com/leptos-rs/cargo-leptos",
+                        ),
+                        "rust-version": String(
+                            "1.71",
+                        ),
+                        "version": String(
+                            "0.2.17",
+                        ),
+                    },
+                ),
+                "profile": Dict(
+                    {
+                        "dist": Dict(
+                            {
+                                "inherits": String(
+                                    "release",
+                                ),
+                                "lto": String(
+                                    "thin",
+                                ),
+                            },
+                        ),
+                    },
+                ),
+                "workspace": Dict(
+                    {
+                        "metadata": Dict(
+                            {
+                                "dist": Dict(
+                                    {
+                                        "cargo-dist-version": String(
+                                            "0.11.1",
+                                        ),
+                                        "ci": Array(
+                                            [
+                                                String(
+                                                    "github",
+                                                ),
+                                            ],
+                                        ),
+                                        "hosting": Array(
+                                            [
+                                                String(
+                                                    "axodotdev",
+                                                ),
+                                                String(
+                                                    "github",
+                                                ),
+                                            ],
+                                        ),
+                                        "installers": Array(
+                                            [
+                                                String(
+                                                    "shell",
+                                                ),
+                                                String(
+                                                    "powershell",
+                                                ),
+                                            ],
+                                        ),
+                                        "pr-run-mode": String(
+                                            "plan",
+                                        ),
+                                        "targets": Array(
+                                            [
+                                                String(
+                                                    "aarch64-apple-darwin",
+                                                ),
+                                                String(
+                                                    "x86_64-apple-darwin",
+                                                ),
+                                                String(
+                                                    "x86_64-unknown-linux-gnu",
+                                                ),
+                                                String(
+                                                    "x86_64-unknown-linux-musl",
+                                                ),
+                                                String(
+                                                    "x86_64-pc-windows-msvc",
+                                                ),
+                                            ],
+                                        ),
+                                        "unix-archive": String(
+                                            ".tar.gz",
+                                        ),
+                                        "windows-archive": String(
+                                            ".tar.gz",
+                                        ),
+                                    },
+                                ),
+                            },
+                        ),
+                    },
+                ),
+            },
+        },
+    ),
+}
+ TESTFigment {
+    profile: Profile(
+        Uncased {
+            string: "leptos",
+        },
+    ),
+    metadata: {
+        Tag(Default, 3): Metadata {
+            name: "TOML file",
+            source: Some(
+                File(
+                    "/celCluster/projects/cargo-leptos/./Cargo.toml",
+                ),
+            ),
+            provide_location: Some(
+                Location {
+                    file: "src/config/cli.rs",
+                    line: 99,
+                    col: 32,
+                },
+            ),
+            interpolater: ,
+        },
+    },
+    value: Ok(
+        {
+            Profile(
+                Uncased {
+                    string: "default",
+                },
+            ): {
+                "dependencies": Dict(
+                    {
+                        "ansi_term": String(
+                            "0.12",
+                        ),
+                        "anyhow": String(
+                            "1.0",
+                        ),
+                        "async-trait": String(
+                            "0.1.72",
+                        ),
+                        "axum": Dict(
+                            {
+                                "features": Array(
+                                    [
+                                        String(
+                                            "ws",
+                                        ),
+                                    ],
+                                ),
+                                "version": String(
+                                    "0.7",
+                                ),
+                            },
+                        ),
+                        "base64ct": Dict(
+                            {
+                                "features": Array(
+                                    [
+                                        String(
+                                            "alloc",
+                                        ),
+                                    ],
+                                ),
+                                "version": String(
+                                    "1.6.0",
+                                ),
+                            },
+                        ),
+                        "brotli": String(
+                            "6",
+                        ),
+                        "bytes": String(
+                            "1.4",
+                        ),
+                        "camino": String(
+                            "1.1",
+                        ),
+                        "cargo-manifest": String(
+                            "0.15.0",
+                        ),
+                        "cargo_metadata": Dict(
+                            {
+                                "features": Array(
+                                    [
+                                        String(
+                                            "builder",
+                                        ),
+                                    ],
+                                ),
+                                "version": String(
+                                    "0.18",
+                                ),
+                            },
+                        ),
+                        "clap": Dict(
+                            {
+                                "features": Array(
+                                    [
+                                        String(
+                                            "derive",
+                                        ),
+                                    ],
+                                ),
+                                "version": String(
+                                    "4.0",
+                                ),
+                            },
+                        ),
+                        "derive_more": String(
+                            "0.99",
+                        ),
+                        "dirs": String(
+                            "5.0",
+                        ),
+                        "dotenvy": String(
+                            "0.15",
+                        ),
+                        "dunce": String(
+                            "1.0",
+                        ),
+                        "figment": Dict(
+                            {
+                                "features": Array(
+                                    [
+                                        String(
+                                            "env",
+                                        ),
+                                        String(
+                                            "toml",
+                                        ),
+                                    ],
+                                ),
+                                "version": String(
+                                    "0.10.19",
+                                ),
+                            },
+                        ),
+                        "flate2": String(
+                            "1.0",
+                        ),
+                        "flexi_logger": String(
+                            "0.28",
+                        ),
+                        "itertools": String(
+                            "0.13",
+                        ),
+                        "lazy_static": String(
+                            "1.4",
+                        ),
+                        "leptos_hot_reload": String(
+                            "0.6",
+                        ),
+                        "libflate": String(
+                            "2",
+                        ),
+                        "lightningcss": Dict(
+                            {
+                                "features": Array(
+                                    [
+                                        String(
+                                            "browserslist",
+                                        ),
+                                    ],
+                                ),
+                                "version": String(
+                                    "1.0.0-alpha.57",
+                                ),
+                            },
+                        ),
+                        "log": String(
+                            "0.4",
+                        ),
+                        "md-5": String(
+                            "0.10.6",
+                        ),
+                        "notify": String(
+                            "4.0",
+                        ),
+                        "pathdiff": Dict(
+                            {
+                                "features": Array(
+                                    [
+                                        String(
+                                            "camino",
+                                        ),
+                                    ],
+                                ),
+                                "version": String(
+                                    "0.2.1",
+                                ),
+                            },
+                        ),
+                        "reqwest": Dict(
+                            {
+                                "default-features": Bool(
+                                    false,
+                                ),
+                                "features": Array(
+                                    [
+                                        String(
+                                            "blocking",
+                                        ),
+                                        String(
+                                            "rustls-tls",
+                                        ),
+                                        String(
+                                            "json",
+                                        ),
+                                    ],
+                                ),
+                                "version": String(
+                                    "0.12",
+                                ),
+                            },
+                        ),
+                        "seahash": String(
+                            "4.1",
+                        ),
+                        "semver": String(
+                            "1.0.19",
+                        ),
+                        "serde": Dict(
+                            {
+                                "features": Array(
+                                    [
+                                        String(
+                                            "derive",
+                                        ),
+                                    ],
+                                ),
+                                "version": String(
+                                    "1.0",
+                                ),
+                            },
+                        ),
+                        "serde_json": String(
+                            "1.0",
+                        ),
+                        "shlex": String(
+                            "1.3.0",
+                        ),
+                        "swc": String(
+                            "0.275.1",
+                        ),
+                        "swc_common": String(
+                            "0.33.26",
+                        ),
+                        "tar": String(
+                            "0.4",
+                        ),
+                        "tokio": Dict(
+                            {
+                                "default-features": Bool(
+                                    false,
+                                ),
+                                "features": Array(
+                                    [
+                                        String(
+                                            "full",
+                                        ),
+                                    ],
+                                ),
+                                "version": String(
+                                    "1.4",
+                                ),
+                            },
+                        ),
+                        "wasm-bindgen-cli-support": String(
+                            "=0.2.92",
+                        ),
+                        "which": String(
+                            "6",
+                        ),
+                        "zip": Dict(
+                            {
+                                "default-features": Bool(
+                                    false,
+                                ),
+                                "features": Array(
+                                    [
+                                        String(
+                                            "deflate",
+                                        ),
+                                    ],
+                                ),
+                                "version": String(
+                                    "0.6",
+                                ),
+                            },
+                        ),
+                    },
+                ),
+                "dev-dependencies": Dict(
+                    {
+                        "insta": Dict(
+                            {
+                                "features": Array(
+                                    [
+                                        String(
+                                            "yaml",
+                                        ),
+                                    ],
+                                ),
+                                "version": String(
+                                    "1.31.0",
+                                ),
+                            },
+                        ),
+                        "temp-dir": String(
+                            "0.1",
+                        ),
+                    },
+                ),
+                "features": Dict(
+                    {
+                        "full_tests": Array(
+                            [],
+                        ),
+                        "no_downloads": Array(
+                            [],
+                        ),
+                    },
+                ),
+                "leptos": Dict(
+                    {
+                        "release": Bool(
+                            true,
+                        ),
+                    },
+                ),
+                "package": Dict(
+                    {
+                        "authors": Array(
+                            [
+                                String(
+                                    "Henrik Akesson",
+                                ),
+                                String(
+                                    "Greg Johnston",
+                                ),
+                                String(
+                                    "Ben Wishovich",
+                                ),
+                            ],
+                        ),
+                        "categories": Array(
+                            [
+                                String(
+                                    "development-tools",
+                                ),
+                                String(
+                                    "wasm",
+                                ),
+                                String(
+                                    "web-programming",
+                                ),
+                            ],
+                        ),
+                        "description": String(
+                            "Build tool for Leptos.",
+                        ),
+                        "edition": String(
+                            "2021",
+                        ),
+                        "keywords": Array(
+                            [
+                                String(
+                                    "leptos",
+                                ),
+                            ],
+                        ),
+                        "license": String(
+                            "MIT",
+                        ),
+                        "name": String(
+                            "cargo-leptos",
+                        ),
+                        "repository": String(
+                            "https://github.com/leptos-rs/cargo-leptos",
+                        ),
+                        "rust-version": String(
+                            "1.71",
+                        ),
+                        "version": String(
+                            "0.2.17",
+                        ),
+                    },
+                ),
+                "profile": Dict(
+                    {
+                        "dist": Dict(
+                            {
+                                "inherits": String(
+                                    "release",
+                                ),
+                                "lto": String(
+                                    "thin",
+                                ),
+                            },
+                        ),
+                    },
+                ),
+                "workspace": Dict(
+                    {
+                        "metadata": Dict(
+                            {
+                                "dist": Dict(
+                                    {
+                                        "cargo-dist-version": String(
+                                            "0.11.1",
+                                        ),
+                                        "ci": Array(
+                                            [
+                                                String(
+                                                    "github",
+                                                ),
+                                            ],
+                                        ),
+                                        "hosting": Array(
+                                            [
+                                                String(
+                                                    "axodotdev",
+                                                ),
+                                                String(
+                                                    "github",
+                                                ),
+                                            ],
+                                        ),
+                                        "installers": Array(
+                                            [
+                                                String(
+                                                    "shell",
+                                                ),
+                                                String(
+                                                    "powershell",
+                                                ),
+                                            ],
+                                        ),
+                                        "pr-run-mode": String(
+                                            "plan",
+                                        ),
+                                        "targets": Array(
+                                            [
+                                                String(
+                                                    "aarch64-apple-darwin",
+                                                ),
+                                                String(
+                                                    "x86_64-apple-darwin",
+                                                ),
+                                                String(
+                                                    "x86_64-unknown-linux-gnu",
+                                                ),
+                                                String(
+                                                    "x86_64-unknown-linux-musl",
+                                                ),
+                                                String(
+                                                    "x86_64-pc-windows-msvc",
+                                                ),
+                                            ],
+                                        ),
+                                        "unix-archive": String(
+                                            ".tar.gz",
+                                        ),
+                                        "windows-archive": String(
+                                            ".tar.gz",
+                                        ),
+                                    },
+                                ),
+                            },
+                        ),
+                    },
+                ),
+            },
+        },
+    ),
+}
+ FOUND Figment {
+    profile: Profile(
+        Uncased {
+            string: "default",
+        },
+    ),
+    metadata: {
+        Tag(Default, 4): Metadata {
+            name: "TOML file",
+            source: Some(
+                File(
+                    "/celCluster/projects/cargo-leptos/./Cargo.toml",
+                ),
+            ),
+            provide_location: Some(
+                Location {
+                    file: "src/config/cli.rs",
+                    line: 99,
+                    col: 32,
+                },
+            ),
+            interpolater: ,
+        },
+    },
+    value: Ok(
+        {
+            Profile(
+                Uncased {
+                    string: "default",
+                },
+            ): {
+                "dependencies": Dict(
+                    {
+                        "ansi_term": String(
+                            "0.12",
+                        ),
+                        "anyhow": String(
+                            "1.0",
+                        ),
+                        "async-trait": String(
+                            "0.1.72",
+                        ),
+                        "axum": Dict(
+                            {
+                                "features": Array(
+                                    [
+                                        String(
+                                            "ws",
+                                        ),
+                                    ],
+                                ),
+                                "version": String(
+                                    "0.7",
+                                ),
+                            },
+                        ),
+                        "base64ct": Dict(
+                            {
+                                "features": Array(
+                                    [
+                                        String(
+                                            "alloc",
+                                        ),
+                                    ],
+                                ),
+                                "version": String(
+                                    "1.6.0",
+                                ),
+                            },
+                        ),
+                        "brotli": String(
+                            "6",
+                        ),
+                        "bytes": String(
+                            "1.4",
+                        ),
+                        "camino": String(
+                            "1.1",
+                        ),
+                        "cargo-manifest": String(
+                            "0.15.0",
+                        ),
+                        "cargo_metadata": Dict(
+                            {
+                                "features": Array(
+                                    [
+                                        String(
+                                            "builder",
+                                        ),
+                                    ],
+                                ),
+                                "version": String(
+                                    "0.18",
+                                ),
+                            },
+                        ),
+                        "clap": Dict(
+                            {
+                                "features": Array(
+                                    [
+                                        String(
+                                            "derive",
+                                        ),
+                                    ],
+                                ),
+                                "version": String(
+                                    "4.0",
+                                ),
+                            },
+                        ),
+                        "derive_more": String(
+                            "0.99",
+                        ),
+                        "dirs": String(
+                            "5.0",
+                        ),
+                        "dotenvy": String(
+                            "0.15",
+                        ),
+                        "dunce": String(
+                            "1.0",
+                        ),
+                        "figment": Dict(
+                            {
+                                "features": Array(
+                                    [
+                                        String(
+                                            "env",
+                                        ),
+                                        String(
+                                            "toml",
+                                        ),
+                                    ],
+                                ),
+                                "version": String(
+                                    "0.10.19",
+                                ),
+                            },
+                        ),
+                        "flate2": String(
+                            "1.0",
+                        ),
+                        "flexi_logger": String(
+                            "0.28",
+                        ),
+                        "itertools": String(
+                            "0.13",
+                        ),
+                        "lazy_static": String(
+                            "1.4",
+                        ),
+                        "leptos_hot_reload": String(
+                            "0.6",
+                        ),
+                        "libflate": String(
+                            "2",
+                        ),
+                        "lightningcss": Dict(
+                            {
+                                "features": Array(
+                                    [
+                                        String(
+                                            "browserslist",
+                                        ),
+                                    ],
+                                ),
+                                "version": String(
+                                    "1.0.0-alpha.57",
+                                ),
+                            },
+                        ),
+                        "log": String(
+                            "0.4",
+                        ),
+                        "md-5": String(
+                            "0.10.6",
+                        ),
+                        "notify": String(
+                            "4.0",
+                        ),
+                        "pathdiff": Dict(
+                            {
+                                "features": Array(
+                                    [
+                                        String(
+                                            "camino",
+                                        ),
+                                    ],
+                                ),
+                                "version": String(
+                                    "0.2.1",
+                                ),
+                            },
+                        ),
+                        "reqwest": Dict(
+                            {
+                                "default-features": Bool(
+                                    false,
+                                ),
+                                "features": Array(
+                                    [
+                                        String(
+                                            "blocking",
+                                        ),
+                                        String(
+                                            "rustls-tls",
+                                        ),
+                                        String(
+                                            "json",
+                                        ),
+                                    ],
+                                ),
+                                "version": String(
+                                    "0.12",
+                                ),
+                            },
+                        ),
+                        "seahash": String(
+                            "4.1",
+                        ),
+                        "semver": String(
+                            "1.0.19",
+                        ),
+                        "serde": Dict(
+                            {
+                                "features": Array(
+                                    [
+                                        String(
+                                            "derive",
+                                        ),
+                                    ],
+                                ),
+                                "version": String(
+                                    "1.0",
+                                ),
+                            },
+                        ),
+                        "serde_json": String(
+                            "1.0",
+                        ),
+                        "shlex": String(
+                            "1.3.0",
+                        ),
+                        "swc": String(
+                            "0.275.1",
+                        ),
+                        "swc_common": String(
+                            "0.33.26",
+                        ),
+                        "tar": String(
+                            "0.4",
+                        ),
+                        "tokio": Dict(
+                            {
+                                "default-features": Bool(
+                                    false,
+                                ),
+                                "features": Array(
+                                    [
+                                        String(
+                                            "full",
+                                        ),
+                                    ],
+                                ),
+                                "version": String(
+                                    "1.4",
+                                ),
+                            },
+                        ),
+                        "wasm-bindgen-cli-support": String(
+                            "=0.2.92",
+                        ),
+                        "which": String(
+                            "6",
+                        ),
+                        "zip": Dict(
+                            {
+                                "default-features": Bool(
+                                    false,
+                                ),
+                                "features": Array(
+                                    [
+                                        String(
+                                            "deflate",
+                                        ),
+                                    ],
+                                ),
+                                "version": String(
+                                    "0.6",
+                                ),
+                            },
+                        ),
+                    },
+                ),
+                "dev-dependencies": Dict(
+                    {
+                        "insta": Dict(
+                            {
+                                "features": Array(
+                                    [
+                                        String(
+                                            "yaml",
+                                        ),
+                                    ],
+                                ),
+                                "version": String(
+                                    "1.31.0",
+                                ),
+                            },
+                        ),
+                        "temp-dir": String(
+                            "0.1",
+                        ),
+                    },
+                ),
+                "features": Dict(
+                    {
+                        "full_tests": Array(
+                            [],
+                        ),
+                        "no_downloads": Array(
+                            [],
+                        ),
+                    },
+                ),
+                "leptos": Dict(
+                    {
+                        "release": Bool(
+                            true,
+                        ),
+                    },
+                ),
+                "package": Dict(
+                    {
+                        "authors": Array(
+                            [
+                                String(
+                                    "Henrik Akesson",
+                                ),
+                                String(
+                                    "Greg Johnston",
+                                ),
+                                String(
+                                    "Ben Wishovich",
+                                ),
+                            ],
+                        ),
+                        "categories": Array(
+                            [
+                                String(
+                                    "development-tools",
+                                ),
+                                String(
+                                    "wasm",
+                                ),
+                                String(
+                                    "web-programming",
+                                ),
+                            ],
+                        ),
+                        "description": String(
+                            "Build tool for Leptos.",
+                        ),
+                        "edition": String(
+                            "2021",
+                        ),
+                        "keywords": Array(
+                            [
+                                String(
+                                    "leptos",
+                                ),
+                            ],
+                        ),
+                        "license": String(
+                            "MIT",
+                        ),
+                        "name": String(
+                            "cargo-leptos",
+                        ),
+                        "repository": String(
+                            "https://github.com/leptos-rs/cargo-leptos",
+                        ),
+                        "rust-version": String(
+                            "1.71",
+                        ),
+                        "version": String(
+                            "0.2.17",
+                        ),
+                    },
+                ),
+                "profile": Dict(
+                    {
+                        "dist": Dict(
+                            {
+                                "inherits": String(
+                                    "release",
+                                ),
+                                "lto": String(
+                                    "thin",
+                                ),
+                            },
+                        ),
+                    },
+                ),
+                "workspace": Dict(
+                    {
+                        "metadata": Dict(
+                            {
+                                "dist": Dict(
+                                    {
+                                        "cargo-dist-version": String(
+                                            "0.11.1",
+                                        ),
+                                        "ci": Array(
+                                            [
+                                                String(
+                                                    "github",
+                                                ),
+                                            ],
+                                        ),
+                                        "hosting": Array(
+                                            [
+                                                String(
+                                                    "axodotdev",
+                                                ),
+                                                String(
+                                                    "github",
+                                                ),
+                                            ],
+                                        ),
+                                        "installers": Array(
+                                            [
+                                                String(
+                                                    "shell",
+                                                ),
+                                                String(
+                                                    "powershell",
+                                                ),
+                                            ],
+                                        ),
+                                        "pr-run-mode": String(
+                                            "plan",
+                                        ),
+                                        "targets": Array(
+                                            [
+                                                String(
+                                                    "aarch64-apple-darwin",
+                                                ),
+                                                String(
+                                                    "x86_64-apple-darwin",
+                                                ),
+                                                String(
+                                                    "x86_64-unknown-linux-gnu",
+                                                ),
+                                                String(
+                                                    "x86_64-unknown-linux-musl",
+                                                ),
+                                                String(
+                                                    "x86_64-pc-windows-msvc",
+                                                ),
+                                            ],
+                                        ),
+                                        "unix-archive": String(
+                                            ".tar.gz",
+                                        ),
+                                        "windows-archive": String(
+                                            ".tar.gz",
+                                        ),
+                                    },
+                                ),
+                            },
+                        ),
+                    },
+                ),
+            },
+        },
+    ),
+}
+CLI: Cli {
+    manifest_path: "./Cargo.toml",
+    log: [],
+    opts: Opts {
+        release: false,
+        precompress: false,
+        hot_reload: false,
+        project: None,
+        features: [],
+        wasm_debug: false,
+        verbose: 0,
+        js_minify: true,
+        bin_opts: BinOpts {
+            bin_features: [],
+            bin_cargo_args: None,
+        },
+        lib_opts: LibOpts {
+            lib_features: [],
+            lib_cargo_args: None,
+        },
+    },
+    command: Build,
+}

@@ -16,10 +16,11 @@ fn release_opts() -> Opts {
         project: None,
         verbose: 0,
         features: Vec::new(),
-        bin_features: Vec::new(),
-        lib_features: Vec::new(),
-        bin_cargo_args: None,
-        lib_cargo_args: None,
+        bin_opts: BinOpts {  bin_features: Vec::new(),bin_cargo_args: None },
+       lib_opts: LibOpts {    lib_features: Vec::new(),  lib_cargo_args: None },
+     
+        
+       
         wasm_debug: false,
     }
 }

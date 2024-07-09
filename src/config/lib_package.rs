@@ -47,8 +47,8 @@ impl LibPackage {
             .find(|p| p.name == *name)
             .ok_or_else(|| anyhow!(r#"Could not find the project lib-package "{name}""#,))?;
 
-        let mut features = if !cli.lib_features.is_empty() {
-            cli.lib_features.clone()
+        let mut features = if !cli.lib_opts.lib_features.is_empty() {
+            cli.lib_opts.lib_features.clone()
         } else if !config.lib_features.is_empty() {
             config.lib_features.clone()
         } else {
@@ -97,7 +97,7 @@ impl LibPackage {
 
         let front_target_path = metadata.target_directory.join("front");
         let cargo_args = cli
-            .lib_cargo_args
+            .lib_opts.lib_cargo_args
             .clone()
             .or_else(|| config.lib_cargo_args.clone());
 

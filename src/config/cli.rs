@@ -1,8 +1,11 @@
+use std::ffi::OsStr;
+
 use crate::command::NewCommand;
 use camino::Utf8PathBuf;
 use clap::{Parser, Subcommand, ValueEnum};
-
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+use figment::{providers::{Format, Toml}, Figment};
+use serde::{Deserialize, Serialize};
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Serialize, Deserialize)]
 pub enum Log {
     /// WASM build (wasm, wasm-opt, walrus)
     Wasm,
@@ -10,7 +13,7 @@ pub enum Log {
     Server,
 }
 
-#[derive(Debug, Clone, Parser, PartialEq, Default)]
+#[derive(Debug, Clone, Parser, Serialize, Deserialize, PartialEq, Default)]
 pub struct Opts {
     /// Build artifacts in release mode, with optimizations.
     #[arg(short, long)]
@@ -32,22 +35,6 @@ pub struct Opts {
     #[arg(long)]
     pub features: Vec<String>,
 
-    /// The features to use when compiling the lib target
-    #[arg(long)]
-    pub lib_features: Vec<String>,
-
-    /// The cargo flags to pass to cargo when compiling the lib target
-    #[arg(long)]
-    pub lib_cargo_args: Option<Vec<String>>,
-
-    /// The features to use when compiling the bin target
-    #[arg(long)]
-    pub bin_features: Vec<String>,
-
-    /// The cargo flags to pass to cargo when compiling the bin target
-    #[arg(long)]
-    pub bin_cargo_args: Option<Vec<String>>,
-
     /// Include debug information in Wasm output. Includes source maps and DWARF debug info.
     #[arg(long)]
     pub wasm_debug: bool,
@@ -59,63 +46,77 @@ pub struct Opts {
     /// Minify javascript assets with swc. Applies to release builds only.
     #[arg(long, default_value = "true", value_parser=clap::builder::BoolishValueParser::new(), action = clap::ArgAction::Set)]
     pub js_minify: bool,
-}
 
-#[derive(Debug, Clone, Parser, PartialEq, Default)]
-pub struct BinOpts {
     #[command(flatten)]
-    opts: Opts,
+    #[serde(flatten)]
+    pub bin_opts: BinOpts,
 
-    #[arg(trailing_var_arg = true)]
-    bin_args: Vec<String>,
+    #[command(flatten)]
+    #[serde(flatten)]
+    pub lib_opts: LibOpts,
 }
 
-#[derive(Debug, Parser)]
+#[derive(Debug, Clone, Parser, PartialEq, Default, Deserialize, Serialize)]
+pub struct BinOpts {
+    /// The features to use when compiling the bin target
+    #[arg(long)]
+    pub bin_features: Vec<String>,
+
+    /// The cargo flags to pass to cargo when compiling the bin target
+    #[arg(long)]
+    pub bin_cargo_args: Option<Vec<String>>,
+}
+#[derive(Debug, Clone, Parser, PartialEq, Default, Deserialize, Serialize)]
+
+pub struct LibOpts {
+    /// The features to use when compiling the lib target
+    #[arg(long)]
+    pub lib_features: Vec<String>,
+
+    /// The cargo flags to pass to cargo when compiling the lib target
+    #[arg(long)]
+    pub lib_cargo_args: Option<Vec<String>>,
+}
+
+#[derive(Debug, Parser, Clone, Serialize, Deserialize)]
 #[clap(version)]
 pub struct Cli {
     /// Path to Cargo.toml.
-    #[arg(long)]
-    pub manifest_path: Option<Utf8PathBuf>,
+    #[arg(long, default_value= OsStr::new("./Cargo.toml"))]
+    pub manifest_path: Utf8PathBuf,
 
     /// Output logs from dependencies (multiple --log accepted).
     #[arg(long)]
     pub log: Vec<Log>,
 
+    /// An internal storage variable that determines whether we're in a workspace or not
+
+    #[command(flatten)]
+    #[serde(flatten)]
+    pub opts: Opts,
+
     #[command(subcommand)]
     pub command: Commands,
 }
 
-impl Cli {
-    pub fn opts(&self) -> Option<Opts> {
-        use Commands::{Build, EndToEnd, New, Serve, Test, Watch};
-        match &self.command {
-            New(_) => None,
-            Serve(bin_opts) | Watch(bin_opts) => Some(bin_opts.opts.clone()),
-            Build(opts) | Test(opts) | EndToEnd(opts) => Some(opts.clone()),
-        }
-    }
-
-    pub fn bin_args(&self) -> Option<&[String]> {
-        use Commands::{Serve, Watch};
-        match &self.command {
-            Serve(bin_opts) | Watch(bin_opts) => Some(bin_opts.bin_args.as_ref()),
-            _ => None,
-        }
+impl Cli{
+    pub fn figment_file(manifest_path: &Utf8PathBuf) -> Figment{
+      Figment::new().merge(Toml::file(manifest_path).nested())
     }
 }
 
-#[derive(Debug, Subcommand, PartialEq)]
+#[derive(Debug, Clone, Deserialize, Serialize, Subcommand, PartialEq)]
 pub enum Commands {
     /// Build the server (feature ssr) and the client (wasm with feature hydrate).
-    Build(Opts),
+    Build,
     /// Run the cargo tests for app, client and server.
-    Test(Opts),
+    Test,
     /// Start the server and end-2-end tests.
-    EndToEnd(Opts),
+    EndToEnd,
     /// Serve. Defaults to hydrate mode.
-    Serve(BinOpts),
+    Serve,
     /// Serve and automatically reload when files change.
-    Watch(BinOpts),
+    Watch,
     /// Start a wizard for creating a new project (using cargo-generate).
     New(NewCommand),
 }

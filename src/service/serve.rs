@@ -142,6 +142,7 @@ impl ServerProcess {
             };
 
             log::debug!("Serve running {}", GRAY.paint(bin_path.as_str()));
+            log::debug!("Env vars {:?}", self.envs);
             let cmd = Some(
                 Command::new(bin_path)
                     .envs(self.envs.clone())

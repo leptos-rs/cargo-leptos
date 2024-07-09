@@ -101,9 +101,12 @@ impl MetadataExt for Metadata {
         self.path_dependencies(id)
             .iter()
             .map(|p| {
-                p.unbase(root)
-                    .unwrap_or_else(|_| p.to_path_buf())
-                    .join("src")
+                let path = p.unbase(root).unwrap_or_else(|_| p.to_path_buf());
+                if path == "." {
+                    Utf8PathBuf::from("src")
+                } else {
+                    path.join("src")
+                }
             })
             .collect()
     }

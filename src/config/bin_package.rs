@@ -35,8 +35,8 @@ impl BinPackage {
         config: &ProjectConfig,
         bin_args: Option<&[String]>,
     ) -> Result<Self> {
-        let mut features = if !cli.bin_features.is_empty() {
-            cli.bin_features.clone()
+        let mut features = if !cli.bin_opts.bin_features.is_empty() {
+            cli.bin_opts.bin_features.clone()
         } else if !config.bin_features.is_empty() {
             config.bin_features.clone()
         } else {
@@ -133,7 +133,7 @@ impl BinPackage {
             target_triple: config.bin_target_triple.clone(),
             target_dir: config.bin_target_dir.clone(),
             cargo_command: config.bin_cargo_command.clone(),
-            cargo_args: cli.bin_cargo_args.clone(),
+            cargo_args: cli.bin_opts.bin_cargo_args.clone(),
             bin_args: bin_args.map(ToOwned::to_owned),
         })
     }
