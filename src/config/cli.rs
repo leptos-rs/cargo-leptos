@@ -3,7 +3,10 @@ use std::ffi::OsStr;
 use crate::command::NewCommand;
 use camino::Utf8PathBuf;
 use clap::{Parser, Subcommand, ValueEnum};
-use figment::{providers::{Format, Toml}, Figment};
+use figment::{
+    providers::{Format, Toml},
+    Figment,
+};
 use serde::{Deserialize, Serialize};
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Serialize, Deserialize)]
 pub enum Log {
@@ -27,9 +30,17 @@ pub struct Opts {
     #[arg(long)]
     pub hot_reload: bool,
 
-    /// Which project to use, from a list of projects defined in a workspace
-    #[arg(short, long)]
-    pub project: Option<String>,
+    /// Build only the binary/server target
+    #[arg(short, long, default_value = "false")]
+    pub bin_only: bool,
+
+    /// Build only the library/front target
+    #[arg(short, long, default_value = "false")]
+    pub lib_only: bool,
+
+    /// An internal use variable denoting whether this is a workspace project by looking for [workspace] in the manifest
+    #[clap(skip)]
+    pub is_workspace: bool,
 
     /// The features to use when compiling all targets
     #[arg(long)]
@@ -49,11 +60,11 @@ pub struct Opts {
 
     #[command(flatten)]
     #[serde(flatten)]
-    pub bin_opts: BinOpts,
+    pub bin_opts: Option<BinOpts>,
 
     #[command(flatten)]
     #[serde(flatten)]
-    pub lib_opts: LibOpts,
+    pub lib_opts: Option<LibOpts>,
 }
 
 #[derive(Debug, Clone, Parser, PartialEq, Default, Deserialize, Serialize)]
@@ -80,10 +91,18 @@ pub struct LibOpts {
 
 #[derive(Debug, Parser, Clone, Serialize, Deserialize)]
 #[clap(version)]
+#[serde(rename_all = "kebab-case")]
 pub struct Cli {
     /// Path to Cargo.toml.
     #[arg(long, default_value= OsStr::new("./Cargo.toml"))]
     pub manifest_path: Utf8PathBuf,
+
+    /// Name of Lib/frontend crate
+    #[arg(long, default_value=None)]
+    pub lib_crate_name: Option<String>,
+    /// Name of Bin/server crate
+    #[arg(long, default_value=None)]
+    pub bin_crate_name: Option<String>,
 
     /// Output logs from dependencies (multiple --log accepted).
     #[arg(long)]
@@ -99,9 +118,9 @@ pub struct Cli {
     pub command: Commands,
 }
 
-impl Cli{
-    pub fn figment_file(manifest_path: &Utf8PathBuf) -> Figment{
-      Figment::new().merge(Toml::file(manifest_path).nested())
+impl Cli {
+    pub fn figment_file(manifest_path: &Utf8PathBuf) -> Figment {
+        Figment::new().merge(Toml::file(manifest_path).nested())
     }
 }
 

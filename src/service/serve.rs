@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::{
-    config::Project,
+    config::{BinOpts, Project},
     ext::{anyhow::Result, append_str_to_filename, determine_pdb_filename, fs},
     logger::GRAY,
     signal::{Interrupt, ReloadSignal, ServerRestart},
@@ -59,7 +59,7 @@ struct ServerProcess {
     process: Option<Child>,
     envs: Vec<(&'static str, String)>,
     binary: Utf8PathBuf,
-    bin_args: Option<Vec<String>>,
+    bin_args: Option<BinOpts>,
 }
 
 impl ServerProcess {
@@ -137,12 +137,13 @@ impl ServerProcess {
             };
 
             let bin_args = match &self.bin_args {
-                Some(bin_args) => bin_args.as_slice(),
-                None => &[],
+                Some(bin_args) => bin_args,
+                None => &BinOpts::default(),
             };
 
             log::debug!("Serve running {}", GRAY.paint(bin_path.as_str()));
             log::debug!("Env vars {:?}", self.envs);
+            //TODO: Replace
             let cmd = Some(
                 Command::new(bin_path)
                     .envs(self.envs.clone())

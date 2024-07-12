@@ -1,9 +1,6 @@
-use crate::ext::anyhow::{Context, Result};
 use clap::Args;
-use tokio::process::Command;
-use crate::ext::exe::Exe;
-use serde::{Serialize, Deserialize};
-
+use color_eyre::Result;
+use serde::{Deserialize, Serialize};
 // A subset of the cargo-generate commands available.
 // See: https://github.com/cargo-generate/cargo-generate/blob/main/src/args.rs
 
@@ -51,15 +48,15 @@ pub struct NewCommand {
 
 impl NewCommand {
     pub async fn run(&self) -> Result<()> {
-        let args = self.to_args();
-        let exe = Exe::CargoGenerate.get().await.dot()?;
+        let _args = self.to_args();
+        // let exe = Exe::CargoGenerate.get().await.dot()?;
 
-        let mut process = Command::new(exe)
-            .arg("generate")
-            .args(&args)
-            .spawn()
-            .context("Could not spawn cargo-generate command (verify that it is installed)")?;
-        process.wait().await.dot()?;
+        // let mut process = Command::new(exe)
+        //     .arg("generate")
+        //     .args(&args)
+        //     .spawn()
+        //     .context("Could not spawn cargo-generate command (verify that it is installed)")?;
+        // process.wait().await.dot()?;
         Ok(())
     }
 
