@@ -60,11 +60,11 @@ pub struct Opts {
 
     #[command(flatten)]
     #[serde(flatten)]
-    pub bin_opts: Option<BinOpts>,
+    pub bin_opts: BinOpts,
 
     #[command(flatten)]
     #[serde(flatten)]
-    pub lib_opts: Option<LibOpts>,
+    pub lib_opts: LibOpts,
 }
 
 #[derive(Debug, Clone, Parser, PartialEq, Default, Deserialize, Serialize)]
@@ -76,6 +76,11 @@ pub struct BinOpts {
     /// The cargo flags to pass to cargo when compiling the bin target
     #[arg(long)]
     pub bin_cargo_args: Option<Vec<String>>,
+
+    /// The command to use to run the build step. Defaults to `cargo` but could be something like
+    /// `cargo cross` or `cargo px` for example
+    #[arg(long, default_value = "cargo")]
+    pub bin_cargo_command: Option<Vec<String>>,
 }
 #[derive(Debug, Clone, Parser, PartialEq, Default, Deserialize, Serialize)]
 
@@ -87,6 +92,11 @@ pub struct LibOpts {
     /// The cargo flags to pass to cargo when compiling the lib target
     #[arg(long)]
     pub lib_cargo_args: Option<Vec<String>>,
+
+    /// The command to use to run the build step. Defaults to `cargo` but could be something like
+    /// `cargo cross` or `cargo px` for example
+    #[arg(long, default_value = "cargo")]
+    pub lib_cargo_command: Option<Vec<String>>,
 }
 
 #[derive(Debug, Parser, Clone, Serialize, Deserialize)]

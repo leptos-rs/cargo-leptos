@@ -19,8 +19,6 @@ async fn main() -> Result<()> {
         .merge(Serialized::defaults(Cli::parse()))
         .merge(Env::prefixed("LEPTOS_"));
 
-    println!("CLI: {initial_figment:#?}");
-
     let manifest_path: Utf8PathBuf = initial_figment
         .extract_inner("manifest-path")
         .expect("manifest_path must be set. This should have defaulted to Cargo.toml");
@@ -68,6 +66,5 @@ async fn main() -> Result<()> {
         };
         cli.lib_crate_name = Some(name)
     }
-    println!("CLI: {cli:#?}");
     run(cli).await
 }
