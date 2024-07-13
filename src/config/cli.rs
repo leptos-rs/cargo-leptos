@@ -69,34 +69,34 @@ pub struct Opts {
 
 #[derive(Debug, Clone, Parser, PartialEq, Default, Deserialize, Serialize)]
 pub struct BinOpts {
-    /// The features to use when compiling the bin target
-    #[arg(long)]
+    /// The features to use when compiling the bin target, in a comma seperated list
+    #[arg(long,value_parser, num_args=1.., value_delimiter=',')]
     pub bin_features: Vec<String>,
 
-    /// The cargo flags to pass to cargo when compiling the bin target
-    #[arg(long)]
+    /// The cargo flags to pass to cargo when compiling the bin target, in a comma seperated list
+    #[arg(long, value_parser, num_args=1.., value_delimiter=',')]
     pub bin_cargo_args: Option<Vec<String>>,
 
     /// The command to use to run the build step. Defaults to `cargo` but could be something like
     /// `cargo cross` or `cargo px` for example
     #[arg(long, default_value = "cargo")]
-    pub bin_cargo_command: Option<Vec<String>>,
+    pub bin_cargo_command: Option<String>,
 }
 #[derive(Debug, Clone, Parser, PartialEq, Default, Deserialize, Serialize)]
 
 pub struct LibOpts {
-    /// The features to use when compiling the lib target
-    #[arg(long)]
+    /// The features to use when compiling the lib target, in a comma seperated list
+    #[arg(long,value_parser, num_args=1.., value_delimiter=',')]
     pub lib_features: Vec<String>,
 
-    /// The cargo flags to pass to cargo when compiling the lib target
-    #[arg(long)]
+    /// The cargo flags to pass to cargo when compiling the lib target, in a comma seperated list
+    #[arg(long,value_parser, num_args=1.., value_delimiter=',')]
     pub lib_cargo_args: Option<Vec<String>>,
 
     /// The command to use to run the build step. Defaults to `cargo` but could be something like
     /// `cargo cross` or `cargo px` for example
     #[arg(long, default_value = "cargo")]
-    pub lib_cargo_command: Option<Vec<String>>,
+    pub lib_cargo_command: Option<String>,
 }
 
 #[derive(Debug, Parser, Clone, Serialize, Deserialize)]

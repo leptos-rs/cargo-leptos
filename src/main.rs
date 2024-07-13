@@ -66,5 +66,7 @@ async fn main() -> Result<()> {
         };
         cli.lib_crate_name = Some(name)
     }
+
+    println!("CLI: {cli:#?}");
     run(cli).await
 }
