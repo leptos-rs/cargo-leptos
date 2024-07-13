@@ -1,13 +1,14 @@
-use std::ffi::OsStr;
-
 use crate::command::NewCommand;
 use camino::Utf8PathBuf;
 use clap::{Parser, Subcommand, ValueEnum};
+use color_eyre::Result;
 use figment::{
     providers::{Format, Toml},
     Figment,
 };
 use serde::{Deserialize, Serialize};
+use std::{ffi::OsStr, process::Command};
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Serialize, Deserialize)]
 pub enum Log {
     /// WASM build (wasm, wasm-opt, walrus)
@@ -81,6 +82,14 @@ pub struct BinOpts {
     /// `cargo cross` or `cargo px` for example
     #[arg(long, default_value = "cargo")]
     pub bin_cargo_command: Option<String>,
+
+    /// The path to the root for the bin crate. Defaults to current root for single crate
+    #[arg(long, default_value= OsStr::new("./"))]
+    pub bin_root_path: Utf8PathBuf,
+
+    /// The target triple to use for bin compilation
+    #[arg(long)]
+    pub bin_target_triple: Option<String>,
 }
 #[derive(Debug, Clone, Parser, PartialEq, Default, Deserialize, Serialize)]
 
@@ -97,6 +106,14 @@ pub struct LibOpts {
     /// `cargo cross` or `cargo px` for example
     #[arg(long, default_value = "cargo")]
     pub lib_cargo_command: Option<String>,
+
+    /// The path to the root for the lib crate. Defaults to current root for single crate
+    #[arg(long, default_value= OsStr::new("./"))]
+    pub lib_root_path: Utf8PathBuf,
+
+    /// The target triple to use for lib compilation
+    #[arg(long, default_value = "wasm32-unknown-unknown")]
+    pub lib_target_triple: String,
 }
 
 #[derive(Debug, Parser, Clone, Serialize, Deserialize)]
@@ -148,4 +165,18 @@ pub enum Commands {
     Watch,
     /// Start a wizard for creating a new project (using cargo-generate).
     New(NewCommand),
+}
+
+pub fn get_target() -> Result<String> {
+    let output = Command::new("rustc").arg("-vV").output()?;
+    let output = std::str::from_utf8(&output.stdout)?;
+
+    let field = "host: ";
+    let host = output
+        .lines()
+        .find(|l| l.starts_with(field))
+        .map(|l| &l[field.len()..])
+        .expect("Failed to get target")
+        .to_string();
+    Ok(host)
 }

@@ -8,27 +8,28 @@ pub mod config;
 use crate::config::Commands;
 // use crate::logger::GRAY;
 use crate::config::Cli;
+use crate::config::get_target;
 use camino::Utf8PathBuf;
 use color_eyre::eyre::Result;
 
 pub async fn run(cli: Cli) -> Result<()> {
-    let verbose = cli.opts.verbose;
+    //let verbose = cli.opts.verbose;
     //logger::setup(verbose, &cli.log);
 
     if let New(new) = &cli.command {
         return new.run().await;
     }
 
-    let mut cwd = get_current_dir(Some(&cli.manifest_path));
+    //let mut cwd = get_current_dir(Some(&cli.manifest_path));
     //cwd.clean_windows_path();
 
-    let opts = cli.opts.clone();
-    let bin_args = opts.bin_opts.clone();
+    //let opts = cli.opts.clone();
+    //let bin_args = opts.bin_opts.clone();
 
-    let watch = matches!(cli.command, Commands::Watch);
+    //let watch = matches!(cli.command, Commands::Watch);
 
     //let _monitor = Interrupt::run_ctrl_c_monitor();
-    use Commands::{Build, EndToEnd, New, Serve, Test, Watch};
+    use Commands::{Build,New};
     match cli.command {
         New(_) => panic!(),
         Build => command::build_all(&cli).await,

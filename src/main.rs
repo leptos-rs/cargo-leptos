@@ -1,5 +1,5 @@
 use camino::Utf8PathBuf;
-use cargo_leptos::config::Cli;
+use cargo_leptos::{config::{Cli,get_target}, get_current_dir};
 use cargo_leptos::run;
 use cargo_manifest::Manifest;
 // use cargo_metadata::MetadataCommand;
@@ -66,6 +66,23 @@ async fn main() -> Result<()> {
         };
         cli.lib_crate_name = Some(name)
     }
+
+    let cwd = get_current_dir(Some(&cli.manifest_path));
+    // Set the bin-root-path and the lib-root-path to different crates if this is a workspace
+    if cli.opts.is_workspace{
+        if let Some(bin_crate_name) = &cli.bin_crate_name{
+            let path = format!{"{cwd}/{bin_crate_name}"};
+            cli.opts.bin_opts.bin_root_path = Utf8PathBuf::from(path);
+        }
+
+        if let Some(lib_crate_name) = &cli.lib_crate_name{
+            let path = format!{"{cwd}/{lib_crate_name}"};
+            cli.opts.lib_opts.lib_root_path = Utf8PathBuf::from(path);
+        }
+    }
+
+    let default_bin_target = get_target()?;
+    cli.opts.bin_opts.bin_target_triple = Some(default_bin_target);
 
     println!("CLI: {cli:#?}");
     run(cli).await
