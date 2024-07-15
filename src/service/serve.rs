@@ -60,6 +60,7 @@ struct ServerProcess {
     envs: Vec<(&'static str, String)>,
     binary: Utf8PathBuf,
     bin_args: Option<Vec<String>>,
+    graceful_exit: bool,
 }
 
 impl ServerProcess {
@@ -69,6 +70,7 @@ impl ServerProcess {
             envs: proj.to_envs(),
             binary: proj.bin.exe_file.clone(),
             bin_args: proj.bin.bin_args.clone(),
+            graceful_exit: proj.graceful_exit,
         }
     }
 
@@ -78,14 +80,44 @@ impl ServerProcess {
         Ok(me)
     }
 
+    async fn terminate(mut proc: Child) -> Result<()> {
+        let Some(pid) = proc.id() else {
+            return Ok(());
+        };
+
+        #[cfg(unix)]
+        {
+            use nix::sys::signal::{kill, Signal};
+            use nix::unistd::Pid;
+            kill(Pid::from_raw(pid as i32), Signal::SIGTERM)?;
+        }
+
+        #[cfg(windows)]
+        unsafe {
+            use windows::Win32::System::Console::GenerateConsoleCtrlEvent;
+            use windows::Win32::System::Console::CTRL_C_EVENT;
+
+            GenerateConsoleCtrlEvent(CTRL_C_EVENT, pid)?;
+        }
+
+        proc.wait().await?;
+
+        Ok(())
+    }
+
     async fn kill(&mut self) {
-        if let Some(proc) = self.process.as_mut() {
-            if let Err(e) = proc.kill().await {
-                log::error!("Serve error killing server process: {e}");
-            } else {
-                log::trace!("Serve stopped");
-            }
-            self.process = None;
+        let Some(mut proc) = self.process.take() else {
+            return;
+        };
+        let res = if self.graceful_exit {
+            Self::terminate(proc).await
+        } else {
+            proc.kill().await.map_err(Into::into)
+        };
+        if let Err(e) = res {
+            log::error!("Serve error killing server process: {e}");
+        } else {
+            log::trace!("Serve stopped");
         }
     }
 
@@ -105,6 +137,24 @@ impl ServerProcess {
             }
         }
         Ok(())
+    }
+
+    fn prepare_command<'a>(&self, command: &'a mut Command) -> &'a mut Command {
+        #[cfg(windows)]
+        {
+            use windows::Win32::System::Threading::CREATE_NEW_PROCESS_GROUP;
+
+            let flag = if self.graceful_exit {
+                CREATE_NEW_PROCESS_GROUP.0
+            } else {
+                0
+            };
+            command.creation_flags(flag)
+        }
+        #[cfg(not(windows))]
+        {
+            command
+        }
     }
 
     async fn start(&mut self) -> Result<()> {
@@ -142,12 +192,10 @@ impl ServerProcess {
             };
 
             log::debug!("Serve running {}", GRAY.paint(bin_path.as_str()));
-            let cmd = Some(
-                Command::new(bin_path)
-                    .envs(self.envs.clone())
-                    .args(bin_args)
-                    .spawn()?,
-            );
+            let mut cmd = Command::new(bin_path);
+            let cmd = self.prepare_command(cmd.envs(self.envs.clone()).args(bin_args));
+
+            let child = Some(cmd.spawn()?);
             let port = self
                 .envs
                 .iter()
@@ -160,7 +208,7 @@ impl ServerProcess {
                 })
                 .unwrap_or_default();
             log::info!("Serving at http://{port}");
-            cmd
+            child
         } else {
             log::debug!("Serve no exe found {}", GRAY.paint(bin.as_str()));
             None

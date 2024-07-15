@@ -59,6 +59,12 @@ pub struct Opts {
     /// Minify javascript assets with swc. Applies to release builds only.
     #[arg(long, default_value = "true", value_parser=clap::builder::BoolishValueParser::new(), action = clap::ArgAction::Set)]
     pub js_minify: bool,
+
+    /// Perform a graceful exit for the server.
+    /// This implies the server will handle SIGTERM on unix systems.
+    /// and CTRL-C on windows systems.
+    #[arg(long)]
+    pub graceful_exit: bool,
 }
 
 #[derive(Debug, Clone, Parser, PartialEq, Default)]
