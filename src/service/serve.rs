@@ -95,9 +95,9 @@ impl ServerProcess {
         #[cfg(windows)]
         unsafe {
             use windows::Win32::System::Console::GenerateConsoleCtrlEvent;
-            use windows::Win32::System::Console::CTRL_C_EVENT;
+            use windows::Win32::System::Console::CTRL_BREAK_EVENT;
 
-            GenerateConsoleCtrlEvent(CTRL_C_EVENT, pid)?;
+            GenerateConsoleCtrlEvent(CTRL_BREAK_EVENT, pid)?;
         }
 
         proc.wait().await?;

@@ -62,7 +62,7 @@ pub struct Opts {
 
     /// Perform a graceful exit for the server.
     /// This implies the server will handle SIGTERM on unix systems.
-    /// and CTRL-C on windows systems.
+    /// and CTRL+BREAK on windows systems.
     #[arg(long)]
     pub graceful_exit: bool,
 }
