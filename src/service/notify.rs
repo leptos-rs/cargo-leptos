@@ -7,12 +7,15 @@ use crate::{
     logger::GRAY,
 };
 use camino::Utf8PathBuf;
+use core::time::Duration;
 use itertools::Itertools;
-use notify::{DebouncedEvent, RecursiveMode, Watcher};
+use notify::event::{DataChange, RenameMode};
+use notify::{RecursiveMode, Watcher};
+use notify_debouncer_full::{new_debouncer, DebounceEventResult, DebouncedEvent};
 use std::collections::HashSet;
+use std::fmt::Display;
 use std::path::Path;
 use std::sync::Arc;
-use std::{fmt::Display, time::Duration};
 use tokio::task::JoinHandle;
 
 pub async fn spawn(proj: &Arc<Project>) -> Result<JoinHandle<()>> {
@@ -62,11 +65,27 @@ async fn run(paths: &[Utf8PathBuf], proj: Arc<Project>) {
         log::debug!("Notify stopped");
     });
 
-    let mut watcher = notify::watcher(sync_tx, Duration::from_millis(200))
-        .expect("failed to build file system watcher");
+    let mut debouncer = new_debouncer(
+        Duration::from_millis(200),
+        None,
+        move |res: DebounceEventResult| match res {
+            Ok(events) => {
+                events.iter().for_each(|event| {
+                    sync_tx
+                        .send(event.clone())
+                        .expect("failed to build file system watcher")
+                });
+            }
+            Err(e) => println!("watch error: {:?}", e),
+        },
+    )
+    .expect("failed to build file system debouncer/watcher");
 
     for path in paths {
-        if let Err(e) = watcher.watch(path, RecursiveMode::Recursive) {
+        if let Err(e) = debouncer
+            .watcher()
+            .watch(path.as_std_path(), RecursiveMode::Recursive)
+        {
             log::error!("Notify could not watch {path:?} due to {e:?}");
         }
     }
@@ -167,25 +186,85 @@ fn convert(p: &Path, proj: &Project) -> Result<Utf8PathBuf> {
 
 impl Watched {
     pub(crate) fn try_new(event: &DebouncedEvent, proj: &Project) -> Result<Option<Self>> {
-        use DebouncedEvent::{
-            Chmod, Create, Error, NoticeRemove, NoticeWrite, Remove, Rename, Rescan, Write,
-        };
+        use notify::event::ModifyKind;
+        use notify::EventKind::Access;
+        use notify::EventKind::Any;
+        use notify::EventKind::Create;
+        use notify::EventKind::Modify;
+        use notify::EventKind::Other;
+        use notify::EventKind::Remove;
+        println!("try_new() event.kind {:#?}", event.kind.clone());
+        Ok(match event.kind {
+            Modify(modify_kind) => {
+                match modify_kind {
+                    ModifyKind::Name(RenameMode::Both)
+                    | ModifyKind::Name(RenameMode::Any)
+                    | ModifyKind::Name(RenameMode::Other) => {
+                        // RenameModes are "Any", "Both", "To", "From" and "Other".
+                        //
+                        // Only "Both" is guaranteed to contain two filenames.
+                        // "Any" are "Other" are for cross-platform compatibility.
+                        //
+                        // Here we are considering the less chatty DebouncedEvent.
+                        //
+                        // See <https://docs.rs/notify-debouncer-full/latest/notify_debouncer_full/>
+                        //
+                        // "Only emits a single Rename event if the rename From and To events can be matched"
+                        // debug_assert!(event.paths.len() == 2usize, "Rename needs two filenames");
+                        Some(Self::Rename(
+                            convert(&event.paths[0], proj)?,
+                            convert(&event.paths[1], proj)?,
+                        ))
+                    }
 
-        Ok(match event {
-            Chmod(_) | NoticeRemove(_) | NoticeWrite(_) => None,
-            Create(f) => Some(Self::Create(convert(f, proj)?)),
-            Remove(f) => Some(Self::Remove(convert(f, proj)?)),
-            Rename(f, t) => Some(Self::Rename(convert(f, proj)?, convert(t, proj)?)),
-            Write(f) => Some(Self::Write(convert(f, proj)?)),
-            Rescan => Some(Self::Rescan),
-            Error(e, Some(p)) => {
-                log::error!("Notify error watching {p:?}: {e:?}");
-                None
+                    ModifyKind::Data(DataChange::Any) | ModifyKind::Data(DataChange::Other) | ModifyKind::Any | ModifyKind::Other =>{
+                      // don't assume event.path is valid with Any or Other events.
+                      // experimental supply dummy path
+                      Some(Self::Write(Utf8PathBuf::from("socks.txt")))
+                    },
+
+                    ModifyKind::Data(DataChange::Content) |  ModifyKind::Data(DataChange::Size)  => {
+                        Some(Self::Write(convert(&event.paths[0], proj)?))
+                    },
+
+                    ModifyKind::Metadata(_) => {
+                      Some(Self::Write(Utf8PathBuf::from("rabbit.txt")))
+                    }
+
+                    ModifyKind::Name(RenameMode::From) | ModifyKind::Name(RenameMode::To) => {
+                        // panic!("These events are not possible with debounced notification.");
+                        Some(Self::Write(Utf8PathBuf::from("apple.txt")))
+                    }
+                }
             }
-            Error(e, None) => {
-                log::error!("Notify error: {e:?}");
-                None
+
+            Create(create_kind) => {
+                match create_kind {
+                    notify::event::CreateKind::File => {
+                        Some(Self::Create(convert(&event.paths[0], proj)?))
+                    }
+                    // Any/Folder/Other
+                    _ => None,
+                }
             }
+            Remove(remove_kind) => {
+                match remove_kind {
+                    notify::event::RemoveKind::File => {
+                        Some(Self::Remove(convert(&event.paths[0], proj)?))
+                    }
+                    // Any/Folder/Other
+                    _ => None,
+                }
+            }
+            Any => {
+              // Experimental looking for missing event.
+              Some(Self::Write(Utf8PathBuf::from("any.txt")))
+            }
+            Other  => {
+              // Experimental looking for missing event.
+              Some(Self::Write(Utf8PathBuf::from("other.txt")))
+            }
+             Access(_) => None,
         })
     }
 
@@ -222,5 +301,141 @@ impl Display for Watched {
             Self::Rename(fr, to) => write!(f, "rename {fr:?} -> {to:?}"),
             Self::Rescan => write!(f, "rescan"),
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+
+    use core::time::Duration;
+    use std::fs::remove_file;
+    use std::fs::File;
+    use std::fs::OpenOptions;
+    use std::io::Write;
+    use std::path::PathBuf;
+
+    use notify::RecursiveMode;
+    use notify::Watcher;
+    use notify_debouncer_full::new_debouncer;
+    use notify_debouncer_full::DebounceEventResult;
+    use tokio::sync::oneshot;
+    use tokio::time::timeout;
+
+    use crate::config::Config;
+    use crate::service::notify::Watched;
+    use crate::GRAY;
+
+    fn opts(project: Option<&str>) -> crate::config::Opts {
+        crate::config::Opts {
+            release: false,
+            precompress: false,
+            hot_reload: false,
+            project: project.map(|s| s.to_string()),
+            verbose: 0,
+            features: Vec::new(),
+            bin_features: Vec::new(),
+            lib_features: Vec::new(),
+            bin_cargo_args: None,
+            lib_cargo_args: None,
+            js_minify: false,
+            wasm_debug: false,
+        }
+    }
+
+    // Overivew :-
+    //
+    // SETUP: create a file in a valid project.
+    //
+    // 1) Construct watching mechanism.
+    //
+    // 2) Modfify the file.
+    //
+    // 3) Assert the mechanism observed a valid event.
+    //
+    // TEARDOWN: delete the file.
+    #[tokio::test]
+    async fn change_file_contents() {
+        let cli = opts(Some("notify"));
+        let config =
+            Config::test_load(cli, "examples", "examples/notify/Cargo.toml", true, None);
+
+        let mut filename = PathBuf::from(&config.working_dir);
+        filename.push("mood.txt");
+
+        let mut file = File::create(filename.clone()).expect("Could not create test file");
+        file.write_all(b"happy\r\n")
+            .expect("did not initialize file");
+        file.flush().expect("initial flushing failed");
+        // File::close()
+        drop(file);
+
+        let (sync_tx, sync_rx) = std::sync::mpsc::channel();
+        let (success_tx, success_rx) = oneshot::channel::<bool>();
+
+        std::thread::spawn(move || {
+            while let Ok(event) = sync_rx.recv() {
+                match Watched::try_new(&event, &config.projects[0]) {
+                    Ok(Some(ret)) => {
+                        print!("try new return value {ret}");
+                        break;
+                    }
+                    Err(e) => println!("Notify error {e}"),
+                    _ => println!("Notify not handled {}", GRAY.paint(format!("{:?}", event))),
+                }
+            }
+            success_tx
+                .send(true)
+                .expect("failed to send passing notification");
+        });
+
+        let mut debouncer = new_debouncer(
+            Duration::from_millis(400),
+            None,
+            move |res: DebounceEventResult| {
+                match res {
+                    Ok(events) => {
+                        // send can fail must handle
+                        println!("debouncer {:#?}", &events);
+                        let _ = events.iter().for_each(|event| {
+                            sync_tx
+                                .send(event.clone())
+                                .expect("change_file_contents: failed to build file system watcher")
+                        });
+                    }
+                    Err(e) => println!("watch errors: {:?}", e),
+                }
+            },
+        )
+        .expect("failed to build file system watcher");
+
+        debouncer
+            .watcher()
+            .watch(&filename, RecursiveMode::NonRecursive)
+            .expect("could not watch {path:?}");
+
+        // Modify file.
+        let mut modify_handle = OpenOptions::new()
+            .write(true)
+            .open(filename.clone())
+            .expect("Could not reopen file");
+        modify_handle
+            .write_all(b"grumpy\r\n")
+            .expect("could not actively modify the file");
+        modify_handle.flush().expect("second flushing failed");
+
+        // Wait for success or a watchdog timeout.
+        let received_notification = match timeout(Duration::from_millis(4000), success_rx).await {
+            Ok(_) => true,
+            Err(e) => {
+                println!("did not receive value within 800 ms");
+                println!("{:#?}", e);
+                false
+            }
+        };
+
+        // TEARDOWN: before assert, as a failing test aborts the test.
+        remove_file(filename).expect("Could not tear down file.");
+
+        assert!(received_notification);
     }
 }

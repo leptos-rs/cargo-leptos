@@ -2,6 +2,7 @@ use wasm_bindgen::prelude::wasm_bindgen;
 
 use app_package::*;
 use leptos::*;
+use leptos::logging::log;
 
 #[wasm_bindgen]
 pub fn hydrate() {
