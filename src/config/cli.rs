@@ -73,11 +73,11 @@ pub struct BinOpts {
 #[derive(Debug, Clone, Parser, PartialEq, Default)]
 pub struct BuildTargets {
     /// Explicitly include the binary target.
-    #[arg(long, default_value = "false", action = clap::ArgAction::Set)]
+    #[arg(long, action)]
     bin: bool,
 
     /// Explicitly include the library target.
-    #[arg(long, default_value = "false", action = clap::ArgAction::Set)]
+    #[arg(long, action)]
     lib: bool,
 }
 

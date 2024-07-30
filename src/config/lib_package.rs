@@ -116,7 +116,7 @@ impl LibPackage {
             front_target_path,
             profile,
             cargo_args,
-            skipped: build_targets.map(|t| t.skip_bin()).unwrap_or_default(),
+            skipped: build_targets.map(|t| t.skip_lib()).unwrap_or_default(),
         })
     }
 }
