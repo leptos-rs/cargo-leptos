@@ -85,7 +85,7 @@ impl BuildTargets {
     pub fn skip_bin(&self) -> bool {
         match (self.bin, self.lib) {
             // Only skip when the other target is
-            // explicitly included and this on is not.
+            // explicitly included and this one is not.
             (false, true) => true,
             _ => false,
         }
@@ -94,7 +94,7 @@ impl BuildTargets {
     pub fn skip_lib(&self) -> bool {
         match (self.bin, self.lib) {
             // Only skip when the other target is
-            // explicitly included and this on is not.
+            // explicitly included and this one is not.
             (true, false) => true,
             _ => false,
         }
