@@ -70,6 +70,46 @@ pub struct BinOpts {
     bin_args: Vec<String>,
 }
 
+#[derive(Debug, Clone, Parser, PartialEq, Default)]
+pub struct BuildTargets {
+    /// Explicitly include the binary target.
+    #[arg(long, default_value = "false", action = clap::ArgAction::Set)]
+    bin: bool,
+
+    /// Explicitly include the library target.
+    #[arg(long, default_value = "false", action = clap::ArgAction::Set)]
+    lib: bool,
+}
+
+impl BuildTargets {
+    pub fn skip_bin(&self) -> bool {
+        match (self.bin, self.lib) {
+            // Only skip when the other target is
+            // explicitly included and this on is not.
+            (false, true) => true,
+            _ => false,
+        }
+    }
+
+    pub fn skip_lib(&self) -> bool {
+        match (self.bin, self.lib) {
+            // Only skip when the other target is
+            // explicitly included and this on is not.
+            (true, false) => true,
+            _ => false,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Parser, PartialEq, Default)]
+pub struct BuildOpts {
+    #[command(flatten)]
+    opts: Opts,
+
+    #[command(flatten)]
+    build_targets: BuildTargets,
+}
+
 #[derive(Debug, Parser)]
 #[clap(version)]
 pub struct Cli {
@@ -90,8 +130,9 @@ impl Cli {
         use Commands::{Build, EndToEnd, New, Serve, Test, Watch};
         match &self.command {
             New(_) => None,
+            Build(build_opts) => Some(build_opts.opts.clone()),
             Serve(bin_opts) | Watch(bin_opts) => Some(bin_opts.opts.clone()),
-            Build(opts) | Test(opts) | EndToEnd(opts) => Some(opts.clone()),
+            Test(opts) | EndToEnd(opts) => Some(opts.clone()),
         }
     }
 
@@ -102,12 +143,21 @@ impl Cli {
             _ => None,
         }
     }
+
+    pub fn build_args(&self) -> Option<&BuildTargets> {
+        use Commands::Build;
+
+        match &self.command {
+            Build(build_opts) => Some(&build_opts.build_targets),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Debug, Subcommand, PartialEq)]
 pub enum Commands {
     /// Build the server (feature ssr) and the client (wasm with feature hydrate).
-    Build(Opts),
+    Build(BuildOpts),
     /// Run the cargo tests for app, client and server.
     Test(Opts),
     /// Start the server and end-2-end tests.

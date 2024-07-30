@@ -9,7 +9,7 @@ use crate::{
 use camino::Utf8PathBuf;
 use cargo_metadata::Metadata;
 
-use super::{project::ProjectDefinition, Profile, ProjectConfig};
+use super::{project::ProjectDefinition, BuildTargets, Profile, ProjectConfig};
 
 pub struct LibPackage {
     pub name: String,
@@ -25,6 +25,7 @@ pub struct LibPackage {
     pub front_target_path: Utf8PathBuf,
     pub profile: Profile,
     pub cargo_args: Option<Vec<String>>,
+    pub skipped: bool,
 }
 
 impl LibPackage {
@@ -33,6 +34,7 @@ impl LibPackage {
         metadata: &Metadata,
         project: &ProjectDefinition,
         config: &ProjectConfig,
+        build_targets: Option<&BuildTargets>,
     ) -> Result<Self> {
         let name = project.lib_package.clone();
         let packages = metadata.workspace_packages();
@@ -114,6 +116,7 @@ impl LibPackage {
             front_target_path,
             profile,
             cargo_args,
+            skipped: build_targets.map(|t| t.skip_bin()).unwrap_or_default(),
         })
     }
 }

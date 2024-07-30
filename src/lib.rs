@@ -39,9 +39,10 @@ pub async fn run(args: Cli) -> Result<()> {
 
     let opts = args.opts().unwrap();
     let bin_args = args.bin_args();
+    let build_targets = args.build_args();
 
     let watch = matches!(args.command, Commands::Watch(_));
-    let config = Config::load(opts, &cwd, &manifest_path, watch, bin_args).dot()?;
+    let config = Config::load(opts, &cwd, &manifest_path, watch, bin_args, build_targets).dot()?;
     env::set_current_dir(&config.working_dir).dot()?;
     log::debug!(
         "Path working dir {}",
