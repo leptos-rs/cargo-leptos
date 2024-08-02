@@ -173,7 +173,7 @@ async fn optimize(
 ) -> Result<CommandResult<()>> {
     let wasm_opt = Exe::WasmOpt.get().await.dot()?;
 
-    let args = [file.as_str(), "-Os", "-o", file.as_str()];
+    let args = [file.as_str(), "-Oz", "-o", file.as_str()];
     let process = Command::new(wasm_opt)
         .args(args)
         .spawn()
