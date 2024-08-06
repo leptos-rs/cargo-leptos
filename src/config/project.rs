@@ -13,6 +13,7 @@ use cargo_metadata::{Metadata, Package};
 use serde::Deserialize;
 use std::{fmt::Debug, net::SocketAddr, sync::Arc};
 
+use super::BuildTargets;
 use super::{
     assets::AssetsConfig,
     bin_package::BinPackage,
@@ -75,6 +76,7 @@ impl Project {
         metadata: &Metadata,
         watch: bool,
         bin_args: Option<&[String]>,
+        build_targets: Option<&BuildTargets>,
     ) -> Result<Vec<Arc<Project>>> {
         let projects = ProjectDefinition::parse(metadata)?;
 
@@ -84,7 +86,7 @@ impl Project {
                 config.output_name = project.name.to_string();
             }
 
-            let lib = LibPackage::resolve(cli, metadata, &project, &config)?;
+            let lib = LibPackage::resolve(cli, metadata, &project, &config, build_targets)?;
 
             let js_dir = config
                 .js_dir
@@ -93,7 +95,8 @@ impl Project {
 
             let watch_additional_files = config.watch_additional_files.clone().unwrap_or_default();
 
-            let bin = BinPackage::resolve(cli, metadata, &project, &config, bin_args)?;
+            let bin =
+                BinPackage::resolve(cli, metadata, &project, &config, bin_args, build_targets)?;
 
             let hash_file = HashFile::new(&bin, config.hash_file_name.as_ref());
 

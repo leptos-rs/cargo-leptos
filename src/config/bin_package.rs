@@ -1,7 +1,7 @@
 use camino::Utf8PathBuf;
 use cargo_metadata::{Metadata, Target};
 
-use super::{project::ProjectDefinition, Profile, ProjectConfig};
+use super::{project::ProjectDefinition, BuildTargets, Profile, ProjectConfig};
 use crate::{
     config::Opts,
     ext::{
@@ -25,6 +25,7 @@ pub struct BinPackage {
     pub cargo_command: Option<String>,
     pub cargo_args: Option<Vec<String>>,
     pub bin_args: Option<Vec<String>>,
+    pub skipped: bool,
 }
 
 impl BinPackage {
@@ -34,6 +35,7 @@ impl BinPackage {
         project: &ProjectDefinition,
         config: &ProjectConfig,
         bin_args: Option<&[String]>,
+        build_targets: Option<&BuildTargets>,
     ) -> Result<Self> {
         let mut features = if !cli.bin_features.is_empty() {
             cli.bin_features.clone()
@@ -135,6 +137,7 @@ impl BinPackage {
             cargo_command: config.bin_cargo_command.clone(),
             cargo_args: cli.bin_cargo_args.clone(),
             bin_args: bin_args.map(ToOwned::to_owned),
+            skipped: build_targets.map(|t| t.skip_bin()).unwrap_or_default(),
         })
     }
 }
