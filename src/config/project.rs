@@ -47,6 +47,7 @@ pub struct Project {
     pub hash_file: HashFile,
     pub hash_files: bool,
     pub js_minify: bool,
+    pub graceful_exit: bool,
 }
 
 impl Debug for Project {
@@ -116,6 +117,7 @@ impl Project {
                 hash_file,
                 hash_files: config.hash_files,
                 js_minify: cli.release && cli.js_minify && config.js_minify,
+                graceful_exit: cli.graceful_exit,
             };
             resolved.push(Arc::new(proj));
         }

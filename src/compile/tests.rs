@@ -21,6 +21,7 @@ fn release_opts() -> Opts {
         bin_cargo_args: None,
         lib_cargo_args: None,
         wasm_debug: false,
+        graceful_exit: false,
     }
 }
 fn dev_opts() -> Opts {
@@ -37,6 +38,7 @@ fn dev_opts() -> Opts {
         bin_cargo_args: None,
         lib_cargo_args: None,
         wasm_debug: false,
+        graceful_exit: true,
     }
 }
 
