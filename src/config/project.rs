@@ -95,7 +95,11 @@ impl Project {
 
             let bin = BinPackage::resolve(cli, metadata, &project, &config, bin_args)?;
 
-            let hash_file = HashFile::new(&bin, config.hash_file_name.as_ref());
+            let hash_file = HashFile::new(
+                &metadata.workspace_root,
+                &bin,
+                config.hash_file_name.as_ref(),
+            );
 
             let proj = Project {
                 working_dir: metadata.workspace_root.clone(),
