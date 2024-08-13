@@ -58,6 +58,12 @@ fn compute_front_file_hashes(proj: &Project) -> Result<HashMap<Utf8PathBuf, Stri
                     let path = entry.path();
 
                     if path.is_file() {
+                        if let Some(extension) = path.extension() {
+                            if extension == "css" && path != proj.style.site_file.dest {
+                                continue;
+                            }
+                        }
+
                         let hash = Base64UrlUnpadded::encode_string(
                             &Md5::new().chain_update(fs::read(&path)?).finalize(),
                         );
