@@ -1,9 +1,10 @@
+
 # Config for 'cargo dist'
 [workspace.metadata.dist]
 # The preferred cargo-dist version to use in CI (Cargo.toml SemVer syntax)
-cargo-dist-version = "0.11.1"
+cargo-dist-version = "0.20.0"
 # CI backends to support
-ci = ["github"]
+ci = "github"
 # Target platforms to build apps for (Rust target-triple syntax)
 targets = ["aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-unknown-linux-gnu", "x86_64-unknown-linux-musl", "x86_64-pc-windows-msvc"]
 # The installers to generate for each app
@@ -16,6 +17,10 @@ windows-archive = ".tar.gz"
 unix-archive = ".tar.gz"
 # Where to host releases
 hosting = ["axodotdev", "github"]
+# Path that installers should place binaries in
+install-path = "CARGO_HOME"
+# Whether to install an updater program
+install-updater = false
 
 [package]
 name = "cargo-leptos"
@@ -24,7 +29,7 @@ repository = "https://github.com/leptos-rs/cargo-leptos"
 description = "Build tool for Leptos."
 categories = ["development-tools", "wasm", "web-programming"]
 keywords = ["leptos"]
-version = "0.2.17"
+version = "0.2.18"
 edition = "2021"
 rust-version = "1.71"
 authors = ["Henrik Akesson", "Greg Johnston", "Ben Wishovich"]
