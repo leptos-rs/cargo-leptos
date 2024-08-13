@@ -15,6 +15,7 @@ use crate::{
     logger::GRAY,
 };
 use camino::{Utf8Path, Utf8PathBuf};
+use swc::config::IsModule;
 use swc::{config::JsMinifyOptions, try_with_handler, BoolOrDataConfig};
 use swc_common::{FileName, SourceMap, GLOBALS};
 use tokio::process::Child;
@@ -187,7 +188,7 @@ fn minify<JS: AsRef<str>>(js: JS) -> Result<String> {
     let c = swc::Compiler::new(cm.clone());
     let output = GLOBALS.set(&Default::default(), || {
         try_with_handler(cm.clone(), Default::default(), |handler| {
-            let fm = cm.new_source_file(FileName::Anon, js.as_ref().to_string());
+            let fm = cm.new_source_file(Arc::new(FileName::Anon), js.as_ref().to_string());
 
             c.minify(
                 fm,
@@ -197,7 +198,7 @@ fn minify<JS: AsRef<str>>(js: JS) -> Result<String> {
                     mangle: BoolOrDataConfig::from_bool(true),
                     // keep_classnames: true,
                     // keep_fnames: true,
-                    module: true,
+                    module: IsModule::Bool(true),
                     ..Default::default()
                 },
             )
