@@ -15,7 +15,7 @@ leptos_router = { version = "0.6", default-features = false }
 leptos_dom = { version = "0.6", default-features = false }
 leptos_actix = { version = "0.6" }
 
-gloo-net = { version = "0.4", features = ["http"] }
+gloo-net = { version = "0.6", features = ["http"] }
 
 # See https://github.com/leptos-rs/cargo-leptos for documentation of all the parameters.
 
