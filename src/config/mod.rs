@@ -6,16 +6,16 @@ mod bin_package;
 mod cli;
 mod dotenvs;
 mod end2end;
+mod hash_file;
 mod lib_package;
 mod profile;
 mod project;
 mod style;
 mod tailwind;
-mod hash_file;
 
 use std::{fmt::Debug, sync::Arc};
 
-pub use self::cli::{Cli, Commands, Log, Opts};
+pub use self::cli::{BuildOpts, BuildTargets, Cli, Commands, Log, Opts};
 use crate::ext::{
     anyhow::{Context, Result},
     MetadataExt,
@@ -53,10 +53,12 @@ impl Config {
         manifest_path: &Utf8Path,
         watch: bool,
         bin_args: Option<&[String]>,
+        build_targets: Option<&BuildTargets>,
     ) -> Result<Self> {
         let metadata = Metadata::load_cleaned(manifest_path)?;
 
-        let mut projects = Project::resolve(&cli, cwd, &metadata, watch, bin_args).dot()?;
+        let mut projects =
+            Project::resolve(&cli, cwd, &metadata, watch, bin_args, build_targets).dot()?;
 
         if projects.is_empty() {
             bail!("Please define leptos projects in the workspace Cargo.toml sections [[workspace.metadata.leptos]]")
@@ -88,6 +90,7 @@ impl Config {
         manifest_path: &str,
         watch: bool,
         bin_args: Option<&[String]>,
+        build_targets: Option<&BuildTargets>,
     ) -> Self {
         use crate::ext::PathBufExt;
 
@@ -96,7 +99,7 @@ impl Config {
             .unwrap();
         let mut cwd = Utf8PathBuf::from(cwd).canonicalize_utf8().unwrap();
         cwd.clean_windows_path();
-        Self::load(cli, &cwd, &manifest_path, watch, bin_args).unwrap()
+        Self::load(cli, &cwd, &manifest_path, watch, bin_args, build_targets).unwrap()
     }
 
     pub fn current_project(&self) -> Result<Arc<Project>> {

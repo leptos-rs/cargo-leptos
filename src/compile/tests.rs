@@ -43,7 +43,14 @@ fn dev_opts() -> Opts {
 #[test]
 fn test_project_dev() {
     let cli = dev_opts();
-    let conf = Config::test_load(cli, "examples", "examples/project/Cargo.toml", true, None);
+    let conf = Config::test_load(
+        cli,
+        "examples",
+        "examples/project/Cargo.toml",
+        true,
+        None,
+        None,
+    );
 
     let mut command = Command::new("cargo");
     let (envs, cargo) = build_cargo_server_cmd("build", &conf.projects[0], &mut command);
@@ -77,7 +84,14 @@ fn test_project_dev() {
 #[test]
 fn test_project_release() {
     let cli = release_opts();
-    let conf = Config::test_load(cli, "examples", "examples/project/Cargo.toml", true, None);
+    let conf = Config::test_load(
+        cli,
+        "examples",
+        "examples/project/Cargo.toml",
+        true,
+        None,
+        None,
+    );
 
     let mut command = Command::new("cargo");
     let (_, cargo) = build_cargo_server_cmd("build", &conf.projects[0], &mut command);
@@ -123,7 +137,14 @@ fn test_workspace_project1() {
     };
 
     let cli = dev_opts();
-    let conf = Config::test_load(cli, "examples", "examples/workspace/Cargo.toml", true, None);
+    let conf = Config::test_load(
+        cli,
+        "examples",
+        "examples/workspace/Cargo.toml",
+        true,
+        None,
+        None,
+    );
 
     let mut command = Command::new("cargo");
     let (envs, cargo) = build_cargo_server_cmd("build", &conf.projects[0], &mut command);
@@ -145,7 +166,14 @@ fn test_workspace_project1() {
 #[test]
 fn test_workspace_project2() {
     let cli = dev_opts();
-    let conf = Config::test_load(cli, "examples", "examples/workspace/Cargo.toml", true, None);
+    let conf = Config::test_load(
+        cli,
+        "examples",
+        "examples/workspace/Cargo.toml",
+        true,
+        None,
+        None,
+    );
 
     let mut command = Command::new("cargo");
     let (_, cargo) = build_cargo_server_cmd("build", &conf.projects[1], &mut command);
@@ -169,7 +197,14 @@ fn test_extra_cargo_args() {
         bin_cargo_args: Some(vec!["-j".into(), "16".into()]),
         ..dev_opts()
     };
-    let conf = Config::test_load(cli, "examples", "examples/project/Cargo.toml", true, None);
+    let conf = Config::test_load(
+        cli,
+        "examples",
+        "examples/project/Cargo.toml",
+        true,
+        None,
+        None,
+    );
 
     let mut command = Command::new("cargo");
     let (_, cargo) = build_cargo_server_cmd("build", &conf.projects[0], &mut command);
