@@ -30,9 +30,7 @@ jobs:
             workspaces: |
               .
               examples/workspace
-        - name: "Install wasm-bindgen-cli"
-          run: cargo install -f wasm-bindgen-cli --version 0.2.93
-
+              
         - name: "Run cargo test --features=full_tests"
           uses: actions-rs/cargo@v1
           with:
