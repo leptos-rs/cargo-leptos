@@ -1,6 +1,5 @@
 use camino::Utf8PathBuf;
 
-use super::bin_package::BinPackage;
 
 pub struct HashFile {
     pub abs: Utf8PathBuf,
