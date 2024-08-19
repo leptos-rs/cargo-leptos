@@ -97,7 +97,6 @@ impl Project {
 
             let hash_file = HashFile::new(
                 &metadata.workspace_root,
-                &bin,
                 config.hash_file_name.as_ref(),
             );
 

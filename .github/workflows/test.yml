@@ -30,7 +30,7 @@ jobs:
             workspaces: |
               .
               examples/workspace
-
+              
         - name: "Run cargo test --features=full_tests"
           uses: actions-rs/cargo@v1
           with:
