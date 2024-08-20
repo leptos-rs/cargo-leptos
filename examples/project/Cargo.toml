@@ -13,7 +13,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 leptos_router = { version = "0.6.7", default-features = false }
-leptos = { version = "0.6.7", default-features = false }
+leptos = { version = "0.6.14", default-features = false }
 leptos_meta = { version = "0.6.7", default-features = false }
 leptos_dom = { version = "0.6.14", default-features = false }
 
