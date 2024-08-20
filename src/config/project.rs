@@ -96,7 +96,7 @@ impl Project {
             let bin = BinPackage::resolve(cli, metadata, &project, &config, bin_args)?;
 
             let hash_file = HashFile::new(
-                &metadata.workspace_root,
+                &bin,
                 config.hash_file_name.as_ref(),
             );
 
