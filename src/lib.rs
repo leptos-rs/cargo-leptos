@@ -80,3 +80,40 @@ pub async fn run(args: Cli) -> Result<()> {
         Watch(_) => command::watch(&config.current_project()?).await,
     }
 }
+
+
+pub fn check_wasm_bindgen_version(manifest_path: &str) {
+    let our_version = "0.2.93"; // Not sure how to get wasm-bindgen-cli-support to emit it's own version number.
+    let manifest = std::fs::read_to_string(manifest_path).expect("Manifest path to be a readable file.");
+    if let Some(your_version) = manifest
+    .lines()
+    .filter_map(|l| {
+        let version = l
+            .chars()
+            .filter(|c| c.is_digit(10) || *c == '.')
+            .collect::<String>();
+
+        l.split('=')
+            .collect::<Vec<&str>>()
+            .first()
+            .map(|crate_name| {
+                if crate_name.contains("wasm-bindgen") {
+                    let remaining = crate_name
+                        .split("wasm-bindgen")
+                        .collect::<Vec<&str>>()
+                        .join("");
+                    if remaining.split_whitespace().collect::<String>().is_empty() {
+                        Some(version)
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            }).flatten()
+    }).next() {
+        if our_version != your_version {
+            panic!("{}",format!("The wasm-bindgen in your Cargo.toml has a version number {your_version} but the cargo-leptos version is {our_version} You need to set the wasm-bindgen dependency your project uses to {our_version} instead of {your_version}"));
+        }
+    }
+}
