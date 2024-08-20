@@ -167,16 +167,3 @@ pub enum Commands {
     New(NewCommand),
 }
 
-pub fn get_target() -> Result<String> {
-    let output = Command::new("rustc").arg("-vV").output()?;
-    let output = std::str::from_utf8(&output.stdout)?;
-
-    let field = "host: ";
-    let host = output
-        .lines()
-        .find(|l| l.starts_with(field))
-        .map(|l| &l[field.len()..])
-        .expect("Failed to get target")
-        .to_string();
-    Ok(host)
-}

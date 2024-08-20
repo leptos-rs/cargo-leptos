@@ -7,8 +7,8 @@ pub mod config;
 // pub mod service;
 use crate::config::Commands;
 // use crate::logger::GRAY;
-use crate::config::Cli;
 use crate::config::get_target;
+use crate::config::Cli;
 use camino::Utf8PathBuf;
 use color_eyre::eyre::Result;
 
@@ -29,7 +29,7 @@ pub async fn run(cli: Cli) -> Result<()> {
     //let watch = matches!(cli.command, Commands::Watch);
 
     //let _monitor = Interrupt::run_ctrl_c_monitor();
-    use Commands::{Build,New};
+    use Commands::{Build, New};
     match cli.command {
         New(_) => panic!(),
         Build => command::build_all(&cli).await,
