@@ -1,5 +1,5 @@
 use camino::Utf8PathBuf;
-use cargo_leptos::run;
+use cargo_leptos::{check_wasm_bindgen_version, run};
 use cargo_leptos::{
     config::Cli,
     get_current_dir,
@@ -25,6 +25,10 @@ async fn main() -> Result<()> {
     let manifest_path: Utf8PathBuf = initial_figment
         .extract_inner("manifest-path")
         .expect("manifest_path must be set. This should have defaulted to Cargo.toml");
+
+    // This will panic and inform the user that their wasm-bindgen version doesn't match.
+    check_wasm_bindgen_version(manifest_path.as_str());
+
     let mut cli: Cli = initial_figment
         .merge(Cli::figment_file(&manifest_path).select("leptos"))
         .extract()?;
