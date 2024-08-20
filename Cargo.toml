@@ -73,7 +73,7 @@ dirs = "5.0"
 camino = "1.1"
 dotenvy = "0.15"
 itertools = "0.13"
-derive_more = "0.99"
+derive_more = "1.0"
 flate2 = "1.0"
 zip = { version = "2.1", default-features = false, features = ["deflate"] }
 tar = "0.4"
