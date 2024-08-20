@@ -84,7 +84,7 @@ async fn main() -> Result<()> {
         }
     }
 
-    let default_bin_target = std::env::var("TARGET").unwrap();
+    let default_bin_target = current_platform::CURRENT_PLATFORM;
     cli.opts.bin_opts.bin_target_triple = Some(default_bin_target.to_string());
 
     println!("CLI: {cli:#?}");
