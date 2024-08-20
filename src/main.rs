@@ -1,7 +1,7 @@
 use camino::Utf8PathBuf;
 use cargo_leptos::run;
 use cargo_leptos::{
-    config::{get_target, Cli},
+    config::Cli,
     get_current_dir,
 };
 use cargo_manifest::Manifest;
