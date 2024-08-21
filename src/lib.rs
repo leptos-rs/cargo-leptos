@@ -60,7 +60,7 @@ pub fn get_current_dir(path: Option<&Utf8PathBuf>) -> Utf8PathBuf {
 }
 
 pub fn check_wasm_bindgen_version(manifest_path: &str) {
-    let our_version = "0.2.93"; // Not sure how to get wasm-bindgen-cli-support to emit it's own version number.
+    let our_version = wasm_bindgen_shared::version();
     let manifest = std::fs::read_to_string(manifest_path).expect("Manifest path to be a readable file.");
     if let Some(your_version) = manifest
     .lines()
