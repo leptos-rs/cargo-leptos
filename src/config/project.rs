@@ -95,10 +95,17 @@ impl Project {
 
             let bin = BinPackage::resolve(cli, metadata, &project, &config, bin_args)?;
 
-            let hash_file = HashFile::new(
-                &bin,
-                config.hash_file_name.as_ref(),
-            );
+            // If there's more than 1 workspace member, we're a workspace. Probably
+            let is_workspace = metadata.workspace_members.len() > 1;
+            log::debug!("Detected Workspace: {is_workspace}");
+            let hash_file = match is_workspace {
+                true => HashFile::new(
+                    Some(&metadata.workspace_root),
+                    &bin,
+                    config.hash_file_name.as_ref(),
+                ),
+                false => HashFile::new(None, &bin, config.hash_file_name.as_ref()),
+            };
 
             let proj = Project {
                 working_dir: metadata.workspace_root.clone(),
