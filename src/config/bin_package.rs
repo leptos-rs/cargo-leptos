@@ -113,12 +113,13 @@ impl BinPackage {
             // Check if the file exists and if not, try to prepend target_triple
             // right now it mail fail to find target/debug/name
             // but the build is successful and in target/"target_triple"/debug/name
-            // if !test_file.exists(){
-            //     test_file = Utf8PathBuf::from(format!(
-            //         "target/{}/{}/{}",
-            //         CURRENT_PLATFORM, profile.to_string(),test_file.file_name().unwrap()
-            //     ));
-            // }
+            // https://github.com/leptos-rs/cargo-leptos/issues/358
+            if !test_file.exists(){
+                test_file = Utf8PathBuf::from(format!(
+                    "target/{}/{}/{}",
+                    CURRENT_PLATFORM, profile.to_string(),test_file.file_name().unwrap()
+                ));
+            }
             test_file
         };
 
