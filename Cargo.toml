@@ -75,7 +75,7 @@ dotenvy = "0.15"
 itertools = "0.13"
 derive_more = "0.99"
 flate2 = "1.0"
-zip = { version = "2.1", default-features = false, features = ["deflate"] }
+zip = { version = "2.2", default-features = false, features = ["deflate"] }
 tar = "0.4"
 dunce = "1.0"
 bytes = "1.4"
