@@ -78,13 +78,21 @@ impl NewCommand {
     }
 }
 
-fn bool_push(args: &mut Vec<String>, name: &str, set: bool) {
+fn bool_push(
+    args: &mut Vec<String>,
+    name: &str,
+    set: bool,
+) {
     if set {
         args.push(format!("--{name}"))
     }
 }
 
-fn opt_push(args: &mut Vec<String>, name: &str, arg: &Option<String>) {
+fn opt_push(
+    args: &mut Vec<String>,
+    name: &str,
+    arg: &Option<String>,
+) {
     if let Some(arg) = arg {
         args.push(format!("--{name}"));
         args.push(arg.clone());
@@ -96,8 +104,30 @@ fn opt_push(args: &mut Vec<String>, name: &str, arg: &Option<String>) {
 fn absolute_git_url(url: &Option<String>) -> Option<String> {
     match url {
         Some(url) => match url.as_str() {
+            // leptos-rs official templates
+            // NB: The alternate workarounds enable an even shorter `cargo leptos new --git start-{{trunk | actix | axum | ..}}` command syntax
+            "start-trunk" => Some("https://github.com/leptos-rs/start-trunk".to_string()),
+            "leptos-rs/start-trunk" => Some("https://github.com/leptos-rs/start-trunk".to_string()),
+
+            "start-actix" => Some("https://github.com/leptos-rs/start".to_string()),
             "leptos-rs/start" => Some("https://github.com/leptos-rs/start".to_string()),
+            "leptos-rs/start-actix" => Some("https://github.com/leptos-rs/start".to_string()),
+
+            "start-axum" => Some("https://github.com/leptos-rs/start-axum".to_string()),
             "leptos-rs/start-axum" => Some("https://github.com/leptos-rs/start-axum".to_string()),
+
+            "start-axum-workspace" => {
+                Some("https://github.com/leptos-rs/start-axum-workspace".to_string())
+            }
+            "leptos-rs/start-axum-workspace" => {
+                Some("https://github.com/leptos-rs/start-axum-workspace".to_string())
+            }
+            "start-aws" => Some("https://github.com/leptos-rs/start-aws".to_string()),
+            "leptos-rs/start-aws" => Some("https://github.com/leptos-rs/start-aws".to_string()),
+
+            "start-spin" => Some("https://github.com/leptos-rs/start-spin".to_string()),
+            "leptos-rs/start-spin" => Some("https://github.com/leptos-rs/start-spin".to_string()),
+
             _ => Some(url.to_string()),
         },
         None => None,
