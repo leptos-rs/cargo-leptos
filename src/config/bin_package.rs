@@ -85,8 +85,10 @@ impl BinPackage {
         let exe_file = {
             let file_ext = if cfg!(target_os = "windows") {
                 "exe"
-            } else if config.bin_target_triple == Some("wasm32-wasi".to_string())
-                || config.bin_target_triple == Some("wasm32-unknown-unknown".to_string())
+            } else if config
+                .bin_target_triple
+                .as_ref()
+                .is_some_and(|target| target.starts_with("wasm32-"))
             {
                 "wasm"
             } else {
