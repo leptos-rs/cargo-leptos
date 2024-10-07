@@ -469,6 +469,7 @@ dependencies = [
  "camino",
  "cargo_metadata",
  "clap",
+ "current_platform",
  "derive_more",
  "dirs",
  "dotenvy",
@@ -750,6 +751,12 @@ dependencies = [
  "quote",
  "syn 2.0.75",
 ]
+
+[[package]]
+name = "current_platform"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a74858bcfe44b22016cb49337d7b6f04618c58e5dbfdef61b06b8c434324a0bc"
 
 [[package]]
 name = "darling"
