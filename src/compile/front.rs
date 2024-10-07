@@ -16,6 +16,7 @@ use crate::{
 };
 use camino::{Utf8Path, Utf8PathBuf};
 use swc::config::IsModule;
+use swc::JsMinifyExtras;
 use swc::{config::JsMinifyOptions, try_with_handler, BoolOrDataConfig};
 use swc_common::{FileName, SourceMap, GLOBALS};
 use tokio::process::Child;
@@ -201,6 +202,7 @@ fn minify<JS: AsRef<str>>(js: JS) -> Result<String> {
                     module: IsModule::Bool(true),
                     ..Default::default()
                 },
+                JsMinifyExtras::default(),
             )
             .context("failed to minify")
         })
