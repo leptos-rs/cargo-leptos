@@ -77,6 +77,25 @@ fn compute_front_file_hashes(proj: &Project) -> Result<HashMap<Utf8PathBuf, Stri
                         }
                     }
 
+                    // Check if the path contains snippets and also if it
+                    // contains inline{}.js. We do not want to hash these files
+                    // as the webassembly will look for an unhashed version of
+                    // the .js file. The folder though can be hashed.
+                    if let Some(path_str) = path.to_str() {
+                        if path_str.contains("snippets") {
+                            if let Some(file_name) = path.file_name() {
+                                let file_name_str = file_name.to_string_lossy();
+                                if file_name_str.contains("inline") {
+                                    if let Some(extension) = path.extension() {
+                                        if extension == "js" {
+                                            continue;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     let hash = Base64UrlUnpadded::encode_string(
                         &Md5::new().chain_update(fs::read(&path)?).finalize(),
                     );
