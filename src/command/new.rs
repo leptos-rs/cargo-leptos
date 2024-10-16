@@ -78,21 +78,13 @@ impl NewCommand {
     }
 }
 
-fn bool_push(
-    args: &mut Vec<String>,
-    name: &str,
-    set: bool,
-) {
+fn bool_push(args: &mut Vec<String>, name: &str, set: bool) {
     if set {
         args.push(format!("--{name}"))
     }
 }
 
-fn opt_push(
-    args: &mut Vec<String>,
-    name: &str,
-    arg: &Option<String>,
-) {
+fn opt_push(args: &mut Vec<String>, name: &str, arg: &Option<String>) {
     if let Some(arg) = arg {
         args.push(format!("--{name}"));
         args.push(arg.clone());
