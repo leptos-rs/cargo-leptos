@@ -61,7 +61,7 @@ flexi_logger = "0.29.3"
 tokio = { version = "1.40.0", default-features = false, features = ["full"] }
 axum = { version = "0.7.7", features = ["ws"] }
 # not using notify 5.0 because it uses Crossbeam which has an issue with tokio
-notify = "4.0"
+notify = "7.0"
 lazy_static = "1.4"
 which = "6"
 cargo_metadata = { version = "0.18", features = ["builder"] }
