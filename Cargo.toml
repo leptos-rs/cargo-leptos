@@ -66,7 +66,7 @@ lazy_static = "1.4"
 which = "6"
 cargo_metadata = { version = "0.18", features = ["builder"] }
 serde_json = "1.0.128"
-wasm-bindgen-cli-support = "=0.2.95"
+wasm-bindgen-cli-support = "=0.2.96"
 ansi_term = "0.12"
 
 reqwest = { version = "0.12.8", features = [
