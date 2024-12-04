@@ -8,12 +8,12 @@ pub async fn run() -> std::io::Result<()> {
     _ = dotenvy::dotenv();
 
     let conf = get_configuration(None).await.unwrap();
-    let addr = conf.leptos_options.site_addr.clone();
+    let addr = conf.leptos_options.site_addr;
 
     log::info!("serving at {addr}");
 
     // Generate the list of routes in your Leptos App
-    let routes = generate_route_list(|| view! { <App/> });
+    let routes = generate_route_list(|| view! { <App /> });
 
     HttpServer::new(move || {
         let leptos_options = &conf.leptos_options;
@@ -24,7 +24,7 @@ pub async fn run() -> std::io::Result<()> {
             .leptos_routes(
                 leptos_options.to_owned(),
                 routes.to_owned(),
-                || view! { <App/> },
+                || view! { <App /> },
             )
             .service(Files::new("/", site_root.to_owned()))
             .wrap(middleware::Compress::default())

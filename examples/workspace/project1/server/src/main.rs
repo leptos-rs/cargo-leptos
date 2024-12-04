@@ -15,7 +15,7 @@ pub async fn main() -> std::io::Result<()> {
     _ = dotenvy::dotenv();
 
     let conf = get_configuration(None).await.unwrap();
-    let addr = conf.leptos_options.site_addr.clone();
+    let addr = conf.leptos_options.site_addr;
 
     log::info!("serving at {addr}");
 

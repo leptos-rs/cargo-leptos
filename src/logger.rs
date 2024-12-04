@@ -98,7 +98,7 @@ fn format(
     }
 }
 
-fn split(args: &String) -> (&str, &str) {
+fn split(args: &str) -> (&str, &str) {
     match args.find(' ') {
         Some(i) => (&args[..i], &args[i + 1..]),
         None => ("", args),

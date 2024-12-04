@@ -1,20 +1,17 @@
 use crate::config::Project;
 use crate::ext::anyhow::Result;
+use crate::ext::PathBufExt;
 use crate::signal::{Interrupt, ReloadSignal};
-use crate::{
-    ext::{remove_nested, PathBufExt},
-    logger::GRAY,
-};
+use crate::{ext::remove_nested, logger::GRAY};
 use camino::Utf8PathBuf;
 use itertools::Itertools;
 use leptos_hot_reload::ViewMacros;
-use notify::{DebouncedEvent, RecursiveMode, Watcher};
+use notify::event::ModifyKind;
+use notify::{Event, EventKind, RecursiveMode, Watcher};
 use std::collections::HashSet;
+use std::path::Path;
 use std::sync::Arc;
-use std::time::Duration;
 use tokio::task::JoinHandle;
-
-use super::notify::Watched;
 
 pub async fn spawn(proj: &Arc<Project>, view_macros: &ViewMacros) -> Result<JoinHandle<()>> {
     let view_macros = view_macros.to_owned();
@@ -36,25 +33,30 @@ pub async fn spawn(proj: &Arc<Project>, view_macros: &ViewMacros) -> Result<Join
 }
 
 async fn run(paths: &[Utf8PathBuf], proj: Arc<Project>, view_macros: ViewMacros) {
-    let (sync_tx, sync_rx) = std::sync::mpsc::channel::<DebouncedEvent>();
+    let (sync_tx, sync_rx) = std::sync::mpsc::channel();
 
     let proj = proj.clone();
-    std::thread::spawn(move || {
+    tokio::task::spawn_blocking(move || {
         while let Ok(event) = sync_rx.recv() {
-            match Watched::try_new(&event, &proj) {
-                Ok(Some(watched)) => handle(watched, proj.clone(), view_macros.clone()),
-                Err(e) => log::error!("Notify error {e}"),
-                _ => log::trace!("Notify not handled {}", GRAY.paint(format!("{:?}", event))),
+            match event {
+                Ok(event) => handle(event, proj.clone(), view_macros.clone()),
+                Err(err) => {
+                    log::trace!("Notify error: {err:?}");
+                    return;
+                }
             }
         }
         log::debug!("Notify stopped");
     });
 
-    let mut watcher = notify::watcher(sync_tx, Duration::from_millis(200))
-        .expect("failed to build file system watcher");
+    let mut watcher = notify::RecommendedWatcher::new(
+        sync_tx,
+        notify::Config::default().with_poll_interval(super::notify::FALLBACK_POLLING_TIMEOUT),
+    )
+    .expect("failed to build file system watcher");
 
     for path in paths {
-        if let Err(e) = watcher.watch(path, RecursiveMode::Recursive) {
+        if let Err(e) = watcher.watch(Path::new(path), RecursiveMode::Recursive) {
             log::error!("Notify could not watch {path:?} due to {e:?}");
         }
     }
@@ -64,23 +66,42 @@ async fn run(paths: &[Utf8PathBuf], proj: Arc<Project>, view_macros: ViewMacros)
     }
 }
 
-fn handle(watched: Watched, proj: Arc<Project>, view_macros: ViewMacros) {
-    log::trace!(
-        "Notify handle {}",
-        GRAY.paint(format!("{:?}", watched.path()))
-    );
+fn handle(event: Event, proj: Arc<Project>, view_macros: ViewMacros) {
+    if event.paths.is_empty() {
+        return;
+    }
 
-    let Some(path) = watched.path() else {
-        Interrupt::send_all_changed();
+    if let EventKind::Any
+    | EventKind::Other
+    | EventKind::Access(_)
+    | EventKind::Modify(ModifyKind::Any | ModifyKind::Other | ModifyKind::Metadata(_)) =
+        event.kind
+    {
         return;
     };
 
-    if path.starts_with_any(&proj.lib.src_paths) && path.is_ext_any(&["rs"]) {
-        // Check if it's possible to patch
-        let patches = view_macros.patch(path);
-        if let Ok(Some(patch)) = patches {
-            log::debug!("Patching view.");
-            ReloadSignal::send_view_patches(&patch);
+    log::trace!("Notify handle {}", GRAY.paint(format!("{:?}", event.paths)));
+
+    let paths: Vec<_> = event
+        .paths
+        .into_iter()
+        .filter_map(|p| match super::notify::convert(&p, &proj) {
+            Ok(p) => Some(p),
+            Err(e) => {
+                log::info!("{e}");
+                None
+            }
+        })
+        .collect();
+
+    for path in paths {
+        if path.starts_with_any(&proj.lib.src_paths) && path.is_ext_any(&["rs"]) {
+            // Check if it's possible to patch
+            let patches = view_macros.patch(&path);
+            if let Ok(Some(patch)) = patches {
+                log::debug!("Patching view.");
+                ReloadSignal::send_view_patches(&patch);
+            }
         }
     }
 }
