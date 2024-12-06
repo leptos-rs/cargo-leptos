@@ -68,9 +68,9 @@ pub async fn runner(proj: &Arc<Project>) -> Result<()> {
     let assets_hdl = compile::assets(proj, &changes).await;
     let style_hdl = compile::style(proj, &changes).await;
 
-    let (serve, front, assets, style) = try_join!(server_hdl, front_hdl, assets_hdl, style_hdl)?;
+    let (server, front, assets, style) = try_join!(server_hdl, front_hdl, assets_hdl, style_hdl)?;
 
-    let outcomes = vec![serve?, front?, assets?, style?];
+    let outcomes = vec![server?, front?, assets?, style?];
 
     let interrupted = outcomes.iter().any(|outcome| *outcome == Outcome::Stopped);
     if interrupted {
