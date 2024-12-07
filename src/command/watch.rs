@@ -97,8 +97,7 @@ pub async fn runner(proj: &Arc<Project>) -> Result<()> {
         // send product change, then the server will send the reload once it has restarted
         ServerRestart::send();
         log::info!("Watch updated {set}. Server restarting")
-    }
-    if set.only_style() {
+    } else if set.only_style() {
         ReloadSignal::send_style();
         log::info!("Watch updated style")
     } else if set.contains_any(&[Product::Front, Product::Assets]) {
