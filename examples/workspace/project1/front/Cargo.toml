@@ -13,5 +13,5 @@ app-package = { path = "../app" }
 leptos = { workspace = true, features = ["serde", "hydrate"] }
 log = "0.4"
 wasm-bindgen = "=0.2.95"
-console_log = "0.2"
+console_log = "1.0"
 console_error_panic_hook = "0.1"
