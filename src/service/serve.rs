@@ -41,17 +41,13 @@ pub async fn spawn_oneshot(proj: &Arc<Project>) -> JoinHandle<Result<()>> {
     let proj = proj.clone();
     tokio::spawn(async move {
         let mut server = ServerProcess::start_new(&proj).await?;
-        loop {
-            select! {
-              _ = server.wait() => {
-                    return Ok(())
-              },
-              _ = int.recv() => {
-                    server.kill().await;
-                    return Ok(())
-              },
-            }
-        }
+        select! {
+          _ = server.wait() => {},
+          _ = int.recv() => {
+                server.kill().await;
+          },
+        };
+        Ok(())
     })
 }
 
