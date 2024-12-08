@@ -32,7 +32,7 @@ actix-files = { version = "0.6.2", optional = true }
 actix-web = { version = "4.2.1", features = ["macros"], optional = true }
 futures = { version = "0.3.31", optional = true }
 simple_logger = { version = "5.0.0", optional = true }
-serde_json = { version = "1.0.128", optional = true }
+serde_json = { version = "1.0.133", optional = true }
 reqwest = { version = "0.12.8", features = ["json"], optional = true }
 leptos_actix = { version = "0.6.7", optional = true }
 # leptos_actix = { version = "0.1.0-beta", optional = true }
