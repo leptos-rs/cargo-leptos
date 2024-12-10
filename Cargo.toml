@@ -2,7 +2,7 @@
 # Config for 'cargo dist'
 [workspace.metadata.dist]
 # The preferred cargo-dist version to use in CI (Cargo.toml SemVer syntax)
-cargo-dist-version = "0.20.0"
+cargo-dist-version = "0.25.0"
 # CI backends to support
 ci = "github"
 # Target platforms to build apps for (Rust target-triple syntax)
@@ -35,7 +35,7 @@ repository = "https://github.com/leptos-rs/cargo-leptos"
 description = "Build tool for Leptos."
 categories = ["development-tools", "wasm", "web-programming"]
 keywords = ["leptos"]
-version = "0.2.22"
+version = "0.2.24"
 edition = "2021"
 rust-version = "1.71"
 authors = ["Henrik Akesson", "Greg Johnston", "Ben Wishovich"]
@@ -66,7 +66,7 @@ lazy_static = "1.4"
 which = "7"
 cargo_metadata = { version = "0.19", features = ["builder"] }
 serde_json = "1.0.128"
-wasm-bindgen-cli-support = "=0.2.99"
+wasm-bindgen-cli-support = "0.2.99"
 ansi_term = "0.12"
 
 reqwest = { version = "0.12.8", features = [
