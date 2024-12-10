@@ -15,7 +15,6 @@
 name: Release
 permissions:
   "contents": "write"
-
 # This task will run whenever you push a git tag that looks like a version
 # like "1.0.0", "v0.1.0-prerelease.1", "my-app/0.1.0", "releases/v1.0.0", etc.
 # Various formats will be parsed into a VERSION and an optional PACKAGE_NAME, where
@@ -42,7 +41,6 @@ on:
   push:
     tags:
       - '**[0-9]+.[0-9]+.[0-9]+*'
-
 jobs:
   # Run 'cargo dist plan' (or host) to determine what tasks we need to do
   plan:
@@ -63,7 +61,7 @@ jobs:
         # we specify bash to get pipefail; it guards against the `curl` command
         # failing. otherwise `sh` won't catch that `curl` returned non-0
         shell: bash
-        run: "curl --proto '=https' --tlsv1.2 -LsSf https://github.com/axodotdev/cargo-dist/releases/download/v0.20.0/cargo-dist-installer.sh | sh"
+        run: "curl --proto '=https' --tlsv1.2 -LsSf https://github.com/axodotdev/cargo-dist/releases/download/v0.25.1/cargo-dist-installer.sh | sh"
       - name: Cache cargo-dist
         uses: actions/upload-artifact@v4
         with:
@@ -85,7 +83,6 @@ jobs:
         with:
           name: artifacts-plan-dist-manifest
           path: plan-dist-manifest.json
-
   # Build and packages all the platform-specific things
   build-local-artifacts:
     name: build-local-artifacts (${{ join(matrix.targets, ', ') }})
@@ -154,7 +151,6 @@ jobs:
           path: |
             ${{ steps.cargo-dist.outputs.paths }}
             ${{ env.BUILD_MANIFEST_NAME }}
-
   # Build and package all the platform-agnostic(ish) things
   build-global-artifacts:
     needs:
@@ -255,7 +251,6 @@ jobs:
           # Overwrite the previous copy
           name: artifacts-dist-manifest
           path: dist-manifest.json
-
   # Create an Announcement for all the Axo Releases, updating the "latest" release
   # Create a GitHub Release while uploading all files to it
   announce:
