@@ -1,11 +1,7 @@
-use std::collections::HashMap;
-use std::sync::Arc;
-
 use super::ChangeSet;
 use crate::config::Project;
-use crate::ext::fs;
 use crate::ext::sync::{wait_interruptible, CommandResult};
-use crate::service::site::SiteFile;
+use crate::ext::{fs, PathBufExt};
 use crate::signal::{Interrupt, Outcome, Product};
 use crate::{
     ext::{
@@ -14,7 +10,8 @@ use crate::{
     },
     logger::GRAY,
 };
-use camino::{Utf8Path, Utf8PathBuf};
+use camino::Utf8Path;
+use std::sync::Arc;
 use swc::config::IsModule;
 use swc::JsMinifyExtras;
 use swc::{config::JsMinifyOptions, try_with_handler, BoolOrDataConfig};
@@ -111,8 +108,9 @@ async fn bindgen(proj: &Project) -> Result<Outcome<Product>> {
     let wasm_file = &proj.lib.wasm_file;
     let interrupt = Interrupt::subscribe_any();
 
-    log::info!("Front compiling WASM");
+    log::info!("Front generating JS/WASM with wasm-bindgen");
 
+    let start_time = tokio::time::Instant::now();
     // see:
     // https://github.com/rustwasm/wasm-bindgen/blob/main/crates/cli-support/src/lib.rs#L95
     // https://github.com/rustwasm/wasm-bindgen/blob/main/crates/cli/src/bin/wasm-bindgen.rs#L13
@@ -120,13 +118,40 @@ async fn bindgen(proj: &Project) -> Result<Outcome<Product>> {
         .debug(proj.wasm_debug)
         .keep_debug(proj.wasm_debug)
         .input_path(&wasm_file.source)
+        .out_name(&proj.lib.output_name)
         .web(true)
         .dot()?
         .generate_output()
         .dot()?;
 
-    bindgen.wasm_mut().emit_wasm_file(&wasm_file.dest).dot()?;
-    log::trace!("Front wrote wasm to {:?}", wasm_file.dest.as_str());
+    let bindgen_generate_end_time = tokio::time::Instant::now();
+
+    log::debug!(
+        "Finished generating wasm-bindgen output in {:?}",
+        bindgen_generate_end_time - start_time
+    );
+
+    bindgen.emit(wasm_file.dest.clone().without_last()).dot()?;
+
+    let bindgen_emit_end_time = tokio::time::Instant::now();
+    log::debug!(
+        "Finished emitting wasm-bindgen in {:?}",
+        bindgen_emit_end_time - bindgen_generate_end_time
+    );
+
+    // rename emitted wasm output file name from {output_name}_bg.wasm to {output_name}.wasm for
+    // backward compatibility with leptos' `HydrationScripts`
+    fs::rename(
+        wasm_file
+            .dest
+            .clone()
+            .without_last()
+            .join(format!("{}_bg.wasm", &proj.lib.output_name)),
+        &wasm_file.dest,
+    )
+    .await
+    .dot()?;
+
     if proj.release {
         match optimize(&wasm_file.dest, interrupt).await.dot()? {
             CommandResult::Interrupted => return Ok(Outcome::Stopped),
@@ -135,19 +160,13 @@ async fn bindgen(proj: &Project) -> Result<Outcome<Product>> {
         }
     }
 
-    let mut js_changed = false;
+    let wasm_optimize_end_time = tokio::time::Instant::now();
+    log::debug!(
+        "Finished optimizing WASM in {:?}",
+        wasm_optimize_end_time - bindgen_emit_end_time
+    );
 
-    js_changed |= write_snippets(proj, bindgen.snippets()).await?;
-
-    js_changed |= write_modules(proj, bindgen.local_modules()).await?;
-
-    let wasm_changed = proj
-        .site
-        .did_file_change(&proj.lib.wasm_file.as_site_file())
-        .await
-        .dot()?;
-
-    js_changed |= if proj.release && proj.js_minify {
+    if proj.js_minify {
         proj.site
             .updated_with(&proj.lib.js_file, minify(bindgen.js())?.as_bytes())
             .await
@@ -159,14 +178,19 @@ async fn bindgen(proj: &Project) -> Result<Outcome<Product>> {
             .dot()?
     };
 
-    log::debug!("Front js changed: {js_changed}");
-    log::debug!("Front wasm changed: {wasm_changed}");
+    let js_minify_end_time = tokio::time::Instant::now();
+    log::debug!(
+        "Finished minifying JS in {:?}",
+        js_minify_end_time - wasm_optimize_end_time
+    );
 
-    if js_changed || wasm_changed {
-        Ok(Outcome::Success(Product::Front))
-    } else {
-        Ok(Outcome::Success(Product::None))
-    }
+    let front_end_time = tokio::time::Instant::now();
+    log::info!(
+        "Finished generating JS/WASM for front in {:?}",
+        front_end_time - start_time
+    );
+
+    Ok(Outcome::Success(Product::Front))
 }
 
 async fn optimize(
@@ -209,58 +233,4 @@ fn minify<JS: AsRef<str>>(js: JS) -> Result<String> {
     })?;
 
     Ok(output.code)
-}
-
-async fn write_snippets(proj: &Project, snippets: &HashMap<String, Vec<String>>) -> Result<bool> {
-    let mut js_changed = false;
-
-    // Provide inline JS files
-    for (identifier, list) in snippets.iter() {
-        for (i, js) in list.iter().enumerate() {
-            let name = format!("inline{}.js", i);
-            let site_path = Utf8PathBuf::from("snippets").join(identifier).join(name);
-            let file_path = proj.site.root_relative_pkg_dir().join(&site_path);
-
-            fs::create_dir_all(file_path.parent().unwrap()).await?;
-
-            let site_file = SiteFile {
-                dest: file_path,
-                site: site_path,
-            };
-
-            js_changed |= if proj.release && proj.js_minify {
-                proj.site
-                    .updated_with(&site_file, minify(js)?.as_bytes())
-                    .await?
-            } else {
-                proj.site.updated_with(&site_file, js.as_bytes()).await?
-            }
-        }
-    }
-    Ok(js_changed)
-}
-
-async fn write_modules(proj: &Project, modules: &HashMap<String, String>) -> Result<bool> {
-    let mut js_changed = false;
-    // Provide snippet files from JS snippets
-    for (path, js) in modules.iter() {
-        let site_path = Utf8PathBuf::from("snippets").join(path);
-        let file_path = proj.site.root_relative_pkg_dir().join(&site_path);
-
-        fs::create_dir_all(file_path.parent().unwrap()).await?;
-
-        let site_file = SiteFile {
-            dest: file_path,
-            site: site_path,
-        };
-
-        js_changed |= if proj.release && proj.js_minify {
-            proj.site
-                .updated_with(&site_file, minify(js)?.as_bytes())
-                .await?
-        } else {
-            proj.site.updated_with(&site_file, js.as_bytes()).await?
-        };
-    }
-    Ok(js_changed)
 }

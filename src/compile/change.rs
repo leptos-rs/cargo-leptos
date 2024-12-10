@@ -1,7 +1,5 @@
 use std::vec;
 
-use crate::service::notify::Watched;
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Change {
     /// sent when a bin target source file is changed
@@ -9,7 +7,7 @@ pub enum Change {
     /// sent when a lib target source file is changed
     LibSource,
     /// sent when an asset file changed
-    Asset(Watched),
+    Asset,
     /// sent when a style file changed
     Style,
     /// Cargo.toml changed
@@ -28,7 +26,7 @@ impl ChangeSet {
             Change::LibSource,
             Change::Style,
             Change::Conf,
-            Change::Asset(Watched::Rescan),
+            Change::Asset,
         ])
     }
 
@@ -52,16 +50,13 @@ impl ChangeSet {
             || self.0.contains(&Change::Additional)
     }
 
-    pub fn asset_iter(&self) -> impl Iterator<Item = &Watched> {
-        self.0.iter().filter_map(|change| match change {
-            Change::Asset(a) => Some(a),
-            _ => None,
-        })
-    }
-
     pub fn need_style_build(&self, css_files: bool, css_in_source: bool) -> bool {
         (css_files && self.0.contains(&Change::Style))
             || (css_in_source && self.0.contains(&Change::LibSource))
+    }
+
+    pub fn need_assets_change(&self) -> bool {
+        self.0.contains(&Change::Asset)
     }
 
     pub fn add(&mut self, change: Change) -> bool {

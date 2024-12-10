@@ -143,7 +143,8 @@ fn replace_in_file(
     old_to_new_paths: &HashMap<Utf8PathBuf, Utf8PathBuf>,
     root_dir: &Utf8PathBuf,
 ) {
-    let mut contents = fs::read_to_string(path).expect(&format!("could not read file {}", path));
+    let mut contents = fs::read_to_string(path)
+        .unwrap_or_else(|e| panic!("error {e}: could not read file {}", path));
 
     for (old_path, new_path) in old_to_new_paths {
         let old_path = old_path

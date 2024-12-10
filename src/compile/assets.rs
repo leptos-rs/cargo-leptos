@@ -3,8 +3,6 @@ use std::sync::Arc;
 use super::ChangeSet;
 use crate::config::Project;
 use crate::ext::anyhow::{Context, Result};
-use crate::service::notify::Watched;
-use crate::service::site::SourcedSiteFile;
 use crate::signal::{Outcome, Product};
 use crate::{ext::PathExt, fs, logger::GRAY};
 use camino::{Utf8Path, Utf8PathBuf};
@@ -13,100 +11,28 @@ use tokio::task::JoinHandle;
 pub async fn assets(
     proj: &Arc<Project>,
     changes: &ChangeSet,
-    first_sync: bool,
 ) -> JoinHandle<Result<Outcome<Product>>> {
     let changes = changes.clone();
 
     let proj = proj.clone();
     tokio::spawn(async move {
+        if !changes.need_assets_change() {
+            return Ok(Outcome::Success(Product::None));
+        }
         let Some(assets) = &proj.assets else {
             return Ok(Outcome::Success(Product::None));
         };
         let dest_root = &proj.site.root_dir;
         let pkg_dir = &proj.site.pkg_dir;
 
-        let change = if first_sync {
-            log::trace!("Assets starting full resync");
-            resync(&assets.dir, dest_root, pkg_dir).await?;
-            true
-        } else {
-            let mut changed = false;
-            for watched in changes.asset_iter() {
-                log::trace!("Assets processing {watched:?}");
-                let change =
-                    update_asset(&proj, watched.clone(), &assets.dir, dest_root, pkg_dir, &[])
-                        .await?;
-                changed |= change;
-            }
-            changed
-        };
-        if change {
-            log::debug!("Assets finished (with changes)");
-            Ok(Outcome::Success(Product::Assets))
-        } else {
-            log::debug!("Assets finished (no changes)");
-            Ok(Outcome::Success(Product::None))
-        }
-    })
-}
-
-async fn update_asset(
-    proj: &Project,
-    watched: Watched,
-    src_root: &Utf8Path,
-    dest_root: &Utf8Path,
-    pkg_dir: &Utf8Path,
-    reserved: &[Utf8PathBuf],
-) -> Result<bool> {
-    if let Some(path) = watched.path() {
-        if reserved.contains(path) {
-            log::warn!("Assets reserved filename for Leptos. Please remove {path:?}");
-            return Ok(false);
-        }
-    }
-    Ok(match watched {
-        Watched::Create(f) => {
-            let to = f.rebase(src_root, dest_root)?;
-            if f.is_dir() {
-                fs::copy_dir_all(f, to).await?;
-            } else {
-                fs::copy(&f, &to).await?;
-            }
-            true
-        }
-        Watched::Remove(f) => {
-            let path = f.rebase(src_root, dest_root)?;
-            if path.is_dir() {
-                fs::remove_dir_all(&path)
-                    .await
-                    .context(format!("remove dir recursively {path:?}"))?;
-            } else {
-                fs::remove_file(&path)
-                    .await
-                    .context(format!("remove file {path:?}"))?;
-            }
-            false
-        }
-        Watched::Rename(from, to) => {
-            let from = from.rebase(src_root, dest_root)?;
-            let to = to.rebase(src_root, dest_root)?;
-            fs::rename(&from, &to)
-                .await
-                .context(format!("rename {from:?} to {to:?}"))?;
-            true
-        }
-        Watched::Write(f) => {
-            let file = SourcedSiteFile {
-                source: f.clone(),
-                dest: f.rebase(src_root, dest_root)?,
-                site: f.unbase(src_root)?,
-            };
-            proj.site.updated(&file).await?
-        }
-        Watched::Rescan => {
-            resync(src_root, dest_root, pkg_dir).await?;
-            true
-        }
+        // if reserved.contains(assets.dir) {
+        //     log::warn!("Assets reserved filename for Leptos. Please remove {watched:?}");
+        //     return Ok(false);
+        // }
+        log::trace!("Assets starting resync");
+        resync(&assets.dir, dest_root, pkg_dir).await?;
+        log::debug!("Assets finished");
+        Ok(Outcome::Success(Product::Assets))
     })
 }
 

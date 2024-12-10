@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use super::anyhow::Result;
 use super::{PathBufExt, PathExt};
 use camino::{Utf8Path, Utf8PathBuf};
-use cargo_metadata::{Metadata, MetadataCommand, Package, PackageId, Resolve, Target};
+use cargo_metadata::{CrateType, Metadata, MetadataCommand, Package, PackageId, Resolve, Target};
 
 pub trait PackageExt {
     fn has_bin_target(&self) -> bool;
@@ -22,15 +22,24 @@ impl PackageExt for Package {
         Box::new(self.targets.iter().filter(|t| t.is_bin()))
     }
     fn cdylib_target(&self) -> Option<&Target> {
-        let cdylib: String = "cdylib".to_string();
         self.targets
             .iter()
-            .find(|t| t.crate_types.contains(&cdylib))
+            .find(|t| t.crate_types.contains(&CrateType::CDyLib))
     }
     fn target_list(&self) -> String {
         self.targets
             .iter()
-            .map(|t| format!("{} ({})", t.name, t.crate_types.join(", ")))
+            .map(|t| {
+                format!(
+                    "{} ({})",
+                    t.name,
+                    t.crate_types
+                        .iter()
+                        .map(|c| c.to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+            })
             .collect::<Vec<_>>()
             .join(", ")
     }
