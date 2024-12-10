@@ -1,8 +1,8 @@
 
-# Config for 'cargo dist'
+# Config for 'dist'
 [workspace.metadata.dist]
-# The preferred cargo-dist version to use in CI (Cargo.toml SemVer syntax)
-cargo-dist-version = "0.25.0"
+# The preferred dist version to use in CI (Cargo.toml SemVer syntax)
+cargo-dist-version = "0.25.1"
 # CI backends to support
 ci = "github"
 # Target platforms to build apps for (Rust target-triple syntax)
@@ -15,7 +15,7 @@ targets = [
 ]
 # The installers to generate for each app
 installers = ["shell", "powershell"]
-# Publish jobs to run in CI
+# Which actions to run on pull requests
 pr-run-mode = "plan"
 # The archive format to use for windows builds (defaults .zip)
 windows-archive = ".tar.gz"
