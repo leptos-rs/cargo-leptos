@@ -1,6 +1,8 @@
+use cargo_generate::{GenerateArgs, TemplatePath};
 use clap::Args;
-use color_eyre::Result;
+use color_eyre::{eyre::eyre, Result};
 use serde::{Deserialize, Serialize};
+
 // A subset of the cargo-generate commands available.
 // See: https://github.com/cargo-generate/cargo-generate/blob/main/src/args.rs
 
@@ -8,25 +10,6 @@ use serde::{Deserialize, Serialize};
 #[clap(arg_required_else_help(true))]
 #[clap(about)]
 pub struct NewCommand {
-    /// Git repository to clone template from. Can be a full URL (like
-    /// `https://github.com/leptos-rs/start`), or a shortcut for one of our
-    /// built-in templates: `leptos-rs/start`, `leptos-rs/start-axum`,
-    /// `leptos-rs/start-axum-workspace`, or `leptos-rs/start-aws`.
-    #[clap(short, long, group("SpecificPath"))]
-    pub git: Option<String>,
-
-    /// Branch to use when installing from git
-    #[clap(short, long, conflicts_with = "tag")]
-    pub branch: Option<String>,
-
-    /// Tag to use when installing from git
-    #[clap(short, long, conflicts_with = "branch")]
-    pub tag: Option<String>,
-
-    /// Local path to copy the template from. Can not be specified together with --git.
-    #[clap(short, long, group("SpecificPath"))]
-    pub path: Option<String>,
-
     /// Directory to create / project name; if the name isn't in kebab-case, it will be converted
     /// to kebab-case unless `--force` is given.
     #[clap(long, short, value_parser)]
@@ -44,45 +27,46 @@ pub struct NewCommand {
     /// Generate the template directly into the current dir. No subfolder will be created and no vcs is initialized.
     #[clap(long, action)]
     pub init: bool,
+
+    /// Local path to copy the template from. Can not be specified together with --template.
+    #[clap(short, long, group("SpecificPath"))]
+    pub path: Option<String>,
+
+    /// Template path
+    #[clap(short, long)]
+    pub template: Option<String>,
+
+    /// Branch to use when installing from template
+    #[clap(long, conflicts_with = "tag")]
+    pub branch: Option<String>,
+
+    /// Tag to use when installing from template
+    #[clap(long, conflicts_with = "branch")]
+    pub tag: Option<String>,
+
+    /// Specifies the sub-template within the template repository to be used as the actual template.
+    #[arg(long)]
+    pub subtemplate: Option<String>,
 }
 
 impl NewCommand {
-    pub async fn run(&self) -> Result<()> {
-        let _args = self.to_args();
-        // let exe = Exe::CargoGenerate.get().await.dot()?;
-
-        // let mut process = Command::new(exe)
-        //     .arg("generate")
-        //     .args(&args)
-        //     .spawn()
-        //     .context("Could not spawn cargo-generate command (verify that it is installed)")?;
-        // process.wait().await.dot()?;
+    pub fn run(self) -> Result<()> {
+        let args = GenerateArgs {
+            name: self.name,
+            force: self.force,
+            verbose: self.verbose,
+            init: self.init,
+            template_path: TemplatePath {
+                auto_path: self.template,
+                branch: self.branch,
+                tag: self.tag,
+                path: self.path,
+                subfolder: self.subtemplate,
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        let _ = cargo_generate::generate(args).map_err(|err| eyre!(Box::new(err)))?;
         Ok(())
-    }
-
-    pub fn to_args(&self) -> Vec<String> {
-        let mut args = vec![];
-        opt_push(&mut args, "git", &self.git);
-        opt_push(&mut args, "branch", &self.branch);
-        opt_push(&mut args, "tag", &self.tag);
-        opt_push(&mut args, "path", &self.path);
-        opt_push(&mut args, "name", &self.name);
-        bool_push(&mut args, "force", self.force);
-        bool_push(&mut args, "verbose", self.verbose);
-        bool_push(&mut args, "init", self.init);
-        args
-    }
-}
-
-fn bool_push(args: &mut Vec<String>, name: &str, set: bool) {
-    if set {
-        args.push(format!("--{name}"))
-    }
-}
-
-fn opt_push(args: &mut Vec<String>, name: &str, arg: &Option<String>) {
-    if let Some(arg) = arg {
-        args.push(format!("--{name}"));
-        args.push(arg.clone());
     }
 }

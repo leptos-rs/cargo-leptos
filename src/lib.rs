@@ -15,8 +15,8 @@ pub async fn run(cli: Cli) -> Result<()> {
     //let verbose = cli.opts.verbose;
     //logger::setup(verbose, &cli.log);
 
-    if let New(new) = &cli.command {
-        return new.run().await;
+    if let New(new) = cli.command {
+        return new.run();
     }
 
     //let mut cwd = get_current_dir(Some(&cli.manifest_path));
