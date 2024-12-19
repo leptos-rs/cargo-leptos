@@ -48,17 +48,12 @@ impl Interrupt {
 
     pub fn send(changes: &[Change]) {
         let mut ch = SOURCE_CHANGES.blocking_write();
-        let mut did_change = false;
         for change in changes {
-            did_change |= ch.add(change.clone());
+            ch.add(change.clone());
         }
         drop(ch);
 
-        if did_change {
-            Self::send_any();
-        } else {
-            log::trace!("Interrupt no change");
-        }
+        Self::send_any();
     }
 
     fn send_any() {
