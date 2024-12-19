@@ -126,6 +126,11 @@ impl BinPackage {
             src_paths.push(rel_dir.join("src"));
         }
 
+        let cargo_args = cli
+            .bin_cargo_args
+            .clone()
+            .or_else(|| config.bin_cargo_args.clone());
+
         log::debug!("BEFORE BIN {:?}", config.bin_cargo_command);
         Ok(Self {
             name,
@@ -140,7 +145,7 @@ impl BinPackage {
             target_triple: config.bin_target_triple.clone(),
             target_dir: config.bin_target_dir.clone(),
             cargo_command: config.bin_cargo_command.clone(),
-            cargo_args: cli.bin_cargo_args.clone(),
+            cargo_args,
             bin_args: bin_args.map(ToOwned::to_owned),
         })
     }
