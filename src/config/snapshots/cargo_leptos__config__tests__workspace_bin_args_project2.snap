@@ -1,6 +1,7 @@
 ---
 source: src/config/tests.rs
 expression: conf
+snapshot_kind: text
 ---
 Config {
     projects: [
@@ -80,6 +81,8 @@ Config {
                     dir: "project2/src/assets",
                 },
             ),
+            server_fn_prefix: None,
+            disable_server_fn_hash: false,
             ..
         },
     ],

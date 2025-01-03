@@ -46,25 +46,25 @@ opt-level = 'z'
 [features]
 default = ["ssr"]
 hydrate = [
-  "leptos/hydrate",
-  "leptos_meta/hydrate",
-  "leptos_router/hydrate",
-  "dep:wasm-bindgen",
-  "dep:console_log",
-  "dep:console_error_panic_hook",
+    "leptos/hydrate",
+    "leptos_meta/hydrate",
+    "leptos_router/hydrate",
+    "dep:wasm-bindgen",
+    "dep:console_log",
+    "dep:console_error_panic_hook",
 ]
 ssr = [
-  "leptos/ssr",
-  "leptos_meta/ssr",
-  "leptos_router/ssr",
-  "dep:leptos_actix",
-  "dep:reqwest",
-  "dep:actix-web",
-  "dep:actix-files",
-  "dep:futures",
-  "dep:simple_logger",
-  "dep:serde_json",
-  "dep:dotenvy",
+    "leptos/ssr",
+    "leptos_meta/ssr",
+    "leptos_router/ssr",
+    "dep:leptos_actix",
+    "dep:reqwest",
+    "dep:actix-web",
+    "dep:actix-files",
+    "dep:futures",
+    "dep:simple_logger",
+    "dep:serde_json",
+    "dep:dotenvy",
 ]
 
 
@@ -122,3 +122,6 @@ env = "dev"
 #
 # Optional: Defaults to false. Can also be set with the LEPTOS_HASH_FILES=false env var
 hash-files = true
+
+server-fn-prefix = "/custom/prefix"
+disable-server-fn-hash = true
