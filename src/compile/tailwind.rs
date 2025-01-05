@@ -13,15 +13,12 @@ use crate::{
     signal::{Interrupt, Outcome},
 };
 
-pub async fn compile_tailwind(
-    _proj: &Project,
-    tw_conf: &TailwindConfig,
-) -> Result<Outcome<String>> {
+pub async fn compile_tailwind(proj: &Project, tw_conf: &TailwindConfig) -> Result<Outcome<String>> {
     if !tw_conf.config_file.exists() {
         create_default_tailwind_config(tw_conf).await?;
     }
 
-    let (line, process) = tailwind_process("tailwindcss", tw_conf).await?;
+    let (line, process) = tailwind_process(&proj, "tailwindcss", tw_conf).await?;
 
     match wait_piped_interruptible("Tailwind", process, Interrupt::subscribe_any()).await? {
         CommandResult::Success(output) => {
@@ -75,10 +72,14 @@ async fn create_default_tailwind_config(tw_conf: &TailwindConfig) -> Result<()> 
     fs::write(&tw_conf.config_file, contents).await
 }
 
-pub async fn tailwind_process(cmd: &str, tw_conf: &TailwindConfig) -> Result<(String, Command)> {
+pub async fn tailwind_process(
+    proj: &Project,
+    cmd: &str,
+    tw_conf: &TailwindConfig,
+) -> Result<(String, Command)> {
     let tailwind = Exe::Tailwind.get().await.dot()?;
 
-    let args: Vec<&str> = vec![
+    let mut args: Vec<&str> = vec![
         "--input",
         tw_conf.input_file.as_str(),
         "--config",
@@ -86,6 +87,12 @@ pub async fn tailwind_process(cmd: &str, tw_conf: &TailwindConfig) -> Result<(St
         "--output",
         tw_conf.tmp_file.as_str(),
     ];
+
+    if proj.release {
+        // minify & optimize
+        args.push("--minify");
+    }
+
     let line = format!("{} {}", cmd, args.join(" "));
     let mut command = Command::new(tailwind);
     command.args(args);

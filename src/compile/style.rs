@@ -118,7 +118,7 @@ async fn process_css(proj: &Project, css: String) -> Result<Product> {
         true => {
             log::trace!(
                 "Style finished with changes {}",
-                GRAY.paint(&proj.style.site_file.to_string())
+                GRAY.paint(proj.style.site_file.to_string())
             );
             Product::Style("".to_string()) //TODO
         }
