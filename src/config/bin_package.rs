@@ -1,6 +1,6 @@
 use camino::Utf8PathBuf;
 use cargo_metadata::{Metadata, Target};
-
+use current_platform::CURRENT_PLATFORM;
 use super::{project::ProjectDefinition, Profile, ProjectConfig};
 use crate::{
     config::Opts,
@@ -114,9 +114,20 @@ impl BinPackage {
             } else {
                 &name
             };
-            file.join(profile.to_string())
+            let mut test_file = file.join(profile.to_string())
                 .join(name)
-                .with_extension(file_ext)
+                .with_extension(file_ext);
+            // Check if the file exists and if not, try to prepend target_triple
+            // right now it mail fail to find target/debug/name
+            // but the build is successful and in target/"target_triple"/debug/name
+            // https://github.com/leptos-rs/cargo-leptos/issues/358
+            if !test_file.exists(){
+                test_file = Utf8PathBuf::from(format!(
+                    "target/{}/{}/{}",
+                    CURRENT_PLATFORM, profile.to_string(),test_file.file_name().unwrap()
+                ));
+            }
+            test_file
         };
 
         let mut src_paths = metadata.src_path_dependencies(&package.id);
