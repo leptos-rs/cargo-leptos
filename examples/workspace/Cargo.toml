@@ -30,3 +30,4 @@ style-file = "project1/css/main.scss"
 site-root = "target/site/project1"
 server-fn-prefix = "/custom/prefix"
 disable-server-fn-hash = true
+server-fn-mod-path = true

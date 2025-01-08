@@ -78,6 +78,7 @@ Config {
             ),
             server_fn_prefix: None,
             disable_server_fn_hash: false,
+            server_fn_mod_path: false,
             ..
         },
     ],

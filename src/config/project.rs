@@ -49,6 +49,7 @@ pub struct Project {
     pub js_minify: bool,
     pub server_fn_prefix: Option<String>,
     pub disable_server_fn_hash: bool,
+    pub server_fn_mod_path: bool,
 }
 
 impl Debug for Project {
@@ -68,6 +69,7 @@ impl Debug for Project {
             .field("assets", &self.assets)
             .field("server_fn_prefix", &self.server_fn_prefix)
             .field("disable_server_fn_hash", &self.disable_server_fn_hash)
+            .field("server_fn_mod_path", &self.server_fn_mod_path)
             .finish_non_exhaustive()
     }
 }
@@ -132,6 +134,7 @@ impl Project {
                 js_minify: cli.release && cli.js_minify && config.js_minify,
                 server_fn_prefix: config.server_fn_prefix,
                 disable_server_fn_hash: config.disable_server_fn_hash,
+                server_fn_mod_path: config.server_fn_mod_path,
             };
             resolved.push(Arc::new(proj));
         }
@@ -172,6 +175,9 @@ impl Project {
         }
         if self.disable_server_fn_hash {
             vec.push(("DISABLE_SERVER_FN_HASH", true.to_string()));
+        }
+        if self.server_fn_mod_path {
+            vec.push(("SERVER_FN_MOD_PATH", true.to_string()));
         }
         vec
     }
@@ -257,6 +263,15 @@ pub struct ProjectConfig {
     /// path needs to be consistent and not have a hash appended.
     #[serde(default)]
     pub disable_server_fn_hash: bool,
+
+    /// Include the module path of the server function in the API route. This is an alternative
+    /// strategy to prevent duplicate server function API routes (the default strategy is to add
+    /// a hash to the end of the route). Each element of the module path will be separated by a `/`.
+    /// For example, a server function with a fully qualified name of `parent::child::server_fn`
+    /// would have an API route of `/api/parent/child/server_fn` (possibly with a
+    /// different prefix and a hash suffix depending on the values of the other server fn configs).
+    #[serde(default)]
+    server_fn_mod_path: bool,
 
     #[serde(skip)]
     pub config_dir: Utf8PathBuf,

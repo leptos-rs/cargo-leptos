@@ -76,6 +76,7 @@ Config {
                 "/custom/prefix",
             ),
             disable_server_fn_hash: true,
+            server_fn_mod_path: true,
             ..
         },
     ],
