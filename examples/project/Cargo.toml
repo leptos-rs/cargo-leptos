@@ -23,7 +23,7 @@ log = "0.4.17"
 cfg-if = "1.0.0"
 
 # dependecies for client (enable hydrate set)
-wasm-bindgen = { version = "=0.2.99", optional = true }
+wasm-bindgen = { version = "=0.2.100", optional = true }
 console_log = { version = "1.0", optional = true }
 console_error_panic_hook = { version = "0.1.7", optional = true }
 
