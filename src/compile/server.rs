@@ -1,5 +1,4 @@
 use std::sync::Arc;
-
 use super::ChangeSet;
 use crate::{
     config::Project,
@@ -107,6 +106,14 @@ pub fn build_cargo_server_cmd(
 
     if !proj.bin.features.is_empty() {
         args.push(format!("--features={}", proj.bin.features.join(",")));
+    }
+    // Check if the binary executable file exists
+    let exe_file = &proj.bin.exe_file;
+    if exe_file.exists() {
+        // If it exists, use its parent directory as the target directory
+        if let Some(target_dir) = exe_file.parent() {
+            command.env("CARGO_TARGET_DIR", target_dir);
+        }
     }
 
     log::debug!("BIN CARGO ARGS: {:?}", &proj.bin.cargo_args);

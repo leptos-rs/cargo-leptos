@@ -100,33 +100,37 @@ impl BinPackage {
                 ""
             };
 
-            let mut file = config
+            let file = config
                 .bin_target_dir
                 .as_ref()
                 .map(|dir| dir.into())
                 // Can't use absolute path because the path gets stored in snapshot testing, and it differs between developers
                 .unwrap_or_else(|| metadata.rel_target_dir());
-            if let Some(triple) = &config.bin_target_triple {
-                file = file.join(triple)
+
+            let file = if let Some(triple) = &config.bin_target_triple {
+                file.join(triple)
+            } else {
+                file
             };
             let name = if let Some(name) = &config.bin_exe_name {
                 name
             } else {
                 &name
             };
-            let mut test_file = file.join(profile.to_string())
-                .join(name)
+            // Create an array of possible locations
+            let possible_locations = [
+                file.join(profile.to_string()).join(name),
+                file.join(CURRENT_PLATFORM).join(profile.to_string()).join(name),
+            ];
+            log::debug!("Possible locations: {:?}", possible_locations);
+            // Find the first existing file path or use the first possible location, which is the default
+            let test_file = possible_locations
+                .iter()
+                .find(|path| path.with_extension(file_ext).exists())
+                .cloned()
+                .unwrap_or_else(|| possible_locations[0].clone())
                 .with_extension(file_ext);
-            // Check if the file exists and if not, try to prepend target_triple
-            // right now it mail fail to find target/debug/name
-            // but the build is successful and in target/"target_triple"/debug/name
-            // https://github.com/leptos-rs/cargo-leptos/issues/358
-            if !test_file.exists(){
-                test_file = Utf8PathBuf::from(format!(
-                    "target/{}/{}/{}",
-                    CURRENT_PLATFORM, profile.to_string(),test_file.file_name().unwrap()
-                ));
-            }
+
             test_file
         };
 
