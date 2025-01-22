@@ -12,6 +12,7 @@ use tokio::{
     process::{Child, Command},
     task::JoinHandle,
 };
+use current_platform::CURRENT_PLATFORM;
 
 pub async fn server(
     proj: &Arc<Project>,
@@ -98,6 +99,8 @@ pub fn build_cargo_server_cmd(
     }
     if let Some(triple) = &proj.bin.target_triple {
         args.push(format!("--target={triple}"));
+    }else{
+        args.push(format!("--target={CURRENT_PLATFORM}"));
     }
 
     if !proj.bin.default_features {

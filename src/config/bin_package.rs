@@ -124,14 +124,18 @@ impl BinPackage {
             ];
             log::debug!("Possible locations: {:?}", possible_locations);
             // Find the first existing file path or use the first possible location, which is the default
-            let test_file = possible_locations
+            let bin_file = possible_locations
                 .iter()
-                .find(|path| path.with_extension(file_ext).exists())
+                .find(|path| {
+                    let with_ext = path.with_extension(file_ext);
+                    with_ext.exists() && path.to_string().contains(CURRENT_PLATFORM)
+                })
+                .or_else(|| possible_locations.iter().find(|path| path.with_extension(file_ext).exists()))
                 .cloned()
-                .unwrap_or_else(|| possible_locations[0].clone())
+                .unwrap_or_else(|| possible_locations[1].clone())
                 .with_extension(file_ext);
 
-            test_file
+            bin_file
         };
 
         let mut src_paths = metadata.src_path_dependencies(&package.id);

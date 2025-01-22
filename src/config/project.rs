@@ -21,7 +21,7 @@ use super::{
     end2end::End2EndConfig,
     style::StyleConfig,
 };
-
+// use current_platform::CURRENT_PLATFORM;
 /// If the site root path starts with this marker, the marker should be replaced with the Cargo target directory
 const CARGO_TARGET_DIR_MARKER: &str = "CARGO_TARGET_DIR";
 /// If the site root path starts with this marker, the marker should be replaced with the Cargo target directory
