@@ -100,42 +100,23 @@ impl BinPackage {
                 ""
             };
 
-            let file = config
+            let mut file = config
                 .bin_target_dir
                 .as_ref()
                 .map(|dir| dir.into())
                 // Can't use absolute path because the path gets stored in snapshot testing, and it differs between developers
                 .unwrap_or_else(|| metadata.rel_target_dir());
-
-            let file = if let Some(triple) = &config.bin_target_triple {
-                file.join(triple)
-            } else {
-                file
+            if let Some(triple) = &config.bin_target_triple {
+                file = file.join(triple)
             };
             let name = if let Some(name) = &config.bin_exe_name {
                 name
             } else {
                 &name
             };
-            // Create an array of possible locations
-            let possible_locations = [
-                file.join(profile.to_string()).join(name),
-                file.join(CURRENT_PLATFORM).join(profile.to_string()).join(name),
-            ];
-            log::debug!("Possible locations: {:?}", possible_locations);
-            // Find the first existing file path or use the first possible location, which is the default
-            let bin_file = possible_locations
-                .iter()
-                .find(|path| {
-                    let with_ext = path.with_extension(file_ext);
-                    with_ext.exists() && path.to_string().contains(CURRENT_PLATFORM)
-                })
-                .or_else(|| possible_locations.iter().find(|path| path.with_extension(file_ext).exists()))
-                .cloned()
-                .unwrap_or_else(|| possible_locations[1].clone())
-                .with_extension(file_ext);
-
-            bin_file
+            file.join(profile.to_string())
+                .join(name)
+                .with_extension(file_ext)
         };
 
         let mut src_paths = metadata.src_path_dependencies(&package.id);
@@ -161,7 +142,7 @@ impl BinPackage {
             default_features: config.bin_default_features,
             src_paths,
             profile,
-            target_triple: config.bin_target_triple.clone(),
+            target_triple: Option::from(config.bin_target_triple.clone().unwrap_or_else(|| CURRENT_PLATFORM.to_string())),
             target_dir: config.bin_target_dir.clone(),
             cargo_command: config.bin_cargo_command.clone(),
             cargo_args,
