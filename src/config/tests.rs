@@ -1,5 +1,6 @@
+// use camino::{Utf8Path, Utf8PathBuf};
 use super::Config;
-
+use current_platform::CURRENT_PLATFORM;
 fn opts(project: Option<&str>) -> crate::config::Opts {
     crate::config::Opts {
         release: false,
@@ -31,10 +32,14 @@ fn test_project() {
 #[test]
 fn test_workspace() {
     let cli = opts(None);
-
     let conf = Config::test_load(cli, "examples", "examples/workspace/Cargo.toml", true, None);
-
-    insta::assert_debug_snapshot!(conf);
+    insta::with_settings!({filters => vec![
+        (format!(r"target/{}/debug", CURRENT_PLATFORM).as_str(), r"target/debug"),
+        ]}, {
+            let conf = format!("{:#?}", &conf);
+            insta::assert_snapshot!(conf);
+        }
+    );
 }
 
 #[test]
@@ -43,7 +48,13 @@ fn test_workspace_project1() {
 
     let conf = Config::test_load(cli, "examples", "examples/workspace/Cargo.toml", true, None);
 
-    insta::assert_debug_snapshot!(conf);
+    insta::with_settings!({filters => vec![
+        (format!(r"target/{}/debug", CURRENT_PLATFORM).as_str(), r"target/debug"),
+        ]}, {
+            let conf = format!("{:#?}", &conf);
+            insta::assert_snapshot!(conf);
+        }
+    );
 }
 
 #[test]
@@ -52,7 +63,13 @@ fn test_workspace_project2() {
 
     let conf = Config::test_load(cli, "examples", "examples/workspace/Cargo.toml", true, None);
 
-    insta::assert_debug_snapshot!(conf);
+    insta::with_settings!({filters => vec![
+        (format!(r"target/{}/debug", CURRENT_PLATFORM).as_str(), r"target/debug"),
+        ]}, {
+            let conf = format!("{:#?}", &conf);
+            insta::assert_snapshot!(conf);
+        }
+    );
 }
 
 #[test]
@@ -67,7 +84,13 @@ fn test_workspace_in_subdir_project2() {
         None,
     );
 
-    insta::assert_debug_snapshot!(conf);
+    insta::with_settings!({filters => vec![
+        (format!(r"target/{}/debug", CURRENT_PLATFORM).as_str(), r"target/debug"),
+        ]}, {
+            let conf = format!("{:#?}", &conf);
+            insta::assert_snapshot!(conf);
+        }
+    );
 }
 
 #[test]
@@ -82,5 +105,12 @@ fn test_workspace_bin_args_project2() {
         Some(&["--".to_string(), "--foo".to_string()]),
     );
 
-    insta::assert_debug_snapshot!(conf);
+    insta::with_settings!({filters => vec![
+        (format!(r"target/{}/debug", CURRENT_PLATFORM).as_str(), r"target/debug"),
+        ]}, {
+            let conf = format!("{:#?}", &conf);
+            insta::assert_snapshot!(conf);
+        }
+    );
 }
+
