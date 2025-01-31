@@ -317,7 +317,7 @@ impl Command for CommandTailwind {
         "tailwindcss"
     }
     fn default_version(&self) -> &'static str {
-        "v3.4.0"
+        "v4.0.2"
     }
     fn env_var_version_name(&self) -> &'static str {
         ENV_VAR_LEPTOS_TAILWIND_VERSION
@@ -353,8 +353,22 @@ impl Command for CommandTailwind {
                 version,
                 self.name()
             )),
+            ("linux", "x86_64") if is_linux_musl_env() => Ok(format!(
+                "https://github.com/{}/{}/releases/download/{}/{}-linux-x64-musl",
+                self.github_owner(),
+                self.github_repo(),
+                version,
+                self.name()
+            )),
             ("linux", "x86_64") => Ok(format!(
                 "https://github.com/{}/{}/releases/download/{}/{}-linux-x64",
+                self.github_owner(),
+                self.github_repo(),
+                version,
+                self.name()
+            )),
+            ("linux", "aarch64") if is_linux_musl_env() => Ok(format!(
+                "https://github.com/{}/{}/releases/download/{}/{}-linux-arm64-musl",
                 self.github_owner(),
                 self.github_repo(),
                 version,
