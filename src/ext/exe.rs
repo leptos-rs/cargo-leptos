@@ -317,7 +317,7 @@ impl Command for CommandTailwind {
         "tailwindcss"
     }
     fn default_version(&self) -> &'static str {
-        "v3.4.0"
+        "v4.0.3"
     }
     fn env_var_version_name(&self) -> &'static str {
         ENV_VAR_LEPTOS_TAILWIND_VERSION
@@ -331,6 +331,8 @@ impl Command for CommandTailwind {
 
     /// Tool binary download url for the given OS and platform arch
     fn download_url(&self, target_os: &str, target_arch: &str, version: &str) -> Result<String> {
+        let use_musl = is_linux_musl_env() && version.starts_with("v4");
+
         match (target_os, target_arch) {
             ("windows", "x86_64") => Ok(format!(
                 "https://github.com/{}/{}/releases/download/{}/{}-windows-x64.exe",
@@ -353,8 +355,22 @@ impl Command for CommandTailwind {
                 version,
                 self.name()
             )),
+            ("linux", "x86_64") if use_musl => Ok(format!(
+                "https://github.com/{}/{}/releases/download/{}/{}-linux-x64-musl",
+                self.github_owner(),
+                self.github_repo(),
+                version,
+                self.name()
+            )),
             ("linux", "x86_64") => Ok(format!(
                 "https://github.com/{}/{}/releases/download/{}/{}-linux-x64",
+                self.github_owner(),
+                self.github_repo(),
+                version,
+                self.name()
+            )),
+            ("linux", "aarch64") if use_musl => Ok(format!(
+                "https://github.com/{}/{}/releases/download/{}/{}-linux-arm64-musl",
                 self.github_owner(),
                 self.github_repo(),
                 version,
@@ -376,17 +392,16 @@ impl Command for CommandTailwind {
         }
     }
 
-    fn executable_name(
-        &self,
-        target_os: &str,
-        target_arch: &str,
-        _version: Option<&str>,
-    ) -> Result<String> {
+    fn executable_name(&self, target_os: &str, target_arch: &str, version: &str) -> Result<String> {
+        let use_musl = is_linux_musl_env() && version.starts_with("v4");
+
         Ok(match (target_os, target_arch) {
             ("windows", _) => format!("{}-windows-x64.exe", self.name()),
             ("macos", "x86_64") => format!("{}-macos-x64", self.name()),
             ("macos", "aarch64") => format!("{}-macos-arm64", self.name()),
+            ("linux", "x86_64") if use_musl => format!("{}-linux-x64-musl", self.name()),
             ("linux", "x86_64") => format!("{}-linux-x64", self.name()),
+            (_, _) if use_musl => format!("{}-linux-arm64-musl", self.name()),
             (_, _) => format!("{}-linux-arm64", self.name()),
         })
     }
@@ -440,23 +455,11 @@ impl Command for CommandWasmOpt {
         &self,
         target_os: &str,
         _target_arch: &str,
-        version: Option<&str>,
+        version: &str,
     ) -> Result<String> {
-        if version.is_none() {
-            bail!("Version is required for WASM Opt, none provided")
-        };
-
         Ok(match target_os {
-            "windows" => format!(
-                "binaryen-{}/bin/{}.exe",
-                version.unwrap_or_default(),
-                self.name()
-            ),
-            _ => format!(
-                "binaryen-{}/bin/{}",
-                version.unwrap_or_default(),
-                self.name()
-            ),
+            "windows" => format!("binaryen-{version}/bin/{}.exe", self.name()),
+            _ => format!("binaryen-{version}/bin/{}", self.name()),
         })
     }
 
@@ -531,7 +534,7 @@ impl Command for CommandSass {
         &self,
         target_os: &str,
         _target_arch: &str,
-        _version: Option<&str>,
+        _version: &str,
     ) -> Result<String> {
         Ok(match target_os {
             "windows" => "dart-sass/sass.bat".to_string(),
@@ -596,7 +599,7 @@ impl Command for CommandCargoGenerate {
         &self,
         target_os: &str,
         _target_arch: &str,
-        _version: Option<&str>,
+        _version: &str,
     ) -> Result<String> {
         Ok(match target_os {
             "windows" => "cargo-generate.exe".to_string(),
@@ -621,12 +624,7 @@ trait Command {
     fn github_owner(&self) -> &str;
     fn github_repo(&self) -> &str;
     fn download_url(&self, target_os: &str, target_arch: &str, version: &str) -> Result<String>;
-    fn executable_name(
-        &self,
-        target_os: &str,
-        target_arch: &str,
-        version: Option<&str>,
-    ) -> Result<String>;
+    fn executable_name(&self, target_os: &str, target_arch: &str, version: &str) -> Result<String>;
     #[allow(unused)]
     fn manual_install_instructions(&self) -> String {
         // default placeholder text, individual commands can override and customize
@@ -650,7 +648,7 @@ trait Command {
     async fn exe_meta(&self, target_os: &str, target_arch: &str) -> Result<ExeMeta> {
         let version = self.resolve_version().await;
         let url = self.download_url(target_os, target_arch, version.as_str())?;
-        let exe = self.executable_name(target_os, target_arch, Some(version.as_str()))?;
+        let exe = self.executable_name(target_os, target_arch, version.as_str())?;
         Ok(ExeMeta {
             name: self.name(),
             version,
