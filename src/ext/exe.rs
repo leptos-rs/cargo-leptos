@@ -3,6 +3,7 @@ use crate::{
     logger::GRAY,
 };
 use bytes::Bytes;
+use core::str;
 use std::{
     fs::{self, File},
     io::{Cursor, Write},
@@ -252,36 +253,40 @@ impl Exe {
 }
 
 /// Tailwind uses the 'vMaj.Min.Pat' format.
-/// WASM opt uses 'version_NNN' format.
 /// We generally want to keep the suffix intact,
 /// as it carries classifiers, etc, but strip non-ascii
 /// digits from the prefix.
 #[inline]
-fn sanitize_version_prefix(ver_string: &str) -> String {
-    ver_string
-        .chars()
-        .skip_while(|c| !c.is_ascii_digit() || *c == '_')
-        .collect::<String>()
+fn sanitize_version_prefix<'a>(ver_string: &'a str) -> Result<&'a str> {
+    if let [b'v', rest @ ..] = ver_string.as_bytes() {
+        str::from_utf8(rest).dot()
+    } else {
+        Ok(ver_string)
+    }
 }
 
 /// Attempts to convert a non-semver version string to a semver one.
-/// E.g. WASM Opt uses `version_112`, which is not semver even if
 /// we strip the prefix, treat it as `112.0.0`
 fn normalize_version(ver_string: &str) -> Option<Version> {
-    let ver_string = sanitize_version_prefix(ver_string);
-    match Version::parse(&ver_string) {
-        Ok(v) => Some(v),
-        Err(_) => match &ver_string.parse::<u64>() {
-            Ok(num) => Some(Version::new(*num, 0, 0)),
-            Err(_) => match Version::parse(format!("{ver_string}.0").as_str()) {
-                Ok(v) => Some(v),
-                Err(e) => {
-                    log::error!("Command failed to normalize version {ver_string}: {e}");
-                    None
-                }
-            },
-        },
-    }
+    sanitize_version_prefix(ver_string)
+        .ok()
+        .and_then(|ver_string| {
+            let version = Version::parse(ver_string)
+                .ok()
+                .or_else(|| {
+                    ver_string
+                        .parse::<u64>()
+                        .map(|num| Version::new(num, 0, 0))
+                        .ok()
+                })
+                .or_else(|| Version::parse(format!("{ver_string}.0").as_str()).ok());
+
+            if version.is_none() {
+                log::error!("Command failed to normalize version: {ver_string}");
+            }
+
+            version
+        })
 }
 
 // fallback to this crate until rust stable includes async traits
@@ -688,19 +693,13 @@ mod tests {
 
     #[test]
     fn test_sanitize_version_prefix() {
-        let version = sanitize_version_prefix("v1.2.3");
-        assert_eq!(version, "1.2.3");
-        assert!(Version::parse(&version).is_ok());
-        let version = sanitize_version_prefix("version_1.2.3");
+        let version = sanitize_version_prefix("v1.2.3").expect("Could not sanitize \"v1.2.3\".");
         assert_eq!(version, "1.2.3");
         assert!(Version::parse(&version).is_ok());
     }
 
     #[test]
     fn test_normalize_version() {
-        let version = normalize_version("version_112");
-        assert!(version.is_some_and(|v| { v.major == 112 && v.minor == 0 && v.patch == 0 }));
-
         let version = normalize_version("v3.3.3");
         assert!(version.is_some_and(|v| { v.major == 3 && v.minor == 3 && v.patch == 3 }));
 
