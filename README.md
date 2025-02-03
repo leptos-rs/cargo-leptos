@@ -64,7 +64,7 @@ For setting up your project, have a look at the [examples](https://github.com/le
 
 ## Dependencies
 
-The dependencies for [sass](https://sass-lang.com/install) and [wasm-opt](https://github.com/WebAssembly/binaryen) are automatically installed in a cache directory when they are used if they are not already installed and found by [which](https://crates.io/crates/which).
+The dependency for [sass](https://sass-lang.com/install) is automatically installed in a cache directory when they are used if they are not already installed and found by [which](https://crates.io/crates/which).
 Different versions of the dependencies might accumulate in this directory, so feel free to delete it.
 
 | OS      | Example                                   |
@@ -334,7 +334,6 @@ override the versions `cargo-leptos` should use (e.g. `LEPTOS_SASS_VERSION=1.69.
 
 - LEPTOS_TAILWIND_VERSION
 - LEPTOS_SASS_VERSION
-- LEPTOS_WASM_OPT_VERSION
 
 ## End-to-end testing
 

@@ -61,7 +61,6 @@ fn overlay(conf: &mut ProjectConfig, envs: impl Iterator<Item = (String, String)
             // good way at the moment to pull the ProjectConfig all the way to Exe
             exe::ENV_VAR_LEPTOS_TAILWIND_VERSION => {}
             exe::ENV_VAR_LEPTOS_SASS_VERSION => {}
-            exe::ENV_VAR_LEPTOS_WASM_OPT_VERSION => {}
             _ if key.starts_with("LEPTOS_") => {
                 log::warn!("Env {key} is not used by cargo-leptos")
             }

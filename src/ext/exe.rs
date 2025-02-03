@@ -38,7 +38,6 @@ lazy_static::lazy_static! {
 
 pub const ENV_VAR_LEPTOS_TAILWIND_VERSION: &str = "LEPTOS_TAILWIND_VERSION";
 pub const ENV_VAR_LEPTOS_SASS_VERSION: &str = "LEPTOS_SASS_VERSION";
-pub const ENV_VAR_LEPTOS_WASM_OPT_VERSION: &str = "LEPTOS_WASM_OPT_VERSION";
 
 impl ExeMeta {
     #[allow(clippy::wrong_self_convention)]
@@ -212,7 +211,6 @@ fn get_cache_dir() -> Result<PathBuf> {
 #[derive(Debug, Hash, Eq, PartialEq)]
 pub enum Exe {
     Sass,
-    WasmOpt,
     Tailwind,
 }
 
@@ -243,10 +241,6 @@ impl Exe {
 
         let exe = match self {
             Exe::Sass => CommandSass.exe_meta(target_os, target_arch).await.dot()?,
-            Exe::WasmOpt => CommandWasmOpt
-                .exe_meta(target_os, target_arch)
-                .await
-                .dot()?,
             Exe::Tailwind => CommandTailwind
                 .exe_meta(target_os, target_arch)
                 .await
@@ -295,7 +289,6 @@ fn normalize_version(ver_string: &str) -> Option<Version> {
 use async_trait::async_trait;
 
 struct CommandTailwind;
-struct CommandWasmOpt;
 struct CommandSass;
 
 #[async_trait]
@@ -380,75 +373,6 @@ impl Command for CommandTailwind {
 
     fn manual_install_instructions(&self) -> String {
         "Try manually installing tailwindcss: https://tailwindcss.com/docs/installation".to_string()
-    }
-}
-
-#[async_trait]
-impl Command for CommandWasmOpt {
-    fn name(&self) -> &'static str {
-        "wasm-opt"
-    }
-    fn default_version(&self) -> &'static str {
-        "version_117"
-    }
-    fn env_var_version_name(&self) -> &'static str {
-        ENV_VAR_LEPTOS_WASM_OPT_VERSION
-    }
-    fn github_owner(&self) -> &'static str {
-        "WebAssembly"
-    }
-    fn github_repo(&self) -> &'static str {
-        "binaryen"
-    }
-
-    fn download_url(&self, target_os: &str, target_arch: &str, version: &str) -> Result<String> {
-        let target = match (target_os, target_arch) {
-            ("linux", "aarch64") => "aarch64-linux",
-            ("linux", "x86_64") => "x86_64-linux",
-            ("windows", _) => "x86_64-windows",
-            ("macos", "aarch64") => "arm64-macos",
-            ("macos", "x86_64") => "x86_64-macos",
-            _ => {
-                bail!("No wasm-opt tar binary found for {target_os} {target_arch}")
-            }
-        };
-
-        Ok(format!(
-            "https://github.com/{}/{}/releases/download/{}/binaryen-{}-{}.tar.gz",
-            self.github_owner(),
-            self.github_repo(),
-            version,
-            version,
-            target
-        ))
-    }
-
-    fn executable_name(
-        &self,
-        target_os: &str,
-        _target_arch: &str,
-        version: Option<&str>,
-    ) -> Result<String> {
-        if version.is_none() {
-            bail!("Version is required for WASM Opt, none provided")
-        };
-
-        Ok(match target_os {
-            "windows" => format!(
-                "binaryen-{}/bin/{}.exe",
-                version.unwrap_or_default(),
-                self.name()
-            ),
-            _ => format!(
-                "binaryen-{}/bin/{}",
-                version.unwrap_or_default(),
-                self.name()
-            ),
-        })
-    }
-
-    fn manual_install_instructions(&self) -> String {
-        "Try manually installing binaryen: https://github.com/WebAssembly/binaryen".to_string()
     }
 }
 
