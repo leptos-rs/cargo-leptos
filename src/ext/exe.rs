@@ -74,7 +74,7 @@ pub struct ExeCache<'a> {
     meta: &'a ExeMeta,
 }
 
-impl<'a> ExeCache<'a> {
+impl ExeCache<'_> {
     fn exe_in_cache(&self) -> Result<PathBuf> {
         let exe_path = self.exe_dir.join(PathBuf::from(&self.meta.exe));
 
