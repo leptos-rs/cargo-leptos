@@ -49,18 +49,28 @@ pub struct NewCommand {
 
 impl NewCommand {
     pub fn run(self) -> Result<()> {
+        let Self {
+            git,
+            branch,
+            tag,
+            path,
+            name,
+            force,
+            verbose,
+            init,
+        } = self;
         let args = GenerateArgs {
             template_path: TemplatePath {
-                git: absolute_git_url(self.git),
-                branch: self.branch.clone(),
-                tag: self.tag.clone(),
-                path: self.path.clone(),
+                git: absolute_git_url(git),
+                branch,
+                tag,
+                path,
                 ..Default::default()
             },
-            name: self.name.clone(),
-            force: self.force,
-            verbose: self.verbose,
-            init: self.init,
+            name,
+            force,
+            verbose,
+            init,
             ..Default::default()
         };
 
