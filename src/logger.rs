@@ -15,7 +15,7 @@ const fn color(num: u8) -> Color {
 
 const ERR_RED: Color = color(196);
 const WARN_YELLOW: Color = color(214);
-pub const INFO_GREEN: Color = color(77);
+const INFO_GREEN: Color = color(77);
 const DBG_BLUE: Color = color(26);
 const TRACE_VIOLET: Color = color(98);
 pub const GRAY: Color = color(241);
