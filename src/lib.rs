@@ -24,8 +24,8 @@ pub async fn run(args: Cli) -> Result<()> {
     let verbose = args.opts().map(|o| o.verbose).unwrap_or(0);
     logger::setup(verbose, &args.log);
 
-    if let New(new) = &args.command {
-        return new.run().await;
+    if let New(new) = args.command {
+        return new.run();
     }
 
     let manifest_path = args

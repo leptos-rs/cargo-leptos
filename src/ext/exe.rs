@@ -36,7 +36,6 @@ lazy_static::lazy_static! {
     static ref ON_STARTUP_DEBUG_ONCE: Once = Once::new();
 }
 
-pub const ENV_VAR_LEPTOS_CARGO_GENERATE_VERSION: &str = "LEPTOS_CARGO_GENERATE_VERSION";
 pub const ENV_VAR_LEPTOS_TAILWIND_VERSION: &str = "LEPTOS_TAILWIND_VERSION";
 pub const ENV_VAR_LEPTOS_SASS_VERSION: &str = "LEPTOS_SASS_VERSION";
 pub const ENV_VAR_LEPTOS_WASM_OPT_VERSION: &str = "LEPTOS_WASM_OPT_VERSION";
@@ -212,7 +211,6 @@ fn get_cache_dir() -> Result<PathBuf> {
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 pub enum Exe {
-    CargoGenerate,
     Sass,
     WasmOpt,
     Tailwind,
@@ -244,15 +242,6 @@ impl Exe {
         let (target_os, target_arch) = os_arch().unwrap();
 
         let exe = match self {
-            // There's a problem with upgrading cargo-generate because the tar file cannot be extracted
-            // due to missing support for https://github.com/alexcrichton/tar-rs/pull/298
-            // The tar extracts ok, but contains a folder `GNUSparseFile.0` which contains a file `cargo-generate`
-            // that has not been fully extracted.
-            // let command = &CommandCargoGenerate as &dyn Command;
-            Exe::CargoGenerate => CommandCargoGenerate
-                .exe_meta(target_os, target_arch)
-                .await
-                .dot()?,
             Exe::Sass => CommandSass.exe_meta(target_os, target_arch).await.dot()?,
             Exe::WasmOpt => CommandWasmOpt
                 .exe_meta(target_os, target_arch)
@@ -270,7 +259,6 @@ impl Exe {
 
 /// Tailwind uses the 'vMaj.Min.Pat' format.
 /// WASM opt uses 'version_NNN' format.
-/// Cargo-generate has the 'vX.Y.Z' format
 /// We generally want to keep the suffix intact,
 /// as it carries classifiers, etc, but strip non-ascii
 /// digits from the prefix.
@@ -309,7 +297,6 @@ use async_trait::async_trait;
 struct CommandTailwind;
 struct CommandWasmOpt;
 struct CommandSass;
-struct CommandCargoGenerate;
 
 #[async_trait]
 impl Command for CommandTailwind {
@@ -541,71 +528,6 @@ impl Command for CommandSass {
 
     fn manual_install_instructions(&self) -> String {
         "Try manually installing sass: https://sass-lang.com/install".to_string()
-    }
-}
-
-#[async_trait]
-impl Command for CommandCargoGenerate {
-    fn name(&self) -> &'static str {
-        "cargo-generate"
-    }
-    fn default_version(&self) -> &'static str {
-        "v0.17.3"
-    }
-    fn env_var_version_name(&self) -> &'static str {
-        ENV_VAR_LEPTOS_CARGO_GENERATE_VERSION
-    }
-    fn github_owner(&self) -> &'static str {
-        "cargo-generate"
-    }
-    fn github_repo(&self) -> &'static str {
-        "cargo-generate"
-    }
-
-    fn download_url(&self, target_os: &str, target_arch: &str, version: &str) -> Result<String> {
-        let is_musl_env = is_linux_musl_env();
-
-        let target = if is_musl_env {
-            match (target_os, target_arch) {
-                ("linux", "aarch64") => "aarch64-unknown-linux-musl",
-                ("linux", "x86_64") => "x86_64-unknown-linux-musl",
-                _ => bail!("No cargo-generate tar binary found for linux-musl {target_arch}"),
-            }
-        } else {
-            match (target_os, target_arch) {
-                ("macos", "aarch64") => "aarch64-apple-darwin",
-                ("linux", "aarch64") => "aarch64-unknown-linux-gnu",
-                ("macos", "x86_64") => "x86_64-apple-darwin",
-                ("windows", "x86_64") => "x86_64-pc-windows-msvc",
-                ("linux", "x86_64") => "x86_64-unknown-linux-gnu",
-                _ => bail!("No cargo-generate tar binary found for {target_os} {target_arch}"),
-            }
-        };
-
-        Ok(format!(
-            "https://github.com/{}/{}/releases/download/{}/cargo-generate-{}-{}.tar.gz",
-            self.github_owner(),
-            self.github_repo(),
-            version,
-            version,
-            target
-        ))
-    }
-
-    fn executable_name(
-        &self,
-        target_os: &str,
-        _target_arch: &str,
-        _version: Option<&str>,
-    ) -> Result<String> {
-        Ok(match target_os {
-            "windows" => "cargo-generate.exe".to_string(),
-            _ => "cargo-generate".to_string(),
-        })
-    }
-
-    fn manual_install_instructions(&self) -> String {
-        "Try manually installing cargo-generate: https://github.com/cargo-generate/cargo-generate#installation".to_string()
     }
 }
 
