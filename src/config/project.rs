@@ -1,4 +1,5 @@
 use crate::config::hash_file::HashFile;
+use crate::ext::Paint;
 use crate::{
     config::lib_package::LibPackage,
     ext::{

@@ -1,5 +1,8 @@
 use crate::{
-    ext::anyhow::{bail, Context, Result},
+    ext::{
+        anyhow::{bail, Context, Result},
+        Paint,
+    },
     logger::GRAY,
 };
 use bytes::Bytes;

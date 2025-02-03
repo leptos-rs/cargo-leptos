@@ -2,6 +2,7 @@ use crate::{
     ext::{
         anyhow::{Context, Result},
         sync::{wait_piped_interruptible, CommandResult, OutputExt},
+        Paint,
     },
     logger::GRAY,
     signal::{Interrupt, Outcome},

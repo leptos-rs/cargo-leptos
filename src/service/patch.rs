@@ -1,6 +1,6 @@
 use crate::config::Project;
 use crate::ext::anyhow::Result;
-use crate::ext::PathBufExt;
+use crate::ext::{Paint, PathBufExt};
 use crate::signal::{Interrupt, ReloadSignal};
 use crate::{ext::remove_nested, logger::GRAY};
 use camino::Utf8PathBuf;

@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::{
     config::Project,
-    ext::{anyhow::Result, append_str_to_filename, determine_pdb_filename, fs},
+    ext::{anyhow::Result, append_str_to_filename, determine_pdb_filename, fs, Paint},
     logger::GRAY,
     signal::{Interrupt, ReloadSignal, ServerRestart},
 };

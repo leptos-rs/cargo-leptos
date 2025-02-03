@@ -7,7 +7,7 @@ use crate::{
         anyhow::Context,
         fs,
         sync::{wait_piped_interruptible, CommandResult, OutputExt},
-        Exe,
+        Exe, Paint,
     },
     logger::GRAY,
     signal::{Interrupt, Outcome},
