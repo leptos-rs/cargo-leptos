@@ -1,5 +1,4 @@
 use crate::internal_prelude::*;
-use crate::internal_prelude::*;
 use crate::{
     ext::{
         sync::{wait_piped_interruptible, CommandResult, OutputExt},

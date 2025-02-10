@@ -61,7 +61,7 @@ pub async fn wait_interruptible(
             Err(e) => bail!("Command failed due to: {e}"),
         },
         _ = interrupt_rx.recv() => {
-            process.kill().await.context("Could not kill process")?;
+            process.kill().await.wrap_err("Could not kill process")?;
             trace!("{name} process interrupted");
             Ok(CommandResult::Interrupted)
         }

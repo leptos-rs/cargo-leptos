@@ -105,7 +105,7 @@ impl ExeCache<'_> {
             extract_tar(data, &self.exe_dir)?;
         } else {
             self.write_binary(data)
-                .context(format!("Could not write binary {}", self.meta.get_name()))?;
+                .wrap_err(format!("Could not write binary {}", self.meta.get_name()))?;
         }
 
         debug!(
@@ -122,7 +122,7 @@ impl ExeCache<'_> {
         let path = self.exe_dir.join(Path::new(&self.meta.exe));
         let mut file = File::create(&path).unwrap();
         file.write_all(data)
-            .context(format!("Error writing binary file: {:?}", path))?;
+            .wrap_err(format!("Error writing binary file: {:?}", path))?;
 
         #[cfg(target_family = "unix")]
         {
@@ -141,12 +141,12 @@ impl ExeCache<'_> {
         let data = self
             .fetch_archive()
             .await
-            .context(format!("Could not download {}", self.meta.get_name()))?;
+            .wrap_err(format!("Could not download {}", self.meta.get_name()))?;
 
         self.extract_downloaded(&data)
-            .context(format!("Could not extract {}", self.meta.get_name()))?;
+            .wrap_err(format!("Could not extract {}", self.meta.get_name()))?;
 
-        let binary_path = self.exe_in_cache().context(format!(
+        let binary_path = self.exe_in_cache().wrap_err(format!(
             "Binary downloaded and extracted but could still not be found at {:?}",
             self.exe_dir
         ))?;
@@ -196,7 +196,7 @@ fn get_cache_dir() -> Result<PathBuf> {
         .join("cargo-leptos");
 
     if !dir.exists() {
-        fs::create_dir_all(&dir).context(format!("Could not create dir {dir:?}"))?;
+        fs::create_dir_all(&dir).wrap_err(format!("Could not create dir {dir:?}"))?;
     }
 
     ON_STARTUP_DEBUG_ONCE.call_once(|| {
@@ -221,7 +221,7 @@ impl Exe {
         } else if cfg!(feature = "no_downloads") {
             bail!("{} is required but was not found. Please install it using your OS's tool of choice", &meta.name);
         } else {
-            meta.cached().await.context(meta.manual)?
+            meta.cached().await.wrap_err(meta.manual)?
         };
 
         debug!(

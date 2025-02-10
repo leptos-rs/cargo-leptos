@@ -3,6 +3,7 @@ use crate::ext::color_eyre::CustomWrapErr;
 use crate::internal_prelude::*;
 use base64ct::{Base64UrlUnpadded, Encoding};
 use camino::Utf8PathBuf;
+use color_eyre::eyre::ContextCompat;
 use color_eyre::Result;
 use md5::{Digest, Md5};
 use std::collections::HashMap;
@@ -26,9 +27,9 @@ pub fn add_hashes_to_site(proj: &Project) -> Result<()> {
         proj.hash_file
             .abs
             .parent()
-            .with_context(|| format!("no parent dir for {}", proj.hash_file.abs))?,
+            .wrap_err_with(|| format!("no parent dir for {}", proj.hash_file.abs))?,
     )
-    .with_context(|| format!("Failed to create parent dir for {}", proj.hash_file.abs))?;
+    .wrap_err_with(|| format!("Failed to create parent dir for {}", proj.hash_file.abs))?;
 
     fs::write(
         &proj.hash_file.abs,
@@ -54,7 +55,7 @@ pub fn add_hashes_to_site(proj: &Project) -> Result<()> {
             files_to_hashes[&proj.style.site_file.dest]
         ),
     )
-    .with_context(|| format!("Failed to write hash file to {}", proj.hash_file.abs))?;
+    .wrap_err_with(|| format!("Failed to write hash file to {}", proj.hash_file.abs))?;
 
     debug!("Hash written to {}", proj.hash_file.abs);
 
@@ -131,7 +132,7 @@ fn rename_files(
         ));
 
         fs::rename(path, &new_path)
-            .with_context(|| format!("Failed to rename {path} to {new_path}"))?;
+            .wrap_err_with(|| format!("Failed to rename {path} to {new_path}"))?;
 
         old_to_new_paths.insert(path.clone(), new_path);
     }

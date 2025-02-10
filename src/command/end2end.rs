@@ -24,7 +24,7 @@ pub async fn end2end_proj(proj: &Arc<Project>) -> Result<()> {
         let server = serve::spawn(proj).await;
         try_run(&e2e.cmd, &e2e.dir)
             .await
-            .context(format!("running: {}", &e2e.cmd))?;
+            .wrap_err(format!("running: {}", &e2e.cmd))?;
         Interrupt::request_shutdown().await;
         server.await.dot()??;
     } else {
@@ -46,7 +46,7 @@ async fn try_run(cmd: &str, dir: &Utf8Path) -> Result<()> {
         .args(args)
         .current_dir(dir)
         .spawn()
-        .context(format!("Could not spawn command {cmd:?}"))?;
+        .wrap_err(format!("Could not spawn command {cmd:?}"))?;
 
     let mut int = Interrupt::subscribe_any();
 

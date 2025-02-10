@@ -4,7 +4,6 @@ use super::ChangeSet;
 use crate::config::Project;
 use crate::ext::Paint;
 use crate::internal_prelude::*;
-use crate::internal_prelude::*;
 use crate::signal::{Outcome, Product};
 use crate::{ext::PathExt, fs, logger::GRAY};
 use camino::{Utf8Path, Utf8PathBuf};
@@ -57,11 +56,11 @@ pub fn reserved(src: &Utf8Path, pkg_dir: &Utf8Path) -> Vec<Utf8PathBuf> {
 async fn resync(src: &Utf8Path, dest: &Utf8Path, pkg_dir: &Utf8Path) -> Result<()> {
     clean_dest(dest, pkg_dir)
         .await
-        .context(format!("Cleaning {dest:?}"))?;
+        .wrap_err(format!("Cleaning {dest:?}"))?;
     let reserved = reserved(src, pkg_dir);
     mirror(src, dest, &reserved)
         .await
-        .context(format!("Mirroring {src:?} -> {dest:?}"))
+        .wrap_err(format!("Mirroring {src:?} -> {dest:?}"))
 }
 
 async fn clean_dest(dest: &Utf8Path, pkg_dir: &Utf8Path) -> Result<()> {

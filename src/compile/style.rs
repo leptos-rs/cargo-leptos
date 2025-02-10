@@ -48,7 +48,7 @@ fn build_sass(proj: &Arc<Project>) -> JoinHandle<Result<Outcome<String>>> {
         match style_file.source.extension() {
             Some("sass") | Some("scss") => compile_sass(style_file, proj.release)
                 .await
-                .context(format!("compile sass/scss: {}", &style_file)),
+                .wrap_err(format!("compile sass/scss: {}", &style_file)),
             Some("css") => Ok(Outcome::Success(
                 fs::read_to_string(&style_file.source).await.dot()?,
             )),
@@ -85,11 +85,11 @@ async fn build(proj: &Arc<Project>) -> Result<Outcome<Product>> {
 }
 
 fn browser_lists(query: &str) -> Result<Option<Browsers>> {
-    Browsers::from_browserslist([query]).context(format!("Error in browserlist query: {query}"))
+    Browsers::from_browserslist([query]).wrap_err(format!("Error in browserlist query: {query}"))
 }
 
 async fn process_css(proj: &Project, css: String) -> Result<Product> {
-    let browsers = browser_lists(&proj.style.browserquery).context("leptos.style.browserquery")?;
+    let browsers = browser_lists(&proj.style.browserquery).wrap_err("leptos.style.browserquery")?;
     let targets = Targets::from(browsers);
 
     let mut stylesheet =

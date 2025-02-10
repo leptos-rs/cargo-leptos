@@ -1,9 +1,9 @@
-use cargo_leptos::{config::Cli, ext::color_eyre::Result, run};
+use cargo_leptos::{config::Cli, run};
 use clap::Parser;
 use std::env;
 
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() -> color_eyre::Result<()> {
     let mut args: Vec<String> = env::args().collect();
     // when running as cargo leptos, the second argument is "leptos" which
     // clap doesn't expect

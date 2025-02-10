@@ -54,7 +54,7 @@ impl StrAdditions for str {
     fn to_created_dir(&self) -> Result<Utf8PathBuf> {
         let path = Utf8PathBuf::from(self);
         if !path.exists() {
-            std::fs::create_dir_all(&path).context(format!("Could not create dir {self:?}"))?;
+            std::fs::create_dir_all(&path).wrap_err(format!("Could not create dir {self:?}"))?;
         }
         Ok(path)
     }

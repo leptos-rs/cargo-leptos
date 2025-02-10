@@ -38,7 +38,7 @@ pub async fn run(args: Cli) -> Result<()> {
         .to_owned()
         .unwrap_or_else(|| Utf8PathBuf::from("Cargo.toml"))
         .resolve_home_dir()
-        .context(format!("manifest_path: {:?}", &args.manifest_path))?;
+        .wrap_err(format!("manifest_path: {:?}", &args.manifest_path))?;
     let mut cwd = Utf8PathBuf::from_path_buf(env::current_dir().unwrap()).unwrap();
     cwd.clean_windows_path();
 

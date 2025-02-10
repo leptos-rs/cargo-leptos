@@ -116,9 +116,9 @@ async fn bindgen(proj: &Project) -> Result<Outcome<Product>> {
         .input_path(&wasm_file.source)
         .out_name(&proj.lib.output_name)
         .web(true)
-        .dot()?
+        .dot_anyhow()?
         .generate_output()
-        .dot()?;
+        .dot_anyhow()?;
 
     let bindgen_generate_end_time = tokio::time::Instant::now();
 
@@ -127,7 +127,9 @@ async fn bindgen(proj: &Project) -> Result<Outcome<Product>> {
         bindgen_generate_end_time - start_time
     );
 
-    bindgen.emit(wasm_file.dest.clone().without_last()).dot()?;
+    bindgen
+        .emit(wasm_file.dest.clone().without_last())
+        .dot_anyhow()?;
 
     let bindgen_emit_end_time = tokio::time::Instant::now();
     debug!(
@@ -195,26 +197,30 @@ fn minify<JS: AsRef<str>>(js: JS) -> Result<String> {
     let cm = Arc::<SourceMap>::default();
 
     let c = swc::Compiler::new(cm.clone());
-    let output = GLOBALS.set(&Default::default(), || {
-        try_with_handler(cm.clone(), Default::default(), |handler| {
-            let fm = cm.new_source_file(Arc::new(FileName::Anon), js.as_ref().to_string());
+    let output = GLOBALS
+        .set(&Default::default(), || {
+            try_with_handler(cm.clone(), Default::default(), |handler| {
+                let fm = cm.new_source_file(Arc::new(FileName::Anon), js.as_ref().to_string());
 
-            c.minify(
-                fm,
-                handler,
-                &JsMinifyOptions {
-                    compress: BoolOrDataConfig::from_bool(true),
-                    mangle: BoolOrDataConfig::from_bool(true),
-                    // keep_classnames: true,
-                    // keep_fnames: true,
-                    module: IsModule::Bool(true),
-                    ..Default::default()
-                },
-                JsMinifyExtras::default(),
-            )
-            .context("failed to minify")
+                use anyhow::Context;
+
+                c.minify(
+                    fm,
+                    handler,
+                    &JsMinifyOptions {
+                        compress: BoolOrDataConfig::from_bool(true),
+                        mangle: BoolOrDataConfig::from_bool(true),
+                        // keep_classnames: true,
+                        // keep_fnames: true,
+                        module: IsModule::Bool(true),
+                        ..Default::default()
+                    },
+                    JsMinifyExtras::default(),
+                )
+                .context("failed to minify")
+            })
         })
-    })?;
+        .wrap_anyhow_err("Failed to minify")?;
 
     Ok(output.code)
 }
