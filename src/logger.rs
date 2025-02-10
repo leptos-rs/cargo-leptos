@@ -1,5 +1,7 @@
 //! TODO: port over formatting to `tracing-subscriber`
-//! Currently, `tracing` emits log events
+//! Currently, `tracing` emits log events and `flexi_logger` consumes then.
+//! When you do implement `tracing-subscriber`, remember to add `tracing-error` error layer
+//! for `color_eyre`!
 
 use ansi_term::{Colour::Fixed, Style};
 use clap::builder::styling::{Ansi256Color, Color};
