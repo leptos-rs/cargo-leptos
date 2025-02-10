@@ -1,9 +1,8 @@
 use crate::config::Project;
-use crate::ext::anyhow::Result;
 use crate::ext::PathBufExt;
+use crate::internal_prelude::*;
 use crate::signal::{Interrupt, ReloadSignal};
 use crate::{ext::remove_nested, logger::GRAY};
-use crate::internal_prelude::*;
 use camino::Utf8PathBuf;
 use itertools::Itertools;
 use leptos_hot_reload::ViewMacros;

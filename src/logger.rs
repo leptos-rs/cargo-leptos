@@ -1,3 +1,6 @@
+//! TODO: port over formatting to `tracing-subscriber`
+//! Currently, `tracing` emits log events
+
 use ansi_term::{Colour::Fixed, Style};
 use flexi_logger::{
     filter::{LogLineFilter, LogLineWriter},
@@ -6,7 +9,6 @@ use flexi_logger::{
 use std::io::Write;
 use std::sync::OnceLock;
 
-use crate::ext::anyhow::Context;
 use crate::{config::Log, ext::StrAdditions};
 
 // https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797
@@ -37,7 +39,7 @@ pub fn setup(verbose: u8, logs: &[Log]) {
             .filter(Box::new(Filter))
             .format(format)
             .start()
-            .unwrap();
+            .expect("Couldn't init cargo-leptos logger");
 
         LogFlag::new(logs)
     });

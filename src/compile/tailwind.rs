@@ -1,11 +1,11 @@
-use anyhow::Result;
+use color_eyre::Result;
 use tokio::process::Command;
 
 use crate::internal_prelude::*;
 use crate::{
     config::{Project, TailwindConfig},
     ext::{
-        anyhow::Context,
+        color_eyre::CustomWrapErr,
         fs,
         sync::{wait_piped_interruptible, CommandResult, OutputExt},
         Exe,

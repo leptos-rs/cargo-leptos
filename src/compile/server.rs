@@ -4,7 +4,6 @@ use super::ChangeSet;
 use crate::internal_prelude::*;
 use crate::{
     config::Project,
-    ext::anyhow::{Context, Result},
     ext::sync::{wait_interruptible, CommandResult},
     logger::GRAY,
     signal::{Interrupt, Outcome, Product},

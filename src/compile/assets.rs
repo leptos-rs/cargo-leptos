@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use super::ChangeSet;
 use crate::config::Project;
-use crate::ext::anyhow::{Context, Result};
+use crate::internal_prelude::*;
 use crate::internal_prelude::*;
 use crate::signal::{Outcome, Product};
 use crate::{ext::PathExt, fs, logger::GRAY};
@@ -67,9 +67,7 @@ async fn clean_dest(dest: &Utf8Path, pkg_dir: &Utf8Path) -> Result<()> {
     let pkg_dir_name = match pkg_dir.file_name() {
         Some(name) => name,
         None => {
-            warn!(
-                "Assets No site-pkg-dir given, defaulting to 'pkg' for checks what to delete."
-            );
+            warn!("Assets No site-pkg-dir given, defaulting to 'pkg' for checks what to delete.");
             warn!("Assets This will probably delete already generated files.");
             "pkg"
         }

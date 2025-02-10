@@ -1,7 +1,7 @@
 use camino::Utf8PathBuf;
 
 use super::ProjectConfig;
-use anyhow::{bail, Result};
+use crate::internal_prelude::*;
 
 #[derive(Clone, Debug)]
 pub struct TailwindConfig {

@@ -6,10 +6,7 @@ use crate::{
     compile,
     compile::ChangeSet,
     config::{Config, Project},
-    ext::{
-        anyhow::{anyhow, Context, Result},
-        fs,
-    },
+    ext::fs,
 };
 
 pub async fn build_all(conf: &Config) -> Result<()> {
@@ -23,7 +20,7 @@ pub async fn build_all(conf: &Config) -> Result<()> {
     }
 
     if let Some(proj) = first_failed_project {
-        Err(anyhow!("Failed to build {}", proj.name))
+        Err(eyre!("Failed to build {}", proj.name))
     } else {
         Ok(())
     }

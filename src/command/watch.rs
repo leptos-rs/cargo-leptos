@@ -3,11 +3,9 @@ use crate::internal_prelude::*;
 use crate::{
     compile::{self},
     config::Project,
-    ext::anyhow::Context,
     service,
     signal::{Interrupt, Outcome, Product, ProductSet, ReloadSignal, ServerRestart},
 };
-use anyhow::Result;
 use leptos_hot_reload::ViewMacros;
 use std::sync::Arc;
 use tokio::try_join;

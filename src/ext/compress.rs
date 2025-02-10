@@ -1,4 +1,3 @@
-use crate::ext::anyhow::{Context, Result};
 use crate::internal_prelude::*;
 use brotli::enc::BrotliEncoderParams;
 use libflate::gzip;

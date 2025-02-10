@@ -3,10 +3,7 @@ use crate::internal_prelude::*;
 use crate::{
     compile::{sass::compile_sass, tailwind::compile_tailwind},
     config::Project,
-    ext::{
-        anyhow::{anyhow, bail, Context, Result},
-        PathBufExt,
-    },
+    ext::PathBufExt,
     fs,
     logger::GRAY,
     signal::{Outcome, Product},
@@ -95,7 +92,7 @@ async fn process_css(proj: &Project, css: String) -> Result<Product> {
     let targets = Targets::from(browsers);
 
     let mut stylesheet =
-        StyleSheet::parse(&css, ParserOptions::default()).map_err(|e| anyhow!("{e}"))?;
+        StyleSheet::parse(&css, ParserOptions::default()).map_err(|e| eyre!("{e}"))?;
 
     if proj.release {
         let minify_options = MinifyOptions {

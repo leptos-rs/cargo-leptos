@@ -1,12 +1,11 @@
 use crate::compile::Change;
 use crate::config::Project;
-use crate::ext::anyhow::{anyhow, Result};
+use crate::internal_prelude::*;
 use crate::signal::Interrupt;
 use crate::{
     ext::{remove_nested, PathBufExt, PathExt},
     logger::GRAY,
 };
-use crate::internal_prelude::*;
 use camino::Utf8PathBuf;
 use itertools::Itertools;
 use notify::event::ModifyKind;
@@ -174,6 +173,6 @@ fn handle(event: Event, proj: Arc<Project>) {
 
 pub(crate) fn convert(p: &Path, proj: &Project) -> Result<Utf8PathBuf> {
     let p = Utf8PathBuf::from_path_buf(p.to_path_buf())
-        .map_err(|e| anyhow!("Could not convert to a Utf8PathBuf: {e:?}"))?;
+        .map_err(|e| eyre!("Could not convert to a Utf8PathBuf: {e:?}"))?;
     Ok(p.unbase(&proj.working_dir).unwrap_or(p))
 }

@@ -9,11 +9,11 @@ pub mod logger;
 pub mod service;
 pub mod signal;
 mod internal_prelude {
+    pub use crate::ext::color_eyre::reexports::*;
     pub use tracing::*;
 }
 
 use crate::config::Commands;
-use crate::ext::anyhow::{Context, Result};
 use crate::ext::PathBufExt;
 use crate::logger::GRAY;
 use camino::Utf8PathBuf;

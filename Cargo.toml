@@ -54,7 +54,7 @@ eula = false
 brotli = "7"
 clap = { version = "4.5.18", features = ["derive"] }
 serde = { version = "1.0.210", features = ["derive"] }
-anyhow = "1.0.89"
+color-eyre = "0.6.3"
 libflate = "2"
 tracing = "0.1.41"
 

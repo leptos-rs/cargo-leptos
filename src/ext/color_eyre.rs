@@ -2,11 +2,17 @@ use core::convert::Infallible;
 use std::fmt::Display;
 use std::panic::Location;
 
-/// re-exports
-pub use anyhow::{anyhow, bail, ensure};
-pub use anyhow::{Chain, Error, Ok, Result};
+pub(crate) mod reexports {
+    //! re-exports
 
-pub trait Context<T, E> {
+    pub use super::CustomWrapErr as _;
+    pub use color_eyre::eyre::{bail, ensure, eyre};
+    pub use color_eyre::Report as Error;
+    pub use color_eyre::Result;
+}
+use reexports::*;
+
+pub trait CustomWrapErr<T, E> {
     fn context<C>(self, context: C) -> Result<T>
     where
         C: Display + Send + Sync + 'static;
@@ -20,10 +26,10 @@ pub trait Context<T, E> {
     fn dot(self) -> Result<T>;
 }
 
-impl<T, E> Context<T, E> for Result<T, E>
+impl<T, E> CustomWrapErr<T, E> for Result<T, E>
 where
     E: Display,
-    Result<T, E>: anyhow::Context<T, E>,
+    Result<T, E>: color_eyre::eyre::WrapErr<T, E>,
 {
     #[inline]
     #[track_caller]
@@ -32,7 +38,7 @@ where
         C: Display + Send + Sync + 'static,
     {
         let caller = Location::caller();
-        anyhow::Context::context(
+        color_eyre::Context::context(
             self,
             format!(
                 "{} at `{}:{}:{}`",
@@ -52,7 +58,7 @@ where
         F: FnOnce() -> C,
     {
         let caller = Location::caller();
-        anyhow::Context::with_context(self, || {
+        color_eyre::Context::with_context(self, || {
             format!(
                 "{} at `{}:{}:{}`",
                 context(),
@@ -67,7 +73,7 @@ where
     #[track_caller]
     fn dot(self) -> Result<T> {
         let caller = Location::caller();
-        anyhow::Context::context(
+        color_eyre::Context::context(
             self,
             format!(
                 "at `{}:{}:{}`",
@@ -79,9 +85,9 @@ where
     }
 }
 
-impl<T> Context<T, Infallible> for Option<T>
+impl<T> CustomWrapErr<T, Infallible> for Option<T>
 where
-    Option<T>: anyhow::Context<T, Infallible>,
+    Option<T>: color_eyre::eyre::WrapErr<T, Infallible>,
 {
     #[inline]
     #[track_caller]
@@ -90,7 +96,7 @@ where
         C: Display + Send + Sync + 'static,
     {
         let caller = Location::caller();
-        anyhow::Context::context(
+        color_eyre::Context::context(
             self,
             format!(
                 "{} at `{}:{}:{}`",
@@ -110,7 +116,7 @@ where
         F: FnOnce() -> C,
     {
         let caller = Location::caller();
-        anyhow::Context::with_context(self, || {
+        color_eyre::Context::with_context(self, || {
             format!(
                 "{} at `{}:{}:{}`",
                 context(),
@@ -125,7 +131,7 @@ where
     #[track_caller]
     fn dot(self) -> Result<T> {
         let caller = Location::caller();
-        anyhow::Context::context(
+        color_eyre::Context::context(
             self,
             format!(
                 "at `{}:{}:{}`",

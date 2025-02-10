@@ -1,8 +1,5 @@
 use crate::internal_prelude::*;
-use crate::{
-    ext::anyhow::{bail, Context, Result},
-    logger::GRAY,
-};
+use crate::logger::GRAY;
 use bytes::Bytes;
 use std::{
     fs::{self, File},
@@ -197,7 +194,7 @@ fn extract_zip(src: &Bytes, dest: &Path) -> Result<()> {
 /// | Windows  | C:\Users\Alice\AppData\Local\NAME |
 fn get_cache_dir() -> Result<PathBuf> {
     let dir = dirs::cache_dir()
-        .ok_or_else(|| anyhow::anyhow!("Cache directory does not exist"))?
+        .ok_or_else(|| eyre!("Cache directory does not exist"))?
         .join("cargo-leptos");
 
     if !dir.exists() {
