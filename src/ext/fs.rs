@@ -1,4 +1,3 @@
-use crate::ext::anyhow::{Context, Result};
 use crate::internal_prelude::*;
 use camino::{Utf8Path, Utf8PathBuf};
 use std::{collections::VecDeque, path::Path};

@@ -1,4 +1,4 @@
-use cargo_leptos::{config::Cli, ext::anyhow::Result, run};
+use cargo_leptos::{config::Cli, ext::color_eyre::Result, run};
 use clap::Parser;
 use std::env;
 

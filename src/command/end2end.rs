@@ -1,11 +1,9 @@
 use std::sync::Arc;
 
-use anyhow::bail;
 use camino::Utf8Path;
 use tokio::process::Command;
 
 use crate::config::{Config, Project};
-use crate::ext::anyhow::{anyhow, Context, Result};
 use crate::internal_prelude::*;
 use crate::service::serve;
 use crate::signal::Interrupt;
@@ -39,7 +37,7 @@ async fn try_run(cmd: &str, dir: &Utf8Path) -> Result<()> {
     let mut parts = cmd.split(' ');
     let exe = parts
         .next()
-        .ok_or_else(|| anyhow!("Invalid command {cmd:?}"))?;
+        .ok_or_else(|| eyre!("Invalid command {cmd:?}"))?;
 
     let args = parts.collect::<Vec<_>>();
 

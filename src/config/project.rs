@@ -3,10 +3,7 @@ use crate::ext::Paint;
 use crate::internal_prelude::*;
 use crate::{
     config::lib_package::LibPackage,
-    ext::{
-        anyhow::{bail, ensure, Result},
-        PackageExt, PathBufExt, PathExt,
-    },
+    ext::{PackageExt, PathBufExt, PathExt},
     logger::GRAY,
     service::site::Site,
 };

@@ -1,6 +1,5 @@
 use crate::compile::{front_cargo_process, server_cargo_process};
 use crate::config::{Config, Project};
-use crate::ext::anyhow::{anyhow, Context, Result};
 use crate::ext::Paint;
 use crate::internal_prelude::*;
 use crate::logger::GRAY;
@@ -15,7 +14,7 @@ pub async fn test_all(conf: &Config) -> Result<()> {
     }
 
     if let Some(proj) = first_failed_project {
-        Err(anyhow!("Tests failed for {}", proj.name))
+        Err(eyre!("Tests failed for {}", proj.name))
     } else {
         Ok(())
     }

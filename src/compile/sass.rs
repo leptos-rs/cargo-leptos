@@ -1,7 +1,7 @@
 use crate::internal_prelude::*;
+use crate::internal_prelude::*;
 use crate::{
     ext::{
-        anyhow::{Context, Result},
         sync::{wait_piped_interruptible, CommandResult, OutputExt},
         Paint,
     },

@@ -1,4 +1,3 @@
-use anyhow::Result;
 use camino::Utf8Path;
 use tokio::process::Command;
 
@@ -6,7 +5,7 @@ use crate::internal_prelude::*;
 use crate::{
     config::{Project, TailwindConfig},
     ext::{
-        anyhow::Context,
+        color_eyre::CustomWrapErr,
         fs,
         sync::{wait_piped_interruptible, CommandResult, OutputExt},
         Exe, Paint,

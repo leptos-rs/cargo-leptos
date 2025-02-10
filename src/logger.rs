@@ -1,12 +1,11 @@
+//! TODO: port over formatting to `tracing-subscriber`
+//! Currently, `tracing` emits log events
+
+use ansi_term::{Colour::Fixed, Style};
 use clap::builder::styling::{Ansi256Color, Color};
-use flexi_logger::{
-    filter::{LogLineFilter, LogLineWriter},
-    DeferredNow, Level, Record,
-};
 use std::io::Write;
 use std::sync::OnceLock;
 
-use crate::ext::{anyhow::Context, Paint};
 use crate::{config::Log, ext::StrAdditions};
 
 const fn color(num: u8) -> Color {
@@ -37,7 +36,7 @@ pub fn setup(verbose: u8, logs: &[Log]) {
             .filter(Box::new(Filter))
             .format(format)
             .start()
-            .unwrap();
+            .expect("Couldn't init cargo-leptos logger");
 
         LogFlag::new(logs)
     });

@@ -1,13 +1,17 @@
+use crate::compile::Change;
+use crate::config::Project;
 use crate::internal_prelude::*;
+use crate::signal::Interrupt;
 use crate::{
     compile::{Change, ChangeSet},
     config::Project,
-    ext::{
-        anyhow::{anyhow, Result},
-        Paint, PathBufExt, PathExt,
-    },
+    ext::{Paint, PathBufExt, PathExt},
     logger::GRAY,
     signal::{Interrupt, ReloadSignal},
+};
+use crate::{
+    ext::{remove_nested, PathBufExt, PathExt},
+    logger::GRAY,
 };
 use camino::Utf8PathBuf;
 use ignore::gitignore::Gitignore;
@@ -238,6 +242,6 @@ fn ignore_paths(
 
 fn convert(p: &Path, proj: &Project) -> Result<Utf8PathBuf> {
     let p = Utf8PathBuf::from_path_buf(p.to_path_buf())
-        .map_err(|e| anyhow!("Could not convert to a Utf8PathBuf: {e:?}"))?;
+        .map_err(|e| eyre!("Could not convert to a Utf8PathBuf: {e:?}"))?;
     Ok(p.unbase(&proj.working_dir).unwrap_or(p))
 }

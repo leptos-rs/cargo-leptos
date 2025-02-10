@@ -1,9 +1,9 @@
 use crate::config::Project;
-use crate::ext::anyhow::Context;
+use crate::ext::color_eyre::CustomWrapErr;
 use crate::internal_prelude::*;
-use anyhow::Result;
 use base64ct::{Base64UrlUnpadded, Encoding};
 use camino::Utf8PathBuf;
+use color_eyre::Result;
 use md5::{Digest, Md5};
 use std::collections::HashMap;
 use std::fs;
@@ -38,19 +38,19 @@ pub fn add_hashes_to_site(proj: &Project) -> Result<()> {
                 .js_file
                 .dest
                 .extension()
-                .ok_or(anyhow::anyhow!("no extension"))?,
+                .ok_or(eyre!("no extension"))?,
             files_to_hashes[&proj.lib.js_file.dest],
             proj.lib
                 .wasm_file
                 .dest
                 .extension()
-                .ok_or(anyhow::anyhow!("no extension"))?,
+                .ok_or(eyre!("no extension"))?,
             files_to_hashes[&proj.lib.wasm_file.dest],
             proj.style
                 .site_file
                 .dest
                 .extension()
-                .ok_or(anyhow::anyhow!("no extension"))?,
+                .ok_or(eyre!("no extension"))?,
             files_to_hashes[&proj.style.site_file.dest]
         ),
     )
@@ -125,9 +125,9 @@ fn rename_files(
 
         new_path.set_file_name(format!(
             "{}.{}.{}",
-            path.file_stem().ok_or(anyhow::anyhow!("no file stem"))?,
+            path.file_stem().ok_or(eyre!("no file stem"))?,
             hash,
-            path.extension().ok_or(anyhow::anyhow!("no extension"))?,
+            path.extension().ok_or(eyre!("no extension"))?,
         ));
 
         fs::rename(path, &new_path)

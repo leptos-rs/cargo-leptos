@@ -7,14 +7,11 @@ use std::{
 use camino::{Utf8Path, Utf8PathBuf};
 use tokio::sync::RwLock;
 
+use crate::internal_prelude::*;
 use crate::{
     config::ProjectConfig,
-    ext::{
-        anyhow::{Context, Result},
-        fs, PathBufExt,
-    },
+    ext::{fs, PathBufExt},
 };
-use crate::internal_prelude::*;
 
 #[derive(Clone)]
 pub struct SourcedSiteFile {

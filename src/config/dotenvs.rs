@@ -1,5 +1,5 @@
 use super::{ProjectConfig, ENV_VAR_LEPTOS_SASS_VERSION, ENV_VAR_LEPTOS_TAILWIND_VERSION};
-use crate::ext::anyhow::Result;
+use crate::ext::exe;
 use crate::internal_prelude::*;
 use camino::{Utf8Path, Utf8PathBuf};
 use std::{env, fs};

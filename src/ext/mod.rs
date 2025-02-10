@@ -1,8 +1,8 @@
 #[cfg(all(test, feature = "full_tests"))]
 mod tests;
 
-pub mod anyhow;
 mod cargo;
+pub mod color_eyre;
 pub mod compress;
 pub mod exe;
 pub mod fs;

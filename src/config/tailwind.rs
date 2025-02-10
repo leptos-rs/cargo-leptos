@@ -1,4 +1,3 @@
-use anyhow::{bail, Result};
 use camino::Utf8PathBuf;
 
 use super::{ProjectConfig, VersionConfig};

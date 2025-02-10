@@ -4,14 +4,8 @@ use crate::ext::sync::{wait_interruptible, CommandResult};
 use crate::ext::{fs, PathBufExt};
 use crate::internal_prelude::*;
 use crate::signal::{Interrupt, Outcome, Product};
-use crate::{
-    ext::{
-        anyhow::{Context, Result},
-        Paint,
-    },
-    logger::GRAY,
-};
-use anyhow::Ok;
+use crate::{ext::exe::Exe, logger::GRAY};
+use crate::{ext::Paint, logger::GRAY};
 use camino::Utf8Path;
 use std::sync::Arc;
 use swc::config::IsModule;

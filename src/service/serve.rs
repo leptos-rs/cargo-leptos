@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
+use crate::internal_prelude::*;
 use crate::{
     config::Project,
-    ext::{anyhow::Result, append_str_to_filename, determine_pdb_filename, fs, Paint},
+    ext::{append_str_to_filename, determine_pdb_filename, fs, Paint},
     logger::GRAY,
     signal::{Interrupt, ReloadSignal, ServerRestart},
 };
-use crate::internal_prelude::*;
 use camino::Utf8PathBuf;
 use tokio::{
     process::{Child, Command},
