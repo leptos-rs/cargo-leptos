@@ -1,7 +1,8 @@
+use anyhow::{bail, Result};
 use camino::Utf8PathBuf;
 
 use super::{ProjectConfig, VersionConfig};
-use anyhow::{bail, Result};
+use crate::internal_prelude::*;
 
 #[derive(Clone, Debug)]
 pub struct TailwindConfig {
@@ -27,7 +28,7 @@ impl TailwindConfig {
             if conf.tailwind_config_file.is_some()
                 || conf.config_dir.join("tailwind.config.js").exists()
             {
-                log::info!("JavaScript config files are no longer required in Tailwind CSS v4. If you still need to use a JS config file, refer to the docs here: https://tailwindcss.com/docs/upgrade-guide#using-a-javascript-config-file.");
+                info!("JavaScript config files are no longer required in Tailwind CSS v4. If you still need to use a JS config file, refer to the docs here: https://tailwindcss.com/docs/upgrade-guide#using-a-javascript-config-file.");
             }
 
             conf.tailwind_config_file.clone()

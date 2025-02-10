@@ -1,4 +1,5 @@
 use super::ChangeSet;
+use crate::internal_prelude::*;
 use crate::{
     compile::{sass::compile_sass, tailwind::compile_tailwind},
     config::Project,
@@ -28,7 +29,7 @@ pub async fn style(
     tokio::spawn(async move {
         let css_in_source = proj.style.tailwind.is_some();
         if !changes.need_style_build(true, css_in_source) {
-            log::debug!("Style no build needed {changes:?}");
+            debug!("Style no build needed {changes:?}");
             return Ok(Outcome::Success(Product::None));
         }
         build(&proj).await
@@ -39,11 +40,11 @@ fn build_sass(proj: &Arc<Project>) -> JoinHandle<Result<Outcome<String>>> {
     let proj = proj.clone();
     tokio::spawn(async move {
         let Some(style_file) = &proj.style.file else {
-            log::trace!("Style not configured");
+            trace!("Style not configured");
             return Ok(Outcome::Success("".to_string()));
         };
 
-        log::trace!("Style found: {}", &style_file);
+        debug!("Style found: {}", &style_file);
         fs::create_dir_all(style_file.dest.clone().without_last())
             .await
             .dot()?;
@@ -63,10 +64,10 @@ fn build_tailwind(proj: &Arc<Project>) -> JoinHandle<Result<Outcome<String>>> {
     let proj = proj.clone();
     tokio::spawn(async move {
         let Some(tw_conf) = proj.style.tailwind.as_ref() else {
-            log::trace!("Tailwind not configured");
+            trace!("Tailwind not configured");
             return Ok(Outcome::Success("".to_string()));
         };
-        log::trace!("Tailwind config: {:?}", &tw_conf);
+        trace!("Tailwind config: {:?}", &tw_conf);
         compile_tailwind(&proj, tw_conf).await
     })
 }
@@ -117,14 +118,14 @@ async fn process_css(proj: &Project, css: String) -> Result<Product> {
 
     let prod = match proj.site.updated_with(&proj.style.site_file, bytes).await? {
         true => {
-            log::trace!(
+            trace!(
                 "Style finished with changes {}",
                 GRAY.paint(proj.style.site_file.to_string())
             );
             Product::Style("".to_string()) //TODO
         }
         false => {
-            log::trace!("Style finished without changes");
+            trace!("Style finished without changes");
             Product::None
         }
     };

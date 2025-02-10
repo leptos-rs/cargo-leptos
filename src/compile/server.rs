@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use super::ChangeSet;
+use crate::internal_prelude::*;
 use crate::{
     config::Project,
     ext::{
@@ -30,11 +31,11 @@ pub async fn server(
         }
 
         let (envs, line, process) = server_cargo_process("build", &proj)?;
-        log::debug!("CARGO SERVER COMMAND: {:?}", process);
+        debug!("CARGO SERVER COMMAND: {:?}", process);
         match wait_interruptible("Cargo", process, Interrupt::subscribe_any()).await? {
             CommandResult::Success(_) => {
-                log::debug!("Cargo envs: {}", GRAY.paint(envs));
-                log::info!("Cargo finished {}", GRAY.paint(line));
+                debug!("Cargo envs: {}", GRAY.paint(envs));
+                info!("Cargo finished {}", GRAY.paint(line));
 
                 let changed = proj
                     .site
@@ -42,10 +43,10 @@ pub async fn server(
                     .await
                     .dot()?;
                 if changed {
-                    log::debug!("Cargo server bin changed");
+                    debug!("Cargo server bin changed");
                     Ok(Outcome::Success(Product::Server))
                 } else {
-                    log::debug!("Cargo server bin unchanged");
+                    debug!("Cargo server bin unchanged");
                     Ok(Outcome::Success(Product::None))
                 }
             }
@@ -112,7 +113,7 @@ pub fn build_cargo_server_cmd(
         args.push(format!("--features={}", proj.bin.features.join(",")));
     }
 
-    log::debug!("BIN CARGO ARGS: {:?}", &proj.bin.cargo_args);
+    debug!("BIN CARGO ARGS: {:?}", &proj.bin.cargo_args);
     // Add cargo flags to cargo command
     if let Some(cargo_args) = &proj.bin.cargo_args {
         args.extend_from_slice(cargo_args);

@@ -1,4 +1,5 @@
 use crate::ext::anyhow::{Context, Result};
+use crate::internal_prelude::*;
 use camino::{Utf8Path, Utf8PathBuf};
 use std::{collections::VecDeque, path::Path};
 use tokio::fs::{self, ReadDir};
@@ -15,7 +16,7 @@ async fn try_rm_dir_content<P: AsRef<Path>>(dir: P) -> Result<()> {
     let dir = dir.as_ref();
 
     if !dir.exists() {
-        log::debug!("Leptos not cleaning {dir:?} because it does not exist");
+        debug!("Leptos not cleaning {dir:?} because it does not exist");
         return Ok(());
     }
 
@@ -45,14 +46,14 @@ pub async fn read(path: impl AsRef<Path>) -> Result<Vec<u8>> {
 }
 
 pub async fn create_dir(path: impl AsRef<Path>) -> Result<()> {
-    log::trace!("FS create_dir {:?}", path.as_ref());
+    trace!("FS create_dir {:?}", path.as_ref());
     fs::create_dir(&path)
         .await
         .context(format!("Could not create dir {:?}", path.as_ref()))
 }
 
 pub async fn create_dir_all<P: AsRef<Path>>(path: P) -> Result<()> {
-    log::trace!("FS create_dir_all {:?}", path.as_ref());
+    trace!("FS create_dir_all {:?}", path.as_ref());
     fs::create_dir_all(&path)
         .await
         .context(format!("Could not create {:?}", path.as_ref()))

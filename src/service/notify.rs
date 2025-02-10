@@ -1,3 +1,4 @@
+use crate::internal_prelude::*;
 use crate::{
     compile::{Change, ChangeSet},
     config::Project,
@@ -18,7 +19,6 @@ use notify_debouncer_full::{
     DebouncedEvent,
 };
 use std::{
-    collections::HashSet,
     path::{Path, PathBuf},
     sync::Arc,
     time::Duration,
@@ -49,7 +49,7 @@ async fn run(proj: Arc<Project>, view_macros: Option<ViewMacros>) {
                     }
                 }
             }
-            log::debug!("Notify stopped");
+            debug!("Notify stopped");
         }
     });
 
@@ -66,7 +66,7 @@ async fn run(proj: Arc<Project>, view_macros: Option<ViewMacros>) {
     }
 
     if let Err(e) = Interrupt::subscribe_shutdown().recv().await {
-        log::trace!("Notify stopped due to: {e:?}");
+        trace!("Notify stopped due to: {e:?}");
     }
 }
 
@@ -171,7 +171,7 @@ fn handle(
         }
 
         if path.starts_with_any(&proj.watch_additional_files) {
-            log::debug!(
+            debug!(
                 "Notify additional file change {}",
                 GRAY.paint(path.as_str())
             );

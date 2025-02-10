@@ -2,6 +2,7 @@ use camino::Utf8PathBuf;
 use cargo_metadata::{Metadata, Target};
 
 use super::{project::ProjectDefinition, Profile, ProjectConfig};
+use crate::internal_prelude::*;
 use crate::{
     config::Opts,
     ext::{
@@ -131,7 +132,7 @@ impl BinPackage {
             .clone()
             .or_else(|| config.bin_cargo_args.clone());
 
-        log::debug!("BEFORE BIN {:?}", config.bin_cargo_command);
+        debug!("BEFORE BIN {:?}", config.bin_cargo_command);
         Ok(Self {
             name,
             abs_dir,

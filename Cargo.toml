@@ -5,16 +5,15 @@
 cargo-dist-version = "0.28.0"
 # CI backends to support
 ci = "github"
-# Target platforms to build apps for (Rust target-triple syntax)
 targets = [
-  "aarch64-apple-darwin",
-  "aarch64-unknown-linux-gnu",
-  "aarch64-pc-windows-msvc",
-  "x86_64-apple-darwin",
-  "x86_64-unknown-linux-gnu",
-  "x86_64-unknown-linux-musl",
-  "x86_64-pc-windows-msvc",
-]
+    "aarch64-apple-darwin",
+    "aarch64-unknown-linux-gnu",
+    "aarch64-pc-windows-msvc",
+    "x86_64-apple-darwin",
+    "x86_64-unknown-linux-gnu",
+    "x86_64-unknown-linux-musl",
+    "x86_64-pc-windows-msvc",
+] # Target platforms to build apps for (Rust target-triple syntax)
 # The installers to generate for each app
 installers = ["shell", "powershell"]
 # Which actions to run on pull requests
@@ -56,7 +55,7 @@ clap = { version = "4.5.29", features = ["derive"] }
 serde = { version = "1.0.217", features = ["derive"] }
 anyhow = "1.0.95"
 libflate = "2"
-log = "0.4"
+tracing = "0.1.41"
 
 lightningcss = { version = "1.0.0-alpha.63", features = ["browserslist"] }
 flexi_logger = "0.29.8"
@@ -71,9 +70,9 @@ serde_json = "1.0.138"
 wasm-bindgen-cli-support = "0.2.100"
 
 reqwest = { version = "0.12.12", features = [
-  "blocking",
-  "rustls-tls",
-  "json",
+    "blocking",
+    "rustls-tls",
+    "json",
 ], default-features = false }
 seahash = "4.1"
 dirs = "6.0"

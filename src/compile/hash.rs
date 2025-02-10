@@ -1,5 +1,6 @@
 use crate::config::Project;
 use crate::ext::anyhow::Context;
+use crate::internal_prelude::*;
 use anyhow::Result;
 use base64ct::{Base64UrlUnpadded, Encoding};
 use camino::Utf8PathBuf;
@@ -11,7 +12,7 @@ use std::fs;
 pub fn add_hashes_to_site(proj: &Project) -> Result<()> {
     let files_to_hashes = compute_front_file_hashes(proj).dot()?;
 
-    log::debug!("Hash computed: {files_to_hashes:?}");
+    debug!("Hash computed: {files_to_hashes:?}");
 
     let renamed_files = rename_files(&files_to_hashes).dot()?;
 
@@ -55,7 +56,7 @@ pub fn add_hashes_to_site(proj: &Project) -> Result<()> {
     )
     .with_context(|| format!("Failed to write hash file to {}", proj.hash_file.abs))?;
 
-    log::debug!("Hash written to {}", proj.hash_file.abs);
+    debug!("Hash written to {}", proj.hash_file.abs);
 
     Ok(())
 }
