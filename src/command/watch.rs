@@ -22,7 +22,9 @@ pub async fn watch(proj: &Arc<Project>) -> Result<()> {
     let view_macros = if proj.hot_reload {
         // build initial set of view macros for patching
         let view_macros = ViewMacros::new();
-        view_macros.update_from_paths(&proj.lib.src_paths)?;
+        view_macros
+            .update_from_paths(&proj.lib.src_paths)
+            .wrap_anyhow_err("Couldn't update view-macro watch")?;
         Some(view_macros)
     } else {
         None

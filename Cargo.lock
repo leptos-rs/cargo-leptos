@@ -467,6 +467,7 @@ name = "cargo-leptos"
 version = "0.2.27"
 dependencies = [
  "ansi_term",
+ "anyhow",
  "async-trait",
  "axum",
  "base64ct",

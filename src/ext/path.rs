@@ -82,7 +82,7 @@ impl PathBufExt for Utf8PathBuf {
 
     fn resolve_home_dir(self) -> Result<Utf8PathBuf> {
         if self.starts_with("~") {
-            let home = std::env::var("HOME").context("Could not resolve $HOME")?;
+            let home = std::env::var("HOME").wrap_err("Could not resolve $HOME")?;
             let home = Utf8PathBuf::from(home);
             Ok(home.join(self.strip_prefix("~").unwrap()))
         } else {
@@ -157,7 +157,7 @@ impl PathExt for Utf8PathBuf {
         let unbased = self
             .unbase(src_root)
             .dot()
-            .context(format!("Rebase {self} from {src_root} to {dest_root}"))?;
+            .wrap_err(format!("Rebase {self} from {src_root} to {dest_root}"))?;
         Ok(dest_root.join(unbased))
     }
 

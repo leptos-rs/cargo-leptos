@@ -24,7 +24,7 @@ pub async fn compress_static_files(path: PathBuf) -> Result<()> {
 fn compress_dir_all(path: PathBuf) -> Result<()> {
     trace!("FS compress_dir_all {:?}", path);
 
-    let dir = fs::read_dir(&path).context(format!("Could not read {:?}", path))?;
+    let dir = fs::read_dir(&path).wrap_err(format!("Could not read {:?}", path))?;
     let brotli_params = BrotliEncoderParams::default();
 
     for entry in dir.into_iter() {

@@ -59,7 +59,7 @@ impl NewCommand {
             .arg("generate")
             .args(&args)
             .spawn()
-            .context("Could not spawn cargo-generate command (verify that it is installed)")?;
+            .wrap_err("Could not spawn cargo-generate command (verify that it is installed)")?;
         process.wait().await.dot()?;
         Ok(())
     }

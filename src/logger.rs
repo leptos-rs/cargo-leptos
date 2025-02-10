@@ -9,6 +9,7 @@ use flexi_logger::{
 use std::io::Write;
 use std::sync::OnceLock;
 
+use crate::internal_prelude::*;
 use crate::{config::Log, ext::StrAdditions};
 
 // https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797
@@ -34,7 +35,7 @@ pub fn setup(verbose: u8, logs: &[Log]) {
     // OnceLock::get_or_try_init() is more idiomatic, but unstable at the moment
     _ = LOG_SELECT.get_or_init(|| {
         flexi_logger::Logger::try_with_str(log_level)
-            .with_context(|| "Logger setup failed")
+            .wrap_err_with(|| "Logger setup failed")
             .unwrap()
             .filter(Box::new(Filter))
             .format(format)
