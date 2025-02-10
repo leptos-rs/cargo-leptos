@@ -15,6 +15,7 @@ async fn main() -> color_eyre::Result<()> {
 
     let verbose = args.opts().map(|o| o.verbose).unwrap_or(0);
     cargo_leptos::logger::setup(verbose, &args.log);
+    color_eyre::install()?;
 
     run(args).await
 }
