@@ -2,6 +2,7 @@ use super::ChangeSet;
 use crate::config::Project;
 use crate::ext::sync::{wait_interruptible, CommandResult};
 use crate::ext::{fs, PathBufExt};
+use crate::internal_prelude::*;
 use crate::signal::{Interrupt, Outcome, Product};
 use crate::{
     ext::{
@@ -28,7 +29,7 @@ pub async fn front(
     let changes = changes.clone();
     tokio::spawn(async move {
         if !changes.need_front_build() {
-            log::trace!("Front no changes to rebuild");
+            trace!("Front no changes to rebuild");
             return Ok(Outcome::Success(Product::None));
         }
 
@@ -36,14 +37,14 @@ pub async fn front(
 
         let (envs, line, process) = front_cargo_process("build", true, &proj)?;
 
-        log::debug!("Running {}", GRAY.paint(&line));
+        debug!("Running {}", GRAY.paint(&line));
         match wait_interruptible("Cargo", process, Interrupt::subscribe_any()).await? {
             CommandResult::Interrupted => return Ok(Outcome::Stopped),
             CommandResult::Failure(_) => return Ok(Outcome::Failed),
             _ => {}
         }
-        log::debug!("Cargo envs: {}", GRAY.paint(envs));
-        log::info!("Cargo finished {}", GRAY.paint(line));
+        debug!("Cargo envs: {}", GRAY.paint(envs));
+        info!("Cargo finished {}", GRAY.paint(line));
 
         bindgen(&proj).await.dot()
     })
@@ -108,7 +109,7 @@ async fn bindgen(proj: &Project) -> Result<Outcome<Product>> {
     let wasm_file = &proj.lib.wasm_file;
     let interrupt = Interrupt::subscribe_any();
 
-    log::info!("Front generating JS/WASM with wasm-bindgen");
+    info!("Front generating JS/WASM with wasm-bindgen");
 
     let start_time = tokio::time::Instant::now();
     // see:
@@ -126,7 +127,7 @@ async fn bindgen(proj: &Project) -> Result<Outcome<Product>> {
 
     let bindgen_generate_end_time = tokio::time::Instant::now();
 
-    log::debug!(
+    debug!(
         "Finished generating wasm-bindgen output in {:?}",
         bindgen_generate_end_time - start_time
     );
@@ -134,7 +135,7 @@ async fn bindgen(proj: &Project) -> Result<Outcome<Product>> {
     bindgen.emit(wasm_file.dest.clone().without_last()).dot()?;
 
     let bindgen_emit_end_time = tokio::time::Instant::now();
-    log::debug!(
+    debug!(
         "Finished emitting wasm-bindgen in {:?}",
         bindgen_emit_end_time - bindgen_generate_end_time
     );
@@ -161,7 +162,7 @@ async fn bindgen(proj: &Project) -> Result<Outcome<Product>> {
     }
 
     let wasm_optimize_end_time = tokio::time::Instant::now();
-    log::debug!(
+    debug!(
         "Finished optimizing WASM in {:?}",
         wasm_optimize_end_time - bindgen_emit_end_time
     );
@@ -179,13 +180,13 @@ async fn bindgen(proj: &Project) -> Result<Outcome<Product>> {
     };
 
     let js_minify_end_time = tokio::time::Instant::now();
-    log::debug!(
+    debug!(
         "Finished minifying JS in {:?}",
         js_minify_end_time - wasm_optimize_end_time
     );
 
     let front_end_time = tokio::time::Instant::now();
-    log::info!(
+    info!(
         "Finished generating JS/WASM for front in {:?}",
         front_end_time - start_time
     );

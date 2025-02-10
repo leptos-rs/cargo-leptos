@@ -3,6 +3,7 @@ use crate::ext::anyhow::Result;
 use crate::ext::PathBufExt;
 use crate::signal::{Interrupt, ReloadSignal};
 use crate::{ext::remove_nested, logger::GRAY};
+use crate::internal_prelude::*;
 use camino::Utf8PathBuf;
 use itertools::Itertools;
 use leptos_hot_reload::ViewMacros;
@@ -21,7 +22,7 @@ pub async fn spawn(proj: &Arc<Project>, view_macros: &ViewMacros) -> Result<Join
 
     let paths = remove_nested(set.into_iter());
 
-    log::info!(
+    info!(
         "Patch watching folders {}",
         GRAY.paint(paths.iter().join(", "))
     );
@@ -41,12 +42,12 @@ async fn run(paths: &[Utf8PathBuf], proj: Arc<Project>, view_macros: ViewMacros)
             match event {
                 Ok(event) => handle(event, proj.clone(), view_macros.clone()),
                 Err(err) => {
-                    log::trace!("Notify error: {err:?}");
+                    trace!("Notify error: {err:?}");
                     return;
                 }
             }
         }
-        log::debug!("Notify stopped");
+        debug!("Notify stopped");
     });
 
     let mut watcher = notify::RecommendedWatcher::new(
@@ -57,12 +58,12 @@ async fn run(paths: &[Utf8PathBuf], proj: Arc<Project>, view_macros: ViewMacros)
 
     for path in paths {
         if let Err(e) = watcher.watch(Path::new(path), RecursiveMode::Recursive) {
-            log::error!("Notify could not watch {path:?} due to {e:?}");
+            error!("Notify could not watch {path:?} due to {e:?}");
         }
     }
 
     if let Err(e) = Interrupt::subscribe_shutdown().recv().await {
-        log::trace!("Notify stopped due to: {e:?}");
+        trace!("Notify stopped due to: {e:?}");
     }
 }
 
@@ -80,7 +81,7 @@ fn handle(event: Event, proj: Arc<Project>, view_macros: ViewMacros) {
         return;
     };
 
-    log::trace!("Notify handle {}", GRAY.paint(format!("{:?}", event.paths)));
+    trace!("Notify handle {}", GRAY.paint(format!("{:?}", event.paths)));
 
     let paths: Vec<_> = event
         .paths
@@ -88,7 +89,7 @@ fn handle(event: Event, proj: Arc<Project>, view_macros: ViewMacros) {
         .filter_map(|p| match super::notify::convert(&p, &proj) {
             Ok(p) => Some(p),
             Err(e) => {
-                log::info!("{e}");
+                info!("{e}");
                 None
             }
         })
@@ -99,7 +100,7 @@ fn handle(event: Event, proj: Arc<Project>, view_macros: ViewMacros) {
             // Check if it's possible to patch
             let patches = view_macros.patch(&path);
             if let Ok(Some(patch)) = patches {
-                log::debug!("Patching view.");
+                debug!("Patching view.");
                 ReloadSignal::send_view_patches(&patch);
             }
         }

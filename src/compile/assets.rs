@@ -3,6 +3,7 @@ use std::sync::Arc;
 use super::ChangeSet;
 use crate::config::Project;
 use crate::ext::anyhow::{Context, Result};
+use crate::internal_prelude::*;
 use crate::signal::{Outcome, Product};
 use crate::{ext::PathExt, fs, logger::GRAY};
 use camino::{Utf8Path, Utf8PathBuf};
@@ -26,12 +27,12 @@ pub async fn assets(
         let pkg_dir = &proj.site.pkg_dir;
 
         // if reserved.contains(assets.dir) {
-        //     log::warn!("Assets reserved filename for Leptos. Please remove {watched:?}");
+        //     warn!("Assets reserved filename for Leptos. Please remove {watched:?}");
         //     return Ok(false);
         // }
-        log::trace!("Assets starting resync");
+        trace!("Assets starting resync");
         resync(&assets.dir, dest_root, pkg_dir).await?;
-        log::debug!("Assets finished");
+        debug!("Assets finished");
         Ok(Outcome::Success(Product::Assets))
     })
 }
@@ -66,10 +67,10 @@ async fn clean_dest(dest: &Utf8Path, pkg_dir: &Utf8Path) -> Result<()> {
     let pkg_dir_name = match pkg_dir.file_name() {
         Some(name) => name,
         None => {
-            log::warn!(
+            warn!(
                 "Assets No site-pkg-dir given, defaulting to 'pkg' for checks what to delete."
             );
-            log::warn!("Assets This will probably delete already generated files.");
+            warn!("Assets This will probably delete already generated files.");
             "pkg"
         }
     };
@@ -80,14 +81,14 @@ async fn clean_dest(dest: &Utf8Path, pkg_dir: &Utf8Path) -> Result<()> {
 
         if entry.file_type().await?.is_dir() {
             if entry.file_name() != pkg_dir_name {
-                log::debug!(
+                debug!(
                     "Assets removing folder {}",
                     GRAY.paint(path.to_string_lossy())
                 );
                 fs::remove_dir_all(path).await?;
             }
         } else if entry.file_name() != "index.html" {
-            log::debug!(
+            debug!(
                 "Assets removing file {}",
                 GRAY.paint(path.to_string_lossy())
             );
@@ -103,19 +104,19 @@ async fn mirror(src_root: &Utf8Path, dest_root: &Utf8Path, reserved: &[Utf8PathB
         let from = entry.path().to_path_buf();
         let to = from.rebase(src_root, dest_root)?;
         if reserved.contains(&from) {
-            log::warn!("");
+            warn!("");
             continue;
         }
 
         if entry.file_type()?.is_dir() {
-            log::debug!(
+            debug!(
                 "Assets copy folder {} -> {}",
                 GRAY.paint(from.as_str()),
                 GRAY.paint(to.as_str())
             );
             fs::copy_dir_all(from, to).await?;
         } else {
-            log::debug!(
+            debug!(
                 "Assets copy file {} -> {}",
                 GRAY.paint(from.as_str()),
                 GRAY.paint(to.as_str())

@@ -1,4 +1,5 @@
 use super::ProjectConfig;
+use crate::internal_prelude::*;
 use crate::ext::anyhow::Result;
 use crate::ext::exe;
 use camino::{Utf8Path, Utf8PathBuf};
@@ -64,7 +65,7 @@ fn overlay(conf: &mut ProjectConfig, envs: impl Iterator<Item = (String, String)
             exe::ENV_VAR_LEPTOS_CARGO_GENERATE_VERSION => {}
             exe::ENV_VAR_LEPTOS_WASM_OPT_VERSION => {}
             _ if key.starts_with("LEPTOS_") => {
-                log::warn!("Env {key} is not used by cargo-leptos")
+                warn!("Env {key} is not used by cargo-leptos")
             }
             _ => {}
         }

@@ -6,6 +6,7 @@ use crate::{
     ext::{remove_nested, PathBufExt, PathExt},
     logger::GRAY,
 };
+use crate::internal_prelude::*;
 use camino::Utf8PathBuf;
 use itertools::Itertools;
 use notify::event::ModifyKind;
@@ -41,7 +42,7 @@ pub async fn spawn(proj: &Arc<Project>) -> Result<JoinHandle<()>> {
 
     let paths = remove_nested(set.into_iter().filter(|path| Path::new(path).exists()));
 
-    log::info!(
+    info!(
         "Notify watching paths {}",
         GRAY.paint(paths.iter().join(", "))
     );
@@ -59,12 +60,12 @@ async fn run(paths: &[Utf8PathBuf], proj: Arc<Project>) {
             match event {
                 Ok(event) => handle(event, proj.clone()),
                 Err(err) => {
-                    log::trace!("Notify error: {err:?}");
+                    trace!("Notify error: {err:?}");
                     return;
                 }
             }
         }
-        log::debug!("Notify stopped");
+        debug!("Notify stopped");
     });
 
     let mut watcher = notify::RecommendedWatcher::new(
@@ -75,12 +76,12 @@ async fn run(paths: &[Utf8PathBuf], proj: Arc<Project>) {
 
     for path in paths {
         if let Err(e) = watcher.watch(Path::new(path), RecursiveMode::Recursive) {
-            log::error!("Notify could not watch {path:?} due to {e:?}");
+            error!("Notify could not watch {path:?} due to {e:?}");
         }
     }
 
     if let Err(e) = Interrupt::subscribe_shutdown().recv().await {
-        log::trace!("Notify stopped due to: {e:?}");
+        trace!("Notify stopped due to: {e:?}");
     }
 }
 
@@ -98,7 +99,7 @@ fn handle(event: Event, proj: Arc<Project>) {
         return;
     };
 
-    log::trace!("Notify handle {}", GRAY.paint(format!("{:?}", event.paths)));
+    trace!("Notify handle {}", GRAY.paint(format!("{:?}", event.paths)));
 
     let paths: Vec<_> = event
         .paths
@@ -106,7 +107,7 @@ fn handle(event: Event, proj: Arc<Project>) {
         .filter_map(|p| match convert(&p, &proj) {
             Ok(p) => Some(p),
             Err(e) => {
-                log::info!("{e}");
+                info!("{e}");
                 None
             }
         })
@@ -117,7 +118,7 @@ fn handle(event: Event, proj: Arc<Project>) {
     for path in paths {
         if let Some(assets) = &proj.assets {
             if path.starts_with(&assets.dir) {
-                log::debug!("Notify asset change {}", GRAY.paint(path.to_string()));
+                debug!("Notify asset change {}", GRAY.paint(path.to_string()));
                 changes.push(Change::Asset);
             }
         }
@@ -126,19 +127,19 @@ fn handle(event: Event, proj: Arc<Project>) {
         let lib_js = path.starts_with(&proj.js_dir) && path.is_ext_any(&["js"]);
 
         if lib_rs || lib_js {
-            log::debug!("Notify lib source change {}", GRAY.paint(path.to_string()));
+            debug!("Notify lib source change {}", GRAY.paint(path.to_string()));
             changes.push(Change::LibSource);
         }
 
         if path.starts_with_any(&proj.bin.src_paths) && path.is_ext_any(&["rs"]) {
-            log::debug!("Notify bin source change {}", GRAY.paint(path.to_string()));
+            debug!("Notify bin source change {}", GRAY.paint(path.to_string()));
             changes.push(Change::BinSource);
         }
 
         if let Some(file) = &proj.style.file {
             let src = file.source.clone().without_last();
             if path.starts_with(src) && path.is_ext_any(&["scss", "sass", "css"]) {
-                log::debug!("Notify style change {}", GRAY.paint(path.to_string()));
+                debug!("Notify style change {}", GRAY.paint(path.to_string()));
                 changes.push(Change::Style)
             }
         }
@@ -147,13 +148,13 @@ fn handle(event: Event, proj: Arc<Project>) {
             if path.as_path() == tailwind.config_file.as_path()
                 || path.as_path() == tailwind.input_file.as_path()
             {
-                log::debug!("Notify style change {}", GRAY.paint(path.to_string()));
+                debug!("Notify style change {}", GRAY.paint(path.to_string()));
                 changes.push(Change::Style)
             }
         }
 
         if path.starts_with_any(&proj.watch_additional_files) {
-            log::debug!(
+            debug!(
                 "Notify additional file change {}",
                 GRAY.paint(path.to_string())
             );
@@ -163,7 +164,7 @@ fn handle(event: Event, proj: Arc<Project>) {
         if !changes.is_empty() {
             Interrupt::send(&changes);
         } else {
-            log::trace!(
+            trace!(
                 "Notify changed but not watched: {}",
                 GRAY.paint(path.to_string())
             );

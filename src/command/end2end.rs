@@ -6,6 +6,7 @@ use tokio::process::Command;
 
 use crate::config::{Config, Project};
 use crate::ext::anyhow::{anyhow, Context, Result};
+use crate::internal_prelude::*;
 use crate::service::serve;
 use crate::signal::Interrupt;
 
@@ -29,7 +30,7 @@ pub async fn end2end_proj(proj: &Arc<Project>) -> Result<()> {
         Interrupt::request_shutdown().await;
         server.await.dot()??;
     } else {
-        log::info!("end2end the Crate.toml package.metadata.leptos.end2end_cmd parameter not set")
+        info!("end2end the Crate.toml package.metadata.leptos.end2end_cmd parameter not set")
     }
     Ok(())
 }
@@ -42,7 +43,7 @@ async fn try_run(cmd: &str, dir: &Utf8Path) -> Result<()> {
 
     let args = parts.collect::<Vec<_>>();
 
-    log::trace!("End2End running {cmd:?}");
+    trace!("End2End running {cmd:?}");
     let mut process = Command::new(exe)
         .args(args)
         .current_dir(dir)

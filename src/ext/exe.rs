@@ -1,3 +1,4 @@
+use crate::internal_prelude::*;
 use crate::{
     ext::anyhow::{bail, Context, Result},
     logger::GRAY,
@@ -76,7 +77,7 @@ pub struct ExeCache<'a> {
     meta: &'a ExeMeta,
 }
 
-impl<'a> ExeCache<'a> {
+impl ExeCache<'_> {
     fn exe_in_cache(&self) -> Result<PathBuf> {
         let exe_path = self.exe_dir.join(PathBuf::from(&self.meta.exe));
 
@@ -88,7 +89,7 @@ impl<'a> ExeCache<'a> {
     }
 
     async fn fetch_archive(&self) -> Result<Bytes> {
-        log::debug!(
+        debug!(
             "Install downloading {} {}",
             self.meta.name,
             GRAY.paint(&self.meta.url)
@@ -112,7 +113,7 @@ impl<'a> ExeCache<'a> {
                 .context(format!("Could not write binary {}", self.meta.get_name()))?;
         }
 
-        log::debug!(
+        debug!(
             "Install decompressing {} {}",
             self.meta.name,
             GRAY.paint(self.exe_dir.to_string_lossy())
@@ -140,7 +141,7 @@ impl<'a> ExeCache<'a> {
     }
 
     async fn download(&self) -> Result<PathBuf> {
-        log::info!("Command installing {} ...", self.meta.get_name());
+        info!("Command installing {} ...", self.meta.get_name());
 
         let data = self
             .fetch_archive()
@@ -154,7 +155,7 @@ impl<'a> ExeCache<'a> {
             "Binary downloaded and extracted but could still not be found at {:?}",
             self.exe_dir
         ))?;
-        log::info!("Command {} installed.", self.meta.get_name());
+        info!("Command {} installed.", self.meta.get_name());
         Ok(binary_path)
     }
 
@@ -204,7 +205,7 @@ fn get_cache_dir() -> Result<PathBuf> {
     }
 
     ON_STARTUP_DEBUG_ONCE.call_once(|| {
-        log::debug!("Command cache dir: {}", dir.to_string_lossy());
+        debug!("Command cache dir: {}", dir.to_string_lossy());
     });
 
     Ok(dir)
@@ -230,7 +231,7 @@ impl Exe {
             meta.cached().await.context(meta.manual)?
         };
 
-        log::debug!(
+        debug!(
             "Command using {} {} {}",
             &meta.name,
             &meta.version,
@@ -294,7 +295,7 @@ fn normalize_version(ver_string: &str) -> Option<Version> {
             Err(_) => match Version::parse(format!("{ver_string}.0").as_str()) {
                 Ok(v) => Some(v),
                 Err(e) => {
-                    log::error!("Command failed to normalize version {ver_string}: {e}");
+                    error!("Command failed to normalize version {ver_string}: {e}");
                     None
                 }
             },
@@ -669,7 +670,7 @@ trait Command {
                 return match (marker.exists(), marker.is_dir()) {
                     (_, true) => {
                         // conflicting dir instead of a marker file, bail
-                        log::warn!("Command [{}] encountered a conflicting dir in the cache, please delete {}",
+                        warn!("Command [{}] encountered a conflicting dir in the cache, please delete {}",
                             self.name(), marker.display());
 
                         false
@@ -712,14 +713,14 @@ trait Command {
                 };
             }
             Err(e) => {
-                log::warn!("Command {} failed to get cache dir: {}", self.name(), e);
+                warn!("Command {} failed to get cache dir: {}", self.name(), e);
                 false
             }
         }
     }
 
     async fn check_for_latest_version(&self) -> Option<String> {
-        log::debug!(
+        debug!(
             "Command [{}] checking for the latest available version",
             self.name()
         );
@@ -740,7 +741,7 @@ trait Command {
             .await
         {
             if !response.status().is_success() {
-                log::error!(
+                error!(
                     "Command [{}] GitHub API request failed: {}",
                     self.name(),
                     response.status()
@@ -756,7 +757,7 @@ trait Command {
             let github: Github = match response.json().await {
                 Ok(json) => json,
                 Err(e) => {
-                    log::debug!(
+                    debug!(
                         "Command [{}] failed to parse the response JSON from the GitHub API: {}",
                         self.name(),
                         e
@@ -767,7 +768,7 @@ trait Command {
 
             Some(github.tag_name)
         } else {
-            log::debug!(
+            debug!(
                 "Command [{}] failed to check for the latest version",
                 self.name()
             );
@@ -783,7 +784,7 @@ trait Command {
         // TODO revisit this logic when implementing the SemVer compatible ranges matching
         // if env var is set, use the requested version and bypass caching logic
         let is_force_pin_version = env::var(self.env_var_version_name()).is_ok();
-        log::trace!(
+        trace!(
             "Command [{}] is_force_pin_version: {} - {:?}",
             self.name(),
             is_force_pin_version,
@@ -791,7 +792,7 @@ trait Command {
         );
 
         if !is_force_pin_version && !self.should_check_for_new_version().await {
-            log::trace!(
+            trace!(
                 "Command [{}] NOT checking for the latest available version",
                 &self.name()
             );
@@ -812,12 +813,12 @@ trait Command {
                     // TODO use the VersionReq for semantic matching
                     match norm_version.cmp(&norm_latest) {
                         core::cmp::Ordering::Greater | core::cmp::Ordering::Equal => {
-                            log::debug!(
+                            debug!(
                                             "Command [{}] requested version {} is already same or newer than available version {}",
                                             self.name(), version, &latest)
                         }
                         core::cmp::Ordering::Less => {
-                            log::info!(
+                            info!(
                                             "Command [{}] requested version {}, but a newer version {} is available, you can try it out by \
                                             setting the {}={} env var and re-running the command",
                                             self.name(), version, &latest, self.env_var_version_name(), &latest)
@@ -825,7 +826,7 @@ trait Command {
                     }
                 }
             }
-            None => log::warn!(
+            None => warn!(
                 "Command [{}] failed to check for the latest version",
                 self.name()
             ),

@@ -6,6 +6,7 @@ use crate::{
     logger::GRAY,
     signal::{Interrupt, ReloadSignal, ServerRestart},
 };
+use crate::internal_prelude::*;
 use camino::Utf8PathBuf;
 use tokio::{
     process::{Child, Command},
@@ -77,9 +78,9 @@ impl ServerProcess {
     async fn kill(&mut self) {
         if let Some(proc) = self.process.as_mut() {
             if let Err(e) = proc.kill().await {
-                log::error!("Serve error killing server process: {e}");
+                error!("Serve error killing server process: {e}");
             } else {
-                log::trace!("Serve stopped");
+                trace!("Serve stopped");
             }
             self.process = None;
         }
@@ -88,16 +89,16 @@ impl ServerProcess {
     async fn restart(&mut self) -> Result<()> {
         self.kill().await;
         self.start().await?;
-        log::trace!("Serve restarted");
+        trace!("Serve restarted");
         Ok(())
     }
 
     async fn wait(&mut self) -> Result<()> {
         if let Some(proc) = self.process.as_mut() {
             if let Err(e) = proc.wait().await {
-                log::error!("Serve error while waiting for server process to exit: {e}");
+                error!("Serve error while waiting for server process to exit: {e}");
             } else {
-                log::trace!("Serve process exited");
+                trace!("Serve process exited");
             }
         }
         Ok(())
@@ -111,7 +112,7 @@ impl ServerProcess {
                 // solution to allow cargo to overwrite a running binary on some platforms:
                 //   copy cargo's output bin to [filename]_leptos and then run it
                 let new_bin_path = append_str_to_filename(bin, "_leptos")?;
-                log::debug!(
+                debug!(
                     "Copying server binary {} to {}",
                     GRAY.paint(bin.as_str()),
                     GRAY.paint(new_bin_path.as_str())
@@ -120,7 +121,7 @@ impl ServerProcess {
                 // also copy the .pdb file if it exists to allow debugging to attach
                 if let Some(pdb) = determine_pdb_filename(bin) {
                     let new_pdb_path = append_str_to_filename(&pdb, "_leptos")?;
-                    log::debug!(
+                    debug!(
                         "Copying server binary debug info {} to {}",
                         GRAY.paint(pdb.as_str()),
                         GRAY.paint(new_pdb_path.as_str())
@@ -137,7 +138,7 @@ impl ServerProcess {
                 None => &[],
             };
 
-            log::debug!("Serve running {}", GRAY.paint(bin_path.as_str()));
+            debug!("Serve running {}", GRAY.paint(bin_path.as_str()));
             let cmd = Some(
                 Command::new(bin_path)
                     .envs(self.envs.clone())
@@ -155,10 +156,10 @@ impl ServerProcess {
                     }
                 })
                 .unwrap_or_default();
-            log::info!("Serving at http://{port}");
+            info!("Serving at http://{port}");
             cmd
         } else {
-            log::debug!("Serve no exe found {}", GRAY.paint(bin.as_str()));
+            debug!("Serve no exe found {}", GRAY.paint(bin.as_str()));
             None
         };
         self.process = child;

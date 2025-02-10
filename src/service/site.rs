@@ -14,6 +14,7 @@ use crate::{
         fs, PathBufExt,
     },
 };
+use crate::internal_prelude::*;
 
 #[derive(Clone)]
 pub struct SourcedSiteFile {
@@ -121,7 +122,7 @@ impl Site {
         }
         let mut f = self.ext_file_reg.write().await;
         f.insert(to.to_string(), new_hash);
-        log::trace!("Site update hash for {to} to {new_hash}");
+        trace!("Site update hash for {to} to {new_hash}");
         Ok(true)
     }
 

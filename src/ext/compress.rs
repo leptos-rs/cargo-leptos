@@ -1,4 +1,5 @@
 use crate::ext::anyhow::{Context, Result};
+use crate::internal_prelude::*;
 use brotli::enc::BrotliEncoderParams;
 use libflate::gzip;
 use std::fs;
@@ -12,7 +13,7 @@ pub async fn compress_static_files(path: PathBuf) -> Result<()> {
 
     tokio::task::spawn_blocking(move || compress_dir_all(path)).await??;
 
-    log::info!(
+    info!(
         "Precompression of static files finished after {} ms",
         start.elapsed().as_millis()
     );
@@ -22,7 +23,7 @@ pub async fn compress_static_files(path: PathBuf) -> Result<()> {
 // This is sync / blocking because an async / parallel execution did provide only a small benefit
 // in performance (~4%) while needing quite a few more dependencies and much more verbose code.
 fn compress_dir_all(path: PathBuf) -> Result<()> {
-    log::trace!("FS compress_dir_all {:?}", path);
+    trace!("FS compress_dir_all {:?}", path);
 
     let dir = fs::read_dir(&path).context(format!("Could not read {:?}", path))?;
     let brotli_params = BrotliEncoderParams::default();
