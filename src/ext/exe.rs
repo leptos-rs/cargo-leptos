@@ -1,9 +1,11 @@
 use crate::{
+    config::VersionConfig,
     ext::anyhow::{bail, Context, Result},
     logger::GRAY,
 };
 use bytes::Bytes;
 use std::{
+    borrow::Cow,
     fs::{self, File},
     io::{Cursor, Write},
     path::{Path, PathBuf},
@@ -35,11 +37,6 @@ pub struct ExeMeta {
 lazy_static::lazy_static! {
     static ref ON_STARTUP_DEBUG_ONCE: Once = Once::new();
 }
-
-pub const ENV_VAR_LEPTOS_CARGO_GENERATE_VERSION: &str = "LEPTOS_CARGO_GENERATE_VERSION";
-pub const ENV_VAR_LEPTOS_TAILWIND_VERSION: &str = "LEPTOS_TAILWIND_VERSION";
-pub const ENV_VAR_LEPTOS_SASS_VERSION: &str = "LEPTOS_SASS_VERSION";
-pub const ENV_VAR_LEPTOS_WASM_OPT_VERSION: &str = "LEPTOS_WASM_OPT_VERSION";
 
 impl ExeMeta {
     #[allow(clippy::wrong_self_convention)]
@@ -316,11 +313,14 @@ impl Command for CommandTailwind {
     fn name(&self) -> &'static str {
         "tailwindcss"
     }
+    fn version(&self) -> Cow<'_, str> {
+        VersionConfig::Tailwind.version()
+    }
     fn default_version(&self) -> &'static str {
-        "v4.0.3"
+        VersionConfig::Tailwind.default_version()
     }
     fn env_var_version_name(&self) -> &'static str {
-        ENV_VAR_LEPTOS_TAILWIND_VERSION
+        VersionConfig::Tailwind.env_var_version_name()
     }
     fn github_owner(&self) -> &'static str {
         "tailwindlabs"
@@ -416,11 +416,14 @@ impl Command for CommandWasmOpt {
     fn name(&self) -> &'static str {
         "wasm-opt"
     }
+    fn version(&self) -> Cow<'_, str> {
+        VersionConfig::WasmOpt.version()
+    }
     fn default_version(&self) -> &'static str {
-        "version_117"
+        VersionConfig::WasmOpt.default_version()
     }
     fn env_var_version_name(&self) -> &'static str {
-        ENV_VAR_LEPTOS_WASM_OPT_VERSION
+        VersionConfig::WasmOpt.env_var_version_name()
     }
     fn github_owner(&self) -> &'static str {
         "WebAssembly"
@@ -473,11 +476,14 @@ impl Command for CommandSass {
     fn name(&self) -> &'static str {
         "sass"
     }
+    fn version(&self) -> Cow<'_, str> {
+        VersionConfig::Sass.version()
+    }
     fn default_version(&self) -> &'static str {
-        "1.58.3"
+        VersionConfig::Sass.default_version()
     }
     fn env_var_version_name(&self) -> &'static str {
-        ENV_VAR_LEPTOS_SASS_VERSION
+        VersionConfig::Sass.env_var_version_name()
     }
     fn github_owner(&self) -> &'static str {
         "dart-musl"
@@ -552,11 +558,14 @@ impl Command for CommandCargoGenerate {
     fn name(&self) -> &'static str {
         "cargo-generate"
     }
+    fn version(&self) -> Cow<'_, str> {
+        VersionConfig::CargoGenerate.version()
+    }
     fn default_version(&self) -> &'static str {
-        "v0.17.3"
+        VersionConfig::CargoGenerate.default_version()
     }
     fn env_var_version_name(&self) -> &'static str {
-        ENV_VAR_LEPTOS_CARGO_GENERATE_VERSION
+        VersionConfig::CargoGenerate.env_var_version_name()
     }
     fn github_owner(&self) -> &'static str {
         "cargo-generate"
@@ -619,6 +628,7 @@ impl Command for CommandCargoGenerate {
 /// version override for a given command.
 trait Command {
     fn name(&self) -> &'static str;
+    fn version(&self) -> Cow<'_, str>;
     fn default_version(&self) -> &str;
     fn env_var_version_name(&self) -> &str;
     fn github_owner(&self) -> &str;
@@ -796,9 +806,7 @@ trait Command {
             return self.default_version().into();
         }
 
-        let version = env::var(self.env_var_version_name())
-            .unwrap_or_else(|_| self.default_version().into())
-            .to_owned();
+        let version = self.version();
 
         let latest = self.check_for_latest_version().await;
 
@@ -829,7 +837,7 @@ trait Command {
             ),
         }
 
-        version
+        version.to_string()
     }
 }
 
