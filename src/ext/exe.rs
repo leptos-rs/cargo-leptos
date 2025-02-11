@@ -3,11 +3,11 @@ use crate::{
     logger::GRAY,
 };
 use bytes::Bytes;
-use core::str;
 use std::{
     fs::{self, File},
     io::{Cursor, Write},
     path::{Path, PathBuf},
+    str,
     sync::Once,
 };
 
