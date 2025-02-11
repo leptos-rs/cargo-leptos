@@ -93,8 +93,7 @@ fn handle(event: Event, proj: Arc<Project>) {
     if let EventKind::Any
     | EventKind::Other
     | EventKind::Access(_)
-    | EventKind::Modify(ModifyKind::Any | ModifyKind::Other | ModifyKind::Metadata(_)) =
-        event.kind
+    | EventKind::Modify(ModifyKind::Other | ModifyKind::Metadata(_)) = event.kind
     {
         return;
     };
