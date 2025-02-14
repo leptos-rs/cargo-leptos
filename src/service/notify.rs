@@ -2,8 +2,7 @@ use crate::{
     compile::Change,
     config::Project,
     ext::{
-        anyhow::{anyhow, Result},
-        PathBufExt, PathExt,
+        anyhow::{anyhow, Result}, Paint, PathBufExt, PathExt
     },
     logger::GRAY,
     signal::{Interrupt, ReloadSignal},
