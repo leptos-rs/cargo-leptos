@@ -711,7 +711,7 @@ mod tests {
     fn test_sanitize_version_prefix() {
         let version = sanitize_version_prefix("v1.2.3").expect("Could not sanitize \"v1.2.3\".");
         assert_eq!(version, "1.2.3");
-        assert!(Version::parse(&version).is_ok());
+        assert!(Version::parse(version).is_ok());
     }
 
     #[test]

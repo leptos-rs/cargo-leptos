@@ -1,9 +1,9 @@
-use crate::config::Project;
-use crate::ext::sync::wait_for_socket;
-use crate::ext::Paint;
-use crate::logger::GRAY;
-use crate::signal::Interrupt;
-use crate::signal::{ReloadSignal, ReloadType};
+use crate::{
+    config::Project,
+    ext::{sync::wait_for_socket, Paint},
+    logger::GRAY,
+    signal::{Interrupt, ReloadSignal, ReloadType},
+};
 use axum::{
     extract::ws::{Message, WebSocket, WebSocketUpgrade},
     response::IntoResponse,
@@ -11,10 +11,13 @@ use axum::{
     Router,
 };
 use serde::Serialize;
-use std::sync::Arc;
-use std::{fmt::Display, net::SocketAddr};
-use tokio::net::TcpListener;
-use tokio::{net::TcpStream, select, sync::RwLock, task::JoinHandle};
+use std::{fmt::Display, net::SocketAddr, sync::Arc};
+use tokio::{
+    net::{TcpListener, TcpStream},
+    select,
+    sync::RwLock,
+    task::JoinHandle,
+};
 
 lazy_static::lazy_static! {
   static ref SITE_ADDR: RwLock<SocketAddr> = RwLock::new(SocketAddr::new([127,0,0,1].into(), 3000));
@@ -110,7 +113,7 @@ async fn send(stream: &mut WebSocket, msg: BrowserMessage) {
     }
 
     let text = serde_json::to_string(&msg).unwrap();
-    match stream.send(Message::Text(text)).await {
+    match stream.send(Message::Text(text.into())).await {
         Err(e) => {
             log::debug!("Reload could not send {msg} due to {e}");
         }
@@ -122,7 +125,7 @@ async fn send(stream: &mut WebSocket, msg: BrowserMessage) {
 
 async fn send_and_close(mut stream: WebSocket, msg: BrowserMessage) {
     send(&mut stream, msg).await;
-    let _ = stream.close().await;
+    let _ = stream.send(Message::Close(None)).await;
     log::trace!("Reload websocket closed");
 }
 
