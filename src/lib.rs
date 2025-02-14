@@ -5,7 +5,7 @@ mod command;
 pub mod compile;
 pub mod config;
 pub mod ext;
-mod logger;
+pub mod logger;
 pub mod service;
 pub mod signal;
 
