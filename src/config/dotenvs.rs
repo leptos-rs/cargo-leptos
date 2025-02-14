@@ -1,6 +1,5 @@
-use super::ProjectConfig;
+use super::{ProjectConfig, ENV_VAR_LEPTOS_SASS_VERSION, ENV_VAR_LEPTOS_TAILWIND_VERSION};
 use crate::ext::anyhow::Result;
-use crate::ext::exe;
 use camino::{Utf8Path, Utf8PathBuf};
 use std::{env, fs};
 
@@ -55,12 +54,12 @@ fn overlay(conf: &mut ProjectConfig, envs: impl Iterator<Item = (String, String)
             "LEPTOS_BIN_TARGET_DIR" => conf.bin_target_dir = Some(val),
             "LEPTOS_BIN_CARGO_COMMAND" => conf.bin_cargo_command = Some(val),
             "LEPTOS_JS_MINIFY" => conf.js_minify = val.parse()?,
+            "SERVER_FN_PREFIX" => conf.server_fn_prefix = Some(val),
+            "DISABLE_SERVER_FN_HASH" => conf.disable_server_fn_hash = true,
             // put these here to suppress the warning, but there's no
             // good way at the moment to pull the ProjectConfig all the way to Exe
-            exe::ENV_VAR_LEPTOS_TAILWIND_VERSION => {}
-            exe::ENV_VAR_LEPTOS_SASS_VERSION => {}
-            exe::ENV_VAR_LEPTOS_CARGO_GENERATE_VERSION => {}
-            exe::ENV_VAR_LEPTOS_WASM_OPT_VERSION => {}
+            ENV_VAR_LEPTOS_TAILWIND_VERSION => {}
+            ENV_VAR_LEPTOS_SASS_VERSION => {}
             _ if key.starts_with("LEPTOS_") => {
                 log::warn!("Env {key} is not used by cargo-leptos")
             }

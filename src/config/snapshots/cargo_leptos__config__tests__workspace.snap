@@ -1,6 +1,7 @@
 ---
 source: src/config/tests.rs
 expression: conf
+snapshot_kind: text
 ---
 Config {
     projects: [
@@ -71,6 +72,11 @@ Config {
                     dir: "project1/assets",
                 },
             ),
+            server_fn_prefix: Some(
+                "/custom/prefix",
+            ),
+            disable_server_fn_hash: true,
+            server_fn_mod_path: true,
             ..
         },
         Project {
@@ -144,6 +150,9 @@ Config {
                     dir: "project2/src/assets",
                 },
             ),
+            server_fn_prefix: None,
+            disable_server_fn_hash: false,
+            server_fn_mod_path: false,
             ..
         },
     ],

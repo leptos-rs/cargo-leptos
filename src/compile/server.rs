@@ -2,8 +2,11 @@ use std::sync::Arc;
 use super::ChangeSet;
 use crate::{
     config::Project,
-    ext::anyhow::{Context, Result},
-    ext::sync::{wait_interruptible, CommandResult},
+    ext::{
+        anyhow::{Context, Result},
+        sync::{wait_interruptible, CommandResult},
+        Paint,
+    },
     logger::GRAY,
     signal::{Interrupt, Outcome, Product},
 };
