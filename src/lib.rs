@@ -5,7 +5,7 @@ mod command;
 pub mod compile;
 pub mod config;
 pub mod ext;
-mod logger;
+pub mod logger;
 pub mod service;
 pub mod signal;
 
@@ -21,9 +21,6 @@ use std::env;
 use std::path::PathBuf;
 
 pub async fn run(args: Cli) -> Result<()> {
-    let verbose = args.opts().map(|o| o.verbose).unwrap_or(0);
-    logger::setup(verbose, &args.log);
-
     if let New(new) = &args.command {
         return new.run().await;
     }
