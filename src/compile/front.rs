@@ -4,7 +4,10 @@ use crate::ext::sync::{wait_interruptible, CommandResult};
 use crate::ext::{fs, PathBufExt};
 use crate::signal::{Interrupt, Outcome, Product};
 use crate::{
-    ext::anyhow::{Context, Result},
+    ext::{
+        anyhow::{Context, Result},
+        Paint,
+    },
     logger::GRAY,
 };
 use anyhow::Ok;

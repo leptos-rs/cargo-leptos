@@ -1,5 +1,6 @@
 use crate::config::Project;
 use crate::ext::sync::wait_for_socket;
+use crate::ext::Paint;
 use crate::logger::GRAY;
 use crate::signal::Interrupt;
 use crate::signal::{ReloadSignal, ReloadType};

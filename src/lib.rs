@@ -15,7 +15,7 @@ use crate::ext::PathBufExt;
 use crate::logger::GRAY;
 use camino::Utf8PathBuf;
 use config::{Cli, Config};
-use ext::fs;
+use ext::{fs, Paint};
 use signal::Interrupt;
 use std::env;
 use std::path::PathBuf;

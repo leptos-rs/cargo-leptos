@@ -4,7 +4,7 @@ use crate::{
     config::Project,
     ext::{
         anyhow::{anyhow, bail, Context, Result},
-        PathBufExt,
+        Paint, PathBufExt,
     },
     fs,
     logger::GRAY,

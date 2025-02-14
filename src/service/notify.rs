@@ -1,6 +1,7 @@
 use crate::compile::Change;
 use crate::config::Project;
 use crate::ext::anyhow::{anyhow, Result};
+use crate::ext::Paint;
 use crate::signal::Interrupt;
 use crate::{
     ext::{remove_nested, PathBufExt, PathExt},
@@ -116,7 +117,7 @@ fn handle(event: Event, proj: Arc<Project>) {
     for path in paths {
         if let Some(assets) = &proj.assets {
             if path.starts_with(&assets.dir) {
-                log::debug!("Notify asset change {}", GRAY.paint(path.to_string()));
+                log::debug!("Notify asset change {}", GRAY.paint(path.as_str()));
                 changes.push(Change::Asset);
             }
         }
@@ -125,19 +126,19 @@ fn handle(event: Event, proj: Arc<Project>) {
         let lib_js = path.starts_with(&proj.js_dir) && path.is_ext_any(&["js"]);
 
         if lib_rs || lib_js {
-            log::debug!("Notify lib source change {}", GRAY.paint(path.to_string()));
+            log::debug!("Notify lib source change {}", GRAY.paint(path.as_str()));
             changes.push(Change::LibSource);
         }
 
         if path.starts_with_any(&proj.bin.src_paths) && path.is_ext_any(&["rs"]) {
-            log::debug!("Notify bin source change {}", GRAY.paint(path.to_string()));
+            log::debug!("Notify bin source change {}", GRAY.paint(path.as_str()));
             changes.push(Change::BinSource);
         }
 
         if let Some(file) = &proj.style.file {
             let src = file.source.clone().without_last();
             if path.starts_with(src) && path.is_ext_any(&["scss", "sass", "css"]) {
-                log::debug!("Notify style change {}", GRAY.paint(path.to_string()));
+                log::debug!("Notify style change {}", GRAY.paint(path.as_str()));
                 changes.push(Change::Style)
             }
         }
@@ -146,7 +147,7 @@ fn handle(event: Event, proj: Arc<Project>) {
             if path.as_path() == tailwind.config_file.as_path()
                 || path.as_path() == tailwind.input_file.as_path()
             {
-                log::debug!("Notify style change {}", GRAY.paint(path.to_string()));
+                log::debug!("Notify style change {}", GRAY.paint(path.as_str()));
                 changes.push(Change::Style)
             }
         }
@@ -154,7 +155,7 @@ fn handle(event: Event, proj: Arc<Project>) {
         if path.starts_with_any(&proj.watch_additional_files) {
             log::debug!(
                 "Notify additional file change {}",
-                GRAY.paint(path.to_string())
+                GRAY.paint(path.as_str())
             );
             changes.push(Change::Additional);
         }
@@ -164,7 +165,7 @@ fn handle(event: Event, proj: Arc<Project>) {
         } else {
             log::trace!(
                 "Notify changed but not watched: {}",
-                GRAY.paint(path.to_string())
+                GRAY.paint(path.as_str())
             );
         }
     }
