@@ -12,5 +12,9 @@ async fn main() -> Result<()> {
     }
 
     let args = Cli::parse_from(&args);
+
+    let verbose = args.opts().map(|o| o.verbose).unwrap_or(0);
+    cargo_leptos::logger::setup(verbose, &args.log);
+
     run(args).await
 }

@@ -6,11 +6,11 @@ use crate::signal::{Interrupt, Outcome, Product};
 use crate::{
     ext::{
         anyhow::{Context, Result},
-        exe::Exe,
         Paint,
     },
     logger::GRAY,
 };
+use anyhow::Ok;
 use camino::Utf8Path;
 use std::sync::Arc;
 use swc::config::IsModule;
@@ -18,8 +18,9 @@ use swc::JsMinifyExtras;
 use swc::{config::JsMinifyOptions, try_with_handler, BoolOrDataConfig};
 use swc_common::{FileName, SourceMap, GLOBALS};
 use tokio::process::Child;
-use tokio::{process::Command, sync::broadcast, task::JoinHandle};
+use tokio::{process::Command, task::JoinHandle};
 use wasm_bindgen_cli_support::Bindgen;
+use wasm_opt::OptimizationOptions;
 
 pub async fn front(
     proj: &Arc<Project>,
@@ -107,7 +108,6 @@ pub fn build_cargo_front_cmd(
 
 async fn bindgen(proj: &Project) -> Result<Outcome<Product>> {
     let wasm_file = &proj.lib.wasm_file;
-    let interrupt = Interrupt::subscribe_any();
 
     log::info!("Front generating JS/WASM with wasm-bindgen");
 
@@ -154,11 +154,7 @@ async fn bindgen(proj: &Project) -> Result<Outcome<Product>> {
     .dot()?;
 
     if proj.release {
-        match optimize(&wasm_file.dest, interrupt).await.dot()? {
-            CommandResult::Interrupted => return Ok(Outcome::Stopped),
-            CommandResult::Failure(_) => return Ok(Outcome::Failed),
-            _ => {}
-        }
+        optimize(&wasm_file.dest)?;
     }
 
     let wasm_optimize_end_time = tokio::time::Instant::now();
@@ -194,18 +190,10 @@ async fn bindgen(proj: &Project) -> Result<Outcome<Product>> {
     Ok(Outcome::Success(Product::Front))
 }
 
-async fn optimize(
-    file: &Utf8Path,
-    interrupt: broadcast::Receiver<()>,
-) -> Result<CommandResult<()>> {
-    let wasm_opt = Exe::WasmOpt.get().await.dot()?;
-
-    let args = [file.as_str(), "-Oz", "-o", file.as_str()];
-    let process = Command::new(wasm_opt)
-        .args(args)
-        .spawn()
-        .context("Could not spawn command")?;
-    wait_interruptible("wasm-opt", process, interrupt).await
+fn optimize(file: &Utf8Path) -> Result<()> {
+    OptimizationOptions::new_optimize_for_size_aggressively()
+        .run(file, file)
+        .dot()
 }
 
 fn minify<JS: AsRef<str>>(js: JS) -> Result<String> {

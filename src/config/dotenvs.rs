@@ -65,6 +65,7 @@ fn overlay(conf: &mut ProjectConfig, envs: impl Iterator<Item = (String, String)
             ENV_VAR_LEPTOS_SASS_VERSION => {}
             ENV_VAR_LEPTOS_CARGO_GENERATE_VERSION => {}
             ENV_VAR_LEPTOS_WASM_OPT_VERSION => {}
+
             _ if key.starts_with("LEPTOS_") => {
                 log::warn!("Env {key} is not used by cargo-leptos")
             }
