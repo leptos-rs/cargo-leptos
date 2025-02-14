@@ -1,24 +1,31 @@
 use crate::{
-    compile::Change,
+    compile::{Change, ChangeSet},
     config::Project,
     ext::{
-        anyhow::{anyhow, Result}, Paint, PathBufExt, PathExt
+        anyhow::{anyhow, Result},
+        Paint, PathBufExt, PathExt,
     },
     logger::GRAY,
     signal::{Interrupt, ReloadSignal},
 };
 use camino::Utf8PathBuf;
 use ignore::gitignore::Gitignore;
+use itertools::Itertools;
 use leptos_hot_reload::ViewMacros;
-use notify::{event::ModifyKind, Event, EventKind, RecursiveMode, Watcher};
+use notify_debouncer_full::{
+    new_debouncer,
+    notify::{event::ModifyKind, EventKind, RecursiveMode},
+    DebouncedEvent,
+};
 use std::{
+    collections::HashSet,
     path::{Path, PathBuf},
     sync::Arc,
     time::Duration,
 };
 use tokio::task::JoinHandle;
 
-pub(crate) const FALLBACK_POLLING_TIMEOUT: Duration = Duration::from_millis(200);
+const POLLING_TIMEOUT: Duration = Duration::from_millis(100);
 
 pub async fn spawn(proj: &Arc<Project>, view_macros: Option<ViewMacros>) -> Result<JoinHandle<()>> {
     let proj = proj.clone();
@@ -46,11 +53,8 @@ async fn run(proj: Arc<Project>, view_macros: Option<ViewMacros>) {
         }
     });
 
-    let mut watcher = notify::RecommendedWatcher::new(
-        sync_tx,
-        notify::Config::default().with_poll_interval(FALLBACK_POLLING_TIMEOUT),
-    )
-    .expect("failed to build file system watcher");
+    let mut watcher =
+        new_debouncer(POLLING_TIMEOUT, None, sync_tx).expect("failed to build file system watcher");
 
     let mut paths = proj.watch_additional_files.clone();
     paths.push(proj.working_dir.clone());
@@ -67,30 +71,47 @@ async fn run(proj: Arc<Project>, view_macros: Option<ViewMacros>) {
 }
 
 fn handle(
-    event: Event,
+    events: Vec<DebouncedEvent>,
     proj: Arc<Project>,
     view_macros: &Option<ViewMacros>,
     gitignore: &mut Gitignore,
 ) {
-    if event.paths.is_empty() {
+    if events.is_empty() {
         return;
     }
 
-    if let EventKind::Any
-    | EventKind::Other
-    | EventKind::Access(_)
-    | EventKind::Modify(ModifyKind::Other | ModifyKind::Metadata(_)) = event.kind
-    {
-        return;
-    };
+    let paths: Vec<_> = events
+        .into_iter()
+        .filter_map(|event| {
+            if event.paths.is_empty() {
+                return None;
+            }
 
-    let paths = ignore_paths(&proj, &event.paths, gitignore);
+            if let EventKind::Any
+            | EventKind::Other
+            | EventKind::Access(_)
+            | EventKind::Modify(ModifyKind::Other | ModifyKind::Metadata(_)) = event.kind
+            {
+                return None;
+            };
+
+            let paths = ignore_paths(&proj, &event.paths, gitignore);
+
+            if paths.is_empty() {
+                None
+            } else {
+                Some(paths)
+            }
+        })
+        .flatten()
+        .dedup()
+        .collect();
 
     if paths.is_empty() {
         return;
     }
 
-    let mut changes = Vec::new();
+    let mut changes = ChangeSet::new();
 
     log::trace!("Notify handle {}", GRAY.paint(format!("{paths:?}")));
 
@@ -104,7 +125,7 @@ fn handle(
         if let Some(assets) = &proj.assets {
             if path.starts_with(&assets.dir) {
                 log::debug!("Notify asset change {}", GRAY.paint(path.as_str()));
-                changes.push(Change::Asset);
+                changes.add(Change::Asset);
             }
         }
 
@@ -113,7 +134,7 @@ fn handle(
 
         if lib_rs || lib_js {
             log::debug!("Notify lib source change {}", GRAY.paint(path.as_str()));
-            changes.push(Change::LibSource);
+            changes.add(Change::LibSource);
         }
 
         if path.starts_with_any(&proj.bin.src_paths) && path.is_ext_any(&["rs"]) {
@@ -126,14 +147,14 @@ fn handle(
                 }
             }
             log::debug!("Notify bin source change {}", GRAY.paint(path.to_string()));
-            changes.push(Change::BinSource);
+            changes.add(Change::BinSource);
         }
 
         if let Some(file) = &proj.style.file {
             let src = file.source.clone().without_last();
             if path.starts_with(src) && path.is_ext_any(&["scss", "sass", "css"]) {
                 log::debug!("Notify style change {}", GRAY.paint(path.as_str()));
-                changes.push(Change::Style)
+                changes.add(Change::Style);
             }
         }
 
@@ -145,7 +166,7 @@ fn handle(
                 || path.as_path() == tailwind.input_file.as_path()
             {
                 log::debug!("Notify style change {}", GRAY.paint(path.as_str()));
-                changes.push(Change::Style)
+                changes.add(Change::Style);
             }
         }
 
@@ -154,7 +175,7 @@ fn handle(
                 "Notify additional file change {}",
                 GRAY.paint(path.as_str())
             );
-            changes.push(Change::Additional);
+            changes.add(Change::Additional);
         }
     }
 
@@ -205,6 +226,11 @@ fn ignore_paths(
                 }
                 parent = par;
             }
+
+            if !p.exists() {
+                return None;
+            }
+
             Some(p)
         })
         .collect()

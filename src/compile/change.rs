@@ -1,4 +1,4 @@
-use std::vec;
+use std::{ops::Deref, vec};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Change {
@@ -20,6 +20,10 @@ pub enum Change {
 pub struct ChangeSet(Vec<Change>);
 
 impl ChangeSet {
+    pub fn new() -> Self {
+        Self(Vec::new())
+    }
+
     pub fn all_changes() -> Self {
         Self(vec![
             Change::BinSource,
@@ -66,5 +70,13 @@ impl ChangeSet {
         } else {
             false
         }
+    }
+}
+
+impl Deref for ChangeSet {
+    type Target = Vec<Change>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
