@@ -1,6 +1,6 @@
 use camino::Utf8PathBuf;
 use cargo_metadata::{Metadata, Target};
-
+use current_platform::CURRENT_PLATFORM;
 use super::{project::ProjectDefinition, Profile, ProjectConfig};
 use crate::{
     config::Opts,
@@ -142,7 +142,7 @@ impl BinPackage {
             default_features: config.bin_default_features,
             src_paths,
             profile,
-            target_triple: config.bin_target_triple.clone(),
+            target_triple: Option::from(config.bin_target_triple.clone().unwrap_or_else(|| CURRENT_PLATFORM.to_string())),
             target_dir: config.bin_target_dir.clone(),
             cargo_command: config.bin_cargo_command.clone(),
             cargo_args,

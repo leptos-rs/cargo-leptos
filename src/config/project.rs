@@ -13,6 +13,7 @@ use camino::{Utf8Path, Utf8PathBuf};
 use cargo_metadata::{Metadata, Package};
 use serde::Deserialize;
 use std::{fmt::Debug, net::SocketAddr, sync::Arc};
+use current_platform::CURRENT_PLATFORM;
 
 use super::{
     assets::AssetsConfig,
@@ -22,7 +23,7 @@ use super::{
     end2end::End2EndConfig,
     style::StyleConfig,
 };
-
+// use current_platform::CURRENT_PLATFORM;
 /// If the site root path starts with this marker, the marker should be replaced with the Cargo target directory
 const CARGO_TARGET_DIR_MARKER: &str = "CARGO_TARGET_DIR";
 /// If the site root path starts with this marker, the marker should be replaced with the Cargo target directory
@@ -335,6 +336,7 @@ impl ProjectConfig {
                 path
             };
         }
+        conf.bin_target_triple = conf.bin_target_triple.clone().or_else(|| Option::from(CURRENT_PLATFORM.to_owned()));
         if conf.site_addr.port() == conf.reload_port {
             bail!(
                 "The site-addr port and reload-port cannot be the same: {}",
