@@ -15,7 +15,6 @@ use tokio::{
     process::{Child, Command},
     task::JoinHandle,
 };
-use current_platform::CURRENT_PLATFORM;
 
 pub async fn server(
     proj: &Arc<Project>,
