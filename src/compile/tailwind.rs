@@ -18,7 +18,7 @@ pub async fn compile_tailwind(proj: &Project, tw_conf: &TailwindConfig) -> Resul
         create_default_tailwind_config(tw_conf).await?;
     }
 
-    let (line, process) = tailwind_process(&proj, "tailwindcss", tw_conf).await?;
+    let (line, process) = tailwind_process(proj, "tailwindcss", tw_conf).await?;
 
     match wait_piped_interruptible("Tailwind", process, Interrupt::subscribe_any()).await? {
         CommandResult::Success(output) => {
