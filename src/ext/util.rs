@@ -1,5 +1,6 @@
 use crate::ext::anyhow::{bail, Context, Result};
 use camino::Utf8PathBuf;
+use clap::builder::styling::{Color, Style};
 use std::borrow::Cow;
 
 pub fn os_arch() -> Result<(&'static str, &'static str)> {
@@ -72,5 +73,18 @@ impl StrAdditions for String {
 
     fn to_created_dir(&self) -> Result<Utf8PathBuf> {
         self.as_str().to_created_dir()
+    }
+}
+
+pub trait Paint {
+    fn paint<'a>(self, text: impl Into<Cow<'a, str>>) -> String;
+}
+
+impl Paint for Color {
+    fn paint<'a>(self, text: impl Into<Cow<'a, str>>) -> String {
+        let text = text.into();
+        let style = Style::new().fg_color(Some(self));
+
+        format!("{style}{text}{style:#}")
     }
 }

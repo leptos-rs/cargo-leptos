@@ -7,6 +7,7 @@ use crate::{
     ext::{
         anyhow::{Context, Result},
         exe::Exe,
+        Paint,
     },
     logger::GRAY,
 };
