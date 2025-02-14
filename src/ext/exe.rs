@@ -400,7 +400,6 @@ impl Command for CommandTailwind {
         "Try manually installing tailwindcss: https://tailwindcss.com/docs/installation".to_string()
     }
 }
-
 #[async_trait]
 impl Command for CommandSass {
     fn name(&self) -> &'static str {
@@ -482,12 +481,12 @@ impl Command for CommandSass {
         "Try manually installing sass: https://sass-lang.com/install".to_string()
     }
 }
-
 #[async_trait]
 /// Template trait, implementors should only fill in
 /// the command-specific logic. Handles caching, latest
 /// version checking against the GitHub API and env var
 /// version override for a given command.
+#[async_trait]
 trait Command {
     fn name(&self) -> &'static str;
     fn version(&self) -> Cow<'_, str>;
