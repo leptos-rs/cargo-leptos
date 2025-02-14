@@ -1,4 +1,5 @@
 use crate::{
+    config::VersionConfig,
     ext::{
         anyhow::{bail, Context, Result},
         Paint,
@@ -7,6 +8,7 @@ use crate::{
 };
 use bytes::Bytes;
 use std::{
+    borrow::Cow,
     fs::{self, File},
     io::{Cursor, Write},
     path::{Path, PathBuf},
@@ -39,9 +41,6 @@ pub struct ExeMeta {
 lazy_static::lazy_static! {
     static ref ON_STARTUP_DEBUG_ONCE: Once = Once::new();
 }
-
-pub const ENV_VAR_LEPTOS_TAILWIND_VERSION: &str = "LEPTOS_TAILWIND_VERSION";
-pub const ENV_VAR_LEPTOS_SASS_VERSION: &str = "LEPTOS_SASS_VERSION";
 
 impl ExeMeta {
     #[allow(clippy::wrong_self_convention)]
@@ -260,7 +259,7 @@ impl Exe {
 /// as it carries classifiers, etc, but strip non-ascii
 /// digits from the prefix.
 #[inline]
-fn sanitize_version_prefix<'a>(ver_string: &'a str) -> Result<&'a str> {
+fn sanitize_version_prefix(ver_string: &str) -> Result<&str> {
     if let [b'v', rest @ ..] = ver_string.as_bytes() {
         str::from_utf8(rest).dot()
     } else {
@@ -304,11 +303,14 @@ impl Command for CommandTailwind {
     fn name(&self) -> &'static str {
         "tailwindcss"
     }
+    fn version(&self) -> Cow<'_, str> {
+        VersionConfig::Tailwind.version()
+    }
     fn default_version(&self) -> &'static str {
-        "v3.4.0"
+        VersionConfig::Tailwind.default_version()
     }
     fn env_var_version_name(&self) -> &'static str {
-        ENV_VAR_LEPTOS_TAILWIND_VERSION
+        VersionConfig::Tailwind.env_var_version_name()
     }
     fn github_owner(&self) -> &'static str {
         "tailwindlabs"
@@ -319,6 +321,8 @@ impl Command for CommandTailwind {
 
     /// Tool binary download url for the given OS and platform arch
     fn download_url(&self, target_os: &str, target_arch: &str, version: &str) -> Result<String> {
+        let use_musl = is_linux_musl_env() && version.starts_with("v4");
+
         match (target_os, target_arch) {
             ("windows", "x86_64") => Ok(format!(
                 "https://github.com/{}/{}/releases/download/{}/{}-windows-x64.exe",
@@ -341,8 +345,22 @@ impl Command for CommandTailwind {
                 version,
                 self.name()
             )),
+            ("linux", "x86_64") if use_musl => Ok(format!(
+                "https://github.com/{}/{}/releases/download/{}/{}-linux-x64-musl",
+                self.github_owner(),
+                self.github_repo(),
+                version,
+                self.name()
+            )),
             ("linux", "x86_64") => Ok(format!(
                 "https://github.com/{}/{}/releases/download/{}/{}-linux-x64",
+                self.github_owner(),
+                self.github_repo(),
+                version,
+                self.name()
+            )),
+            ("linux", "aarch64") if use_musl => Ok(format!(
+                "https://github.com/{}/{}/releases/download/{}/{}-linux-arm64-musl",
                 self.github_owner(),
                 self.github_repo(),
                 version,
@@ -364,17 +382,16 @@ impl Command for CommandTailwind {
         }
     }
 
-    fn executable_name(
-        &self,
-        target_os: &str,
-        target_arch: &str,
-        _version: Option<&str>,
-    ) -> Result<String> {
+    fn executable_name(&self, target_os: &str, target_arch: &str, version: &str) -> Result<String> {
+        let use_musl = is_linux_musl_env() && version.starts_with("v4");
+
         Ok(match (target_os, target_arch) {
             ("windows", _) => format!("{}-windows-x64.exe", self.name()),
             ("macos", "x86_64") => format!("{}-macos-x64", self.name()),
             ("macos", "aarch64") => format!("{}-macos-arm64", self.name()),
+            ("linux", "x86_64") if use_musl => format!("{}-linux-x64-musl", self.name()),
             ("linux", "x86_64") => format!("{}-linux-x64", self.name()),
+            (_, _) if use_musl => format!("{}-linux-arm64-musl", self.name()),
             (_, _) => format!("{}-linux-arm64", self.name()),
         })
     }
@@ -383,17 +400,19 @@ impl Command for CommandTailwind {
         "Try manually installing tailwindcss: https://tailwindcss.com/docs/installation".to_string()
     }
 }
-
 #[async_trait]
 impl Command for CommandSass {
     fn name(&self) -> &'static str {
         "sass"
     }
+    fn version(&self) -> Cow<'_, str> {
+        VersionConfig::Sass.version()
+    }
     fn default_version(&self) -> &'static str {
-        "1.58.3"
+        VersionConfig::Sass.default_version()
     }
     fn env_var_version_name(&self) -> &'static str {
-        ENV_VAR_LEPTOS_SASS_VERSION
+        VersionConfig::Sass.env_var_version_name()
     }
     fn github_owner(&self) -> &'static str {
         "dart-musl"
@@ -450,7 +469,7 @@ impl Command for CommandSass {
         &self,
         target_os: &str,
         _target_arch: &str,
-        _version: Option<&str>,
+        _version: &str,
     ) -> Result<String> {
         Ok(match target_os {
             "windows" => "dart-sass/sass.bat".to_string(),
@@ -462,25 +481,21 @@ impl Command for CommandSass {
         "Try manually installing sass: https://sass-lang.com/install".to_string()
     }
 }
-
 #[async_trait]
 /// Template trait, implementors should only fill in
 /// the command-specific logic. Handles caching, latest
 /// version checking against the GitHub API and env var
 /// version override for a given command.
+#[async_trait]
 trait Command {
     fn name(&self) -> &'static str;
+    fn version(&self) -> Cow<'_, str>;
     fn default_version(&self) -> &str;
     fn env_var_version_name(&self) -> &str;
     fn github_owner(&self) -> &str;
     fn github_repo(&self) -> &str;
     fn download_url(&self, target_os: &str, target_arch: &str, version: &str) -> Result<String>;
-    fn executable_name(
-        &self,
-        target_os: &str,
-        target_arch: &str,
-        version: Option<&str>,
-    ) -> Result<String>;
+    fn executable_name(&self, target_os: &str, target_arch: &str, version: &str) -> Result<String>;
     #[allow(unused)]
     fn manual_install_instructions(&self) -> String {
         // default placeholder text, individual commands can override and customize
@@ -504,7 +519,7 @@ trait Command {
     async fn exe_meta(&self, target_os: &str, target_arch: &str) -> Result<ExeMeta> {
         let version = self.resolve_version().await;
         let url = self.download_url(target_os, target_arch, version.as_str())?;
-        let exe = self.executable_name(target_os, target_arch, Some(version.as_str()))?;
+        let exe = self.executable_name(target_os, target_arch, version.as_str())?;
         Ok(ExeMeta {
             name: self.name(),
             version,
@@ -652,9 +667,7 @@ trait Command {
             return self.default_version().into();
         }
 
-        let version = env::var(self.env_var_version_name())
-            .unwrap_or_else(|_| self.default_version().into())
-            .to_owned();
+        let version = self.version();
 
         let latest = self.check_for_latest_version().await;
 
@@ -685,7 +698,7 @@ trait Command {
             ),
         }
 
-        version
+        version.to_string()
     }
 }
 

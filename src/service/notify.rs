@@ -32,7 +32,9 @@ pub async fn spawn(proj: &Arc<Project>) -> Result<JoinHandle<()>> {
     }
 
     if let Some(tailwind) = &proj.style.tailwind {
-        set.insert(tailwind.config_file.clone());
+        if let Some(config_file) = tailwind.config_file.as_ref() {
+            set.insert(config_file.clone());
+        }
         set.insert(tailwind.input_file.clone());
     }
 
@@ -144,7 +146,10 @@ fn handle(event: Event, proj: Arc<Project>) {
         }
 
         if let Some(tailwind) = &proj.style.tailwind {
-            if path.as_path() == tailwind.config_file.as_path()
+            if tailwind
+                .config_file
+                .as_ref()
+                .is_some_and(|config_file| path.as_path() == config_file.as_path())
                 || path.as_path() == tailwind.input_file.as_path()
             {
                 log::debug!("Notify style change {}", GRAY.paint(path.as_str()));

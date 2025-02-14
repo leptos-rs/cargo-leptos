@@ -1,4 +1,5 @@
 use anyhow::Result;
+use camino::Utf8Path;
 use tokio::process::Command;
 
 use crate::{
@@ -14,8 +15,10 @@ use crate::{
 };
 
 pub async fn compile_tailwind(proj: &Project, tw_conf: &TailwindConfig) -> Result<Outcome<String>> {
-    if !tw_conf.config_file.exists() {
-        create_default_tailwind_config(tw_conf).await?;
+    if let Some(config_file) = tw_conf.config_file.as_ref() {
+        if !config_file.exists() {
+            create_default_tailwind_config(config_file).await?
+        }
     }
 
     let (line, process) = tailwind_process(proj, "tailwindcss", tw_conf).await?;
@@ -56,7 +59,7 @@ pub async fn compile_tailwind(proj: &Project, tw_conf: &TailwindConfig) -> Resul
     }
 }
 
-async fn create_default_tailwind_config(tw_conf: &TailwindConfig) -> Result<()> {
+async fn create_default_tailwind_config(config_file: &Utf8Path) -> Result<()> {
     let contents = r#"/** @type {import('tailwindcss').Config} */
     module.exports = {
       content: {
@@ -69,7 +72,7 @@ async fn create_default_tailwind_config(tw_conf: &TailwindConfig) -> Result<()> 
       plugins: [],
     }
     "#;
-    fs::write(&tw_conf.config_file, contents).await
+    fs::write(config_file, contents).await
 }
 
 pub async fn tailwind_process(
@@ -79,14 +82,15 @@ pub async fn tailwind_process(
 ) -> Result<(String, Command)> {
     let tailwind = Exe::Tailwind.get().await.dot()?;
 
-    let mut args: Vec<&str> = vec![
-        "--input",
-        tw_conf.input_file.as_str(),
-        "--config",
-        tw_conf.config_file.as_str(),
-        "--output",
-        tw_conf.tmp_file.as_str(),
-    ];
+    let mut args = vec!["--input", tw_conf.input_file.as_str()];
+
+    if let Some(config_file) = tw_conf.config_file.as_ref() {
+        args.push("--config");
+        args.push(config_file.as_str());
+    }
+
+    args.push("--output");
+    args.push(tw_conf.tmp_file.as_str());
 
     if proj.release {
         // minify & optimize

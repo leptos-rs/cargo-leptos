@@ -34,6 +34,7 @@ pub async fn style(
         build(&proj).await
     })
 }
+
 fn build_sass(proj: &Arc<Project>) -> JoinHandle<Result<Outcome<String>>> {
     let proj = proj.clone();
     tokio::spawn(async move {
