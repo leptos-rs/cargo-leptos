@@ -29,11 +29,7 @@ pub async fn watch(proj: &Arc<Project>) -> Result<()> {
         None
     };
 
-    let _watch = service::notify::spawn(proj).await?;
-    if let Some(view_macros) = view_macros {
-        let _patch = service::patch::spawn(proj, &view_macros).await?;
-    }
-
+    service::notify::spawn(proj, view_macros).await?;
     service::serve::spawn(proj).await;
     service::reload::spawn(proj).await;
 

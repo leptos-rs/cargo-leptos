@@ -1,73 +1,49 @@
-use crate::compile::Change;
-use crate::config::Project;
-use crate::ext::anyhow::{anyhow, Result};
-use crate::ext::Paint;
-use crate::signal::Interrupt;
 use crate::{
-    ext::{remove_nested, PathBufExt, PathExt},
+    compile::Change,
+    config::Project,
+    ext::{
+        anyhow::{anyhow, Result}, Paint, PathBufExt, PathExt
+    },
     logger::GRAY,
+    signal::{Interrupt, ReloadSignal},
 };
 use camino::Utf8PathBuf;
-use itertools::Itertools;
-use notify::event::ModifyKind;
-use notify::{Event, EventKind, RecursiveMode, Watcher};
-use std::collections::HashSet;
-use std::path::Path;
-use std::sync::Arc;
-use std::time::Duration;
+use ignore::gitignore::Gitignore;
+use leptos_hot_reload::ViewMacros;
+use notify::{event::ModifyKind, Event, EventKind, RecursiveMode, Watcher};
+use std::{
+    path::{Path, PathBuf},
+    sync::Arc,
+    time::Duration,
+};
 use tokio::task::JoinHandle;
 
 pub(crate) const FALLBACK_POLLING_TIMEOUT: Duration = Duration::from_millis(200);
 
-pub async fn spawn(proj: &Arc<Project>) -> Result<JoinHandle<()>> {
-    let mut set: HashSet<Utf8PathBuf> = HashSet::from_iter(vec![]);
-
-    set.extend(proj.lib.src_paths.clone());
-    set.extend(proj.bin.src_paths.clone());
-    set.extend(proj.watch_additional_files.clone());
-    set.insert(proj.js_dir.clone());
-
-    if let Some(file) = &proj.style.file {
-        set.insert(file.source.clone().without_last());
-    }
-
-    if let Some(tailwind) = &proj.style.tailwind {
-        if let Some(config_file) = tailwind.config_file.as_ref() {
-            set.insert(config_file.clone());
-        }
-        set.insert(tailwind.input_file.clone());
-    }
-
-    if let Some(assets) = &proj.assets {
-        set.insert(assets.dir.clone());
-    }
-
-    let paths = remove_nested(set.into_iter().filter(|path| Path::new(path).exists()));
-
-    log::info!(
-        "Notify watching paths {}",
-        GRAY.paint(paths.iter().join(", "))
-    );
+pub async fn spawn(proj: &Arc<Project>, view_macros: Option<ViewMacros>) -> Result<JoinHandle<()>> {
     let proj = proj.clone();
 
-    Ok(tokio::spawn(async move { run(&paths, proj).await }))
+    Ok(tokio::spawn(async move { run(proj, view_macros).await }))
 }
 
-async fn run(paths: &[Utf8PathBuf], proj: Arc<Project>) {
+async fn run(proj: Arc<Project>, view_macros: Option<ViewMacros>) {
     let (sync_tx, sync_rx) = std::sync::mpsc::channel();
 
-    let proj = proj.clone();
-    tokio::task::spawn_blocking(move || {
-        while let Ok(event) = sync_rx.recv() {
-            match event {
-                Ok(event) => handle(event, proj.clone()),
-                Err(err) => {
-                    log::trace!("Notify error: {err:?}");
-                    return;
+    tokio::task::spawn_blocking({
+        let proj = proj.clone();
+        move || {
+            let mut gitignore = create_gitignore_instance(&proj);
+            while let Ok(event) = sync_rx.recv() {
+                match event {
+                    Ok(event) => handle(event, proj.clone(), &view_macros, &mut gitignore),
+                    Err(err) => {
+                        log::trace!("Notify error: {err:?}");
+                        return;
+                    }
                 }
             }
+            log::debug!("Notify stopped");
         }
-        log::debug!("Notify stopped");
     });
 
     let mut watcher = notify::RecommendedWatcher::new(
@@ -76,9 +52,12 @@ async fn run(paths: &[Utf8PathBuf], proj: Arc<Project>) {
     )
     .expect("failed to build file system watcher");
 
+    let mut paths = proj.watch_additional_files.clone();
+    paths.push(proj.working_dir.clone());
+
     for path in paths {
-        if let Err(e) = watcher.watch(Path::new(path), RecursiveMode::Recursive) {
-            log::error!("Notify could not watch {path:?} due to {e:?}");
+        if let Err(e) = watcher.watch(path.as_std_path(), RecursiveMode::Recursive) {
+            log::error!("Notify could not watch {:?} due to {e:?}", proj.working_dir);
         }
     }
 
@@ -87,7 +66,12 @@ async fn run(paths: &[Utf8PathBuf], proj: Arc<Project>) {
     }
 }
 
-fn handle(event: Event, proj: Arc<Project>) {
+fn handle(
+    event: Event,
+    proj: Arc<Project>,
+    view_macros: &Option<ViewMacros>,
+    gitignore: &mut Gitignore,
+) {
     if event.paths.is_empty() {
         return;
     }
@@ -100,23 +84,23 @@ fn handle(event: Event, proj: Arc<Project>) {
         return;
     };
 
-    log::trace!("Notify handle {}", GRAY.paint(format!("{:?}", event.paths)));
+    let paths = ignore_paths(&proj, &event.paths, gitignore);
 
-    let paths: Vec<_> = event
-        .paths
-        .into_iter()
-        .filter_map(|p| match convert(&p, &proj) {
-            Ok(p) => Some(p),
-            Err(e) => {
-                log::info!("{e}");
-                None
-            }
-        })
-        .collect();
+    if paths.is_empty() {
+        return;
+    }
 
     let mut changes = Vec::new();
 
+    log::trace!("Notify handle {}", GRAY.paint(format!("{paths:?}")));
+
     for path in paths {
+        if path.starts_with(".gitignore") {
+            *gitignore = create_gitignore_instance(&proj);
+            log::debug!("Notify .gitignore change {}", GRAY.paint(path.to_string()));
+            continue;
+        }
+
         if let Some(assets) = &proj.assets {
             if path.starts_with(&assets.dir) {
                 log::debug!("Notify asset change {}", GRAY.paint(path.as_str()));
@@ -133,7 +117,15 @@ fn handle(event: Event, proj: Arc<Project>) {
         }
 
         if path.starts_with_any(&proj.bin.src_paths) && path.is_ext_any(&["rs"]) {
-            log::debug!("Notify bin source change {}", GRAY.paint(path.as_str()));
+            if let Some(view_macros) = view_macros {
+                // Check if it's possible to patch
+                let patches = view_macros.patch(&path);
+                if let Ok(Some(patch)) = patches {
+                    log::debug!("Patching view.");
+                    ReloadSignal::send_view_patches(&patch);
+                }
+            }
+            log::debug!("Notify bin source change {}", GRAY.paint(path.to_string()));
             changes.push(Change::BinSource);
         }
 
@@ -164,19 +156,61 @@ fn handle(event: Event, proj: Arc<Project>) {
             );
             changes.push(Change::Additional);
         }
+    }
 
-        if !changes.is_empty() {
-            Interrupt::send(&changes);
-        } else {
-            log::trace!(
-                "Notify changed but not watched: {}",
-                GRAY.paint(path.as_str())
-            );
-        }
+    if !changes.is_empty() {
+        Interrupt::send(&changes);
     }
 }
 
-pub(crate) fn convert(p: &Path, proj: &Project) -> Result<Utf8PathBuf> {
+fn create_gitignore_instance(proj: &Project) -> Gitignore {
+    log::info!("Creating ignore list from '.gitignore' file");
+
+    let (gi, err) = Gitignore::new(proj.working_dir.join(".gitignore"));
+
+    if let Some(err) = err {
+        log::error!("Failed reading '.gitignore' file in the working directory: {err}\nThis causes the watcher to work expensively on file changes like changes in the 'target' path.\nCreate a '.gitignore' file and exclude common build and cache paths like 'target'");
+    }
+
+    gi
+}
+
+fn ignore_paths(
+    proj: &Project,
+    event_paths: &[PathBuf],
+    gitignore: &Gitignore,
+) -> Vec<Utf8PathBuf> {
+    event_paths
+        .iter()
+        .filter_map(|p| {
+            let p = match convert(p, proj) {
+                Ok(p) => p,
+                Err(e) => {
+                    log::info!("{e}");
+                    return None;
+                }
+            };
+
+            // Check if the file excluded
+            let matched = gitignore.matched(p.as_std_path(), p.is_dir());
+            if matches!(matched, ignore::Match::Ignore(_)) {
+                return None;
+            }
+
+            // Check if the parent directories excluded
+            let mut parent = p.as_std_path();
+            while let Some(par) = parent.parent() {
+                if matches!(gitignore.matched(par, true), ignore::Match::Ignore(_)) {
+                    return None;
+                }
+                parent = par;
+            }
+            Some(p)
+        })
+        .collect()
+}
+
+fn convert(p: &Path, proj: &Project) -> Result<Utf8PathBuf> {
     let p = Utf8PathBuf::from_path_buf(p.to_path_buf())
         .map_err(|e| anyhow!("Could not convert to a Utf8PathBuf: {e:?}"))?;
     Ok(p.unbase(&proj.working_dir).unwrap_or(p))
