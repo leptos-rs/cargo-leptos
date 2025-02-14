@@ -164,7 +164,7 @@ fn handle(
     }
 }
 
-pub(crate) fn create_gitignore_instance(proj: &Project) -> Gitignore {
+fn create_gitignore_instance(proj: &Project) -> Gitignore {
     log::info!("Creating ignore list from '.gitignore' file");
 
     let (gi, err) = Gitignore::new(proj.working_dir.join(".gitignore"));
@@ -176,7 +176,7 @@ pub(crate) fn create_gitignore_instance(proj: &Project) -> Gitignore {
     gi
 }
 
-pub(crate) fn ignore_paths(
+fn ignore_paths(
     proj: &Project,
     event_paths: &[PathBuf],
     gitignore: &Gitignore,
@@ -211,7 +211,7 @@ pub(crate) fn ignore_paths(
         .collect()
 }
 
-pub(crate) fn convert(p: &Path, proj: &Project) -> Result<Utf8PathBuf> {
+fn convert(p: &Path, proj: &Project) -> Result<Utf8PathBuf> {
     let p = Utf8PathBuf::from_path_buf(p.to_path_buf())
         .map_err(|e| anyhow!("Could not convert to a Utf8PathBuf: {e:?}"))?;
     Ok(p.unbase(&proj.working_dir).unwrap_or(p))
