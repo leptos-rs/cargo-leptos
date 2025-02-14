@@ -9,6 +9,7 @@ use crate::{
 use anyhow::Result;
 use leptos_hot_reload::ViewMacros;
 use std::sync::Arc;
+use tokio::sync::broadcast::error::RecvError;
 use tokio::try_join;
 
 pub async fn watch(proj: &Arc<Project>) -> Result<()> {
@@ -45,7 +46,12 @@ pub async fn run_loop(proj: &Arc<Project>) -> Result<()> {
     loop {
         log::debug!("Watch waiting for changes");
 
-        int.recv().await.dot()?;
+        let int = int.recv().await;
+        // Do not terminate the execution of watch if the receiver lagged behind as it might be a slow receiver
+        // It happens when many files are modified in short period and it exceeds the channel capacity.
+        if matches!(int, Err(RecvError::Closed)) {
+            return Err(RecvError::Closed).dot();
+        }
 
         if Interrupt::is_shutdown_requested().await {
             log::debug!("Shutting down");
