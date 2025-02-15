@@ -1,5 +1,4 @@
 use crate::internal_prelude::*;
-use crate::logger::GRAY;
 use crate::{config::VersionConfig, ext::Paint, logger::GRAY};
 use bytes::Bytes;
 use std::{

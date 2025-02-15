@@ -10,6 +10,7 @@ pub mod service;
 pub mod signal;
 mod internal_prelude {
     pub use crate::ext::color_eyre::reexports::*;
+    pub use crate::ext::Paint as _;
     pub use tracing::*;
 }
 

@@ -1,9 +1,6 @@
 use cargo_generate::{generate, GenerateArgs, TemplatePath};
 use clap::Args;
 
-use tokio::process::Command;
-
-use crate::ext::exe::Exe;
 use crate::internal_prelude::*;
 
 // A subset of the cargo-generate commands available.
@@ -78,7 +75,7 @@ impl NewCommand {
             ..Default::default()
         };
 
-        generate(args).dot()?;
+        generate(args).dot_anyhow()?;
 
         Ok(())
     }

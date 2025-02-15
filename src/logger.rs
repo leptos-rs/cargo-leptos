@@ -3,8 +3,9 @@
 //! When you do implement `tracing-subscriber`, remember to add `tracing-error` error layer
 //! for `color_eyre`!
 
-use ansi_term::{Colour::Fixed, Style};
 use clap::builder::styling::{Ansi256Color, Color};
+use flexi_logger::filter::{LogLineFilter, LogLineWriter};
+use flexi_logger::{DeferredNow, Level, Record};
 use std::io::Write;
 use std::sync::OnceLock;
 

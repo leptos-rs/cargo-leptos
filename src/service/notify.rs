@@ -1,17 +1,12 @@
 use crate::compile::Change;
 use crate::config::Project;
 use crate::internal_prelude::*;
+use crate::logger::GRAY;
 use crate::signal::Interrupt;
 use crate::{
-    compile::{Change, ChangeSet},
-    config::Project,
+    compile::ChangeSet,
     ext::{Paint, PathBufExt, PathExt},
-    logger::GRAY,
-    signal::{Interrupt, ReloadSignal},
-};
-use crate::{
-    ext::{remove_nested, PathBufExt, PathExt},
-    logger::GRAY,
+    signal::ReloadSignal,
 };
 use camino::Utf8PathBuf;
 use ignore::gitignore::Gitignore;
