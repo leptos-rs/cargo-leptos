@@ -1,4 +1,4 @@
-use crate::ext::anyhow::{anyhow, Context, Result};
+use crate::internal_prelude::*;
 use camino::{Utf8Path, Utf8PathBuf};
 
 pub trait PathExt {
@@ -45,7 +45,7 @@ impl PathExt for Utf8Path {
         let path = self
             .strip_prefix(base)
             .map(|p| p.to_path_buf())
-            .map_err(|_| anyhow!("Could not remove base {base:?} from {self:?}"))?;
+            .map_err(|_| eyre!("Could not remove base {base:?} from {self:?}"))?;
         if path == "" {
             Ok(Utf8PathBuf::from("."))
         } else {
@@ -82,7 +82,7 @@ impl PathBufExt for Utf8PathBuf {
 
     fn resolve_home_dir(self) -> Result<Utf8PathBuf> {
         if self.starts_with("~") {
-            let home = std::env::var("HOME").context("Could not resolve $HOME")?;
+            let home = std::env::var("HOME").wrap_err("Could not resolve $HOME")?;
             let home = Utf8PathBuf::from(home);
             Ok(home.join(self.strip_prefix("~").unwrap()))
         } else {
@@ -157,7 +157,7 @@ impl PathExt for Utf8PathBuf {
         let unbased = self
             .unbase(src_root)
             .dot()
-            .context(format!("Rebase {self} from {src_root} to {dest_root}"))?;
+            .wrap_err(format!("Rebase {self} from {src_root} to {dest_root}"))?;
         Ok(dest_root.join(unbased))
     }
 
@@ -213,7 +213,7 @@ pub fn append_str_to_filename(path: &Utf8PathBuf, suffix: &str) -> Result<Utf8Pa
             full_path.push(new_filename);
             Ok(full_path)
         }
-        None => Err(anyhow!("no file present in provided path {path:?}")),
+        None => Err(eyre!("no file present in provided path {path:?}")),
     }
 }
 

@@ -7,12 +7,10 @@ use std::{
 use camino::{Utf8Path, Utf8PathBuf};
 use tokio::sync::RwLock;
 
+use crate::internal_prelude::*;
 use crate::{
     config::ProjectConfig,
-    ext::{
-        anyhow::{Context, Result},
-        fs, PathBufExt,
-    },
+    ext::{fs, PathBufExt},
 };
 
 #[derive(Clone)]
@@ -121,7 +119,7 @@ impl Site {
         }
         let mut f = self.ext_file_reg.write().await;
         f.insert(to.to_string(), new_hash);
-        log::trace!("Site update hash for {to} to {new_hash}");
+        trace!("Site update hash for {to} to {new_hash}");
         Ok(true)
     }
 

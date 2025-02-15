@@ -1,28 +1,26 @@
 use std::sync::Arc;
 
 use crate::ext::compress;
+use crate::internal_prelude::*;
 use crate::{
     compile,
     compile::ChangeSet,
     config::{Config, Project},
-    ext::{
-        anyhow::{anyhow, Context, Result},
-        fs,
-    },
+    ext::fs,
 };
 
 pub async fn build_all(conf: &Config) -> Result<()> {
     let mut first_failed_project = None;
 
     for proj in &conf.projects {
-        log::debug!("Building project: {}, {}", proj.name, proj.working_dir);
+        debug!("Building project: {}, {}", proj.name, proj.working_dir);
         if !build_proj(proj).await? && first_failed_project.is_none() {
             first_failed_project = Some(proj);
         }
     }
 
     if let Some(proj) = first_failed_project {
-        Err(anyhow!("Failed to build {}", proj.name))
+        Err(eyre!("Failed to build {}", proj.name))
     } else {
         Ok(())
     }

@@ -1,7 +1,7 @@
 use crate::compile::{front_cargo_process, server_cargo_process};
 use crate::config::{Config, Project};
-use crate::ext::anyhow::{anyhow, Context, Result};
 use crate::ext::Paint;
+use crate::internal_prelude::*;
 use crate::logger::GRAY;
 
 pub async fn test_all(conf: &Config) -> Result<()> {
@@ -14,7 +14,7 @@ pub async fn test_all(conf: &Config) -> Result<()> {
     }
 
     if let Some(proj) = first_failed_project {
-        Err(anyhow!("Tests failed for {}", proj.name))
+        Err(eyre!("Tests failed for {}", proj.name))
     } else {
         Ok(())
     }
@@ -24,14 +24,14 @@ pub async fn test_proj(proj: &Project) -> Result<bool> {
     let (envs, line, mut proc) = server_cargo_process("test", proj).dot()?;
 
     let server_exit_status = proc.wait().await.dot()?;
-    log::debug!("Cargo envs: {}", GRAY.paint(envs));
-    log::info!("Cargo server tests finished {}", GRAY.paint(line));
+    debug!("Cargo envs: {}", GRAY.paint(envs));
+    info!("Cargo server tests finished {}", GRAY.paint(line));
 
     let (envs, line, mut proc) = front_cargo_process("test", false, proj).dot()?;
 
     let front_exit_status = proc.wait().await.dot()?;
-    log::debug!("Cargo envs: {}", GRAY.paint(envs));
-    log::info!("Cargo front tests finished {}", GRAY.paint(line));
+    debug!("Cargo envs: {}", GRAY.paint(envs));
+    info!("Cargo front tests finished {}", GRAY.paint(line));
 
     Ok(server_exit_status.success() && front_exit_status.success())
 }

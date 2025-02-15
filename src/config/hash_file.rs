@@ -1,6 +1,7 @@
 use camino::Utf8PathBuf;
 
 use super::bin_package::BinPackage;
+use crate::internal_prelude::*;
 
 pub struct HashFile {
     pub abs: Utf8PathBuf,
@@ -20,7 +21,7 @@ impl HashFile {
         let exe_file_dir = bin.exe_file.parent().unwrap();
         let abs;
         if let Some(workspace_root) = workspace_root {
-            log::debug!("BIN PARENT: {}", bin.exe_file.parent().unwrap());
+            debug!("BIN PARENT: {}", bin.exe_file.parent().unwrap());
             abs = workspace_root.join(exe_file_dir).join(&rel);
         } else {
             abs = bin.abs_dir.join(exe_file_dir).join(&rel);

@@ -1,6 +1,7 @@
-use crate::ext::anyhow::{Context, Result};
 use cargo_generate::{generate, GenerateArgs, TemplatePath};
 use clap::Args;
+
+use crate::internal_prelude::*;
 
 // A subset of the cargo-generate commands available.
 // See: https://github.com/cargo-generate/cargo-generate/blob/main/src/args.rs
@@ -74,7 +75,7 @@ impl NewCommand {
             ..Default::default()
         };
 
-        generate(args).dot()?;
+        generate(args).dot_anyhow()?;
 
         Ok(())
     }

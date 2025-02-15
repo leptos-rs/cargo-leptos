@@ -1,6 +1,6 @@
+use crate::internal_prelude::*;
 use crate::{
     ext::{
-        anyhow::{Context, Result},
         sync::{wait_piped_interruptible, CommandResult, OutputExt},
         Paint,
     },
@@ -20,7 +20,7 @@ pub async fn compile_sass(style_file: &SourcedSiteFile, optimise: bool) -> Resul
     let mut cmd = Command::new(exe);
     cmd.args(&args);
 
-    log::trace!(
+    trace!(
         "Style running {}",
         GRAY.paint(format!("sass {}", args.join(" ")))
     );
@@ -29,7 +29,7 @@ pub async fn compile_sass(style_file: &SourcedSiteFile, optimise: bool) -> Resul
         CommandResult::Success(output) => Ok(Outcome::Success(output.stdout())),
         CommandResult::Interrupted => Ok(Outcome::Stopped),
         CommandResult::Failure(output) => {
-            log::warn!("Dart Sass failed with:");
+            warn!("Dart Sass failed with:");
             println!("{}", output.stderr());
             Ok(Outcome::Failed)
         }

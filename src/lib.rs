@@ -8,9 +8,13 @@ pub mod ext;
 pub mod logger;
 pub mod service;
 pub mod signal;
+mod internal_prelude {
+    pub use crate::ext::color_eyre::reexports::*;
+    pub use crate::ext::Paint as _;
+    pub use tracing::*;
+}
 
 use crate::config::Commands;
-use crate::ext::anyhow::{Context, Result};
 use crate::ext::PathBufExt;
 use crate::logger::GRAY;
 use camino::Utf8PathBuf;
@@ -20,10 +24,9 @@ use signal::Interrupt;
 use std::env;
 use std::path::PathBuf;
 
-pub async fn run(args: Cli) -> Result<()> {
-    let verbose = args.opts().map(|o| o.verbose).unwrap_or(0);
-    logger::setup(verbose, &args.log);
+use crate::internal_prelude::*;
 
+pub async fn run(args: Cli) -> Result<()> {
     if let New(new) = args.command {
         return new.run();
     }
@@ -33,7 +36,7 @@ pub async fn run(args: Cli) -> Result<()> {
         .to_owned()
         .unwrap_or_else(|| Utf8PathBuf::from("Cargo.toml"))
         .resolve_home_dir()
-        .context(format!("manifest_path: {:?}", &args.manifest_path))?;
+        .wrap_err(format!("manifest_path: {:?}", &args.manifest_path))?;
     let mut cwd = Utf8PathBuf::from_path_buf(env::current_dir().unwrap()).unwrap();
     cwd.clean_windows_path();
 
@@ -43,13 +46,13 @@ pub async fn run(args: Cli) -> Result<()> {
     let watch = matches!(args.command, Commands::Watch(_));
     let config = Config::load(opts, &cwd, &manifest_path, watch, bin_args).dot()?;
     env::set_current_dir(&config.working_dir).dot()?;
-    log::debug!(
+    debug!(
         "Path working dir {}",
         GRAY.paint(config.working_dir.as_str())
     );
 
     if config.working_dir.join("package.json").exists() {
-        log::debug!("Path found 'package.json' adding 'node_modules/.bin' to PATH");
+        debug!("Path found 'package.json' adding 'node_modules/.bin' to PATH");
         let node_modules = &config.working_dir.join("node_modules");
         if node_modules.exists() {
             match env::var("PATH") {
@@ -59,13 +62,13 @@ pub async fn run(args: Cli) -> Result<()> {
                     // unwrap is safe, because we got the paths from the actual PATH variable
                     env::set_var("PATH", env::join_paths(path_dirs).unwrap());
                 }
-                Err(_) => log::warn!("Path PATH environment variable not found, ignoring"),
+                Err(_) => warn!("Path PATH environment variable not found, ignoring"),
             }
         } else {
-            log::warn!(
+            warn!(
                 "Path 'node_modules' folder not found, please install the required packages first"
             );
-            log::warn!("Path continuing without using 'node_modules'");
+            warn!("Path continuing without using 'node_modules'");
         }
     }
 

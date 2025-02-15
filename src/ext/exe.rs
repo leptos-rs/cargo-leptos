@@ -1,11 +1,5 @@
-use crate::{
-    config::VersionConfig,
-    ext::{
-        anyhow::{bail, Context, Result},
-        Paint,
-    },
-    logger::GRAY,
-};
+use crate::internal_prelude::*;
+use crate::{config::VersionConfig, ext::Paint, logger::GRAY};
 use bytes::Bytes;
 use std::{
     borrow::Cow,
@@ -89,7 +83,7 @@ impl ExeCache<'_> {
     }
 
     async fn fetch_archive(&self) -> Result<Bytes> {
-        log::debug!(
+        debug!(
             "Install downloading {} {}",
             self.meta.name,
             GRAY.paint(&self.meta.url)
@@ -110,10 +104,10 @@ impl ExeCache<'_> {
             extract_tar(data, &self.exe_dir)?;
         } else {
             self.write_binary(data)
-                .context(format!("Could not write binary {}", self.meta.get_name()))?;
+                .wrap_err(format!("Could not write binary {}", self.meta.get_name()))?;
         }
 
-        log::debug!(
+        debug!(
             "Install decompressing {} {}",
             self.meta.name,
             GRAY.paint(self.exe_dir.to_string_lossy())
@@ -127,7 +121,7 @@ impl ExeCache<'_> {
         let path = self.exe_dir.join(Path::new(&self.meta.exe));
         let mut file = File::create(&path).unwrap();
         file.write_all(data)
-            .context(format!("Error writing binary file: {:?}", path))?;
+            .wrap_err(format!("Error writing binary file: {:?}", path))?;
 
         #[cfg(target_family = "unix")]
         {
@@ -141,21 +135,21 @@ impl ExeCache<'_> {
     }
 
     async fn download(&self) -> Result<PathBuf> {
-        log::info!("Command installing {} ...", self.meta.get_name());
+        info!("Command installing {} ...", self.meta.get_name());
 
         let data = self
             .fetch_archive()
             .await
-            .context(format!("Could not download {}", self.meta.get_name()))?;
+            .wrap_err(format!("Could not download {}", self.meta.get_name()))?;
 
         self.extract_downloaded(&data)
-            .context(format!("Could not extract {}", self.meta.get_name()))?;
+            .wrap_err(format!("Could not extract {}", self.meta.get_name()))?;
 
-        let binary_path = self.exe_in_cache().context(format!(
+        let binary_path = self.exe_in_cache().wrap_err(format!(
             "Binary downloaded and extracted but could still not be found at {:?}",
             self.exe_dir
         ))?;
-        log::info!("Command {} installed.", self.meta.get_name());
+        info!("Command {} installed.", self.meta.get_name());
         Ok(binary_path)
     }
 
@@ -197,15 +191,15 @@ fn extract_zip(src: &Bytes, dest: &Path) -> Result<()> {
 /// | Windows  | C:\Users\Alice\AppData\Local\NAME |
 fn get_cache_dir() -> Result<PathBuf> {
     let dir = dirs::cache_dir()
-        .ok_or_else(|| anyhow::anyhow!("Cache directory does not exist"))?
+        .ok_or_else(|| eyre!("Cache directory does not exist"))?
         .join("cargo-leptos");
 
     if !dir.exists() {
-        fs::create_dir_all(&dir).context(format!("Could not create dir {dir:?}"))?;
+        fs::create_dir_all(&dir).wrap_err(format!("Could not create dir {dir:?}"))?;
     }
 
     ON_STARTUP_DEBUG_ONCE.call_once(|| {
-        log::debug!("Command cache dir: {}", dir.to_string_lossy());
+        debug!("Command cache dir: {}", dir.to_string_lossy());
     });
 
     Ok(dir)
@@ -226,10 +220,10 @@ impl Exe {
         } else if cfg!(feature = "no_downloads") {
             bail!("{} is required but was not found. Please install it using your OS's tool of choice", &meta.name);
         } else {
-            meta.cached().await.context(meta.manual)?
+            meta.cached().await.wrap_err(meta.manual)?
         };
 
-        log::debug!(
+        debug!(
             "Command using {} {} {}",
             &meta.name,
             &meta.version,
@@ -538,7 +532,7 @@ trait Command {
                 return match (marker.exists(), marker.is_dir()) {
                     (_, true) => {
                         // conflicting dir instead of a marker file, bail
-                        log::warn!("Command [{}] encountered a conflicting dir in the cache, please delete {}",
+                        warn!("Command [{}] encountered a conflicting dir in the cache, please delete {}",
                             self.name(), marker.display());
 
                         false
@@ -581,14 +575,14 @@ trait Command {
                 };
             }
             Err(e) => {
-                log::warn!("Command {} failed to get cache dir: {}", self.name(), e);
+                warn!("Command {} failed to get cache dir: {}", self.name(), e);
                 false
             }
         }
     }
 
     async fn check_for_latest_version(&self) -> Option<String> {
-        log::debug!(
+        debug!(
             "Command [{}] checking for the latest available version",
             self.name()
         );
@@ -609,7 +603,7 @@ trait Command {
             .await
         {
             if !response.status().is_success() {
-                log::error!(
+                error!(
                     "Command [{}] GitHub API request failed: {}",
                     self.name(),
                     response.status()
@@ -625,7 +619,7 @@ trait Command {
             let github: Github = match response.json().await {
                 Ok(json) => json,
                 Err(e) => {
-                    log::debug!(
+                    debug!(
                         "Command [{}] failed to parse the response JSON from the GitHub API: {}",
                         self.name(),
                         e
@@ -636,7 +630,7 @@ trait Command {
 
             Some(github.tag_name)
         } else {
-            log::debug!(
+            debug!(
                 "Command [{}] failed to check for the latest version",
                 self.name()
             );
@@ -652,7 +646,7 @@ trait Command {
         // TODO revisit this logic when implementing the SemVer compatible ranges matching
         // if env var is set, use the requested version and bypass caching logic
         let is_force_pin_version = env::var(self.env_var_version_name()).is_ok();
-        log::trace!(
+        trace!(
             "Command [{}] is_force_pin_version: {} - {:?}",
             self.name(),
             is_force_pin_version,
@@ -660,7 +654,7 @@ trait Command {
         );
 
         if !is_force_pin_version && !self.should_check_for_new_version().await {
-            log::trace!(
+            trace!(
                 "Command [{}] NOT checking for the latest available version",
                 &self.name()
             );
@@ -679,12 +673,12 @@ trait Command {
                     // TODO use the VersionReq for semantic matching
                     match norm_version.cmp(&norm_latest) {
                         core::cmp::Ordering::Greater | core::cmp::Ordering::Equal => {
-                            log::debug!(
+                            debug!(
                                             "Command [{}] requested version {} is already same or newer than available version {}",
                                             self.name(), version, &latest)
                         }
                         core::cmp::Ordering::Less => {
-                            log::info!(
+                            info!(
                                             "Command [{}] requested version {}, but a newer version {} is available, you can try it out by \
                                             setting the {}={} env var and re-running the command",
                                             self.name(), version, &latest, self.env_var_version_name(), &latest)
@@ -692,7 +686,7 @@ trait Command {
                     }
                 }
             }
-            None => log::warn!(
+            None => warn!(
                 "Command [{}] failed to check for the latest version",
                 self.name()
             ),

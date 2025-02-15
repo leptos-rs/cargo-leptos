@@ -2,6 +2,7 @@ use derive_more::Display;
 use itertools::Itertools;
 use std::{collections::HashSet, fmt};
 use tokio::sync::broadcast;
+use crate::internal_prelude::*;
 
 lazy_static::lazy_static! {
   static ref SERVER_RESTART_CHANNEL: broadcast::Sender::<()> = broadcast::channel::<()>(1).0;
@@ -86,9 +87,9 @@ impl ServerRestart {
     }
 
     pub fn send() {
-        log::trace!("Server restart sent");
+        trace!("Server restart sent");
         if let Err(e) = SERVER_RESTART_CHANNEL.send(()) {
-            log::error!("Error could not send product changes due to {e}")
+            error!("Error could not send product changes due to {e}")
         }
     }
 }

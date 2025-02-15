@@ -17,11 +17,8 @@ mod version;
 use std::{fmt::Debug, sync::Arc};
 
 pub use self::cli::{Cli, Commands, Log, Opts};
-use crate::ext::{
-    anyhow::{Context, Result},
-    MetadataExt,
-};
-use anyhow::bail;
+use crate::ext::MetadataExt;
+use crate::internal_prelude::*;
 use camino::{Utf8Path, Utf8PathBuf};
 use cargo_metadata::Metadata;
 pub use profile::Profile;
