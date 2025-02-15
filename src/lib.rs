@@ -27,9 +27,6 @@ use std::path::PathBuf;
 use crate::internal_prelude::*;
 
 pub async fn run(args: Cli) -> Result<()> {
-    let verbose = args.opts().map(|o| o.verbose).unwrap_or(0);
-    logger::setup(verbose, &args.log);
-
     if let New(new) = args.command {
         return new.run();
     }
