@@ -21,6 +21,10 @@ pub async fn watch(proj: &Arc<Project>) -> Result<()> {
         return Ok(());
     }
 
+    if proj.hot_reload && proj.release {
+        log::warn!("warning: Hot reloading does not currently work in --release mode.");
+    }
+
     let view_macros = if proj.hot_reload {
         // build initial set of view macros for patching
         let view_macros = ViewMacros::new();
