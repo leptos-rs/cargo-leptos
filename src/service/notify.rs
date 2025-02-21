@@ -1,12 +1,10 @@
-use crate::compile::Change;
-use crate::config::Project;
-use crate::internal_prelude::*;
-use crate::logger::GRAY;
-use crate::signal::Interrupt;
 use crate::{
-    compile::ChangeSet,
+    compile::{Change, ChangeSet},
+    config::Project,
     ext::{Paint, PathBufExt, PathExt},
-    signal::ReloadSignal,
+    internal_prelude::*,
+    logger::GRAY,
+    signal::{Interrupt, ReloadSignal},
 };
 use camino::Utf8PathBuf;
 use ignore::gitignore::Gitignore;
@@ -18,11 +16,13 @@ use notify_debouncer_full::{
     DebounceEventResult, DebouncedEvent, Debouncer, RecommendedCache,
 };
 use std::{
+    collections::HashSet,
     path::{Path, PathBuf},
     sync::{mpsc::Sender, Arc, Mutex},
     time::Duration,
 };
 use tokio::task::JoinHandle;
+use tracing::*;
 use walkdir::WalkDir;
 
 const POLLING_TIMEOUT: Duration = Duration::from_millis(100);
@@ -46,7 +46,7 @@ async fn run(proj: Arc<Project>, view_macros: Option<ViewMacros>) {
                 match event {
                     Ok(event) => handle(event, proj.clone(), &view_macros, watcher.clone()),
                     Err(err) => {
-                        log::trace!("Notify error: {err:?}");
+                        trace!("Notify error: {err:?}");
                         return;
                     }
                 }
@@ -104,7 +104,7 @@ fn handle(
                     let p = match convert(p, &proj) {
                         Ok(p) => p,
                         Err(e) => {
-                            log::info!("{e}");
+                            info!("{e}");
                             return None;
                         }
                     };
@@ -133,18 +133,18 @@ fn handle(
 
     let mut changes = ChangeSet::new();
 
-    log::trace!("Notify handle {}", GRAY.paint(format!("{paths:?}")));
+    trace!("Notify handle {}", GRAY.paint(format!("{paths:?}")));
 
     for path in paths {
         if path.starts_with(".gitignore") {
-            log::debug!("Notify .gitignore change {}", GRAY.paint(path.to_string()));
+            debug!("Notify .gitignore change {}", GRAY.paint(path.to_string()));
             watcher.lock().unwrap().update_gitignore();
             continue;
         }
 
         if let Some(assets) = &proj.assets {
             if path.starts_with(&assets.dir) {
-                log::debug!("Notify asset change {}", GRAY.paint(path.as_str()));
+                debug!("Notify asset change {}", GRAY.paint(path.as_str()));
                 changes.add(Change::Asset);
             }
         }
@@ -153,7 +153,7 @@ fn handle(
         let lib_js = path.starts_with(&proj.js_dir) && path.is_ext_any(&["js"]);
 
         if lib_rs || lib_js {
-            log::debug!("Notify lib source change {}", GRAY.paint(path.as_str()));
+            debug!("Notify lib source change {}", GRAY.paint(path.as_str()));
             changes.add(Change::LibSource);
         }
 
@@ -162,18 +162,18 @@ fn handle(
                 // Check if it's possible to patch
                 let patches = view_macros.patch(&path);
                 if let Ok(Some(patch)) = patches {
-                    log::debug!("Patching view.");
+                    debug!("Patching view.");
                     ReloadSignal::send_view_patches(&patch);
                 }
             }
-            log::debug!("Notify bin source change {}", GRAY.paint(path.to_string()));
+            debug!("Notify bin source change {}", GRAY.paint(path.to_string()));
             changes.add(Change::BinSource);
         }
 
         if let Some(file) = &proj.style.file {
             let src = file.source.clone().without_last();
             if path.starts_with(src) && path.is_ext_any(&["scss", "sass", "css"]) {
-                log::debug!("Notify style change {}", GRAY.paint(path.as_str()));
+                debug!("Notify style change {}", GRAY.paint(path.as_str()));
                 changes.add(Change::Style);
             }
         }
@@ -185,7 +185,7 @@ fn handle(
                 .is_some_and(|config_file| path.as_path() == config_file.as_path())
                 || path.as_path() == tailwind.input_file.as_path()
             {
-                log::debug!("Notify style change {}", GRAY.paint(path.as_str()));
+                debug!("Notify style change {}", GRAY.paint(path.as_str()));
                 changes.add(Change::Style);
             }
         }
@@ -258,12 +258,12 @@ impl GitAwareWatcher {
     }
 
     fn new_gitignore(gitignore_path: &Path) -> Gitignore {
-        log::info!("Creating ignore list from '.gitignore' file");
+        info!("Creating ignore list from '.gitignore' file");
 
         let (gi, err) = Gitignore::new(gitignore_path);
 
         if let Some(err) = err {
-            log::error!("Failed reading '.gitignore' file in the working directory: {err}\nThis causes the watcher to work expensively on file changes like changes in the 'target' path.\nCreate a '.gitignore' file and exclude common build and cache paths like 'target'");
+            error!("Failed reading '.gitignore' file in the working directory: {err}\nThis causes the watcher to work expensively on file changes like changes in the 'target' path.\nCreate a '.gitignore' file and exclude common build and cache paths like 'target'");
         }
 
         gi
@@ -311,11 +311,11 @@ impl GitAwareWatcher {
     {
         let paths = self.ignore_paths(paths);
 
-        log::trace!("Watch paths: {paths:?}");
+        trace!("Watch paths: {paths:?}");
 
         for path in paths {
             if let Err(e) = self.watcher.watch(&path, RecursiveMode::NonRecursive) {
-                log::error!("Notify could not watch {:?} due to {e:?}", path);
+                error!("Notify could not watch {:?} due to {e:?}", path);
                 continue;
             }
         }
@@ -327,11 +327,11 @@ impl GitAwareWatcher {
     {
         let paths = self.ignore_paths(paths);
 
-        log::trace!("Unwatch paths: {paths:?}");
+        trace!("Unwatch paths: {paths:?}");
 
         for path in paths {
             if let Err(e) = self.watcher.unwatch(&path) {
-                log::error!("Notify could not watch {:?} due to {e:?}", path);
+                error!("Notify could not watch {:?} due to {e:?}", path);
             }
         }
     }
