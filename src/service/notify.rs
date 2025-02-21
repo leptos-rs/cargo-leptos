@@ -1,12 +1,10 @@
-use crate::compile::Change;
-use crate::config::Project;
-use crate::internal_prelude::*;
-use crate::logger::GRAY;
-use crate::signal::Interrupt;
 use crate::{
-    compile::ChangeSet,
+    compile::{Change, ChangeSet},
+    config::Project,
     ext::{Paint, PathBufExt, PathExt},
-    signal::ReloadSignal,
+    internal_prelude::*,
+    logger::GRAY,
+    signal::{Interrupt, ReloadSignal},
 };
 use camino::Utf8PathBuf;
 use ignore::gitignore::Gitignore;
@@ -14,15 +12,18 @@ use itertools::Itertools;
 use leptos_hot_reload::ViewMacros;
 use notify_debouncer_full::{
     new_debouncer,
-    notify::{event::ModifyKind, EventKind, RecursiveMode},
-    DebouncedEvent,
+    notify::{event::ModifyKind, EventKind, RecommendedWatcher, RecursiveMode},
+    DebounceEventResult, DebouncedEvent, Debouncer, RecommendedCache,
 };
 use std::{
+    collections::HashSet,
     path::{Path, PathBuf},
-    sync::Arc,
+    sync::{mpsc::Sender, Arc, Mutex},
     time::Duration,
 };
 use tokio::task::JoinHandle;
+use tracing::*;
+use walkdir::WalkDir;
 
 const POLLING_TIMEOUT: Duration = Duration::from_millis(100);
 
@@ -35,15 +36,17 @@ pub async fn spawn(proj: &Arc<Project>, view_macros: Option<ViewMacros>) -> Resu
 async fn run(proj: Arc<Project>, view_macros: Option<ViewMacros>) {
     let (sync_tx, sync_rx) = std::sync::mpsc::channel();
 
-    tokio::task::spawn_blocking({
+    let watcher = Arc::new(Mutex::new(GitAwareWatcher::new(&proj, sync_tx.clone())));
+
+    std::thread::spawn({
         let proj = proj.clone();
+        let watcher = watcher.clone();
         move || {
-            let mut gitignore = create_gitignore_instance(&proj);
             while let Ok(event) = sync_rx.recv() {
                 match event {
-                    Ok(event) => handle(event, proj.clone(), &view_macros, &mut gitignore),
+                    Ok(event) => handle(event, proj.clone(), &view_macros, watcher.clone()),
                     Err(err) => {
-                        log::trace!("Notify error: {err:?}");
+                        trace!("Notify error: {err:?}");
                         return;
                     }
                 }
@@ -51,18 +54,6 @@ async fn run(proj: Arc<Project>, view_macros: Option<ViewMacros>) {
             debug!("Notify stopped");
         }
     });
-
-    let mut watcher =
-        new_debouncer(POLLING_TIMEOUT, None, sync_tx).expect("failed to build file system watcher");
-
-    let mut paths = proj.watch_additional_files.clone();
-    paths.push(proj.working_dir.clone());
-
-    for path in paths {
-        if let Err(e) = watcher.watch(path.as_std_path(), RecursiveMode::Recursive) {
-            log::error!("Notify could not watch {:?} due to {e:?}", proj.working_dir);
-        }
-    }
 
     if let Err(e) = Interrupt::subscribe_shutdown().recv().await {
         trace!("Notify stopped due to: {e:?}");
@@ -73,7 +64,7 @@ fn handle(
     events: Vec<DebouncedEvent>,
     proj: Arc<Project>,
     view_macros: &Option<ViewMacros>,
-    gitignore: &mut Gitignore,
+    watcher: Arc<Mutex<GitAwareWatcher>>,
 ) {
     if events.is_empty() {
         return;
@@ -94,7 +85,37 @@ fn handle(
                 return None;
             };
 
-            let paths = ignore_paths(&proj, &event.paths, gitignore);
+            if let EventKind::Create(_) = event.kind {
+                let added_dirs: HashSet<_> =
+                    event.paths.iter().filter(|p| p.is_dir()).cloned().collect();
+                watcher.lock().unwrap().watch(added_dirs.iter());
+            }
+
+            if let EventKind::Remove(_) = event.kind {
+                let deleted_dirs: HashSet<_> =
+                    event.paths.iter().filter(|p| p.is_dir()).cloned().collect();
+                watcher.lock().unwrap().unwatch(deleted_dirs.iter());
+            }
+
+            let paths: Vec<Utf8PathBuf> = event
+                .paths
+                .iter()
+                .filter_map(|p| {
+                    let p = match convert(p, &proj) {
+                        Ok(p) => p,
+                        Err(e) => {
+                            info!("{e}");
+                            return None;
+                        }
+                    };
+
+                    if !p.exists() {
+                        return None;
+                    }
+
+                    Some(p)
+                })
+                .collect();
 
             if paths.is_empty() {
                 None
@@ -112,18 +133,18 @@ fn handle(
 
     let mut changes = ChangeSet::new();
 
-    log::trace!("Notify handle {}", GRAY.paint(format!("{paths:?}")));
+    trace!("Notify handle {}", GRAY.paint(format!("{paths:?}")));
 
     for path in paths {
         if path.starts_with(".gitignore") {
-            *gitignore = create_gitignore_instance(&proj);
-            log::debug!("Notify .gitignore change {}", GRAY.paint(path.to_string()));
+            debug!("Notify .gitignore change {}", GRAY.paint(path.to_string()));
+            watcher.lock().unwrap().update_gitignore();
             continue;
         }
 
         if let Some(assets) = &proj.assets {
             if path.starts_with(&assets.dir) {
-                log::debug!("Notify asset change {}", GRAY.paint(path.as_str()));
+                debug!("Notify asset change {}", GRAY.paint(path.as_str()));
                 changes.add(Change::Asset);
             }
         }
@@ -132,7 +153,7 @@ fn handle(
         let lib_js = path.starts_with(&proj.js_dir) && path.is_ext_any(&["js"]);
 
         if lib_rs || lib_js {
-            log::debug!("Notify lib source change {}", GRAY.paint(path.as_str()));
+            debug!("Notify lib source change {}", GRAY.paint(path.as_str()));
             changes.add(Change::LibSource);
         }
 
@@ -141,18 +162,18 @@ fn handle(
                 // Check if it's possible to patch
                 let patches = view_macros.patch(&path);
                 if let Ok(Some(patch)) = patches {
-                    log::debug!("Patching view.");
+                    debug!("Patching view.");
                     ReloadSignal::send_view_patches(&patch);
                 }
             }
-            log::debug!("Notify bin source change {}", GRAY.paint(path.to_string()));
+            debug!("Notify bin source change {}", GRAY.paint(path.to_string()));
             changes.add(Change::BinSource);
         }
 
         if let Some(file) = &proj.style.file {
             let src = file.source.clone().without_last();
             if path.starts_with(src) && path.is_ext_any(&["scss", "sass", "css"]) {
-                log::debug!("Notify style change {}", GRAY.paint(path.as_str()));
+                debug!("Notify style change {}", GRAY.paint(path.as_str()));
                 changes.add(Change::Style);
             }
         }
@@ -164,7 +185,7 @@ fn handle(
                 .is_some_and(|config_file| path.as_path() == config_file.as_path())
                 || path.as_path() == tailwind.input_file.as_path()
             {
-                log::debug!("Notify style change {}", GRAY.paint(path.as_str()));
+                debug!("Notify style change {}", GRAY.paint(path.as_str()));
                 changes.add(Change::Style);
             }
         }
@@ -183,56 +204,137 @@ fn handle(
     }
 }
 
-fn create_gitignore_instance(proj: &Project) -> Gitignore {
-    log::info!("Creating ignore list from '.gitignore' file");
-
-    let (gi, err) = Gitignore::new(proj.working_dir.join(".gitignore"));
-
-    if let Some(err) = err {
-        log::error!("Failed reading '.gitignore' file in the working directory: {err}\nThis causes the watcher to work expensively on file changes like changes in the 'target' path.\nCreate a '.gitignore' file and exclude common build and cache paths like 'target'");
-    }
-
-    gi
+struct GitAwareWatcher {
+    watcher: Debouncer<RecommendedWatcher, RecommendedCache>,
+    gitignore: Gitignore,
+    gitignore_path: Utf8PathBuf,
+    paths: HashSet<PathBuf>,
+    sync_tx: Sender<notify_debouncer_full::DebounceEventResult>,
 }
 
-fn ignore_paths(
-    proj: &Project,
-    event_paths: &[PathBuf],
-    gitignore: &Gitignore,
-) -> Vec<Utf8PathBuf> {
-    event_paths
-        .iter()
-        .filter_map(|p| {
-            let p = match convert(p, proj) {
-                Ok(p) => p,
-                Err(e) => {
-                    log::info!("{e}");
+impl GitAwareWatcher {
+    fn new(proj: &Project, sync_tx: std::sync::mpsc::Sender<DebounceEventResult>) -> Self {
+        let watcher = new_debouncer(POLLING_TIMEOUT, None, sync_tx.clone())
+            .expect("failed to build file system watcher");
+
+        let mut paths: Vec<_> = proj
+            .watch_additional_files
+            .iter()
+            .filter_map(|p| p.canonicalize().ok())
+            .collect();
+        paths.push(proj.working_dir.clone().into());
+
+        let paths: HashSet<PathBuf> = paths
+            .into_iter()
+            .flat_map(|p| {
+                WalkDir::new(p)
+                    .follow_links(true)
+                    .into_iter()
+                    .filter_map(|e| e.ok())
+                    .filter(|d| {
+                        d.file_type().is_dir()
+                            && !d.path().components().any(|c| c.as_os_str() == ".git")
+                    })
+                    .map(|d| d.path().to_owned())
+                    .collect::<HashSet<_>>()
+            })
+            .collect();
+
+        let gitignore_path = proj.working_dir.join(".gitignore");
+
+        let gitignore = Self::new_gitignore(gitignore_path.as_std_path());
+
+        let mut watcher = Self {
+            watcher,
+            gitignore,
+            gitignore_path,
+            sync_tx,
+            paths: paths.clone(),
+        };
+
+        watcher.watch(paths.iter());
+
+        watcher
+    }
+
+    fn new_gitignore(gitignore_path: &Path) -> Gitignore {
+        info!("Creating ignore list from '.gitignore' file");
+
+        let (gi, err) = Gitignore::new(gitignore_path);
+
+        if let Some(err) = err {
+            error!("Failed reading '.gitignore' file in the working directory: {err}\nThis causes the watcher to work expensively on file changes like changes in the 'target' path.\nCreate a '.gitignore' file and exclude common build and cache paths like 'target'");
+        }
+
+        gi
+    }
+
+    fn update_gitignore(&mut self) {
+        // Current watcher will be stopped on drop
+        self.watcher = new_debouncer(POLLING_TIMEOUT, None, self.sync_tx.clone())
+            .expect("failed to build file system watcher");
+
+        self.gitignore = Self::new_gitignore(self.gitignore_path.as_std_path());
+
+        self.watch(self.paths.clone().iter());
+    }
+
+    fn ignore_paths<'a, I>(&self, paths: I) -> HashSet<PathBuf>
+    where
+        I: Iterator<Item = &'a PathBuf>,
+    {
+        paths
+            .filter_map(|p| {
+                // Check if the file excluded
+                let matched = self.gitignore.matched(p, p.is_dir());
+                if matches!(matched, ignore::Match::Ignore(_)) {
                     return None;
                 }
-            };
 
-            // Check if the file excluded
-            let matched = gitignore.matched(p.as_std_path(), p.is_dir());
-            if matches!(matched, ignore::Match::Ignore(_)) {
-                return None;
-            }
-
-            // Check if the parent directories excluded
-            let mut parent = p.as_std_path();
-            while let Some(par) = parent.parent() {
-                if matches!(gitignore.matched(par, true), ignore::Match::Ignore(_)) {
-                    return None;
+                // Check if the parent directories excluded
+                let mut parent = p.clone();
+                while let Some(par) = parent.parent() {
+                    if matches!(self.gitignore.matched(par, true), ignore::Match::Ignore(_)) {
+                        return None;
+                    }
+                    parent = par.to_path_buf();
                 }
-                parent = par;
-            }
 
-            if !p.exists() {
-                return None;
-            }
+                Some(p.clone())
+            })
+            .collect()
+    }
 
-            Some(p)
-        })
-        .collect()
+    fn watch<'a, I>(&mut self, paths: I)
+    where
+        I: Iterator<Item = &'a PathBuf>,
+    {
+        let paths = self.ignore_paths(paths);
+
+        trace!("Watch paths: {paths:?}");
+
+        for path in paths {
+            if let Err(e) = self.watcher.watch(&path, RecursiveMode::NonRecursive) {
+                error!("Notify could not watch {:?} due to {e:?}", path);
+                continue;
+            }
+        }
+    }
+
+    fn unwatch<'a, I>(&mut self, paths: I)
+    where
+        I: Iterator<Item = &'a PathBuf>,
+    {
+        let paths = self.ignore_paths(paths);
+
+        trace!("Unwatch paths: {paths:?}");
+
+        for path in paths {
+            if let Err(e) = self.watcher.unwatch(&path) {
+                error!("Notify could not watch {:?} due to {e:?}", path);
+            }
+        }
+    }
 }
 
 fn convert(p: &Path, proj: &Project) -> Result<Utf8PathBuf> {
