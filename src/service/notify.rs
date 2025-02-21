@@ -1,12 +1,12 @@
+use crate::compile::Change;
+use crate::config::Project;
+use crate::internal_prelude::*;
+use crate::logger::GRAY;
+use crate::signal::Interrupt;
 use crate::{
-    compile::{Change, ChangeSet},
-    config::Project,
-    ext::{
-        anyhow::{anyhow, Result},
-        Paint, PathBufExt, PathExt,
-    },
-    logger::GRAY,
-    signal::{Interrupt, ReloadSignal},
+    compile::ChangeSet,
+    ext::{Paint, PathBufExt, PathExt},
+    signal::ReloadSignal,
 };
 use camino::Utf8PathBuf;
 use ignore::gitignore::Gitignore;
@@ -18,7 +18,6 @@ use notify_debouncer_full::{
     DebouncedEvent,
 };
 use std::{
-    collections::HashSet,
     path::{Path, PathBuf},
     sync::Arc,
     time::Duration,
@@ -49,7 +48,7 @@ async fn run(proj: Arc<Project>, view_macros: Option<ViewMacros>) {
                     }
                 }
             }
-            log::debug!("Notify stopped");
+            debug!("Notify stopped");
         }
     });
 
@@ -66,7 +65,7 @@ async fn run(proj: Arc<Project>, view_macros: Option<ViewMacros>) {
     }
 
     if let Err(e) = Interrupt::subscribe_shutdown().recv().await {
-        log::trace!("Notify stopped due to: {e:?}");
+        trace!("Notify stopped due to: {e:?}");
     }
 }
 
@@ -171,7 +170,7 @@ fn handle(
         }
 
         if path.starts_with_any(&proj.watch_additional_files) {
-            log::debug!(
+            debug!(
                 "Notify additional file change {}",
                 GRAY.paint(path.as_str())
             );
@@ -238,6 +237,6 @@ fn ignore_paths(
 
 fn convert(p: &Path, proj: &Project) -> Result<Utf8PathBuf> {
     let p = Utf8PathBuf::from_path_buf(p.to_path_buf())
-        .map_err(|e| anyhow!("Could not convert to a Utf8PathBuf: {e:?}"))?;
+        .map_err(|e| eyre!("Could not convert to a Utf8PathBuf: {e:?}"))?;
     Ok(p.unbase(&proj.working_dir).unwrap_or(p))
 }

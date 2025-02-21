@@ -1,11 +1,9 @@
 use crate::config::hash_file::HashFile;
 use crate::ext::Paint;
+use crate::internal_prelude::*;
 use crate::{
     config::lib_package::LibPackage,
-    ext::{
-        anyhow::{bail, ensure, Result},
-        PackageExt, PathBufExt, PathExt,
-    },
+    ext::{PackageExt, PathBufExt, PathExt},
     logger::GRAY,
     service::site::Site,
 };
@@ -104,7 +102,7 @@ impl Project {
 
             // If there's more than 1 workspace member, we're a workspace. Probably
             let is_workspace = metadata.workspace_members.len() > 1;
-            log::debug!("Detected Workspace: {is_workspace}");
+            debug!("Detected Workspace: {is_workspace}");
             let hash_file = match is_workspace {
                 true => HashFile::new(
                     Some(&metadata.workspace_root),
@@ -344,8 +342,8 @@ impl ProjectConfig {
 
         #[allow(deprecated)]
         if conf.separate_front_target_dir.is_some() {
-            log::warn!("Deprecated: the `separate-front-target-dir` option is deprecated since cargo-leptos 0.2.3");
-            log::warn!("It is now unconditionally enabled; you can remove it from your Cargo.toml")
+            warn!("Deprecated: the `separate-front-target-dir` option is deprecated since cargo-leptos 0.2.3");
+            warn!("It is now unconditionally enabled; you can remove it from your Cargo.toml")
         }
 
         Ok(conf)

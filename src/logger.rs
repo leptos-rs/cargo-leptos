@@ -1,12 +1,15 @@
+//! TODO: port over formatting to `tracing-subscriber`
+//! Currently, `tracing` emits log events and `flexi_logger` consumes then.
+//! When you do implement `tracing-subscriber`, remember to add `tracing-error` error layer
+//! for `color_eyre`!
+
 use clap::builder::styling::{Ansi256Color, Color};
-use flexi_logger::{
-    filter::{LogLineFilter, LogLineWriter},
-    DeferredNow, Level, Record,
-};
+use flexi_logger::filter::{LogLineFilter, LogLineWriter};
+use flexi_logger::{DeferredNow, Level, Record};
 use std::io::Write;
 use std::sync::OnceLock;
 
-use crate::ext::{anyhow::Context, Paint};
+use crate::internal_prelude::*;
 use crate::{config::Log, ext::StrAdditions};
 
 const fn color(num: u8) -> Color {
@@ -32,12 +35,12 @@ pub fn setup(verbose: u8, logs: &[Log]) {
     // OnceLock::get_or_try_init() is more idiomatic, but unstable at the moment
     _ = LOG_SELECT.get_or_init(|| {
         flexi_logger::Logger::try_with_str(log_level)
-            .with_context(|| "Logger setup failed")
+            .wrap_err_with(|| "Logger setup failed")
             .unwrap()
             .filter(Box::new(Filter))
             .format(format)
             .start()
-            .unwrap();
+            .expect("Couldn't init cargo-leptos logger");
 
         LogFlag::new(logs)
     });

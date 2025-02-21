@@ -1,12 +1,11 @@
 use super::build::build_proj;
+use crate::internal_prelude::*;
 use crate::{
     compile::{self},
     config::Project,
-    ext::anyhow::Context,
     service,
     signal::{Interrupt, Outcome, Product, ProductSet, ReloadSignal, ServerRestart},
 };
-use anyhow::Result;
 use leptos_hot_reload::ViewMacros;
 use std::sync::Arc;
 use tokio::sync::broadcast::error::RecvError;
@@ -28,7 +27,9 @@ pub async fn watch(proj: &Arc<Project>) -> Result<()> {
     let view_macros = if proj.hot_reload {
         // build initial set of view macros for patching
         let view_macros = ViewMacros::new();
-        view_macros.update_from_paths(&proj.lib.src_paths)?;
+        view_macros
+            .update_from_paths(&proj.lib.src_paths)
+            .wrap_anyhow_err("Couldn't update view-macro watch")?;
         Some(view_macros)
     } else {
         None
@@ -48,7 +49,7 @@ pub async fn watch(proj: &Arc<Project>) -> Result<()> {
 pub async fn run_loop(proj: &Arc<Project>) -> Result<()> {
     let mut int = Interrupt::subscribe_any();
     loop {
-        log::debug!("Watch waiting for changes");
+        debug!("Watch waiting for changes");
 
         let int = int.recv().await;
         // Do not terminate the execution of watch if the receiver lagged behind as it might be a slow receiver
@@ -58,7 +59,7 @@ pub async fn run_loop(proj: &Arc<Project>) -> Result<()> {
         }
 
         if Interrupt::is_shutdown_requested().await {
-            log::debug!("Shutting down");
+            debug!("Shutting down");
             return Ok(());
         }
 
@@ -80,13 +81,13 @@ pub async fn runner(proj: &Arc<Project>) -> Result<()> {
 
     let interrupted = outcomes.iter().any(|outcome| *outcome == Outcome::Stopped);
     if interrupted {
-        log::info!("Build interrupted. Restarting.");
+        info!("Build interrupted. Restarting.");
         return Ok(());
     }
 
     let failed = outcomes.iter().any(|outcome| *outcome == Outcome::Failed);
     if failed {
-        log::warn!("Build failed");
+        warn!("Build failed");
         Interrupt::clear_source_changes().await;
         return Ok(());
     }
@@ -94,21 +95,21 @@ pub async fn runner(proj: &Arc<Project>) -> Result<()> {
     let set = ProductSet::from(outcomes);
 
     if set.is_empty() {
-        log::trace!("Build step done with no changes");
+        trace!("Build step done with no changes");
     } else {
-        log::trace!("Build step done with changes: {set}");
+        trace!("Build step done with changes: {set}");
     }
 
     if set.contains(&Product::Server) {
         // send product change, then the server will send the reload once it has restarted
         ServerRestart::send();
-        log::info!("Watch updated {set}. Server restarting")
+        info!("Watch updated {set}. Server restarting")
     } else if set.only_style() {
         ReloadSignal::send_style();
-        log::info!("Watch updated style")
+        info!("Watch updated style")
     } else if set.contains_any(&[Product::Front, Product::Assets]) {
         ReloadSignal::send_full();
-        log::info!("Watch updated {set}")
+        info!("Watch updated {set}")
     }
     Interrupt::clear_source_changes().await;
     Ok(())

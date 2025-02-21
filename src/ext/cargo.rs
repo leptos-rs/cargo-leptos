@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
-use super::anyhow::Result;
 use super::{PathBufExt, PathExt};
+use crate::internal_prelude::*;
 use camino::{Utf8Path, Utf8PathBuf};
 use cargo_metadata::{CrateType, Metadata, MetadataCommand, Package, PackageId, Resolve, Target};
 

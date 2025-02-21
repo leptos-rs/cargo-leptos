@@ -2,12 +2,10 @@ use camino::Utf8PathBuf;
 use cargo_metadata::{Metadata, Target};
 
 use super::{project::ProjectDefinition, Profile, ProjectConfig};
+use crate::internal_prelude::*;
 use crate::{
     config::Opts,
-    ext::{
-        anyhow::{anyhow, bail, Error, Result},
-        MetadataExt, PackageExt, PathBufExt, PathExt,
-    },
+    ext::{MetadataExt, PackageExt, PathBufExt, PathExt},
 };
 pub struct BinPackage {
     pub name: String,
@@ -51,7 +49,7 @@ impl BinPackage {
         let package = packages
             .iter()
             .find(|p| p.name == name && p.has_bin_target())
-            .ok_or_else(|| anyhow!(r#"Could not find the project bin-package "{name}""#,))?;
+            .ok_or_else(|| eyre!(r#"Could not find the project bin-package "{name}""#,))?;
 
         let package = (*package).clone();
 
@@ -131,7 +129,7 @@ impl BinPackage {
             .clone()
             .or_else(|| config.bin_cargo_args.clone());
 
-        log::debug!("BEFORE BIN {:?}", config.bin_cargo_command);
+        debug!("BEFORE BIN {:?}", config.bin_cargo_command);
         Ok(Self {
             name,
             abs_dir,
@@ -176,12 +174,12 @@ impl std::fmt::Debug for BinPackage {
 }
 
 fn many_targets_found(pkg: &str) -> Error {
-    anyhow!(
+    eyre!(
         r#"Several bin targets found for member "{pkg}", please specify which one to use with: [[workspace.metadata.leptos]] bin-target = "name""#
     )
 }
 fn target_not_found(target: &str) -> Error {
-    anyhow!(
+    eyre!(
         r#"Could not find the target specified: [[workspace.metadata.leptos]] bin-target = "{target}""#,
     )
 }
