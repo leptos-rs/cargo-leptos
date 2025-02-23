@@ -23,3 +23,5 @@ hosting = ["axodotdev", "github"]
 install-path = "CARGO_HOME"
 # Whether to install an updater program
 install-updater = false
+# Add custom build setup steps
+github-build-setup = "../build-setup.yml"
