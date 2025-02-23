@@ -127,6 +127,13 @@ jobs:
             curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
             echo "$HOME/.cargo/bin" >> $GITHUB_PATH
           fi
+      - name: "Symlink g++ compiler for musl targets"
+        if: "contains(env.TARGETS, 'x86_64-unknown-linux-musl')"
+        run: |
+          sudo ln -s /usr/bin/g++ /usr/bin/musl-g++
+          ls -l /usr/bin/musl-g++
+        env:
+          "TARGETS": "${{ join(matrix.targets, '-') }}"
       - name: Install dist
         run: ${{ matrix.install_dist.run }}
       # Get the dist-manifest
