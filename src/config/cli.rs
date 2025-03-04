@@ -59,6 +59,14 @@ pub struct Opts {
     /// Minify javascript assets with swc. Applies to release builds only.
     #[arg(long, default_value = "true", value_parser=clap::builder::BoolishValueParser::new(), action = clap::ArgAction::Set)]
     pub js_minify: bool,
+
+    /// Only do steps invovling the lib target
+    #[arg(long, default_value = "false")]
+    pub lib_only: bool,
+
+    /// Only do steps involving the bin target
+    #[arg(long, default_value = "false")]
+    pub bin_only: bool
 }
 
 #[derive(Debug, Clone, Parser, PartialEq, Default)]

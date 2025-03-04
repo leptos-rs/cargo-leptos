@@ -142,51 +142,57 @@ fn handle(
             continue;
         }
 
-        if let Some(assets) = &proj.assets {
-            if path.starts_with(&assets.dir) {
-                debug!("Notify asset change {}", GRAY.paint(path.as_str()));
-                changes.add(Change::Asset);
-            }
-        }
+        if proj.lib.is_some() {
 
-        let lib_rs = path.starts_with_any(&proj.lib.src_paths) && path.is_ext_any(&["rs"]);
-        let lib_js = path.starts_with(&proj.js_dir) && path.is_ext_any(&["js"]);
-
-        if lib_rs || lib_js {
-            debug!("Notify lib source change {}", GRAY.paint(path.as_str()));
-            changes.add(Change::LibSource);
-        }
-
-        if path.starts_with_any(&proj.bin.src_paths) && path.is_ext_any(&["rs"]) {
-            if let Some(view_macros) = view_macros {
-                // Check if it's possible to patch
-                let patches = view_macros.patch(&path);
-                if let Ok(Some(patch)) = patches {
-                    debug!("Patching view.");
-                    ReloadSignal::send_view_patches(&patch);
+            if let Some(assets) = &proj.assets {
+                if path.starts_with(&assets.dir) {
+                    debug!("Notify asset change {}", GRAY.paint(path.as_str()));
+                    changes.add(Change::Asset);
                 }
             }
-            debug!("Notify bin source change {}", GRAY.paint(path.to_string()));
-            changes.add(Change::BinSource);
-        }
-
-        if let Some(file) = &proj.style.file {
-            let src = file.source.clone().without_last();
-            if path.starts_with(src) && path.is_ext_any(&["scss", "sass", "css"]) {
-                debug!("Notify style change {}", GRAY.paint(path.as_str()));
-                changes.add(Change::Style);
+    
+            let lib_rs = path.starts_with_any(&proj.lib.as_ref().unwrap().src_paths) && path.is_ext_any(&["rs"]);
+            let lib_js = path.starts_with(&proj.js_dir) && path.is_ext_any(&["js"]);
+    
+            if lib_rs || lib_js {
+                debug!("Notify lib source change {}", GRAY.paint(path.as_str()));
+                changes.add(Change::LibSource);
             }
+
+            if let Some(file) = &proj.style.file {
+                let src = file.source.clone().without_last();
+                if path.starts_with(src) && path.is_ext_any(&["scss", "sass", "css"]) {
+                    debug!("Notify style change {}", GRAY.paint(path.as_str()));
+                    changes.add(Change::Style);
+                }
+            }
+    
+            if let Some(tailwind) = &proj.style.tailwind {
+                if tailwind
+                    .config_file
+                    .as_ref()
+                    .is_some_and(|config_file| path.as_path() == config_file.as_path())
+                    || path.as_path() == tailwind.input_file.as_path()
+                {
+                    debug!("Notify style change {}", GRAY.paint(path.as_str()));
+                    changes.add(Change::Style);
+                }
+            }
+
         }
 
-        if let Some(tailwind) = &proj.style.tailwind {
-            if tailwind
-                .config_file
-                .as_ref()
-                .is_some_and(|config_file| path.as_path() == config_file.as_path())
-                || path.as_path() == tailwind.input_file.as_path()
-            {
-                debug!("Notify style change {}", GRAY.paint(path.as_str()));
-                changes.add(Change::Style);
+        if proj.bin.is_some() {
+            if path.starts_with_any(&proj.bin.as_ref().unwrap().src_paths) && path.is_ext_any(&["rs"]) {
+                if let Some(view_macros) = view_macros {
+                    // Check if it's possible to patch
+                    let patches = view_macros.patch(&path);
+                    if let Ok(Some(patch)) = patches {
+                        debug!("Patching view.");
+                        ReloadSignal::send_view_patches(&patch);
+                    }
+                }
+                debug!("Notify bin source change {}", GRAY.paint(path.to_string()));
+                changes.add(Change::BinSource);
             }
         }
 

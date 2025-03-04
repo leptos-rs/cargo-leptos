@@ -64,8 +64,8 @@ impl ServerProcess {
         Self {
             process: None,
             envs: proj.to_envs(),
-            binary: proj.bin.exe_file.clone(),
-            bin_args: proj.bin.bin_args.clone(),
+            binary: proj.bin.as_ref().unwrap().exe_file.clone(),
+            bin_args: proj.bin.as_ref().unwrap().bin_args.clone(),
         }
     }
 

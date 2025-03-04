@@ -1,4 +1,4 @@
-use crate::config::hash_file::HashFile;
+use crate::config::hash_file::{HashFile, HashablePackage};
 use crate::ext::Paint;
 use crate::internal_prelude::*;
 use crate::{
@@ -26,12 +26,14 @@ const CARGO_TARGET_DIR_MARKER: &str = "CARGO_TARGET_DIR";
 /// If the site root path starts with this marker, the marker should be replaced with the Cargo target directory
 const CARGO_BUILD_TARGET_DIR_MARKER: &str = "CARGO_BUILD_TARGET_DIR";
 
+// todo: make BinProject / LibProject to avoid needing all the as_ref().unwraps() when using just one of them
+
 pub struct Project {
     /// absolute path to the working dir
     pub working_dir: Utf8PathBuf,
     pub name: String,
-    pub lib: LibPackage,
-    pub bin: BinPackage,
+    pub lib: Option<LibPackage>,
+    pub bin: Option<BinPackage>,
     pub style: StyleConfig,
     pub watch: bool,
     pub release: bool,
@@ -89,8 +91,14 @@ impl Project {
                 config.output_name = project.name.to_string();
             }
 
-            let lib = LibPackage::resolve(cli, metadata, &project, &config)?;
+            let lib = if project.lib_package.is_some() {
+                let lib = LibPackage::resolve(cli, metadata, &project, &config)?;
+                Some(lib)
+            } else {
+                None
+            };
 
+            // todo: I think bin-only flag should negate this? should move this into a tuple with lib call
             let js_dir = config
                 .js_dir
                 .clone()
@@ -98,18 +106,30 @@ impl Project {
 
             let watch_additional_files = config.watch_additional_files.clone().unwrap_or_default();
 
-            let bin = BinPackage::resolve(cli, metadata, &project, &config, bin_args)?;
+            let bin = if project.bin_package.is_some() {
+                let bin = BinPackage::resolve(cli, metadata, &project, &config, bin_args)?;
+                Some(bin)
+            } else {
+                None
+            };
+
+            if bin.is_none() && lib.is_none() {
+                bail!(
+                    "either bin or lib package must be present for all leptos configs!",
+                );
+            }
 
             // If there's more than 1 workspace member, we're a workspace. Probably
             let is_workspace = metadata.workspace_members.len() > 1;
+            let pkg = HashablePackage::new(bin.as_ref(), lib.as_ref());
             debug!("Detected Workspace: {is_workspace}");
             let hash_file = match is_workspace {
                 true => HashFile::new(
                     Some(&metadata.workspace_root),
-                    &bin,
+                    pkg,
                     config.hash_file_name.as_ref(),
                 ),
-                false => HashFile::new(None, &bin, config.hash_file_name.as_ref()),
+                false => HashFile::new(None, pkg, config.hash_file_name.as_ref()),
             };
 
             let proj = Project {
@@ -140,7 +160,14 @@ impl Project {
 
         let projects_in_cwd = resolved
             .iter()
-            .filter(|p| p.bin.abs_dir.starts_with(cwd) || p.lib.abs_dir.starts_with(cwd))
+            .filter(|p| {
+                match (p.bin.as_ref(), p.lib.as_ref()) {
+                    (Some(bin), Some(lib)) => bin.abs_dir.starts_with(cwd) || lib.abs_dir.starts_with(cwd),
+                    (None, Some(lib)) => lib.abs_dir.starts_with(cwd),
+                    (Some(bin), None) => bin.abs_dir.starts_with(cwd),
+                    (None, None) => panic!("Need either bin or lib"),
+                }
+            })
             .collect::<Vec<_>>();
 
         if projects_in_cwd.len() == 1 {
@@ -152,14 +179,20 @@ impl Project {
 
     /// env vars to use when running external command
     pub fn to_envs(&self) -> Vec<(&'static str, String)> {
+        let (lib_name, lib_dir) = if let Some(lib) = self.lib.as_ref() {
+            (lib.output_name.to_string(), lib.rel_dir.to_string())
+        } else {
+            (String::new(), String::new())
+        };
+        let bin_dir = if let Some(bin) = self.bin.as_ref() { bin.rel_dir.to_string() } else { String::new() };
         let mut vec = vec![
-            ("LEPTOS_OUTPUT_NAME", self.lib.output_name.to_string()),
+            ("LEPTOS_OUTPUT_NAME", lib_name),
             ("LEPTOS_SITE_ROOT", self.site.root_dir.to_string()),
             ("LEPTOS_SITE_PKG_DIR", self.site.pkg_dir.to_string()),
             ("LEPTOS_SITE_ADDR", self.site.addr.to_string()),
             ("LEPTOS_RELOAD_PORT", self.site.reload.port().to_string()),
-            ("LEPTOS_LIB_DIR", self.lib.rel_dir.to_string()),
-            ("LEPTOS_BIN_DIR", self.bin.rel_dir.to_string()),
+            ("LEPTOS_LIB_DIR", lib_dir),
+            ("LEPTOS_BIN_DIR", bin_dir),
             ("LEPTOS_JS_MINIFY", self.js_minify.to_string()),
             ("LEPTOS_HASH_FILES", self.hash_files.to_string()),
         ];
@@ -354,8 +387,8 @@ impl ProjectConfig {
 #[serde(rename_all = "kebab-case")]
 pub struct ProjectDefinition {
     name: String,
-    pub bin_package: String,
-    pub lib_package: String,
+    pub bin_package: Option<String>,
+    pub lib_package: Option<String>,
 }
 impl ProjectDefinition {
     fn from_workspace(
@@ -396,8 +429,8 @@ impl ProjectDefinition {
         Ok((
             ProjectDefinition {
                 name: package.name.to_string(),
-                bin_package: package.name.to_string(),
-                lib_package: package.name.to_string(),
+                bin_package: Some(package.name.to_string()),
+                lib_package: Some(package.name.to_string()),
             },
             conf,
         ))

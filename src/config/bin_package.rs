@@ -44,7 +44,8 @@ impl BinPackage {
         features.extend(config.features.clone());
         features.extend(cli.features.clone());
 
-        let name = project.bin_package.clone();
+        // todo: should we just assume this is avail if we get here?
+        let name = project.bin_package.clone().unwrap();
         let packages = metadata.workspace_packages();
         let package = packages
             .iter()

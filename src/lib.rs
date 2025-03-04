@@ -43,6 +43,10 @@ pub async fn run(args: Cli) -> Result<()> {
     let opts = args.opts().unwrap();
     let bin_args = args.bin_args();
 
+    if opts.bin_only && opts.lib_only {
+        bail!("Specified bin only and lib only, must choose one");
+    }
+
     let watch = matches!(args.command, Commands::Watch(_));
     let config = Config::load(opts, &cwd, &manifest_path, watch, bin_args).dot()?;
     env::set_current_dir(&config.working_dir).dot()?;
@@ -71,7 +75,7 @@ pub async fn run(args: Cli) -> Result<()> {
             warn!("Path continuing without using 'node_modules'");
         }
     }
-
+    
     let _monitor = Interrupt::run_ctrl_c_monitor();
     use Commands::{Build, EndToEnd, New, Serve, Test, Watch};
     match args.command {

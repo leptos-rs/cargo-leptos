@@ -33,28 +33,30 @@ pub async fn build_proj(proj: &Arc<Project>) -> Result<bool> {
     }
     let changes = ChangeSet::all_changes();
 
-    if !compile::front(proj, &changes).await.await??.is_success() {
-        return Ok(false);
-    }
-    if !compile::assets(proj, &changes).await.await??.is_success() {
-        return Ok(false);
-    }
-    if !compile::style(proj, &changes).await.await??.is_success() {
-        return Ok(false);
+    if proj.lib.is_some() {
+        if !compile::front(proj, &changes).await.await??.is_success() {
+            return Ok(false);
+        }
+        if !compile::assets(proj, &changes).await.await??.is_success() {
+            return Ok(false);
+        }
+        if !compile::style(proj, &changes).await.await??.is_success() {
+            return Ok(false);
+        }
+        if proj.hash_files {
+            compile::add_hashes_to_site(proj)?;
+        }
+        // it is important to do the precompression of the static files before building the
+        // server to make it possible to include them as assets into the binary itself
+        if proj.release && proj.precompress {
+            compress::compress_static_files(proj.site.root_dir.clone().into()).await?;
+        }
     }
 
-    if proj.hash_files {
-        compile::add_hashes_to_site(proj)?;
-    }
-
-    // it is important to do the precompression of the static files before building the
-    // server to make it possible to include them as assets into the binary itself
-    if proj.release && proj.precompress {
-        compress::compress_static_files(proj.site.root_dir.clone().into()).await?;
-    }
-
-    if !compile::server(proj, &changes).await.await??.is_success() {
-        return Ok(false);
+    if proj.bin.is_some() {
+        if !compile::server(proj, &changes).await.await??.is_success() {
+            return Ok(false);
+        }
     }
 
     Ok(true)

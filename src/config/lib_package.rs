@@ -32,7 +32,8 @@ impl LibPackage {
         project: &ProjectDefinition,
         config: &ProjectConfig,
     ) -> Result<Self> {
-        let name = project.lib_package.clone();
+        // todo: should we just trust lib_package is avail when getting here?
+        let name = project.lib_package.clone().unwrap();
         let packages = metadata.workspace_packages();
         let output_name = if !config.output_name.is_empty() {
             config.output_name.clone()

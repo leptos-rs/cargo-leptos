@@ -7,9 +7,9 @@ use crate::{
     signal::{Interrupt, Outcome, Product, ProductSet, ReloadSignal, ServerRestart},
 };
 use leptos_hot_reload::ViewMacros;
+use tokio::try_join;
 use std::sync::Arc;
 use tokio::sync::broadcast::error::RecvError;
-use tokio::try_join;
 
 pub async fn watch(proj: &Arc<Project>) -> Result<()> {
     // even if the build fails, we continue
@@ -22,13 +22,15 @@ pub async fn watch(proj: &Arc<Project>) -> Result<()> {
 
     if proj.hot_reload && proj.release {
         log::warn!("warning: Hot reloading does not currently work in --release mode.");
+    } else if proj.hot_reload && proj.lib.is_none() {
+        log::warn!("warning: Hot reloading won't do anything, running in bin-only mode");
     }
 
-    let view_macros = if proj.hot_reload {
+    let view_macros = if proj.hot_reload && proj.lib.is_some() {
         // build initial set of view macros for patching
         let view_macros = ViewMacros::new();
         view_macros
-            .update_from_paths(&proj.lib.src_paths)
+            .update_from_paths(&proj.lib.as_ref().unwrap().src_paths)
             .wrap_anyhow_err("Couldn't update view-macro watch")?;
         Some(view_macros)
     } else {
@@ -36,7 +38,9 @@ pub async fn watch(proj: &Arc<Project>) -> Result<()> {
     };
 
     service::notify::spawn(proj, view_macros).await?;
-    service::serve::spawn(proj).await;
+    if proj.bin.is_some() {
+        service::serve::spawn(proj).await;
+    }
     service::reload::spawn(proj).await;
 
     let res = run_loop(proj).await;
@@ -70,11 +74,26 @@ pub async fn run_loop(proj: &Arc<Project>) -> Result<()> {
 pub async fn runner(proj: &Arc<Project>) -> Result<()> {
     let changes = Interrupt::get_source_changes().await;
 
-    let server_hdl = compile::server(proj, &changes).await;
-    let front_hdl = compile::front(proj, &changes).await;
-    let assets_hdl = compile::assets(proj, &changes).await;
-    let style_hdl = compile::style(proj, &changes).await;
+    // todo: super hacky, gotta be a better way
+    let server_hdl = if proj.bin.is_some() {
+        compile::server(proj, &changes).await
+    } else {
+        tokio::spawn(async move { Ok(Outcome::Skipped) })
+    };
 
+    let (front_hdl, assets_hdl, style_hdl) = if proj.lib.is_some() {
+        (
+            compile::front(proj, &changes).await,
+            compile::assets(proj, &changes).await,
+            compile::style(proj, &changes).await
+        )
+    } else {
+        (
+            tokio::spawn(async move { Ok(Outcome::Skipped) }),
+            tokio::spawn(async move { Ok(Outcome::Skipped) }),
+            tokio::spawn(async move { Ok(Outcome::Skipped) })
+        )
+    };
     let (server, front, assets, style) = try_join!(server_hdl, front_hdl, assets_hdl, style_hdl)?;
 
     let outcomes = vec![server?, front?, assets?, style?];
@@ -100,14 +119,14 @@ pub async fn runner(proj: &Arc<Project>) -> Result<()> {
         trace!("Build step done with changes: {set}");
     }
 
-    if set.contains(&Product::Server) {
+    if set.contains(&Product::Server) && proj.bin.is_some() {
         // send product change, then the server will send the reload once it has restarted
         ServerRestart::send();
         info!("Watch updated {set}. Server restarting")
-    } else if set.only_style() {
+    } else if set.only_style() && proj.lib.is_some() {
         ReloadSignal::send_style();
         info!("Watch updated style")
-    } else if set.contains_any(&[Product::Front, Product::Assets]) {
+    } else if set.contains_any(&[Product::Front, Product::Assets]) && proj.lib.is_some() {
         ReloadSignal::send_full();
         info!("Watch updated {set}")
     }
