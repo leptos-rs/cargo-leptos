@@ -277,6 +277,11 @@ assets-dir = "assets"
 # Optional. Defaults to "src"
 js-dir = "src"
 
+# Enables minification of JS files in production builds
+#
+# Optional: Defaults to false. Can also be set with the LEPTOS_JS_MINIFY=false env var (must be set at runtime too)
+js-minify = false
+
 # Additional files your application could depends on.
 # A change to any file in those directories will trigger a rebuild.
 #
@@ -302,6 +307,38 @@ end2end-cmd = "npx playwright test"
 #
 # Optional. Env: LEPTOS_END2END_DIR
 end2end-dir = "integration"
+
+# The default prefix to use for server functions when generating API routes. Can be
+# overridden for individual functions using `#[server(prefix = "...")]` as usual.
+#
+# This is useful to override the default prefix (`/api`) for all server functions without
+# needing to manually specify via `#[server(prefix = "...")]` on every server function.
+#
+# Optional. Defaults to "/api". Env: SERVER_FN_PREFIX
+server-fn-prefix = "/api"
+
+# Whether to disable appending the server functions' hashes to the end of their API names.
+#
+# This is useful when an app's client side needs a stable server API. For example, shipping
+# the CSR WASM binary in a Tauri app. Tauri app releases are dependent on each platform's
+# distribution method (e.g., the Apple App Store or the Google Play Store), which typically
+# are much slower than the frequency at which a website can be updated. In addition, it's
+# common for users to not have the latest app version installed. In these cases, the CSR WASM
+# app would need to be able to continue calling the backend server function API, so the API
+# path needs to be consistent and not have a hash appended.
+#
+# Optional: Defaults to false. Env: DISABLE_SERVER_FN_HASH
+disable-server-fn-hash = false
+
+# Include the module path of the server function in the API route. This is an alternative
+# strategy to prevent duplicate server function API routes (the default strategy is to add
+# a hash to the end of the route). Each element of the module path will be separated by a `/`.
+# For example, a server function with a fully qualified name of `parent::child::server_fn`
+# would have an API route of `/api/parent/child/server_fn` (possibly with a
+# different prefix and a hash suffix depending on the values of the other server fn configs).
+#
+# Optional, Defaults to false. Env: SERVER_FN_MOD_PATH
+server-fn-mod-path = false
 ```
 
 <br/>

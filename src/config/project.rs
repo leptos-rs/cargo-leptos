@@ -167,16 +167,19 @@ impl Project {
             vec.push(("LEPTOS_HASH_FILE_NAME", self.hash_file.rel.to_string()));
         }
         if self.watch {
-            vec.push(("LEPTOS_WATCH", true.to_string()))
+            vec.push(("LEPTOS_WATCH", self.watch.to_string()))
         }
         if let Some(prefix) = self.server_fn_prefix.as_ref() {
             vec.push(("SERVER_FN_PREFIX", prefix.clone()));
         }
         if self.disable_server_fn_hash {
-            vec.push(("DISABLE_SERVER_FN_HASH", true.to_string()));
+            vec.push((
+                "DISABLE_SERVER_FN_HASH",
+                self.disable_server_fn_hash.to_string(),
+            ));
         }
         if self.server_fn_mod_path {
-            vec.push(("SERVER_FN_MOD_PATH", true.to_string()));
+            vec.push(("SERVER_FN_MOD_PATH", self.server_fn_mod_path.to_string()));
         }
         vec
     }
