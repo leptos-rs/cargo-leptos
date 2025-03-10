@@ -311,12 +311,12 @@ impl GitAwareWatcher {
     {
         let paths = self.ignore_paths(paths);
 
-        trace!("Watch paths: {paths:?}");
-
         for path in paths {
             if let Err(e) = self.watcher.watch(&path, RecursiveMode::NonRecursive) {
                 error!("Notify could not watch {:?} due to {e:?}", path);
                 continue;
+            } else {
+                trace!("Watch path: {path:?}");
             }
         }
     }
@@ -327,11 +327,11 @@ impl GitAwareWatcher {
     {
         let paths = self.ignore_paths(paths);
 
-        trace!("Unwatch paths: {paths:?}");
-
         for path in paths {
             if let Err(e) = self.watcher.unwatch(&path) {
                 error!("Notify could not watch {:?} due to {e:?}", path);
+            } else {
+                trace!("Unwatch path: {path:?}");
             }
         }
     }
