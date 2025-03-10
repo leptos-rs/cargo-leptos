@@ -15,7 +15,7 @@ cfg_if! {
 
                     logging::log!("hydrate mode - hydrating ({})", app::message());
 
-                    leptos::mount_to_body(|| {
+                    leptos::mount::hydrate_body(|| {
                         view! { <App/> }
                     });
             }
