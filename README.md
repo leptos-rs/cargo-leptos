@@ -277,7 +277,8 @@ assets-dir = "assets"
 # Optional. Defaults to "src"
 js-dir = "src"
 
-# Enables minification of JS files in production builds
+# Enables minification of the JS glue needed for Leptos to work.
+# Uses SWC (Speed Web Compiler) to mangle and compress the JS, which it treats as a module.
 #
 # Optional: Defaults to false. Can also be set with the LEPTOS_JS_MINIFY=false env var (must be set at runtime too)
 js-minify = false
