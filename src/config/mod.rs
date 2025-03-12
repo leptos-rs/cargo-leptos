@@ -63,6 +63,11 @@ impl Config {
 
         if let Some(proj_name) = &cli.project {
             if let Some(proj) = projects.iter().find(|p| p.name == *proj_name) {
+                if proj.bin.is_none() && cli.bin_only {
+                    bail!("CLI flag --bin-only present for leptos project without a bin-package");
+                } else if proj.lib.is_none() && cli.lib_only {
+                    bail!("CLI flag --lib-only present for leptos project without a lib-package");
+                }
                 projects = vec![proj.clone()];
             } else {
                 bail!(

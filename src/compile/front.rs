@@ -61,31 +61,33 @@ pub fn build_cargo_front_cmd(
     proj: &Project,
     command: &mut Command,
 ) -> (String, String) {
+    // todo: maybe throw here if lib is empty? should rely on outer layers to get here with lib intact
+    let lib = proj.lib.as_ref().unwrap();
     let mut args = vec![
         cmd.to_string(),
-        format!("--package={}", proj.lib.name.as_str()),
+        format!("--package={}", lib.name.as_str()),
         "--lib".to_string(),
-        format!("--target-dir={}", &proj.lib.front_target_path),
+        format!("--target-dir={}", &lib.front_target_path),
     ];
 
     if wasm {
         args.push("--target=wasm32-unknown-unknown".to_string());
     }
 
-    if !proj.lib.default_features {
+    if !lib.default_features {
         args.push("--no-default-features".to_string());
     }
 
-    if !proj.lib.features.is_empty() {
-        args.push(format!("--features={}", proj.lib.features.join(",")));
+    if !lib.features.is_empty() {
+        args.push(format!("--features={}", lib.features.join(",")));
     }
 
     // Add cargo flags to cargo command
-    if let Some(cargo_args) = &proj.lib.cargo_args {
+    if let Some(cargo_args) = &lib.cargo_args {
         args.extend_from_slice(cargo_args);
     }
 
-    proj.lib.profile.add_to_args(&mut args);
+    lib.profile.add_to_args(&mut args);
 
     let envs = proj.to_envs();
 
@@ -101,7 +103,9 @@ pub fn build_cargo_front_cmd(
 }
 
 async fn bindgen(proj: &Project) -> Result<Outcome<Product>> {
-    let wasm_file = &proj.lib.wasm_file;
+    // todo: maybe throw here if lib is empty? should rely on outer layers to get here with lib intact
+    let lib = proj.lib.as_ref().unwrap();
+    let wasm_file = &lib.wasm_file;
 
     info!("Front generating JS/WASM with wasm-bindgen");
 
@@ -113,7 +117,7 @@ async fn bindgen(proj: &Project) -> Result<Outcome<Product>> {
         .debug(proj.wasm_debug)
         .keep_debug(proj.wasm_debug)
         .input_path(&wasm_file.source)
-        .out_name(&proj.lib.output_name)
+        .out_name(&lib.output_name)
         .web(true)
         .dot_anyhow()?
         .generate_output()
@@ -143,7 +147,7 @@ async fn bindgen(proj: &Project) -> Result<Outcome<Product>> {
             .dest
             .clone()
             .without_last()
-            .join(format!("{}_bg.wasm", &proj.lib.output_name)),
+            .join(format!("{}_bg.wasm", &lib.output_name)),
         &wasm_file.dest,
     )
     .await
@@ -161,12 +165,12 @@ async fn bindgen(proj: &Project) -> Result<Outcome<Product>> {
 
     if proj.js_minify {
         proj.site
-            .updated_with(&proj.lib.js_file, minify(bindgen.js())?.as_bytes())
+            .updated_with(&lib.js_file, minify(bindgen.js())?.as_bytes())
             .await
             .dot()?
     } else {
         proj.site
-            .updated_with(&proj.lib.js_file, bindgen.js().as_bytes())
+            .updated_with(&lib.js_file, bindgen.js().as_bytes())
             .await
             .dot()?
     };
