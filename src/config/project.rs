@@ -130,7 +130,7 @@ impl Project {
                 watch_additional_files,
                 hash_file,
                 hash_files: config.hash_files,
-                js_minify: cli.release && cli.js_minify && config.js_minify,
+                js_minify: cli.release && (cli.js_minify || config.js_minify),
                 server_fn_prefix: config.server_fn_prefix,
                 disable_server_fn_hash: config.disable_server_fn_hash,
                 server_fn_mod_path: config.server_fn_mod_path,
