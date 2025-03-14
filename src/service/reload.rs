@@ -12,6 +12,7 @@ use axum::{
     Router,
 };
 use serde::Serialize;
+use std::sync::LazyLock;
 use std::{fmt::Display, net::SocketAddr, sync::Arc};
 use tokio::{
     net::{TcpListener, TcpStream},
@@ -20,10 +21,9 @@ use tokio::{
     task::JoinHandle,
 };
 
-lazy_static::lazy_static! {
-  static ref SITE_ADDR: RwLock<SocketAddr> = RwLock::new(SocketAddr::new([127,0,0,1].into(), 3000));
-  static ref CSS_LINK: RwLock<String> = RwLock::new(String::default());
-}
+static SITE_ADDR: LazyLock<RwLock<SocketAddr>> =
+    LazyLock::new(|| RwLock::new(SocketAddr::new([127, 0, 0, 1].into(), 3000)));
+static CSS_LINK: LazyLock<RwLock<String>> = LazyLock::new(|| RwLock::new(String::default()));
 
 pub async fn spawn(proj: &Arc<Project>) -> JoinHandle<()> {
     let proj = proj.clone();

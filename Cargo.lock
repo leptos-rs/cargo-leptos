@@ -589,7 +589,6 @@ dependencies = [
  "ignore",
  "insta",
  "itertools 0.14.0",
- "lazy_static",
  "leptos_hot_reload",
  "libflate",
  "lightningcss",
