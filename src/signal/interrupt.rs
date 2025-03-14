@@ -1,3 +1,4 @@
+use std::sync::LazyLock;
 use tokio::{
     signal,
     sync::{broadcast, RwLock},
@@ -7,13 +8,12 @@ use tokio::{
 use crate::compile::{Change, ChangeSet};
 use crate::internal_prelude::*;
 
-lazy_static::lazy_static! {
-  static ref ANY_INTERRUPT: broadcast::Sender<()> = broadcast::channel(10).0;
-  static ref SHUTDOWN: broadcast::Sender<()> = broadcast::channel(1).0;
+static ANY_INTERRUPT: LazyLock<broadcast::Sender<()>> = LazyLock::new(|| broadcast::channel(10).0);
+static SHUTDOWN: LazyLock<broadcast::Sender<()>> = LazyLock::new(|| broadcast::channel(1).0);
 
-  static ref SHUTDOWN_REQUESTED: RwLock<bool> = RwLock::new(false);
-  static ref SOURCE_CHANGES: RwLock<ChangeSet> = RwLock::new(ChangeSet::default());
-}
+static SHUTDOWN_REQUESTED: LazyLock<RwLock<bool>> = LazyLock::new(|| RwLock::new(false));
+static SOURCE_CHANGES: LazyLock<RwLock<ChangeSet>> =
+    LazyLock::new(|| RwLock::new(ChangeSet::default()));
 
 pub struct Interrupt {}
 

@@ -1,10 +1,10 @@
 use crate::internal_prelude::*;
 use leptos_hot_reload::diff::Patches;
+use std::sync::LazyLock;
 use tokio::sync::broadcast;
 
-lazy_static::lazy_static! {
-  static ref RELOAD_CHANNEL: broadcast::Sender::<ReloadType> = broadcast::channel::<ReloadType>(1).0;
-}
+static RELOAD_CHANNEL: LazyLock<broadcast::Sender<ReloadType>> =
+    LazyLock::new(|| broadcast::channel::<ReloadType>(1).0);
 
 #[derive(Debug, Clone)]
 pub enum ReloadType {

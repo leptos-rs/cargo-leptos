@@ -57,7 +57,6 @@ tokio = { version = "1.43.0", default-features = false, features = ["full"] }
 axum = { version = "0.8.1", features = ["ws"] }
 # not using notify 5.0 because it uses Crossbeam which has an issue with tokio
 notify-debouncer-full = "0.5.0"
-lazy_static = "1.5"
 which = "7"
 cargo_metadata = { version = "0.19", features = ["builder"] }
 serde_json = "1.0.138"

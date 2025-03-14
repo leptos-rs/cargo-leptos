@@ -1,12 +1,12 @@
+use crate::internal_prelude::*;
 use derive_more::Display;
 use itertools::Itertools;
+use std::sync::LazyLock;
 use std::{collections::HashSet, fmt};
 use tokio::sync::broadcast;
-use crate::internal_prelude::*;
 
-lazy_static::lazy_static! {
-  static ref SERVER_RESTART_CHANNEL: broadcast::Sender::<()> = broadcast::channel::<()>(1).0;
-}
+static SERVER_RESTART_CHANNEL: LazyLock<broadcast::Sender<()>> =
+    LazyLock::new(|| broadcast::channel::<()>(1).0);
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub enum Outcome<T> {
