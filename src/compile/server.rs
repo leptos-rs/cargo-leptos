@@ -35,7 +35,7 @@ pub async fn server(
 
                 let changed = proj
                     .site
-                    .did_external_file_change(&proj.bin.exe_file)
+                    .did_external_file_change(&proj.bin.as_ref().unwrap().exe_file)
                     .await
                     .dot()?;
                 if changed {
@@ -53,7 +53,7 @@ pub async fn server(
 }
 
 pub fn server_cargo_process(cmd: &str, proj: &Project) -> Result<(String, String, Child)> {
-    let raw_command = proj.bin.cargo_command.as_deref().unwrap_or("cargo");
+    let raw_command = proj.bin.as_ref().unwrap().cargo_command.as_deref().unwrap_or("cargo");
     let mut command_iter = Shlex::new(raw_command);
 
     if command_iter.had_error {
@@ -77,44 +77,47 @@ pub fn build_cargo_server_cmd(
     proj: &Project,
     command: &mut Command,
 ) -> (String, String) {
+
+    let bin = proj.bin.as_ref().unwrap();
+
     let mut args = vec![
         cmd.to_string(),
-        format!("--package={}", proj.bin.name.as_str()),
+        format!("--package={}", bin.name.as_str()),
     ];
 
     // If we're building the bin target for wasm, we want it to be a lib so it
     // can be run by wasmtime or spin or wasmer or whatever
-    let server_is_wasm = match &proj.bin.target_triple {
+    let server_is_wasm = match &bin.target_triple {
         Some(t) => t.contains("wasm"),
         None => false,
     };
     if cmd != "test" && !server_is_wasm {
-        args.push(format!("--bin={}", proj.bin.target))
+        args.push(format!("--bin={}", bin.target))
     } else if cmd != "test" && server_is_wasm {
         args.push("--lib".to_string())
     }
 
-    if let Some(target_dir) = &proj.bin.target_dir {
+    if let Some(target_dir) = &bin.target_dir {
         args.push(format!("--target-dir={target_dir}"));
     }
-    if let Some(triple) = &proj.bin.target_triple {
+    if let Some(triple) = &bin.target_triple {
         args.push(format!("--target={triple}"));
     }
 
-    if !proj.bin.default_features {
+    if !bin.default_features {
         args.push("--no-default-features".to_string());
     }
 
-    if !proj.bin.features.is_empty() {
-        args.push(format!("--features={}", proj.bin.features.join(",")));
+    if !bin.features.is_empty() {
+        args.push(format!("--features={}", bin.features.join(",")));
     }
 
-    debug!("BIN CARGO ARGS: {:?}", &proj.bin.cargo_args);
+    debug!("BIN CARGO ARGS: {:?}", &bin.cargo_args);
     // Add cargo flags to cargo command
-    if let Some(cargo_args) = &proj.bin.cargo_args {
+    if let Some(cargo_args) = &bin.cargo_args {
         args.extend_from_slice(cargo_args);
     }
-    proj.bin.profile.add_to_args(&mut args);
+    bin.profile.add_to_args(&mut args);
 
     let envs = proj.to_envs();
 

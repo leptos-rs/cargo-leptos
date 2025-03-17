@@ -17,8 +17,11 @@ pub fn add_hashes_to_site(proj: &Project) -> Result<()> {
 
     let renamed_files = rename_files(&files_to_hashes).dot()?;
 
+    // todo: maybe throw here if lib is empty? should rely on outer layers to get here with lib intact
+    let lib = proj.lib.as_ref().unwrap();
+
     replace_in_file(
-        &renamed_files[&proj.lib.js_file.dest],
+        &renamed_files[&lib.js_file.dest],
         &renamed_files,
         &proj.site.root_relative_pkg_dir(),
     );
@@ -35,18 +38,18 @@ pub fn add_hashes_to_site(proj: &Project) -> Result<()> {
         &proj.hash_file.abs,
         format!(
             "{}: {}\n{}: {}\n{}: {}\n",
-            proj.lib
+            lib
                 .js_file
                 .dest
                 .extension()
                 .ok_or(eyre!("no extension"))?,
-            files_to_hashes[&proj.lib.js_file.dest],
-            proj.lib
+            files_to_hashes[&lib.js_file.dest],
+            lib
                 .wasm_file
                 .dest
                 .extension()
                 .ok_or(eyre!("no extension"))?,
-            files_to_hashes[&proj.lib.wasm_file.dest],
+            files_to_hashes[&lib.wasm_file.dest],
             proj.style
                 .site_file
                 .dest

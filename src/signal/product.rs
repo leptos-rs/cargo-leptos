@@ -13,6 +13,7 @@ pub enum Outcome<T> {
     Success(T),
     Stopped,
     Failed,
+    Skipped
 }
 
 impl<T> Outcome<T> {
