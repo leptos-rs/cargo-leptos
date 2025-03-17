@@ -32,9 +32,7 @@ pub struct ExeMeta {
     manual: String,
 }
 
-lazy_static::lazy_static! {
-    static ref ON_STARTUP_DEBUG_ONCE: Once = Once::new();
-}
+static ON_STARTUP_DEBUG_ONCE: Once = Once::new();
 
 impl ExeMeta {
     #[allow(clippy::wrong_self_convention)]
@@ -421,15 +419,15 @@ impl Command for CommandSass {
             match target_arch {
                 "x86_64" => {
                     format!(
-                    "https://github.com/{}/{}/releases/download/{}/dart-sass-{}-linux-x64.tar.gz",
-                    self.github_owner(), self.github_repo(), version, version
-                )
+                        "https://github.com/{}/{}/releases/download/{}/dart-sass-{}-linux-x64.tar.gz",
+                        self.github_owner(), self.github_repo(), version, version
+                    )
                 }
                 "aarch64" => {
                     format!(
-                    "https://github.com/{}/{}/releases/download/{}/dart-sass-{}-linux-arm64.tar.gz"
-                    , self.github_owner(), self.github_repo(), version, version
-                )
+                        "https://github.com/{}/{}/releases/download/{}/dart-sass-{}-linux-arm64.tar.gz"
+                        , self.github_owner(), self.github_repo(), version, version
+                    )
                 }
                 _ => bail!("No sass tar binary found for linux-musl {target_arch}"),
             }
@@ -438,21 +436,21 @@ impl Command for CommandSass {
                 // note the different github_owner
                 ("windows", "x86_64") => {
                     format!(
-                    "https://github.com/sass/{}/releases/download/{}/dart-sass-{}-windows-x64.zip",
-                    self.github_repo(), version, version
-                )
+                        "https://github.com/sass/{}/releases/download/{}/dart-sass-{}-windows-x64.zip",
+                        self.github_repo(), version, version
+                    )
                 }
                 ("macos" | "linux", "x86_64") => {
                     format!(
-                    "https://github.com/sass/{}/releases/download/{}/dart-sass-{}-{}-x64.tar.gz",
-                    self.github_repo(), version, version, target_os
-                )
+                        "https://github.com/sass/{}/releases/download/{}/dart-sass-{}-{}-x64.tar.gz",
+                        self.github_repo(), version, version, target_os
+                    )
                 }
                 ("macos" | "linux", "aarch64") => {
                     format!(
-                    "https://github.com/sass/{}/releases/download/{}/dart-sass-{}-{}-arm64.tar.gz",
-                    self.github_repo(), version, version, target_os
-                )
+                        "https://github.com/sass/{}/releases/download/{}/dart-sass-{}-{}-arm64.tar.gz",
+                        self.github_repo(), version, version, target_os
+                    )
                 }
                 _ => bail!("No sass tar binary found for {target_os} {target_arch}"),
             }
