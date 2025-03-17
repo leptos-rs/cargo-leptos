@@ -283,14 +283,9 @@ fn normalize_version(ver_string: &str) -> Option<Version> {
         })
 }
 
-// fallback to this crate until rust stable includes async traits
-// https://github.com/dtolnay/async-trait
-use async_trait::async_trait;
-
 struct CommandTailwind;
 struct CommandSass;
 
-#[async_trait]
 impl Command for CommandTailwind {
     fn name(&self) -> &'static str {
         "tailwindcss"
@@ -392,7 +387,7 @@ impl Command for CommandTailwind {
         "Try manually installing tailwindcss: https://tailwindcss.com/docs/installation".to_string()
     }
 }
-#[async_trait]
+
 impl Command for CommandSass {
     fn name(&self) -> &'static str {
         "sass"
@@ -473,12 +468,11 @@ impl Command for CommandSass {
         "Try manually installing sass: https://sass-lang.com/install".to_string()
     }
 }
-#[async_trait]
+
 /// Template trait, implementors should only fill in
 /// the command-specific logic. Handles caching, latest
 /// version checking against the GitHub API and env var
 /// version override for a given command.
-#[async_trait]
 trait Command {
     fn name(&self) -> &'static str;
     fn version(&self) -> Cow<'_, str>;

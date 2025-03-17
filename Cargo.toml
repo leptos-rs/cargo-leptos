@@ -81,7 +81,6 @@ bytes = "1.10.0"
 leptos_hot_reload = "0.7"
 pathdiff = { version = "0.2.3", features = ["camino"] }
 semver = "1.0.25"
-async-trait = "0.1.86"
 md-5 = "0.10.6"
 base64ct = { version = "1.6.0", features = ["alloc"] }
 swc = "13.0.1"
