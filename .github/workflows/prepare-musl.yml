@@ -1,0 +1,22 @@
+name: PrepareMusl
+on:
+  # Defining workflow_call means that this workflow can be called from
+  # your main workflow job
+  workflow_call:
+    # dist exposes the plan from the plan step, as a JSON string,
+    # to your job if it needs it
+    inputs:
+      plan:
+        required: true
+        type: string
+jobs:
+  prepare-musl:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install MUSL tools and configure environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y musl-tools
+          if ! command -v musl-g++ >/dev/null; then
+            sudo ln -s $(which musl-gcc) /usr/local/bin/musl-g++
+          fi
