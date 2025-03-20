@@ -402,7 +402,7 @@ impl Command for CommandSass {
         VersionConfig::Sass.env_var_version_name()
     }
     fn github_owner(&self) -> &'static str {
-        "dart-musl"
+        "sass"
     }
     fn github_repo(&self) -> &'static str {
         "dart-sass"
