@@ -33,7 +33,13 @@ gloo-net = { version = "0.6", features = ["http"] }
 name = "project1"
 bin-package = "server-package"
 lib-package = "front-package"
-extra-lib-packages = ["extra-package-1", "extra-package-2"]
+build-scripts = [
+  "cd project1/extras/extra-package-1 && wasm-pack build --release --target web --out-dir=../../../target/extra/package1",
+  "cd project1/extras/extra-package-2 && wasm-pack build --release --target web --out-dir=../../../target/extra/package2",
+  "mkdir ./target/site/project1/pkg/extra",
+  "mv ./target/extra/package*/*.wasm ./target/site/project1/pkg/extra",
+  "mv ./target/extra/package*/*.js ./target/site/project1/pkg/extra",
+]
 assets-dir = "project1/assets"
 style-file = "project1/css/main.scss"
 site-root = "target/site/project1"

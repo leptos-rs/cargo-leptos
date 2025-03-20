@@ -47,6 +47,10 @@ pub async fn build_proj(proj: &Arc<Project>) -> Result<bool> {
         compile::add_hashes_to_site(proj)?;
     }
 
+    if !compile::run_build_scripts(proj).await.await??.is_success() {
+        return Ok(false);
+    }
+
     // it is important to do the precompression of the static files before building the
     // server to make it possible to include them as assets into the binary itself
     if proj.release && proj.precompress {
