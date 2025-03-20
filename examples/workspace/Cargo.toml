@@ -1,5 +1,12 @@
 [workspace]
-members = ["project1/app", "project1/front", "project1/server", "project2"]
+members = [
+  "project1/app",
+  "project1/front",
+  "project1/server",
+  "project1/extras/extra-package-1",
+  "project1/extras/extra-package-2",
+  "project2",
+]
 resolver = "2"
 
 # need to be applied only to wasm build
@@ -21,10 +28,12 @@ gloo-net = { version = "0.6", features = ["http"] }
 
 # A leptos project defines which workspace members
 # that are used together frontend (lib) & server (bin)
+# and optinally any extra wasm libs that need copying into the pkg dir during build
 [[workspace.metadata.leptos]]
 name = "project1"
 bin-package = "server-package"
 lib-package = "front-package"
+extra-lib-packages = ["extra-package-1", "extra-package-2"]
 assets-dir = "project1/assets"
 style-file = "project1/css/main.scss"
 site-root = "target/site/project1"
