@@ -20,7 +20,8 @@ async fn handle_commands_sequentially(proj: &Arc<Project>) -> Result<Outcome<Pro
         .enumerate()
     {
         info!(
-            "Running build script {i} / {len}: {}",
+            "Running build script {} / {len}: {}",
+            i + 1,
             GRAY.paint(&command_str)
         );
         let child = command
@@ -31,7 +32,7 @@ async fn handle_commands_sequentially(proj: &Arc<Project>) -> Result<Outcome<Pro
             CommandResult::Interrupted => return Ok(Outcome::Stopped),
             CommandResult::Failure(_) => return Ok(Outcome::Failed),
             CommandResult::Success(_) => {
-                debug!("Finished build script {i} / {len}");
+                debug!("Finished build script {} / {len}", i + 1,);
             }
         };
     }
@@ -43,16 +44,14 @@ fn strings_to_commands(build_scripts: Vec<String>) -> Vec<(Command, String)> {
         .clone()
         .into_iter()
         .map(|command_str| {
-            //TODO: what happens if the whole command_str is ""?
-            //TODO: What to do if we're running this on BlackBerry, or god forbid Samsung smartfridge?!?
             let command = if cfg!(target_family = "windows") {
                 let mut c = Command::new("cmd");
-                c.args(["/C", &command_str, "&& exit"]);
+                c.args(["/C", &command_str]);
                 c
             } else {
                 // only other target_family option is UNIX
                 let mut c = Command::new("sh");
-                c.args(["-c", &command_str, "&& exit 1"]);
+                c.args(["-c", &command_str]);
                 c
             };
 
