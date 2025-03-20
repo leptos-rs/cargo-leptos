@@ -20,3 +20,15 @@ jobs:
           if ! command -v musl-g++ >/dev/null; then
             sudo ln -s $(which musl-gcc) /usr/local/bin/musl-g++
           fi
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install specific Tailwind CSS and Sass versions
+        run: |
+          npm install tailwindcss
+          npm install @tailwindcss/cli
+          npm install sass
+
+          echo "Tailwind CSS version:"
+          ./node_modules/.bin/tailwindcss --version
+          echo "Sass version:"
+          ./node_modules/.bin/sass --version
