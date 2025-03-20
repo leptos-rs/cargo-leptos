@@ -1,4 +1,4 @@
-name: PrepareMusl
+name: PrepareDependencies
 on:
   # Defining workflow_call means that this workflow can be called from
   # your main workflow job
@@ -10,7 +10,7 @@ on:
         required: true
         type: string
 jobs:
-  prepare-musl:
+  prepare-deps:
     runs-on: ubuntu-latest
     steps:
       - name: Install MUSL tools and configure environment
