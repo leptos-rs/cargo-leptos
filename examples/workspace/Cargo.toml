@@ -36,7 +36,7 @@ lib-package = "front-package"
 build-scripts = [
   "cd project1/extras/extra-package-1 && wasm-pack build --release --target web --out-dir=../../../target/extra/package1",
   "cd project1/extras/extra-package-2 && wasm-pack build --release --target web --out-dir=../../../target/extra/package2",
-  "mkdir ./target/site/project1/pkg/extra",
+  "mkdir -p ./target/site/project1/pkg/extra",
   "mv ./target/extra/package*/*.wasm ./target/site/project1/pkg/extra",
   "mv ./target/extra/package*/*.js ./target/site/project1/pkg/extra",
 ]
