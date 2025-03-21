@@ -1,5 +1,5 @@
-use crate::internal_prelude::*;
-use crate::{config::VersionConfig, ext::Paint, logger::GRAY};
+use crate::{config::VersionConfig, ext::Paint, internal_prelude::*, logger::GRAY};
+use anyhow::Context;
 use bytes::Bytes;
 use std::{
     borrow::Cow,
@@ -163,6 +163,9 @@ impl ExeCache<'_> {
 // there's a issue in the tar crate: https://github.com/alexcrichton/tar-rs/issues/295
 // It doesn't handle TAR sparse extensions, with data ending up in a GNUSparseFile.0 sub-folder
 fn extract_tar(src: &Bytes, dest: &Path) -> Result<()> {
+    if !dest.exists() {
+        fs::create_dir_all(dest).dot()?;
+    }
     let content = Cursor::new(src);
     let dec = flate2::read::GzDecoder::new(content);
     let mut arch = tar::Archive::new(dec);
@@ -171,6 +174,9 @@ fn extract_tar(src: &Bytes, dest: &Path) -> Result<()> {
 }
 
 fn extract_zip(src: &Bytes, dest: &Path) -> Result<()> {
+    if !dest.exists() {
+        fs::create_dir_all(dest).dot()?;
+    }
     let content = Cursor::new(src);
     let mut arch = ZipArchive::new(content).dot()?;
     arch.extract(dest).dot().dot()?;
