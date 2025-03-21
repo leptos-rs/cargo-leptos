@@ -125,11 +125,14 @@ jobs:
             curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
             echo "$HOME/.cargo/bin" >> $GITHUB_PATH
           fi
-      - name: "Symlink g++ compiler for musl targets"
+      - name: "Install MUSL tools and configure environment"
         if: "contains(env.TARGETS, 'x86_64-unknown-linux-musl')"
         run: |
-          sudo ln -s /usr/bin/g++ /usr/bin/musl-g++
-          ls -l /usr/bin/musl-g++
+          sudo apt-get update
+          sudo apt-get install -y musl-tools musl-dev build-essential pkg-config libssl-dev
+          if ! command -v musl-g++ > /dev/null; then
+            sudo ln -s $(which musl-gcc) /usr/local/bin/musl-g++
+          fi
         env:
           "TARGETS": "${{ join(matrix.targets, '-') }}"
       - name: Install dist

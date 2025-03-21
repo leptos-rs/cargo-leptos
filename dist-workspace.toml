@@ -8,7 +8,7 @@ cargo-dist-version = "0.28.0"
 # CI backends to support
 ci = "github"
 # Target platforms to build apps for (Rust target-triple syntax)
-targets = ["aarch64-apple-darwin", "aarch64-unknown-linux-gnu", "aarch64-pc-windows-msvc", "x86_64-apple-darwin", "x86_64-unknown-linux-gnu", "x86_64-unknown-linux-musl", "x86_64-pc-windows-msvc"]
+targets = ["aarch64-apple-darwin", "aarch64-unknown-linux-gnu", "x86_64-apple-darwin", "x86_64-unknown-linux-gnu", "x86_64-unknown-linux-musl", "x86_64-pc-windows-msvc"]
 # The installers to generate for each app
 installers = ["shell", "powershell"]
 # Which actions to run on pull requests
@@ -18,7 +18,7 @@ windows-archive = ".tar.gz"
 # The archive format to use for non-windows builds (defaults .tar.xz)
 unix-archive = ".tar.gz"
 # Where to host releases
-hosting = ["axodotdev", "github"]
+hosting = "github"
 # Path that installers should place binaries in
 install-path = "CARGO_HOME"
 # Whether to install an updater program
