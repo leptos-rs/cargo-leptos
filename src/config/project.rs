@@ -32,6 +32,7 @@ pub struct Project {
     pub name: String,
     pub lib: LibPackage,
     pub bin: BinPackage,
+    pub build_scripts: Vec<String>,
     pub style: StyleConfig,
     pub watch: bool,
     pub release: bool,
@@ -134,6 +135,7 @@ impl Project {
                 server_fn_prefix: config.server_fn_prefix,
                 disable_server_fn_hash: config.disable_server_fn_hash,
                 server_fn_mod_path: config.server_fn_mod_path,
+                build_scripts: config.build_scripts,
             };
             resolved.push(Arc::new(proj));
         }
@@ -245,6 +247,8 @@ pub struct ProjectConfig {
     pub bin_features: Vec<String>,
     #[serde(default)]
     pub bin_default_features: bool,
+    #[serde(default)]
+    pub build_scripts: Vec<String>,
 
     /// The default prefix to use for server functions when generating API routes. Can be
     /// overridden for individual functions using `#[server(prefix = "...")]` as usual.
