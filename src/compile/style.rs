@@ -77,6 +77,8 @@ async fn build(proj: &Arc<Project>) -> Result<Outcome<Product>> {
 
     use Outcome::*;
     let css = match (css, tw) {
+        // realistically if one is skipped, the other will be as well. but meh
+        (Skipped, _) | (_, Skipped) => return Ok(Skipped),
         (Stopped, _) | (_, Stopped) => return Ok(Stopped),
         (Failed, _) | (_, Failed) => return Ok(Failed),
         (Success(css), Success(tw)) => format!("{css}\n{tw}"),
