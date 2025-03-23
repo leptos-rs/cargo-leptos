@@ -6,19 +6,12 @@ repository = "https://github.com/leptos-rs/cargo-leptos"
 description = "Build tool for Leptos."
 categories = ["development-tools", "wasm", "web-programming"]
 keywords = ["leptos"]
-version = "0.2.31"
+version = "0.2.32"
 edition = "2021"
 rust-version = "1.82.0"
 authors = ["Henrik Akesson", "Greg Johnston", "Ben Wishovich"]
 
-[package.metadata.wix]
-upgrade-guid = "D53446E4-A943-4A64-823F-4CB4855A4B09"
-path-guid = "A08FA8BB-CD5A-4C75-85D0-E9DE2B374C14"
-license = false
-eula = false
-
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 brotli = "7"
 clap = { version = "4.5.29", features = ["derive"] }
