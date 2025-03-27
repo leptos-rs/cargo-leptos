@@ -87,18 +87,28 @@ pub struct Cli {
 
 impl Cli {
     pub fn opts(&self) -> Option<Opts> {
-        use Commands::{Build, EndToEnd, New, Serve, Test, Watch};
         match &self.command {
-            New(_) => None,
-            Serve(bin_opts) | Watch(bin_opts) => Some(bin_opts.opts.clone()),
-            Build(opts) | Test(opts) | EndToEnd(opts) => Some(opts.clone()),
+            Commands::New(_) => None,
+            Commands::Serve(bin_opts) | Commands::Watch(bin_opts) => Some(bin_opts.opts.clone()),
+            Commands::Build(opts) | Commands::Test(opts) | Commands::EndToEnd(opts) => {
+                Some(opts.clone())
+            }
+        }
+    }
+
+    pub fn opts_mut(&mut self) -> Option<&mut Opts> {
+        match &mut self.command {
+            Commands::New(_) => None,
+            Commands::Serve(bin_opts) | Commands::Watch(bin_opts) => Some(&mut bin_opts.opts),
+            Commands::Build(opts) | Commands::Test(opts) | Commands::EndToEnd(opts) => Some(opts),
         }
     }
 
     pub fn bin_args(&self) -> Option<&[String]> {
-        use Commands::{Serve, Watch};
         match &self.command {
-            Serve(bin_opts) | Watch(bin_opts) => Some(bin_opts.bin_args.as_ref()),
+            Commands::Serve(bin_opts) | Commands::Watch(bin_opts) => {
+                Some(bin_opts.bin_args.as_ref())
+            }
             _ => None,
         }
     }
