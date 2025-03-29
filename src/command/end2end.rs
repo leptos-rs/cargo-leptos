@@ -42,7 +42,7 @@ async fn try_run(cmd: &str, dir: &Utf8Path) -> Result<()> {
     let args = parts.collect::<Vec<_>>();
 
     trace!("End2End running {cmd:?}");
-    let mut process = Command::new(exe)
+    let mut process = Command::new(which::which(exe)?)
         .args(args)
         .current_dir(dir)
         .spawn()
