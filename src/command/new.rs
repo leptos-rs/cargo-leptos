@@ -87,7 +87,7 @@ fn absolute_git_url(url: Option<String>) -> Option<String> {
     url.map(|url| match url.as_str() {
         "start-trunk" | "leptos-rs/start-trunk" => format_leptos_starter_url("start-trunk"),
         "start-actix" | "leptos-rs/start" | "leptos-rs/start-actix" => {
-            format_leptos_starter_url("start")
+            format_leptos_starter_url("start-actix")
         }
         "start-axum" | "leptos-rs/start-axum" => format_leptos_starter_url("start-axum"),
         "start-axum-workspace" | "leptos-rs/start-axum-workspace" => {
