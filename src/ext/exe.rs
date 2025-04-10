@@ -1,5 +1,4 @@
 use crate::{config::VersionConfig, ext::Paint, internal_prelude::*, logger::GRAY};
-use anyhow::Context;
 use bytes::Bytes;
 use std::{
     borrow::Cow,
