@@ -15,21 +15,21 @@ authors = ["Henrik Akesson", "Greg Johnston", "Ben Wishovich"]
 [dependencies]
 brotli = "8.0.0"
 clap = { version = "4.5.37", features = ["derive"] }
-serde = { version = "1.0.217", features = ["derive"] }
+serde = { version = "1.0.219", features = ["derive"] }
 anyhow = "1.0.95"
 color-eyre = "0.6.3"
 libflate = "2"
 tracing = "0.1.41"
 
-lightningcss = { version = "1.0.0-alpha.63", features = ["browserslist"] }
+lightningcss = { version = "1.0.0-alpha.65", features = ["browserslist"] }
 flexi_logger = "0.30.1"
-tokio = { version = "1.43.0", default-features = false, features = ["full"] }
+tokio = { version = "1.44.2", default-features = false, features = ["full"] }
 axum = { version = "0.8.3", features = ["ws"] }
 # not using notify 5.0 because it uses Crossbeam which has an issue with tokio
 notify-debouncer-full = "0.5.0"
 which = "7.0.3"
 cargo_metadata = { version = "0.19", features = ["builder"] }
-serde_json = "1.0.138"
+serde_json = "1.0.140"
 wasm-bindgen-cli-support = "0.2.100"
 
 reqwest = { version = "0.12.15", features = [
@@ -45,24 +45,24 @@ itertools = "0.14"
 derive_more = { version = "2.0.1", features = ["display"] }
 flate2 = "1.1.1"
 zip = { version = "2.6.1", default-features = false, features = ["deflate"] }
-tar = "0.4.43"
+tar = "0.4.44"
 dunce = "1.0"
-bytes = "1.10.0"
+bytes = "1.10.1"
 leptos_hot_reload = "0.7.8"
 pathdiff = { version = "0.2.3", features = ["camino"] }
 semver = "1.0.26"
 md-5 = "0.10.6"
-base64ct = { version = "1.6.0", features = ["alloc"] }
+base64ct = { version = "1.7.3", features = ["alloc"] }
 swc = "13.0.1"
 swc_common = "6.1"
 shlex = "1.3.0"
-cargo-generate = { version = "0.23.3", features = ["vendored-openssl"] }
+cargo-generate = { version = "0.22.1", features = ["vendored-openssl"] }
 wasm-opt = "0.116.1"
 ignore = "0.4.23"
 walkdir = "2.5"
 
 [dev-dependencies]
-insta = { version = "1.42.1", features = ["yaml"] }
+insta = { version = "1.42.2", features = ["yaml"] }
 temp-dir = "0.1"
 
 [features]
