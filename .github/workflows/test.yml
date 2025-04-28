@@ -30,6 +30,8 @@ jobs:
             workspaces: |
               .
               examples/workspace
+        - name: "Check that lock file is up to date"
+          run: cargo fetch --locked
               
         - name: "Run cargo test --features=full_tests"
           uses: actions-rs/cargo@v1
