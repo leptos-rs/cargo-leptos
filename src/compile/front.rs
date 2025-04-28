@@ -97,6 +97,7 @@ pub fn build_cargo_front_cmd(
 
     command.args(&args).envs(envs);
     let line = super::build_cargo_command_string(args);
+    trace!(?envs_str, ?line, "Constructed cargo build front cmd");
     (envs_str, line)
 }
 
