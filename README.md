@@ -221,12 +221,12 @@ bin-cargo-command = "cross"
 # at the cost of a runtime/binary size overhead per component.
 #
 # Optional. By default, erased components are used for debug builds, and not for release builds.
-always-erase-components = "false"
+always-erase-components = false
 
 # Whether to disable erased components mode for all cargo-leptos builds. 
 #
 # Optional. By default, erased components are used for debug builds, and not for release builds.
-disable-erase-components = "false"
+disable-erase-components = false
 ```
 
 ## Site parameters
