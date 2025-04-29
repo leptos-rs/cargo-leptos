@@ -191,7 +191,7 @@ impl Project {
         // Set the default to erase-components mode if in debug mode and not explicitly disabled
         // or always enabled
         if (!self.disable_erase_components && !self.release) || (self.always_erase_components) {
-            vec.push(("RUSTFLAGS", "\"--cfg erase_components\"".to_string()))
+            vec.push(("RUSTFLAGS", "--cfg erase_components".to_string()))
         }
         vec
     }
