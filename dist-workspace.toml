@@ -37,3 +37,5 @@ allow-dirty = ["ci"]
 [dist.github-custom-runners]
 x86_64-unknown-linux-musl.container = "messense/rust-musl-cross:x86_64-musl"
 x86_64-unknown-linux-gnu = "ubuntu-22.04"
+aarch64-unknown-linux-gnu = "ubuntu-22.04"
+aarch64-unknown-linux-musl = "ubuntu-22.04"
