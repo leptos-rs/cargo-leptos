@@ -190,8 +190,8 @@ impl Project {
 
         // Set the default to erase-components mode if in debug mode and not explicitly disabled
         // or always enabled
-        if (!self.disable_erase_components && !self.release) || (self.always_erase_components)  {
-            vec.push(("RUSTFLAGS", "--cfg erase_components".to_string()))
+        if (!self.disable_erase_components && !self.release) || (self.always_erase_components) {
+            vec.push(("RUSTFLAGS", "\"--cfg erase_components\"".to_string()))
         }
         vec
     }
@@ -277,7 +277,6 @@ pub struct ProjectConfig {
     /// path needs to be consistent and not have a hash appended.
     #[serde(default)]
     pub disable_server_fn_hash: bool,
-
 
     /// Whether to disable erased components mode for debug mode. Overridden by the the following
     /// cli flag `always_enable_erase_components`.
