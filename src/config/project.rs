@@ -1,9 +1,7 @@
-use crate::config::hash_file::HashFile;
-use crate::ext::Paint;
-use crate::internal_prelude::*;
 use crate::{
-    config::lib_package::LibPackage,
-    ext::{PackageExt, PathBufExt, PathExt},
+    config::{hash_file::HashFile, lib_package::LibPackage},
+    ext::{PackageExt, Paint, PathBufExt, PathExt},
+    internal_prelude::*,
     logger::GRAY,
     service::site::Site,
 };
@@ -157,7 +155,7 @@ impl Project {
     }
 
     /// env vars to use when running external command
-    pub fn to_envs(&self) -> Vec<(&'static str, String)> {
+    pub fn to_envs(&self, wasm: bool) -> Vec<(&'static str, String)> {
         let mut vec = vec![
             ("LEPTOS_OUTPUT_NAME", self.lib.output_name.to_string()),
             ("LEPTOS_SITE_ROOT", self.site.root_dir.to_string()),
@@ -191,7 +189,23 @@ impl Project {
         // Set the default to erase-components mode if in debug mode and not explicitly disabled
         // or always enabled
         if (!self.disable_erase_components && !self.release) || (self.always_erase_components) {
-            vec.push(("RUSTFLAGS", "--cfg erase_components".to_string()))
+            let config = cargo_config2::Config::load().expect("Valid config file");
+            let rustflags = if wasm {
+                config.rustflags("wasm32-unknown-unknown")
+            } else {
+                config.rustflags(target_lexicon::HOST.to_string())
+            };
+
+            if let Ok(Some(rustflags)) = rustflags {
+                let _ = rustflags
+                    .encode_space_separated()
+                    .inspect(|rustflags| {
+                        vec.push(("RUSTFLAGS", format!("{} --cfg erase_components", rustflags)))
+                    })
+                    .inspect_err(|err| error!("Failed to set '--cfg erase_components': {}", err));
+            } else {
+                vec.push(("RUSTFLAGS", "--cfg erase_components".to_string()))
+            }
         }
         vec
     }

@@ -494,6 +494,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "cargo-config2"
+version = "0.1.32"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6dc3749a36e0423c991f1e7a3e4ab0c36a1f489658313db4b187d401d79cc461"
+dependencies = [
+ "serde",
+ "serde_derive",
+ "toml_edit",
+ "windows-sys 0.59.0",
+]
+
+[[package]]
 name = "cargo-generate"
 version = "0.23.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -546,6 +558,7 @@ dependencies = [
  "brotli",
  "bytes",
  "camino",
+ "cargo-config2",
  "cargo-generate",
  "cargo_metadata",
  "clap",
@@ -574,6 +587,7 @@ dependencies = [
  "swc",
  "swc_common",
  "tar",
+ "target-lexicon",
  "temp-dir",
  "tokio",
  "tracing",
@@ -5435,6 +5449,12 @@ dependencies = [
  "libc",
  "xattr",
 ]
+
+[[package]]
+name = "target-lexicon"
+version = "0.13.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e502f78cdbb8ba4718f566c418c52bc729126ffd16baee5baa718cf25dd5a69a"
 
 [[package]]
 name = "temp-dir"
