@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
-use crate::internal_prelude::*;
 use crate::{
     config::Project,
     ext::{append_str_to_filename, determine_pdb_filename, fs, Paint},
+    internal_prelude::*,
     logger::GRAY,
     signal::{Interrupt, ReloadSignal, ServerRestart},
 };
@@ -63,7 +63,7 @@ impl ServerProcess {
     fn new(proj: &Project) -> Self {
         Self {
             process: None,
-            envs: proj.to_envs(),
+            envs: proj.to_envs(false),
             binary: proj.bin.exe_file.clone(),
             bin_args: proj.bin.bin_args.clone(),
         }

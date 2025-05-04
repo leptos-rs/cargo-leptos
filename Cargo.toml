@@ -20,6 +20,8 @@ anyhow = "1.0.98"
 color-eyre = "0.6.3"
 libflate = "2"
 tracing = "0.1.41"
+cargo-config2 = "0.1.32"
+target-lexicon = "0.13.2"
 
 lightningcss = { version = "1.0.0-alpha.63", features = ["browserslist"] }
 flexi_logger = "0.30.1"
@@ -33,9 +35,9 @@ serde_json = "1.0.138"
 wasm-bindgen-cli-support = "0.2.100"
 
 reqwest = { version = "0.12.15", features = [
-    "blocking",
-    "rustls-tls",
-    "json",
+  "blocking",
+  "rustls-tls",
+  "json",
 ], default-features = false }
 seahash = "4.1"
 dirs = "6.0"
