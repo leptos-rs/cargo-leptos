@@ -62,7 +62,8 @@ fn test_project_dev() {
     LEPTOS_WATCH=true \
     SERVER_FN_PREFIX=/custom/prefix \
     DISABLE_SERVER_FN_HASH=true \
-    SERVER_FN_MOD_PATH=true";
+    SERVER_FN_MOD_PATH=true \
+    RUSTFLAGS=--cfg erase_components";
     assert_eq!(ENV_REF, envs);
 
     assert_snapshot!(cargo, @"cargo build --package=example --bin=example --no-default-features --features=ssr");
@@ -113,7 +114,8 @@ fn test_workspace_project1() {
     LEPTOS_WATCH=true \
     SERVER_FN_PREFIX=/custom/prefix \
     DISABLE_SERVER_FN_HASH=true \
-    SERVER_FN_MOD_PATH=true"
+    SERVER_FN_MOD_PATH=true \
+    RUSTFLAGS=--cfg erase_components"
     } else {
         "\
     LEPTOS_OUTPUT_NAME=project1 \
@@ -128,7 +130,8 @@ fn test_workspace_project1() {
     LEPTOS_WATCH=true \
     SERVER_FN_PREFIX=/custom/prefix \
     DISABLE_SERVER_FN_HASH=true \
-    SERVER_FN_MOD_PATH=true"
+    SERVER_FN_MOD_PATH=true \
+    RUSTFLAGS=--cfg erase_components"
     };
 
     let cli = dev_opts();

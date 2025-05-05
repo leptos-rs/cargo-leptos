@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
 use super::ChangeSet;
-use crate::internal_prelude::*;
 use crate::{
     config::Project,
     ext::sync::{wait_interruptible, CommandResult},
+    internal_prelude::*,
     logger::GRAY,
     signal::{Interrupt, Outcome, Product},
 };
@@ -116,7 +116,7 @@ pub fn build_cargo_server_cmd(
     }
     proj.bin.profile.add_to_args(&mut args);
 
-    let envs = proj.to_envs();
+    let envs = proj.to_envs(false);
 
     let envs_str = envs
         .iter()

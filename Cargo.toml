@@ -6,7 +6,7 @@ repository = "https://github.com/leptos-rs/cargo-leptos"
 description = "Build tool for Leptos."
 categories = ["development-tools", "wasm", "web-programming"]
 keywords = ["leptos"]
-version = "0.2.32"
+version = "0.2.33"
 edition = "2021"
 rust-version = "1.82.0"
 authors = ["Henrik Akesson", "Greg Johnston", "Ben Wishovich"]
@@ -16,11 +16,12 @@ authors = ["Henrik Akesson", "Greg Johnston", "Ben Wishovich"]
 brotli = "8.0.0"
 clap = { version = "4.5.37", features = ["derive"] }
 serde = { version = "1.0.219", features = ["derive"] }
-anyhow = "1.0.95"
+anyhow = "1.0.98"
 color-eyre = "0.6.3"
 libflate = "2"
 tracing = "0.1.41"
-
+cargo-config2 = "0.1.32"
+target-lexicon = "0.13.2"
 lightningcss = { version = "1.0.0-alpha.65", features = ["browserslist"] }
 flexi_logger = "0.30.1"
 tokio = { version = "1.44.2", default-features = false, features = ["full"] }
@@ -31,7 +32,6 @@ which = "7.0.3"
 cargo_metadata = { version = "0.19", features = ["builder"] }
 serde_json = "1.0.140"
 wasm-bindgen-cli-support = "0.2.100"
-
 reqwest = { version = "0.12.15", features = [
     "blocking",
     "rustls-tls",
@@ -44,8 +44,8 @@ dotenvy = "0.15"
 itertools = "0.14"
 derive_more = { version = "2.0.1", features = ["display"] }
 flate2 = "1.1.1"
-zip = { version = "2.6.1", default-features = false, features = ["deflate"] }
-tar = "0.4.44"
+zip = { version = "2.6", default-features = false, features = ["deflate"] }
+tar = "0.4.43"
 dunce = "1.0"
 bytes = "1.10.1"
 leptos_hot_reload = "0.7.8"

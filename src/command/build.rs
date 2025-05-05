@@ -33,13 +33,19 @@ pub async fn build_proj(proj: &Arc<Project>) -> Result<bool> {
     }
     let changes = ChangeSet::all_changes();
 
+    let mut success = true;
+
     if !compile::front(proj, &changes).await.await??.is_success() {
-        return Ok(false);
+        success = false;
     }
     if !compile::assets(proj, &changes).await.await??.is_success() {
-        return Ok(false);
+        success = false;
     }
     if !compile::style(proj, &changes).await.await??.is_success() {
+        success = false;
+    }
+
+    if !success {
         return Ok(false);
     }
 

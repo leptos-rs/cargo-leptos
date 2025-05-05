@@ -1,7 +1,6 @@
 ---
 source: src/config/tests.rs
 expression: conf
-snapshot_kind: text
 ---
 Config {
     projects: [
@@ -83,6 +82,8 @@ Config {
             ),
             server_fn_prefix: None,
             disable_server_fn_hash: false,
+            disable_erase_components: false,
+            always_erase_components: false,
             server_fn_mod_path: false,
             ..
         },

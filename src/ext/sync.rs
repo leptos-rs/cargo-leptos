@@ -47,6 +47,7 @@ pub async fn wait_interruptible(
     mut process: Child,
     mut interrupt_rx: broadcast::Receiver<()>,
 ) -> Result<CommandResult<()>> {
+    trace!(?process, "Waiting for process to finish");
     tokio::select! {
         res = process.wait() => match res {
             Ok(exit) => {
@@ -73,6 +74,7 @@ pub async fn wait_piped_interruptible(
     mut cmd: Command,
     mut interrupt_rx: broadcast::Receiver<()>,
 ) -> Result<CommandResult<Output>> {
+    trace!(?cmd, "Waiting for command (piped)");
     // see: https://docs.rs/tokio/latest/tokio/process/index.html
 
     cmd.kill_on_drop(true);

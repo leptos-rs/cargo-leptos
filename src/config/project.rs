@@ -1,9 +1,7 @@
-use crate::config::hash_file::HashFile;
-use crate::ext::Paint;
-use crate::internal_prelude::*;
 use crate::{
-    config::lib_package::LibPackage,
-    ext::{PackageExt, PathBufExt, PathExt},
+    config::{hash_file::HashFile, lib_package::LibPackage},
+    ext::{PackageExt, Paint, PathBufExt, PathExt},
+    internal_prelude::*,
     logger::GRAY,
     service::site::Site,
 };
@@ -48,6 +46,8 @@ pub struct Project {
     pub js_minify: bool,
     pub server_fn_prefix: Option<String>,
     pub disable_server_fn_hash: bool,
+    pub disable_erase_components: bool,
+    pub always_erase_components: bool,
     pub server_fn_mod_path: bool,
 }
 
@@ -68,6 +68,8 @@ impl Debug for Project {
             .field("assets", &self.assets)
             .field("server_fn_prefix", &self.server_fn_prefix)
             .field("disable_server_fn_hash", &self.disable_server_fn_hash)
+            .field("disable_erase_components", &self.disable_erase_components)
+            .field("always_erase_components", &self.always_erase_components)
             .field("server_fn_mod_path", &self.server_fn_mod_path)
             .finish_non_exhaustive()
     }
@@ -133,6 +135,8 @@ impl Project {
                 js_minify: cli.release && (cli.js_minify || config.js_minify),
                 server_fn_prefix: config.server_fn_prefix,
                 disable_server_fn_hash: config.disable_server_fn_hash,
+                disable_erase_components: config.disable_erase_components,
+                always_erase_components: config.always_erase_components,
                 server_fn_mod_path: config.server_fn_mod_path,
             };
             resolved.push(Arc::new(proj));
@@ -151,7 +155,7 @@ impl Project {
     }
 
     /// env vars to use when running external command
-    pub fn to_envs(&self) -> Vec<(&'static str, String)> {
+    pub fn to_envs(&self, wasm: bool) -> Vec<(&'static str, String)> {
         let mut vec = vec![
             ("LEPTOS_OUTPUT_NAME", self.lib.output_name.to_string()),
             ("LEPTOS_SITE_ROOT", self.site.root_dir.to_string()),
@@ -180,6 +184,28 @@ impl Project {
         }
         if self.server_fn_mod_path {
             vec.push(("SERVER_FN_MOD_PATH", self.server_fn_mod_path.to_string()));
+        }
+
+        // Set the default to erase-components mode if in debug mode and not explicitly disabled
+        // or always enabled
+        if (!self.disable_erase_components && !self.release) || (self.always_erase_components) {
+            let config = cargo_config2::Config::load().expect("Valid config file");
+            let rustflags = if wasm {
+                config.rustflags("wasm32-unknown-unknown")
+            } else {
+                config.rustflags(target_lexicon::HOST.to_string())
+            };
+
+            if let Ok(Some(rustflags)) = rustflags {
+                let _ = rustflags
+                    .encode_space_separated()
+                    .inspect(|rustflags| {
+                        vec.push(("RUSTFLAGS", format!("{} --cfg erase_components", rustflags)))
+                    })
+                    .inspect_err(|err| error!("Failed to set '--cfg erase_components': {}", err));
+            } else {
+                vec.push(("RUSTFLAGS", "--cfg erase_components".to_string()))
+            }
         }
         vec
     }
@@ -266,6 +292,27 @@ pub struct ProjectConfig {
     #[serde(default)]
     pub disable_server_fn_hash: bool,
 
+    /// Whether to disable erased components mode for debug mode. Overridden by the the following
+    /// cli flag `always_enable_erase_components`.
+    ///
+    /// erase_components mode offers a signifigant compile time speedup by type erasing the types
+    /// in your app. This is similar to adding `.into_any()` to your entire app. It can also solve
+    /// some issues with compilation in debug mode. It is automatically enabled in debug mode, but
+    /// can be disabled by setting this to true. If you'd like to use it for all profiles, see the
+    /// next flag, `always_enable_erase_components`
+    #[serde(default)]
+    pub disable_erase_components: bool,
+
+    /// Whether to enable erased components mode for all cargo-leptos builds. Overrides the cli
+    /// flag `disable_erase_components`.
+    ///
+    /// erase_components mode offers a signifigant compile time speedup by type erasing the types
+    /// in your app. This is similar to adding `.into_any()` to your entire app. It can also solve
+    /// some issues with compilation in debug mode. It is automatically enabled in debug mode, but
+    /// can be disabled by setting this to true. If you'd like to use it for all profiles, see the
+    /// next flag, `always_enable_erase_components`
+    #[serde(default)]
+    pub always_erase_components: bool,
     /// Include the module path of the server function in the API route. This is an alternative
     /// strategy to prevent duplicate server function API routes (the default strategy is to add
     /// a hash to the end of the route). Each element of the module path will be separated by a `/`.

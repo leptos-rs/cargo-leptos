@@ -216,6 +216,17 @@ bin-cargo-args = ["--timings"]
 #
 # Optional. No default. Env: LEPTOS_BIN_CARGO_COMMAND
 bin-cargo-command = "cross"
+
+# Whether to enable erased components mode for all cargo-leptos builds. This optimizes for compile speed,
+# at the cost of a runtime/binary size overhead per component.
+#
+# Optional. By default, erased components are used for debug builds, and not for release builds.
+always-erase-components = false
+
+# Whether to disable erased components mode for all cargo-leptos builds. 
+#
+# Optional. By default, erased components are used for debug builds, and not for release builds.
+disable-erase-components = false
 ```
 
 ## Site parameters
