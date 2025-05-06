@@ -3,7 +3,7 @@ use clap::Parser;
 use std::env;
 
 #[tokio::main]
-async fn main() -> color_eyre::Result<()> {
+async fn main() -> eyre::Result<()> {
     let mut args: Vec<String> = env::args().collect();
     // when running as cargo leptos, the second argument is "leptos" which
     // clap doesn't expect
@@ -15,7 +15,6 @@ async fn main() -> color_eyre::Result<()> {
 
     let verbose = args.opts().map(|o| o.verbose).unwrap_or(0);
     cargo_leptos::logger::setup(verbose, &args.log);
-    color_eyre::install()?;
 
     run(args).await
 }

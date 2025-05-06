@@ -2,9 +2,9 @@
 mod tests;
 
 mod cargo;
-pub mod color_eyre;
 pub mod compress;
 pub mod exe;
+pub mod eyre;
 pub mod fs;
 mod path;
 pub mod sync;

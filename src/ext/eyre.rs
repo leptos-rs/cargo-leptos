@@ -1,14 +1,11 @@
 use core::convert::Infallible;
-use std::fmt::Display;
-use std::panic::Location;
+use std::{fmt::Display, panic::Location};
 
 pub(crate) mod reexports {
     //! re-exports
 
     pub use super::{AnyhowCompatWrapErr as _, CustomWrapErr as _};
-    pub use color_eyre::eyre::{bail, ensure, eyre};
-    pub use color_eyre::Report as Error;
-    pub use color_eyre::Result;
+    pub use eyre::{bail, ensure, eyre, Report as Error, Result};
 }
 use reexports::*;
 
@@ -66,7 +63,7 @@ impl<T> AnyhowCompatWrapErr<T> for anyhow::Result<T> {
         C: Display + Send + Sync + 'static,
     {
         let caller = Location::caller();
-        color_eyre::eyre::WrapErr::wrap_err(
+        eyre::WrapErr::wrap_err(
             self.map_err(AnyhowNewType),
             format!(
                 "{} at `{}:{}:{}`",
@@ -86,7 +83,7 @@ impl<T> AnyhowCompatWrapErr<T> for anyhow::Result<T> {
         F: FnOnce() -> C,
     {
         let caller = Location::caller();
-        color_eyre::eyre::WrapErr::wrap_err_with(self.map_err(AnyhowNewType), || {
+        eyre::WrapErr::wrap_err_with(self.map_err(AnyhowNewType), || {
             format!(
                 "{} at `{}:{}:{}`",
                 context(),
@@ -101,7 +98,7 @@ impl<T> AnyhowCompatWrapErr<T> for anyhow::Result<T> {
     #[track_caller]
     fn dot_anyhow(self) -> Result<T> {
         let caller = Location::caller();
-        color_eyre::eyre::WrapErr::wrap_err(
+        eyre::WrapErr::wrap_err(
             self.map_err(AnyhowNewType),
             format!(
                 "at `{}:{}:{}`",
@@ -116,7 +113,7 @@ impl<T> AnyhowCompatWrapErr<T> for anyhow::Result<T> {
 impl<T, E> CustomWrapErr<T, E> for Result<T, E>
 where
     E: Display,
-    Result<T, E>: color_eyre::eyre::WrapErr<T, E>,
+    Result<T, E>: eyre::WrapErr<T, E>,
 {
     #[inline]
     #[track_caller]
@@ -125,7 +122,7 @@ where
         C: Display + Send + Sync + 'static,
     {
         let caller = Location::caller();
-        color_eyre::eyre::WrapErr::wrap_err(
+        eyre::WrapErr::wrap_err(
             self,
             format!(
                 "{} at `{}:{}:{}`",
@@ -145,7 +142,7 @@ where
         F: FnOnce() -> C,
     {
         let caller = Location::caller();
-        color_eyre::eyre::WrapErr::wrap_err_with(self, || {
+        eyre::WrapErr::wrap_err_with(self, || {
             format!(
                 "{} at `{}:{}:{}`",
                 context(),
@@ -160,7 +157,7 @@ where
     #[track_caller]
     fn dot(self) -> Result<T> {
         let caller = Location::caller();
-        color_eyre::eyre::WrapErr::wrap_err(
+        eyre::WrapErr::wrap_err(
             self,
             format!(
                 "at `{}:{}:{}`",
@@ -174,7 +171,7 @@ where
 
 impl<T> CustomWrapErr<T, Infallible> for Option<T>
 where
-    Option<T>: color_eyre::eyre::WrapErr<T, Infallible>,
+    Option<T>: eyre::WrapErr<T, Infallible>,
 {
     #[inline]
     #[track_caller]
@@ -183,7 +180,7 @@ where
         C: Display + Send + Sync + 'static,
     {
         let caller = Location::caller();
-        color_eyre::eyre::WrapErr::wrap_err(
+        eyre::WrapErr::wrap_err(
             self,
             format!(
                 "{} at `{}:{}:{}`",
@@ -203,7 +200,7 @@ where
         F: FnOnce() -> C,
     {
         let caller = Location::caller();
-        color_eyre::eyre::WrapErr::wrap_err_with(self, || {
+        eyre::WrapErr::wrap_err_with(self, || {
             format!(
                 "{} at `{}:{}:{}`",
                 context(),
@@ -218,7 +215,7 @@ where
     #[track_caller]
     fn dot(self) -> Result<T> {
         let caller = Location::caller();
-        color_eyre::eyre::WrapErr::wrap_err(
+        eyre::WrapErr::wrap_err(
             self,
             format!(
                 "at `{}:{}:{}`",

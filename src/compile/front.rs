@@ -2,6 +2,7 @@ use super::ChangeSet;
 use crate::{
     config::Project,
     ext::{
+        eyre::AnyhowCompatWrapErr,
         fs,
         sync::{wait_interruptible, CommandResult},
         PathBufExt,
@@ -229,6 +230,7 @@ fn minify<JS: AsRef<str>>(js: JS) -> Result<String> {
                 .context("failed to minify")
             })
         })
+        .map_err(|e| e.to_pretty_error())
         .wrap_anyhow_err("Failed to minify")?;
 
     Ok(output.code)
