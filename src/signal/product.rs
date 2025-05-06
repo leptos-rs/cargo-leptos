@@ -23,6 +23,7 @@ impl<T> Outcome<T> {
 
 #[derive(Debug, Display, Clone, PartialEq, Eq, Hash)]
 pub enum Product {
+    BuildScripts,
     Server,
     Front,
     Style(String),
