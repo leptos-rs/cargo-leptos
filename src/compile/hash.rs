@@ -1,13 +1,9 @@
-use crate::config::Project;
-use crate::ext::color_eyre::CustomWrapErr;
-use crate::internal_prelude::*;
+use crate::{config::Project, ext::eyre::CustomWrapErr, internal_prelude::*};
 use base64ct::{Base64UrlUnpadded, Encoding};
 use camino::Utf8PathBuf;
-use color_eyre::eyre::ContextCompat;
-use color_eyre::Result;
+use eyre::{ContextCompat, Result};
 use md5::{Digest, Md5};
-use std::collections::HashMap;
-use std::fs;
+use std::{collections::HashMap, fs};
 
 ///Adds hashes to the filenames of the css, js, and wasm files in the output
 pub fn add_hashes_to_site(proj: &Project) -> Result<()> {

@@ -526,7 +526,7 @@ trait Command {
         match get_cache_dir() {
             Ok(dir) => {
                 let marker = dir.join(format!(".{}_last_checked", self.name()));
-                return match (marker.exists(), marker.is_dir()) {
+                match (marker.exists(), marker.is_dir()) {
                     (_, true) => {
                         // conflicting dir instead of a marker file, bail
                         warn!("Command [{}] encountered a conflicting dir in the cache, please delete {}",
@@ -561,15 +561,15 @@ trait Command {
                     (false, _) => {
                         // no marker file yet, record and hint to check
                         let now = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH);
-                        return if let Ok(unix_timestamp) = now {
+                        if let Ok(unix_timestamp) = now {
                             tokio::fs::write(marker, unix_timestamp.as_millis().to_string())
                                 .await
                                 .is_ok()
                         } else {
                             false
-                        };
+                        }
                     }
-                };
+                }
             }
             Err(e) => {
                 warn!("Command {} failed to get cache dir: {}", self.name(), e);

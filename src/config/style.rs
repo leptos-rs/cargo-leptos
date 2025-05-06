@@ -1,6 +1,6 @@
 use super::{ProjectConfig, TailwindConfig};
 use crate::service::site::{SiteFile, SourcedSiteFile};
-use color_eyre::Result;
+use eyre::Result;
 
 #[derive(Debug, Clone)]
 pub struct StyleConfig {

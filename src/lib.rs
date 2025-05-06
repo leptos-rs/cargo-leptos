@@ -9,20 +9,16 @@ pub mod logger;
 pub mod service;
 pub mod signal;
 mod internal_prelude {
-    pub use crate::ext::color_eyre::reexports::*;
-    pub use crate::ext::Paint as _;
+    pub use crate::ext::{eyre::reexports::*, Paint as _};
     pub use tracing::*;
 }
 
-use crate::config::Commands;
-use crate::ext::PathBufExt;
-use crate::logger::GRAY;
+use crate::{config::Commands, ext::PathBufExt, logger::GRAY};
 use camino::Utf8PathBuf;
 use config::{Cli, Config};
 use ext::{fs, Paint};
 use signal::Interrupt;
-use std::env;
-use std::path::PathBuf;
+use std::{env, path::PathBuf};
 
 use crate::internal_prelude::*;
 

@@ -1,16 +1,16 @@
 //! TODO: port over formatting to `tracing-subscriber`
 //! Currently, `tracing` emits log events and `flexi_logger` consumes then.
 //! When you do implement `tracing-subscriber`, remember to add `tracing-error` error layer
-//! for `color_eyre`!
+//! for `eyre`!
 
 use clap::builder::styling::{Ansi256Color, Color};
-use flexi_logger::filter::{LogLineFilter, LogLineWriter};
-use flexi_logger::{DeferredNow, Level, Record};
-use std::io::Write;
-use std::sync::OnceLock;
+use flexi_logger::{
+    filter::{LogLineFilter, LogLineWriter},
+    DeferredNow, Level, Record,
+};
+use std::{io::Write, sync::OnceLock};
 
-use crate::internal_prelude::*;
-use crate::{config::Log, ext::StrAdditions};
+use crate::{config::Log, ext::StrAdditions, internal_prelude::*};
 
 const fn color(num: u8) -> Color {
     Color::Ansi256(Ansi256Color(num))
