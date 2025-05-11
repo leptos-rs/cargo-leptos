@@ -49,6 +49,7 @@ pub struct Project {
     pub disable_erase_components: bool,
     pub always_erase_components: bool,
     pub server_fn_mod_path: bool,
+    pub clear_terminal_on_rebuild: bool,
 }
 
 impl Debug for Project {
@@ -125,6 +126,7 @@ impl Project {
                 precompress: cli.precompress,
                 hot_reload: cli.hot_reload,
                 wasm_debug: cli.wasm_debug,
+                clear_terminal_on_rebuild: cli.clear,
                 site: Arc::new(Site::new(&config)),
                 end2end: End2EndConfig::resolve(&config),
                 assets: AssetsConfig::resolve(&config),

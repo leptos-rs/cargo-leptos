@@ -60,6 +60,7 @@ cargo-generate = { version = "0.23.3", features = ["vendored-openssl"] }
 wasm-opt = "0.116.1"
 ignore = "0.4.23"
 walkdir = "2.5"
+clearscreen = "4.0.1"
 
 [dev-dependencies]
 insta = { version = "1.43", features = ["yaml"] }
