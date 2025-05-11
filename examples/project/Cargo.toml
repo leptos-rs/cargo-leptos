@@ -12,29 +12,29 @@ crate-type = ["cdylib", "rlib"]
 
 
 [dependencies]
-leptos_router = { version = "0.7.7", default-features = false }
-leptos = { version = "0.7.7", default-features = false }
-leptos_meta = { version = "0.7.7", default-features = false }
-leptos_dom = { version = "0.7.7", default-features = false }
+leptos_router = { version = "0.8.2", default-features = false }
+leptos = { version = "0.8.2", default-features = false }
+leptos_meta = { version = "0.8.2", default-features = false }
+leptos_dom = { version = "0.8.2", default-features = false }
 
 
 gloo-net = { version = "0.6", features = ["http"] }
-log = "0.4.26"
+log = "0.4.27"
 cfg-if = "1.0.0"
 
-# dependecies for client (enable hydrate set)
+# dependencies for client (enable hydrate set)
 wasm-bindgen = { version = "=0.2.100", optional = true }
 console_log = { version = "1.0", optional = true }
 console_error_panic_hook = { version = "0.1.7", optional = true }
 
-# dependecies for server (enable when ssr set)
+# dependencies for server (enable when ssr set)
 actix-files = { version = "0.6.6", optional = true }
-actix-web = { version = "4.9.0", features = ["macros"], optional = true }
+actix-web = { version = "4.10.2", features = ["macros"], optional = true }
 futures = { version = "0.3.31", optional = true }
 simple_logger = { version = "5.0.0", optional = true }
 serde_json = { version = "1.0.140", optional = true }
-reqwest = { version = "0.12.12", features = ["json"], optional = true }
-leptos_actix = { version = "0.7.7", optional = true }
+reqwest = { version = "0.12.15", features = ["json"], optional = true }
+leptos_actix = { version = "0.8.2", optional = true }
 dotenvy = { version = "0.15.7", optional = true }
 
 [profile.release]

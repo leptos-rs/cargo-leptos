@@ -10,7 +10,7 @@ crate-type = ["cdylib", "rlib"]
 
 
 [dependencies]
-leptos = { workspace = true, features = ["serde"] }
+leptos = { workspace = true}
 leptos_meta.workspace = true
 leptos_router.workspace = true
 
@@ -38,8 +38,6 @@ dotenvy = { version = "0.15", optional = true }
 default = ["ssr"]
 hydrate = [
   "leptos/hydrate",
-  "leptos_meta/hydrate",
-  "leptos_router/hydrate",
   "dep:wasm-bindgen",
   "dep:console_log",
   "dep:console_error_panic_hook",

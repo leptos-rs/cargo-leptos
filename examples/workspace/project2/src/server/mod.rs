@@ -1,9 +1,9 @@
 use crate::app::*;
 use actix_files::Files;
 use actix_web::*;
-use leptos::*;
+use leptos::prelude::*;
 use leptos_actix::{generate_route_list, LeptosRoutes};
-use tracing::*;
+use log::info;
 
 fn app() -> impl IntoView {
     view! { <App /> }
@@ -14,7 +14,7 @@ pub async fn run() -> std::io::Result<()> {
 
     simple_logger::init_with_level(log::Level::Debug).expect("couldn't initialize logging");
 
-    let conf = get_configuration(None).await.unwrap();
+    let conf = get_configuration(None).unwrap();
     let addr = conf.leptos_options.site_addr;
 
     info!("serving at {addr}");

@@ -3,5 +3,22 @@
     "./Cargo.toml",
     "./examples/project/Cargo.toml",
     "./examples/workspace/Cargo.toml"
+  ],
+  "cSpell.words": [
+    "browserslist",
+    "dotenvy",
+    "dotenv",
+    "debouncer",
+    "flate",
+    "reqwest",
+    "seahash",
+    "shlex",
+    "rustls",
+    "flexi",
+    "pathdiff",
+    "lightningcss",
+    "libflate",
+    "camino",
+    "insta",
   ]
 }
