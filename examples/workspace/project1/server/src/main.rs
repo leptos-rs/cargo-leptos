@@ -1,7 +1,7 @@
 use actix_web::*;
-use leptos::*;
+use leptos::prelude::*;
 use leptos_actix::{generate_route_list, LeptosRoutes};
-use tracing::*;
+use log::info;
 
 fn app() -> impl IntoView {
     use app_package::*;

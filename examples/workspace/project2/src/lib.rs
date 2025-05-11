@@ -9,14 +9,14 @@ if #[cfg(feature = "hydrate")] {
     #[wasm_bindgen]
     pub fn hydrate() {
       use app::*;
-      use leptos::*;
+      use leptos::prelude::*;
 
       console_error_panic_hook::set_once();
       _ = console_log::init_with_level(log::Level::Debug);
 
       leptos::logging::log!("hydrate mode - hydrating");
 
-      leptos::mount_to_body(|| {
+      mount_to_body(|| {
           view! { <App/> }
       });
   }
