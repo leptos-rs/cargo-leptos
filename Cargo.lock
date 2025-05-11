@@ -577,6 +577,7 @@ dependencies = [
  "cargo-generate",
  "cargo_metadata",
  "clap",
+ "clearscreen",
  "derive_more",
  "dirs",
  "dotenvy",
@@ -737,6 +738,19 @@ name = "clap_lex"
 version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f46ad14479a25103f283c0f10005961cf086d8dc42205bb44c46ac563475dca6"
+
+[[package]]
+name = "clearscreen"
+version = "4.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8c41dc435a7b98e4608224bbf65282309f5403719df9113621b30f8b6f74e2f4"
+dependencies = [
+ "nix",
+ "terminfo",
+ "thiserror 2.0.12",
+ "which",
+ "windows-sys 0.59.0",
+]
 
 [[package]]
 name = "codespan-reporting"
@@ -5484,6 +5498,18 @@ checksum = "45c6481c4829e4cc63825e62c49186a34538b7b2750b73b266581ffb612fb5ed"
 dependencies = [
  "rustix",
  "windows-sys 0.59.0",
+]
+
+[[package]]
+name = "terminfo"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d4ea810f0692f9f51b382fff5893887bb4580f5fa246fde546e0b13e7fcee662"
+dependencies = [
+ "fnv",
+ "nom",
+ "phf",
+ "phf_codegen",
 ]
 
 [[package]]
