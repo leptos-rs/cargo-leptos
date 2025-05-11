@@ -28,7 +28,14 @@ pub async fn run() -> std::io::Result<()> {
         let pkg_dir = leptos_options.site_pkg_dir.clone();
         let site_root = leptos_options.site_root.clone();
         App::new()
-            .leptos_routes(leptos_options.to_owned(), routes.to_owned(), app)
+            .leptos_routes(
+              routes.clone(), {
+                let leptos_options = leptos_options.clone();
+                move || view!{
+                  <App/>
+                }
+              }
+            )
             .service(Files::new(&pkg_dir, format!("{site_root}/{pkg_dir}")))
             .wrap(middleware::Compress::default())
     })
