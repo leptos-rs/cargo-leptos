@@ -3,7 +3,9 @@ use clap::Parser;
 use std::env;
 
 #[tokio::main]
-async fn main() -> eyre::Result<()> {
+async fn main() -> color_eyre::Result<()> {
+    color_eyre::install()?;
+
     let mut args: Vec<String> = env::args().collect();
     // when running as cargo leptos, the second argument is "leptos" which
     // clap doesn't expect
