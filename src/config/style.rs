@@ -1,6 +1,8 @@
 use super::{ProjectConfig, TailwindConfig};
-use crate::service::site::{SiteFile, SourcedSiteFile};
-use eyre::Result;
+use crate::{
+    ext::eyre::reexports::Result,
+    service::site::{SiteFile, SourcedSiteFile},
+};
 
 #[derive(Debug, Clone)]
 pub struct StyleConfig {

@@ -5,7 +5,7 @@ pub(crate) mod reexports {
     //! re-exports
 
     pub use super::{AnyhowCompatWrapErr as _, CustomWrapErr as _};
-    pub use eyre::{bail, ensure, eyre, Report as Error, Result};
+    pub use color_eyre::eyre::{self, bail, ensure, eyre, Report as Error, Result};
 }
 use reexports::*;
 
