@@ -1,7 +1,7 @@
 use wasm_bindgen::prelude::wasm_bindgen;
 
 use app_package::*;
-use leptos::*;
+use leptos::prelude::*;
 
 #[wasm_bindgen]
 pub fn hydrate() {
@@ -10,7 +10,7 @@ pub fn hydrate() {
 
     leptos::logging::log!("hydrate mode - hydrating");
 
-    leptos::mount_to_body(|| {
+    mount_to_body(|| {
         view! { <App/> }
     });
 }
