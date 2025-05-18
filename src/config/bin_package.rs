@@ -82,10 +82,10 @@ impl BinPackage {
         );
         let exe_file = {
             let file_ext = if cfg!(target_os = "windows")
-                && config
+                || config
                     .bin_target_triple
                     .as_ref()
-                    .is_none_or(|triple| triple.contains("-pc-windows-"))
+                    .is_some_and(|triple| triple.contains("-pc-windows-"))
             {
                 "exe"
             } else if config
