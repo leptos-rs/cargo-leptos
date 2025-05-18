@@ -18,15 +18,19 @@ pub use server::{server, server_cargo_process};
 pub use style::style;
 
 use itertools::Itertools;
+use tokio::process::Command;
 
-fn build_cargo_command_string(args: impl IntoIterator<Item = String>) -> String {
-    std::iter::once("cargo".to_owned())
-        .chain(args.into_iter().map(|arg| {
-            if arg.contains(' ') {
-                format!("'{arg}'")
-            } else {
-                arg
-            }
-        }))
-        .join(" ")
+fn build_cargo_command_string(command: &Command) -> String {
+  let std_command = command.as_std();
+  let program = std_command.get_program();
+  let args = std_command.get_args();
+
+  [program]
+    .into_iter()
+    .chain(args)
+    .map(|arg| match arg.to_string_lossy() {
+      arg if arg.contains(' ') => format!("'{arg}'"),
+      arg => arg.into_owned(),
+    })
+    .join(" ")
 }
