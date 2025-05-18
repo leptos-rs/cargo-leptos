@@ -125,6 +125,6 @@ pub fn build_cargo_server_cmd(
         .join(" ");
 
     command.args(&args).envs(envs);
-    let line = super::build_cargo_command_string(args);
+    let line = super::build_cargo_command_string(command);
     (envs_str, line)
 }
