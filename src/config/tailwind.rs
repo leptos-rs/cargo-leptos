@@ -1,7 +1,7 @@
 use camino::Utf8PathBuf;
 
 use super::{ProjectConfig, VersionConfig};
-use crate::internal_prelude::*;
+use crate::{ext::exe::sanitize_version_prefix, internal_prelude::*};
 
 #[derive(Clone, Debug)]
 pub struct TailwindConfig {
@@ -21,9 +21,12 @@ impl TailwindConfig {
             return Ok(None);
         };
 
-        let is_v_4 = VersionConfig::Tailwind.version().starts_with("v4");
+        let version = VersionConfig::Tailwind.version();
+        let sanitized_version =
+            sanitize_version_prefix(version.as_ref()).unwrap_or(version.as_ref());
+        let is_v4 = sanitized_version.starts_with("4.") || sanitized_version == "4";
 
-        let config_file = if is_v_4 {
+        let config_file = if is_v4 {
             if conf.tailwind_config_file.is_some()
                 || conf.config_dir.join("tailwind.config.js").exists()
             {

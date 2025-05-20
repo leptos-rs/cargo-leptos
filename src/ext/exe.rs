@@ -256,7 +256,7 @@ impl Exe {
 /// as it carries classifiers, etc, but strip non-ascii
 /// digits from the prefix.
 #[inline]
-fn sanitize_version_prefix(ver_string: &str) -> Result<&str> {
+pub(crate) fn sanitize_version_prefix(ver_string: &str) -> Result<&str> {
     if let [b'v', rest @ ..] = ver_string.as_bytes() {
         str::from_utf8(rest).dot()
     } else {
@@ -296,7 +296,9 @@ impl Command for CommandTailwind {
         "tailwindcss"
     }
     fn version(&self) -> Cow<'_, str> {
-        VersionConfig::Tailwind.version()
+        let version = VersionConfig::Tailwind.version();
+        let sanitized = sanitize_version_prefix(version.as_ref()).unwrap_or(version.as_ref());
+        Cow::Owned(sanitized.to_string())
     }
     fn default_version(&self) -> &'static str {
         VersionConfig::Tailwind.default_version()
@@ -313,53 +315,54 @@ impl Command for CommandTailwind {
 
     /// Tool binary download url for the given OS and platform arch
     fn download_url(&self, target_os: &str, target_arch: &str, version: &str) -> Result<String> {
-        let use_musl = is_linux_musl_env() && version.starts_with("v4");
+        let is_v4 = version.starts_with("4.") || version == "4";
+        let use_musl = is_linux_musl_env() && is_v4;
 
         match (target_os, target_arch) {
             ("windows", "x86_64") => Ok(format!(
-                "https://github.com/{}/{}/releases/download/{}/{}-windows-x64.exe",
+                "https://github.com/{}/{}/releases/download/v{}/{}-windows-x64.exe",
                 self.github_owner(),
                 self.github_repo(),
                 version,
                 self.name()
             )),
             ("macos", "x86_64") => Ok(format!(
-                "https://github.com/{}/{}/releases/download/{}/{}-macos-x64",
+                "https://github.com/{}/{}/releases/download/v{}/{}-macos-x64",
                 self.github_owner(),
                 self.github_repo(),
                 version,
                 self.name()
             )),
             ("macos", "aarch64") => Ok(format!(
-                "https://github.com/{}/{}/releases/download/{}/{}-macos-arm64",
+                "https://github.com/{}/{}/releases/download/v{}/{}-macos-arm64",
                 self.github_owner(),
                 self.github_repo(),
                 version,
                 self.name()
             )),
             ("linux", "x86_64") if use_musl => Ok(format!(
-                "https://github.com/{}/{}/releases/download/{}/{}-linux-x64-musl",
+                "https://github.com/{}/{}/releases/download/v{}/{}-linux-x64-musl",
                 self.github_owner(),
                 self.github_repo(),
                 version,
                 self.name()
             )),
             ("linux", "x86_64") => Ok(format!(
-                "https://github.com/{}/{}/releases/download/{}/{}-linux-x64",
+                "https://github.com/{}/{}/releases/download/v{}/{}-linux-x64",
                 self.github_owner(),
                 self.github_repo(),
                 version,
                 self.name()
             )),
             ("linux", "aarch64") if use_musl => Ok(format!(
-                "https://github.com/{}/{}/releases/download/{}/{}-linux-arm64-musl",
+                "https://github.com/{}/{}/releases/download/v{}/{}-linux-arm64-musl",
                 self.github_owner(),
                 self.github_repo(),
                 version,
                 self.name()
             )),
             ("linux", "aarch64") => Ok(format!(
-                "https://github.com/{}/{}/releases/download/{}/{}-linux-arm64",
+                "https://github.com/{}/{}/releases/download/v{}/{}-linux-arm64",
                 self.github_owner(),
                 self.github_repo(),
                 version,
@@ -375,7 +378,8 @@ impl Command for CommandTailwind {
     }
 
     fn executable_name(&self, target_os: &str, target_arch: &str, version: &str) -> Result<String> {
-        let use_musl = is_linux_musl_env() && version.starts_with("v4");
+        let is_v4 = version.starts_with("4.") || version == "4";
+        let use_musl = is_linux_musl_env() && is_v4;
 
         Ok(match (target_os, target_arch) {
             ("windows", _) => format!("{}-windows-x64.exe", self.name()),
@@ -670,15 +674,19 @@ trait Command {
                     // TODO use the VersionReq for semantic matching
                     match norm_version.cmp(&norm_latest) {
                         core::cmp::Ordering::Greater | core::cmp::Ordering::Equal => {
+                            let latest: &str =
+                                sanitize_version_prefix(&latest).unwrap_or(latest.as_str());
                             debug!(
-                                            "Command [{}] requested version {} is already same or newer than available version {}",
-                                            self.name(), version, &latest)
+                                "Command [{}] requested version {} is already same or newer than available version {}",
+                                self.name(), version, &latest)
                         }
                         core::cmp::Ordering::Less => {
+                            let latest: &str =
+                                sanitize_version_prefix(&latest).unwrap_or(latest.as_str());
                             info!(
-                                            "Command [{}] requested version {}, but a newer version {} is available, you can try it out by \
-                                            setting the {}={} env var and re-running the command",
-                                            self.name(), version, &latest, self.env_var_version_name(), &latest)
+                                "Command [{}] requested version {}, but a newer version {} is available, you can try it out by \
+                                setting the {}={} env var and re-running the command",
+                                self.name(), version, &latest, self.env_var_version_name(), &latest)
                         }
                     }
                 }
