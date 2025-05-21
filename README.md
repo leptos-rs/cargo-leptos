@@ -108,7 +108,7 @@ lib-package = "front"
 # more configuration parameters...
 ```
 
-Note the double braces: several projects can be defined and one package can be used in several projects.
+Note the double square brackets: several projects can be defined and one package can be used in several projects.
 
 <br/>
 
