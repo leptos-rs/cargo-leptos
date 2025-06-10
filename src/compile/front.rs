@@ -199,6 +199,8 @@ async fn bindgen(proj: &Project) -> Result<Outcome<Product>> {
 
 fn optimize(file: &Utf8Path) -> Result<()> {
     OptimizationOptions::new_optimize_for_size_aggressively()
+        .enable_feature(wasm_opt::Feature::BulkMemory)
+        .enable_feature(wasm_opt::Feature::TruncSat)
         .run(file, file)
         .dot()
 }
