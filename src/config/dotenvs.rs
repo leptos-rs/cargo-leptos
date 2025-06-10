@@ -56,6 +56,9 @@ fn overlay(conf: &mut ProjectConfig, envs: impl Iterator<Item = (String, String)
             "LEPTOS_JS_MINIFY" => conf.js_minify = val.parse()?,
             "SERVER_FN_PREFIX" => conf.server_fn_prefix = Some(val),
             "DISABLE_SERVER_FN_HASH" => conf.disable_server_fn_hash = true,
+            "LEPTOS_WASM_OPT_FEATURES" => {
+                conf.wasm_opt_features = Some(val.split(',').map(|s| s.trim().to_owned()).collect())
+            }
             // put these here to suppress the warning, but there's no
             // good way at the moment to pull the ProjectConfig all the way to Exe
             ENV_VAR_LEPTOS_TAILWIND_VERSION => {}

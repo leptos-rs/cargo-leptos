@@ -12,7 +12,7 @@ use crate::{
     signal::{Interrupt, Outcome, Product},
 };
 use camino::Utf8Path;
-use std::sync::Arc;
+use std::{str::FromStr, sync::Arc};
 use swc::{
     config::{IsModule, JsMinifyOptions},
     try_with_handler, BoolOrDataConfig, JsMinifyExtras,
@@ -161,7 +161,7 @@ async fn bindgen(proj: &Project) -> Result<Outcome<Product>> {
     .dot()?;
 
     if proj.release {
-        optimize(&wasm_file.dest)?;
+        optimize(proj, &wasm_file.dest)?;
     }
 
     let wasm_optimize_end_time = tokio::time::Instant::now();
@@ -197,10 +197,22 @@ async fn bindgen(proj: &Project) -> Result<Outcome<Product>> {
     Ok(Outcome::Success(Product::Front))
 }
 
-fn optimize(file: &Utf8Path) -> Result<()> {
-    OptimizationOptions::new_optimize_for_size_aggressively()
-        .run(file, file)
-        .dot()
+fn optimize(proj: &Project, file: &Utf8Path) -> Result<()> {
+    let mut opts = OptimizationOptions::new_optimize_for_size_aggressively();
+    if let Some(features) = &proj.wasm_opt_features {
+        for feature in features {
+            let feature = match wasm_opt::Feature::from_str(feature) {
+                Ok(feature) => feature,
+                Err(err) => {
+                    error!("Enabling wasm-opt {} feature error: {}", feature, err);
+                    continue;
+                }
+            };
+            opts.enable_feature(feature);
+        }
+    }
+
+    opts.run(file, file).dot()
 }
 
 fn minify<JS: AsRef<str>>(js: JS) -> Result<String> {
