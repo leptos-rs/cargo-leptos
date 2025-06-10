@@ -210,6 +210,9 @@ fn optimize(proj: &Project, file: &Utf8Path) -> Result<()> {
             };
             opts.enable_feature(feature);
         }
+    } else {
+        opts.enable_feature(wasm_opt::Feature::BulkMemory)
+            .enable_feature(wasm_opt::Feature::TruncSat);
     }
 
     opts.run(file, file).dot()
