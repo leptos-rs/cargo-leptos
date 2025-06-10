@@ -85,6 +85,7 @@ Config {
             disable_erase_components: false,
             always_erase_components: false,
             server_fn_mod_path: false,
+            wasm_opt_features: None,
             ..
         },
     ],
