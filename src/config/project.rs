@@ -203,7 +203,7 @@ impl Project {
                 let _ = rustflags
                     .encode_space_separated()
                     .inspect(|rustflags| {
-                        vec.push(("RUSTFLAGS", format!("{} --cfg erase_components", rustflags)))
+                        vec.push(("RUSTFLAGS", format!("{rustflags} --cfg erase_components")))
                     })
                     .inspect_err(|err| error!("Failed to set '--cfg erase_components': {}", err));
             } else {

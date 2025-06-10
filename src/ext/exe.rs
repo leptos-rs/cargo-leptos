@@ -118,7 +118,7 @@ impl ExeCache<'_> {
         let path = self.exe_dir.join(Path::new(&self.meta.exe));
         let mut file = File::create(&path).unwrap();
         file.write_all(data)
-            .wrap_err(format!("Error writing binary file: {:?}", path))?;
+            .wrap_err(format!("Error writing binary file: {path:?}"))?;
 
         #[cfg(target_family = "unix")]
         {
