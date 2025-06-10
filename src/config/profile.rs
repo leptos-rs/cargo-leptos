@@ -12,7 +12,7 @@ impl fmt::Display for Profile {
         match self {
             Self::Debug => write!(f, "debug"),
             Self::Release => write!(f, "release"),
-            Self::Named(name) => write!(f, "{}", name),
+            Self::Named(name) => write!(f, "{name}"),
         }
     }
 }
@@ -39,7 +39,7 @@ impl Profile {
                 args.push("--release".to_string());
             }
             Self::Named(name) => {
-                args.push(format!("--profile={}", name));
+                args.push(format!("--profile={name}"));
             }
         }
     }

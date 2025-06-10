@@ -91,7 +91,7 @@ fn format(
     let lvl_color = record.level().color();
 
     if let Some(dep) = dependency(record) {
-        let dep = format!("[{}]", dep);
+        let dep = format!("[{dep}]");
         let dep = dep.pad_left_to(12);
         write!(write, "{} {}", lvl_color.paint(dep), record.args())
     } else {
