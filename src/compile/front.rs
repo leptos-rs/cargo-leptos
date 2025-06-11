@@ -199,6 +199,9 @@ async fn bindgen(proj: &Project) -> Result<Outcome<Product>> {
 
 fn optimize(proj: &Project, file: &Utf8Path) -> Result<()> {
     let mut opts = OptimizationOptions::new_optimize_for_size_aggressively();
+
+    opts.optimize_level(wasm_opt::OptimizeLevel::Level4);
+
     if let Some(features) = &proj.wasm_opt_features {
         opts.mvp_features_only();
         for feature in features {
