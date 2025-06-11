@@ -200,6 +200,7 @@ async fn bindgen(proj: &Project) -> Result<Outcome<Product>> {
 fn optimize(proj: &Project, file: &Utf8Path) -> Result<()> {
     let mut opts = OptimizationOptions::new_optimize_for_size_aggressively();
     if let Some(features) = &proj.wasm_opt_features {
+        opts.mvp_features_only();
         for feature in features {
             let feature = match wasm_opt::Feature::from_str(feature) {
                 Ok(feature) => feature,
@@ -211,9 +212,16 @@ fn optimize(proj: &Project, file: &Utf8Path) -> Result<()> {
             opts.enable_feature(feature);
         }
     } else {
-        opts.enable_feature(wasm_opt::Feature::BulkMemory)
+        // Baseline default feature enables mutable-globals and sign-ext features,
+        // just re-add them here for better readability.
+        opts.enable_feature(wasm_opt::Feature::MutableGlobals)
+            .enable_feature(wasm_opt::Feature::SignExt)
+            .enable_feature(wasm_opt::Feature::BulkMemory)
+            .enable_feature(wasm_opt::Feature::ReferenceTypes)
             .enable_feature(wasm_opt::Feature::TruncSat);
     }
+
+    debug!("Enabled wasm-opt features: {:?}", opts.features);
 
     opts.run(file, file).dot()
 }
