@@ -223,10 +223,15 @@ bin-cargo-command = "cross"
 # Optional. By default, erased components are used for debug builds, and not for release builds.
 always-erase-components = false
 
-# Whether to disable erased components mode for all cargo-leptos builds. 
+# Whether to disable erased components mode for all cargo-leptos builds.
 #
 # Optional. By default, erased components are used for debug builds, and not for release builds.
 disable-erase-components = false
+
+# Enabling wasm-opt features
+#
+# Optional. By default, bulk-memory, nontrapping-float-to-int, reference-types, sign-ext and mutable-globals are used. Features: https://docs.rs/wasm-opt/latest/wasm_opt/enum.Feature.html
+wasm-opt-features = ["bulk-memory", "nontrapping-float-to-int", "reference-types", "sign-ext", "mutable-globals"]
 ```
 
 ## Site parameters
