@@ -24,7 +24,7 @@ pub async fn compress_static_files(path: PathBuf) -> Result<()> {
 fn compress_dir_all(path: PathBuf) -> Result<()> {
     trace!("FS compress_dir_all {:?}", path);
 
-    let dir = fs::read_dir(&path).wrap_err(format!("Could not read {:?}", path))?;
+    let dir = fs::read_dir(&path).wrap_err(format!("Could not read {path:?}"))?;
     let brotli_params = BrotliEncoderParams::default();
 
     for entry in dir.into_iter() {
@@ -46,11 +46,11 @@ fn compress_dir_all(path: PathBuf) -> Result<()> {
             let mut encoder = gzip::Encoder::new(Vec::new())?;
             encoder.write_all(file.as_ref())?;
             let encoded_data = encoder.finish().into_result()?;
-            let path_gz = format!("{}.gz", pstr);
+            let path_gz = format!("{pstr}.gz");
             fs::write(path_gz, encoded_data)?;
 
             // brotli
-            let path_br = format!("{}.br", pstr);
+            let path_br = format!("{pstr}.br");
             let mut output = File::create(path_br)?;
             let mut reader = BufReader::new(file.as_slice());
             brotli::BrotliCompress(&mut reader, &mut output, &brotli_params)?;

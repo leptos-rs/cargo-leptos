@@ -8,7 +8,7 @@ use crate::{
 use camino::{Utf8Path, Utf8PathBuf};
 use cargo_metadata::{Metadata, Package};
 use serde::Deserialize;
-use std::{fmt::Debug, net::SocketAddr, sync::Arc};
+use std::{collections::HashSet, fmt::Debug, net::SocketAddr, sync::Arc};
 
 use super::{
     assets::AssetsConfig,
@@ -49,6 +49,7 @@ pub struct Project {
     pub disable_erase_components: bool,
     pub always_erase_components: bool,
     pub server_fn_mod_path: bool,
+    pub wasm_opt_features: Option<HashSet<String>>,
 }
 
 impl Debug for Project {
@@ -71,6 +72,7 @@ impl Debug for Project {
             .field("disable_erase_components", &self.disable_erase_components)
             .field("always_erase_components", &self.always_erase_components)
             .field("server_fn_mod_path", &self.server_fn_mod_path)
+            .field("wasm_opt_features", &self.wasm_opt_features)
             .finish_non_exhaustive()
     }
 }
@@ -138,6 +140,7 @@ impl Project {
                 disable_erase_components: config.disable_erase_components,
                 always_erase_components: config.always_erase_components,
                 server_fn_mod_path: config.server_fn_mod_path,
+                wasm_opt_features: config.wasm_opt_features,
             };
             resolved.push(Arc::new(proj));
         }
@@ -200,7 +203,7 @@ impl Project {
                 let _ = rustflags
                     .encode_space_separated()
                     .inspect(|rustflags| {
-                        vec.push(("RUSTFLAGS", format!("{} --cfg erase_components", rustflags)))
+                        vec.push(("RUSTFLAGS", format!("{rustflags} --cfg erase_components")))
                     })
                     .inspect_err(|err| error!("Failed to set '--cfg erase_components': {}", err));
             } else {
@@ -336,6 +339,7 @@ pub struct ProjectConfig {
     pub lib_profile_release: Option<String>,
     pub bin_profile_dev: Option<String>,
     pub bin_profile_release: Option<String>,
+    pub wasm_opt_features: Option<HashSet<String>>,
 }
 
 impl ProjectConfig {
