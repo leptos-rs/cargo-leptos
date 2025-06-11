@@ -8,7 +8,7 @@ use crate::{
 use camino::{Utf8Path, Utf8PathBuf};
 use cargo_metadata::{Metadata, Package};
 use serde::Deserialize;
-use std::{fmt::Debug, net::SocketAddr, sync::Arc};
+use std::{collections::HashSet, fmt::Debug, net::SocketAddr, sync::Arc};
 
 use super::{
     assets::AssetsConfig,
@@ -49,7 +49,7 @@ pub struct Project {
     pub disable_erase_components: bool,
     pub always_erase_components: bool,
     pub server_fn_mod_path: bool,
-    pub wasm_opt_features: Option<Vec<String>>,
+    pub wasm_opt_features: Option<HashSet<String>>,
 }
 
 impl Debug for Project {
@@ -339,7 +339,7 @@ pub struct ProjectConfig {
     pub lib_profile_release: Option<String>,
     pub bin_profile_dev: Option<String>,
     pub bin_profile_release: Option<String>,
-    pub wasm_opt_features: Option<Vec<String>>,
+    pub wasm_opt_features: Option<HashSet<String>>,
 }
 
 impl ProjectConfig {
