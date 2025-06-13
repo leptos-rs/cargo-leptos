@@ -1,7 +1,7 @@
-use crate::internal_prelude::*;
 use crate::{
     config::Opts,
     ext::{MetadataExt, PathBufExt, PathExt},
+    internal_prelude::*,
     service::site::{SiteFile, SourcedSiteFile},
 };
 use camino::Utf8PathBuf;
@@ -42,7 +42,7 @@ impl LibPackage {
 
         let package = packages
             .iter()
-            .find(|p| p.name == *name)
+            .find(|p| *p.name == name)
             .ok_or_else(|| eyre!(r#"Could not find the project lib-package "{name}""#,))?;
 
         let mut features = if !cli.lib_features.is_empty() {

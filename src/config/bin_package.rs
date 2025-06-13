@@ -2,10 +2,10 @@ use camino::Utf8PathBuf;
 use cargo_metadata::{Metadata, Target};
 
 use super::{project::ProjectDefinition, Profile, ProjectConfig};
-use crate::internal_prelude::*;
 use crate::{
     config::Opts,
     ext::{MetadataExt, PackageExt, PathBufExt, PathExt},
+    internal_prelude::*,
 };
 pub struct BinPackage {
     pub name: String,
@@ -48,7 +48,7 @@ impl BinPackage {
         let packages = metadata.workspace_packages();
         let package = packages
             .iter()
-            .find(|p| p.name == name && p.has_bin_target())
+            .find(|p| *p.name == name && p.has_bin_target())
             .ok_or_else(|| eyre!(r#"Could not find the project bin-package "{name}""#,))?;
 
         let package = (*package).clone();
