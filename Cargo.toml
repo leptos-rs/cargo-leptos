@@ -53,8 +53,8 @@ pathdiff = { version = "0.2.3", features = ["camino"] }
 semver = "1.0"
 md-5 = "0.10.6"
 base64ct = { version = "1.7.3", features = ["alloc"] }
-swc = "23.0"
-swc_common = "9.0"
+swc = "26.0"
+swc_common = "12.0"
 shlex = "1.3"
 cargo-generate = { version = "0.23.3", features = ["vendored-openssl"] }
 wasm-opt = "0.116.1"
