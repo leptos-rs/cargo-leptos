@@ -210,6 +210,7 @@ struct GitAwareWatcher {
     gitignore_path: Utf8PathBuf,
     paths: HashSet<PathBuf>,
     sync_tx: Sender<notify_debouncer_full::DebounceEventResult>,
+    forced_watch_paths: HashSet<PathBuf>,
 }
 
 impl GitAwareWatcher {
@@ -222,6 +223,13 @@ impl GitAwareWatcher {
             .iter()
             .filter_map(|p| p.canonicalize().ok())
             .collect();
+
+        let forced_watch_paths: HashSet<PathBuf> = proj
+            .watch_additional_files
+            .iter()
+            .filter_map(|p| p.canonicalize().ok())
+            .collect();
+
         paths.push(proj.working_dir.clone().into());
 
         let paths: HashSet<PathBuf> = paths
@@ -250,6 +258,7 @@ impl GitAwareWatcher {
             gitignore_path,
             sync_tx,
             paths: paths.clone(),
+            forced_watch_paths,
         };
 
         watcher.watch(paths.iter());
@@ -285,6 +294,10 @@ impl GitAwareWatcher {
     {
         paths
             .filter_map(|p| {
+                // Check if the path should always be included no matter what
+                if self.forced_watch_paths.contains(p) {
+                    return Some(p.clone());
+                }
                 // Check if the file excluded
                 let matched = self.gitignore.matched(p, p.is_dir());
                 if matches!(matched, ignore::Match::Ignore(_)) {
