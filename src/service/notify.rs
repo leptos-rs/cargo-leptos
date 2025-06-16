@@ -224,17 +224,22 @@ impl GitAwareWatcher {
             .filter_map(|p| p.canonicalize().ok())
             .collect();
 
-        let forced_watch_paths: HashSet<PathBuf> = proj
+        let forced_watch_top_level_paths: HashSet<PathBuf> = proj
             .watch_additional_files
             .iter()
             .filter_map(|p| p.canonicalize().ok())
             .collect();
+
+        let mut forced_watch_paths: HashSet<PathBuf> = HashSet::new();
+
+        let working_dir: PathBuf = proj.working_dir.clone().into();
 
         paths.push(proj.working_dir.clone().into());
 
         let paths: HashSet<PathBuf> = paths
             .into_iter()
             .flat_map(|p| {
+                let is_forced_path = forced_watch_top_level_paths.contains(&working_dir);
                 WalkDir::new(p)
                     .follow_links(true)
                     .into_iter()
@@ -243,7 +248,12 @@ impl GitAwareWatcher {
                         d.file_type().is_dir()
                             && !d.path().components().any(|c| c.as_os_str() == ".git")
                     })
-                    .map(|d| d.path().to_owned())
+                    .map(|d| {
+                        if is_forced_path {
+                            forced_watch_paths.insert(d.path().into());
+                        }
+                        return d.path().to_owned();
+                    })
                     .collect::<HashSet<_>>()
             })
             .collect();
