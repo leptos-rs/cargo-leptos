@@ -232,14 +232,12 @@ impl GitAwareWatcher {
 
         let mut forced_watch_paths: HashSet<PathBuf> = HashSet::new();
 
-        let working_dir: PathBuf = proj.working_dir.clone().into();
-
         paths.push(proj.working_dir.clone().into());
 
         let paths: HashSet<PathBuf> = paths
             .into_iter()
             .flat_map(|p| {
-                let is_forced_path = forced_watch_top_level_paths.contains(&working_dir);
+                let is_forced_path = forced_watch_top_level_paths.contains(&p);
                 WalkDir::new(p)
                     .follow_links(true)
                     .into_iter()
