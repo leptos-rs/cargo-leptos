@@ -260,9 +260,16 @@ impl Exe {
 /// We generally want to keep the suffix intact,
 /// as it carries classifiers, etc, but strip non-ascii
 /// digits from the prefix.
+///
+/// Handles both semver-style prefixes (e.g., "v1.2.3") and
+/// wasm-opt/Binaryen style prefixes (e.g., "version_123").
 #[inline]
 fn sanitize_version_prefix(ver_string: &str) -> Result<&str> {
-    if let [b'v', rest @ ..] = ver_string.as_bytes() {
+    if let Some(rest) = ver_string.strip_prefix("version_") {
+        // Handle "version_123" format (wasm-opt/Binaryen) - check this first
+        Ok(rest)
+    } else if let [b'v', rest @ ..] = ver_string.as_bytes() {
+        // Handle "v1.2.3" format
         str::from_utf8(rest).dot()
     } else {
         Ok(ver_string)
@@ -792,9 +799,29 @@ mod tests {
 
     #[test]
     fn test_sanitize_version_prefix() {
+        // Test standard semver with 'v' prefix
         let version = sanitize_version_prefix("v1.2.3").expect("Could not sanitize \"v1.2.3\".");
         assert_eq!(version, "1.2.3");
         assert!(Version::parse(version).is_ok());
+
+        // Test wasm-opt/Binaryen 'version_' prefix format
+        let version =
+            sanitize_version_prefix("version_123").expect("Could not sanitize \"version_123\".");
+        assert_eq!(version, "123");
+
+        // Test wasm-opt with suffix (like "version_120_b")
+        let version = sanitize_version_prefix("version_120_b")
+            .expect("Could not sanitize \"version_120_b\".");
+        assert_eq!(version, "120_b");
+
+        // Test no prefix
+        let version = sanitize_version_prefix("1.2.3").expect("Could not sanitize \"1.2.3\".");
+        assert_eq!(version, "1.2.3");
+        assert!(Version::parse(version).is_ok());
+
+        // Test plain number (like "123")
+        let version = sanitize_version_prefix("123").expect("Could not sanitize \"123\".");
+        assert_eq!(version, "123");
     }
 
     #[test]
@@ -812,6 +839,20 @@ mod tests {
         assert_eq!(v.major, 10);
         assert_eq!(v.minor, 0);
         assert_eq!(v.patch, 0);
+
+        // Test wasm-opt version format (pure numeric)
+        let version = normalize_version("version_123");
+        assert!(version.is_some());
+        let v = version.unwrap();
+        assert_eq!(v.major, 123);
+        assert_eq!(v.minor, 0);
+        assert_eq!(v.patch, 0);
+
+        // Test wasm-opt version with non-numeric suffix (should fail gracefully)
+        let _version = normalize_version("version_120_b");
+        // This might return None because "120_b" is not a valid semver or pure number
+        // But the sanitization should still work correctly
+        assert_eq!(sanitize_version_prefix("version_120_b").unwrap(), "120_b");
     }
 
     #[test]

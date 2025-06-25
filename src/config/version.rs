@@ -21,7 +21,7 @@ impl VersionConfig {
         match self {
             Self::Tailwind => "v4.1.4",
             Self::Sass => "1.86.0",
-            Self::WasmOpt => "version_121",
+            Self::WasmOpt => "version_123",
         }
     }
 
