@@ -17,7 +17,7 @@ impl VersionConfig {
 
     pub fn default_version(&self) -> &'static str {
         match self {
-            Self::Tailwind => "v4.1.8",
+            Self::Tailwind => "v4.1.10",
             Self::Sass => "1.86.0",
         }
     }
