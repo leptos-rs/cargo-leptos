@@ -1,0 +1,48 @@
+{
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        // copilot
+        "GitHub.copilot",
+        "GitHub.copilot-chat",
+        // docker
+        "ms-azuretools.vscode-containers",
+        // editor
+        "albert.TabOut",
+        // github
+        "mhutchie.git-graph",
+        "github.vscode-github-actions",
+        "GitHub.vscode-pull-request-github",
+        // rust
+        "fill-labs.dependi",
+        "tamasfe.even-better-toml",
+        "rust-lang.rust-analyzer",
+        "vadimcn.vscode-lldb",
+        // shell
+        "TheNuProjectContributors.vscode-nushell-lang",
+        // tailwindcss
+        "bradlc.vscode-tailwindcss",
+        // git
+        "eamodio.gitlens"
+      ]
+    }
+  },
+  "features": {
+    // rust toolchain
+    "ghcr.io/devcontainers/features/rust:1": {},
+    // kickass shell
+    "ghcr.io/eitsupi/devcontainer-features/nushell:0": {},
+    // for clang required to build ring
+    "ghcr.io/devcontainers-community/features/llvm": {},
+    // build dependency for ml-feed-server bindings
+    "ghcr.io/devcontainers-extra/features/protoc:1": {}
+  },
+  "hostRequirements": {
+    "cpus": 8
+  },
+  "onCreateCommand": "rustup update;",
+  "postCreateCommand": "nu .devcontainer/setup.nu"
+}
