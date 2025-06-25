@@ -23,7 +23,6 @@ use tokio::{
     task::JoinHandle,
 };
 use wasm_bindgen_cli_support::Bindgen;
-use wasm_opt::OptimizationOptions;
 
 pub async fn front(
     proj: &Arc<Project>,
@@ -161,7 +160,7 @@ async fn bindgen(proj: &Project) -> Result<Outcome<Product>> {
     .dot()?;
 
     if proj.release {
-        optimize(&wasm_file.dest)?;
+        optimize(&wasm_file.dest).await?;
     }
 
     let wasm_optimize_end_time = tokio::time::Instant::now();
@@ -197,10 +196,41 @@ async fn bindgen(proj: &Project) -> Result<Outcome<Product>> {
     Ok(Outcome::Success(Product::Front))
 }
 
-fn optimize(file: &Utf8Path) -> Result<()> {
-    OptimizationOptions::new_optimize_for_size_aggressively()
-        .run(file, file)
-        .dot()
+async fn optimize(file: &Utf8Path) -> Result<()> {
+    use crate::ext::{
+        sync::{wait_piped_interruptible, CommandResult, OutputExt},
+        Exe,
+    };
+    use tokio::process::Command;
+
+    let wasm_opt = Exe::WasmOpt.get().await.dot()?;
+
+    let mut cmd = Command::new(wasm_opt);
+    cmd.args([
+        "-Oz",
+        "--enable-bulk-memory",
+        file.as_str(),
+        "-o",
+        file.as_str(),
+    ]);
+
+    trace!(
+        "WASM running wasm-opt -Oz --enable-bulk-memory {} -o {}",
+        file,
+        file
+    );
+
+    match wait_piped_interruptible("wasm-opt", cmd, crate::signal::Interrupt::subscribe_any())
+        .await?
+    {
+        CommandResult::Success(_) => Ok(()),
+        CommandResult::Interrupted => bail!("wasm-opt was interrupted"),
+        CommandResult::Failure(output) => {
+            error!("wasm-opt failed with:");
+            println!("{}", output.stderr());
+            bail!("wasm-opt optimization failed")
+        }
+    }
 }
 
 fn minify<JS: AsRef<str>>(js: JS) -> Result<String> {
