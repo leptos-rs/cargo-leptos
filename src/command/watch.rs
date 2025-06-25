@@ -79,13 +79,13 @@ pub async fn runner(proj: &Arc<Project>) -> Result<()> {
 
     let outcomes = vec![server?, front?, assets?, style?];
 
-    let interrupted = outcomes.iter().any(|outcome| *outcome == Outcome::Stopped);
+    let interrupted = outcomes.contains(&Outcome::Stopped);
     if interrupted {
         info!("Build interrupted. Restarting.");
         return Ok(());
     }
 
-    let failed = outcomes.iter().any(|outcome| *outcome == Outcome::Failed);
+    let failed = outcomes.contains(&Outcome::Failed);
     if failed {
         warn!("Build failed");
         Interrupt::clear_source_changes().await;
