@@ -210,6 +210,7 @@ struct GitAwareWatcher {
     gitignore_path: Utf8PathBuf,
     paths: HashSet<PathBuf>,
     sync_tx: Sender<notify_debouncer_full::DebounceEventResult>,
+    forced_watch_paths: HashSet<PathBuf>,
 }
 
 impl GitAwareWatcher {
@@ -222,11 +223,21 @@ impl GitAwareWatcher {
             .iter()
             .filter_map(|p| p.canonicalize().ok())
             .collect();
+
+        let forced_watch_top_level_paths: HashSet<PathBuf> = proj
+            .watch_additional_files
+            .iter()
+            .filter_map(|p| p.canonicalize().ok())
+            .collect();
+
+        let mut forced_watch_paths: HashSet<PathBuf> = HashSet::new();
+
         paths.push(proj.working_dir.clone().into());
 
         let paths: HashSet<PathBuf> = paths
             .into_iter()
             .flat_map(|p| {
+                let is_forced_path = forced_watch_top_level_paths.contains(&p);
                 WalkDir::new(p)
                     .follow_links(true)
                     .into_iter()
@@ -235,7 +246,12 @@ impl GitAwareWatcher {
                         d.file_type().is_dir()
                             && !d.path().components().any(|c| c.as_os_str() == ".git")
                     })
-                    .map(|d| d.path().to_owned())
+                    .map(|d| {
+                        if is_forced_path {
+                            forced_watch_paths.insert(d.path().into());
+                        }
+                        return d.path().to_owned();
+                    })
                     .collect::<HashSet<_>>()
             })
             .collect();
@@ -250,6 +266,7 @@ impl GitAwareWatcher {
             gitignore_path,
             sync_tx,
             paths: paths.clone(),
+            forced_watch_paths,
         };
 
         watcher.watch(paths.iter());
@@ -285,6 +302,10 @@ impl GitAwareWatcher {
     {
         paths
             .filter_map(|p| {
+                // Check if the path should always be included no matter what
+                if self.forced_watch_paths.contains(p) {
+                    return Some(p.clone());
+                }
                 // Check if the file excluded
                 let matched = self.gitignore.matched(p, p.is_dir());
                 if matches!(matched, ignore::Match::Ignore(_)) {
