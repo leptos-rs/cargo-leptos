@@ -26,7 +26,7 @@ fn build_cargo_command_string(command: &Command) -> String {
     val.map(|val| {
       let name = name.to_string_lossy();
       let val = val.to_string_lossy();
-      format!("{name}={val}")
+      if val.contains(' ') { format!("{name}='{val}'") } else { format!("{name}={val}") }
     })
   });
   let program = std_command.get_program().to_string_lossy().into_owned();
