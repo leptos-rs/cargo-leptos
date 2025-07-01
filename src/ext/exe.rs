@@ -212,6 +212,7 @@ fn get_cache_dir() -> Result<PathBuf> {
 pub enum Exe {
     Sass,
     Tailwind,
+    WasmOpt,
 }
 
 impl Exe {
@@ -245,6 +246,10 @@ impl Exe {
                 .exe_meta(target_os, target_arch)
                 .await
                 .dot()?,
+            Exe::WasmOpt => CommandWasmOpt
+                .exe_meta(target_os, target_arch)
+                .await
+                .dot()?,
         };
 
         Ok(exe)
@@ -255,9 +260,16 @@ impl Exe {
 /// We generally want to keep the suffix intact,
 /// as it carries classifiers, etc, but strip non-ascii
 /// digits from the prefix.
+///
+/// Handles both semver-style prefixes (e.g., "v1.2.3") and
+/// wasm-opt/Binaryen style prefixes (e.g., "version_123").
 #[inline]
 fn sanitize_version_prefix(ver_string: &str) -> Result<&str> {
-    if let [b'v', rest @ ..] = ver_string.as_bytes() {
+    if let Some(rest) = ver_string.strip_prefix("version_") {
+        // Handle "version_123" format (wasm-opt/Binaryen) - check this first
+        Ok(rest)
+    } else if let [b'v', rest @ ..] = ver_string.as_bytes() {
+        // Handle "v1.2.3" format
         str::from_utf8(rest).dot()
     } else {
         Ok(ver_string)
@@ -290,6 +302,7 @@ fn normalize_version(ver_string: &str) -> Option<Version> {
 
 struct CommandTailwind;
 struct CommandSass;
+struct CommandWasmOpt;
 
 impl Command for CommandTailwind {
     fn name(&self) -> &'static str {
@@ -471,6 +484,92 @@ impl Command for CommandSass {
 
     fn manual_install_instructions(&self) -> String {
         "Try manually installing sass: https://sass-lang.com/install".to_string()
+    }
+}
+
+impl Command for CommandWasmOpt {
+    fn name(&self) -> &'static str {
+        "wasm-opt"
+    }
+    fn version(&self) -> Cow<'_, str> {
+        VersionConfig::WasmOpt.version()
+    }
+    fn default_version(&self) -> &'static str {
+        VersionConfig::WasmOpt.default_version()
+    }
+    fn env_var_version_name(&self) -> &'static str {
+        VersionConfig::WasmOpt.env_var_version_name()
+    }
+    fn github_owner(&self) -> &'static str {
+        "WebAssembly"
+    }
+    fn github_repo(&self) -> &'static str {
+        "binaryen"
+    }
+
+    fn download_url(&self, target_os: &str, target_arch: &str, version: &str) -> Result<String> {
+        match (target_os, target_arch) {
+            ("windows", "x86_64") => Ok(format!(
+                "https://github.com/{}/{}/releases/download/{}/binaryen-{}-x86_64-windows.tar.gz",
+                self.github_owner(),
+                self.github_repo(),
+                version,
+                version
+            )),
+            ("macos", "x86_64") => Ok(format!(
+                "https://github.com/{}/{}/releases/download/{}/binaryen-{}-x86_64-macos.tar.gz",
+                self.github_owner(),
+                self.github_repo(),
+                version,
+                version
+            )),
+            ("macos", "aarch64") => Ok(format!(
+                "https://github.com/{}/{}/releases/download/{}/binaryen-{}-arm64-macos.tar.gz",
+                self.github_owner(),
+                self.github_repo(),
+                version,
+                version
+            )),
+            ("linux", "x86_64") => Ok(format!(
+                "https://github.com/{}/{}/releases/download/{}/binaryen-{}-x86_64-linux.tar.gz",
+                self.github_owner(),
+                self.github_repo(),
+                version,
+                version
+            )),
+            ("linux", "aarch64") => Ok(format!(
+                "https://github.com/{}/{}/releases/download/{}/binaryen-{}-arm64-linux.tar.gz",
+                self.github_owner(),
+                self.github_repo(),
+                version,
+                version
+            )),
+            _ => bail!(
+                "Command [{}] failed to find a match for {}-{} ",
+                self.name(),
+                target_os,
+                target_arch
+            ),
+        }
+    }
+
+    fn executable_name(
+        &self,
+        target_os: &str,
+        _target_arch: &str,
+        version: &str,
+    ) -> Result<String> {
+        let exe_name = if target_os == "windows" {
+            "wasm-opt.exe"
+        } else {
+            "wasm-opt"
+        };
+        Ok(format!("binaryen-{}/bin/{}", version, exe_name))
+    }
+
+    fn manual_install_instructions(&self) -> String {
+        "Try manually installing wasm-opt from Binaryen: https://github.com/WebAssembly/binaryen"
+            .to_string()
     }
 }
 
@@ -700,27 +799,77 @@ mod tests {
 
     #[test]
     fn test_sanitize_version_prefix() {
+        // Test standard semver with 'v' prefix
         let version = sanitize_version_prefix("v1.2.3").expect("Could not sanitize \"v1.2.3\".");
         assert_eq!(version, "1.2.3");
         assert!(Version::parse(version).is_ok());
+
+        // Test wasm-opt/Binaryen 'version_' prefix format
+        let version =
+            sanitize_version_prefix("version_123").expect("Could not sanitize \"version_123\".");
+        assert_eq!(version, "123");
+
+        // Test wasm-opt with suffix (like "version_120_b")
+        let version = sanitize_version_prefix("version_120_b")
+            .expect("Could not sanitize \"version_120_b\".");
+        assert_eq!(version, "120_b");
+
+        // Test no prefix
+        let version = sanitize_version_prefix("1.2.3").expect("Could not sanitize \"1.2.3\".");
+        assert_eq!(version, "1.2.3");
+        assert!(Version::parse(version).is_ok());
+
+        // Test plain number (like "123")
+        let version = sanitize_version_prefix("123").expect("Could not sanitize \"123\".");
+        assert_eq!(version, "123");
     }
 
     #[test]
     fn test_normalize_version() {
         let version = normalize_version("v3.3.3");
-        assert!(version.is_some_and(|v| { v.major == 3 && v.minor == 3 && v.patch == 3 }));
+        assert!(version.is_some());
+        let v = version.unwrap();
+        assert_eq!(v.major, 3);
+        assert_eq!(v.minor, 3);
+        assert_eq!(v.patch, 3);
 
         let version = normalize_version("10.0.0");
-        assert!(version.is_some_and(|v| { v.major == 10 && v.minor == 0 && v.patch == 0 }));
+        assert!(version.is_some());
+        let v = version.unwrap();
+        assert_eq!(v.major, 10);
+        assert_eq!(v.minor, 0);
+        assert_eq!(v.patch, 0);
+
+        // Test wasm-opt version format (pure numeric)
+        let version = normalize_version("version_123");
+        assert!(version.is_some());
+        let v = version.unwrap();
+        assert_eq!(v.major, 123);
+        assert_eq!(v.minor, 0);
+        assert_eq!(v.patch, 0);
+
+        // Test wasm-opt version with non-numeric suffix (should fail gracefully)
+        let _version = normalize_version("version_120_b");
+        // This might return None because "120_b" is not a valid semver or pure number
+        // But the sanitization should still work correctly
+        assert_eq!(sanitize_version_prefix("version_120_b").unwrap(), "120_b");
     }
 
     #[test]
     fn test_incomplete_version_strings() {
         let version = normalize_version("5");
-        assert!(version.is_some_and(|v| { v.major == 5 && v.minor == 0 && v.patch == 0 }));
+        assert!(version.is_some());
+        let v = version.unwrap();
+        assert_eq!(v.major, 5);
+        assert_eq!(v.minor, 0);
+        assert_eq!(v.patch, 0);
 
         let version = normalize_version("0.2");
-        assert!(version.is_some_and(|v| { v.major == 0 && v.minor == 2 && v.patch == 0 }));
+        assert!(version.is_some());
+        let v = version.unwrap();
+        assert_eq!(v.major, 0);
+        assert_eq!(v.minor, 2);
+        assert_eq!(v.patch, 0);
     }
 
     #[test]

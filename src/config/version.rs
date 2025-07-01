@@ -2,10 +2,12 @@ use std::{borrow::Cow, env};
 
 pub const ENV_VAR_LEPTOS_TAILWIND_VERSION: &str = "LEPTOS_TAILWIND_VERSION";
 pub const ENV_VAR_LEPTOS_SASS_VERSION: &str = "LEPTOS_SASS_VERSION";
+pub const ENV_VAR_LEPTOS_WASM_OPT_VERSION: &str = "LEPTOS_WASM_OPT_VERSION";
 
 pub enum VersionConfig {
     Tailwind,
     Sass,
+    WasmOpt,
 }
 
 impl VersionConfig {
@@ -19,6 +21,7 @@ impl VersionConfig {
         match self {
             Self::Tailwind => "v4.1.4",
             Self::Sass => "1.86.0",
+            Self::WasmOpt => "version_123",
         }
     }
 
@@ -26,6 +29,7 @@ impl VersionConfig {
         match self {
             Self::Tailwind => ENV_VAR_LEPTOS_TAILWIND_VERSION,
             Self::Sass => ENV_VAR_LEPTOS_SASS_VERSION,
+            Self::WasmOpt => ENV_VAR_LEPTOS_WASM_OPT_VERSION,
         }
     }
 }
