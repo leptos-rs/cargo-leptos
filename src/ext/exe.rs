@@ -527,6 +527,7 @@ impl Command for CommandWasmOpt {
             ("macos", "x86_64") => Ok(format!("{base_url}-x86_64-macos.tar.gz")),
             ("macos", "aarch64") => Ok(format!("{base_url}-arm64-macos.tar.gz")),
             ("linux", "aarch64") => Ok(format!("{base_url}-aarch64-linux.tar.gz")),
+            ("linux", "arm64") => Ok(format!("{base_url}-aarch64-linux.tar.gz")),
             ("linux", "x86_64") => Ok(format!("{base_url}-x86_64-linux.tar.gz")),
             _ => bail!(
                 "Command [{}] failed to find a match for {}-{} ",
