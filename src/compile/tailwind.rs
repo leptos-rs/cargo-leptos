@@ -61,17 +61,20 @@ pub async fn compile_tailwind(proj: &Project, tw_conf: &TailwindConfig) -> Resul
 
 async fn create_default_tailwind_config(config_file: &Utf8Path) -> Result<()> {
     let contents = r#"/** @type {import('tailwindcss').Config} */
-    module.exports = {
-      content: {
-        relative: true,
-        files: ["*.html", "./src/**/*.rs"],
-      },
-      theme: {
-        extend: {},
-      },
-      plugins: [],
-    }
-    "#;
+module.exports = {
+  content: {
+    relative: true,
+    files: ["*.html", "./src/**/*.rs"],
+    transform: {
+      rs: (content) => content.replace(/(?:^|\s)class:/g, ' '),
+    },
+  },
+  theme: {
+    extend: {},
+  },
+  plugins: [],
+}
+"#;
     fs::write(config_file, contents).await
 }
 
