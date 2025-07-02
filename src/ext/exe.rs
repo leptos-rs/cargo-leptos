@@ -510,37 +510,27 @@ impl Command for CommandWasmOpt {
     fn download_url(&self, target_os: &str, target_arch: &str, version: &str) -> Result<String> {
         match (target_os, target_arch) {
             ("windows", "x86_64") => Ok(format!(
-                "https://github.com/{}/{}/releases/download/{}/binaryen-{}-x86_64-windows.tar.gz",
-                self.github_owner(),
-                self.github_repo(),
+                "https://github.com/{self.github_owner()}/{self.github_repo()}/releases/download/{}/binaryen-{}-x86_64-windows.tar.gz",
                 version,
                 version
             )),
             ("macos", "x86_64") => Ok(format!(
-                "https://github.com/{}/{}/releases/download/{}/binaryen-{}-x86_64-macos.tar.gz",
-                self.github_owner(),
-                self.github_repo(),
+                "https://github.com/{self.github_owner()}/{self.github_repo()}/releases/download/{}/binaryen-{}-x86_64-macos.tar.gz",
                 version,
                 version
             )),
             ("macos", "aarch64") => Ok(format!(
-                "https://github.com/{}/{}/releases/download/{}/binaryen-{}-arm64-macos.tar.gz",
-                self.github_owner(),
-                self.github_repo(),
+                "https://github.com/{self.github_owner()}/{self.github_repo()}/releases/download/{}/binaryen-{}-arm64-macos.tar.gz",
                 version,
                 version
             )),
             ("linux", "x86_64") => Ok(format!(
-                "https://github.com/{}/{}/releases/download/{}/binaryen-{}-x86_64-linux.tar.gz",
-                self.github_owner(),
-                self.github_repo(),
+                "https://github.com/{self.github_owner()}/{self.github_repo()}/releases/download/{}/binaryen-{}-x86_64-linux.tar.gz",
                 version,
                 version
             )),
             ("linux", "aarch64") => Ok(format!(
-                "https://github.com/{}/{}/releases/download/{}/binaryen-{}-arm64-linux.tar.gz",
-                self.github_owner(),
-                self.github_repo(),
+                "https://github.com/{self.github_owner()}/{self.github_repo()}/releases/download/{}/binaryen-{}-arm64-linux.tar.gz",
                 version,
                 version
             )),
