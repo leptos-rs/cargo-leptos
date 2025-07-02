@@ -790,6 +790,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "extra-package-1"
+version = "0.1.0"
+dependencies = [
+ "wasm-bindgen",
+ "web-sys",
+]
+
+[[package]]
+name = "extra-package-2"
+version = "0.1.0"
+dependencies = [
+ "wasm-bindgen",
+]
+
+[[package]]
 name = "fastrand"
 version = "2.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"

@@ -63,5 +63,9 @@ pub async fn build_proj(proj: &Arc<Project>) -> Result<bool> {
         return Ok(false);
     }
 
+    if !compile::run_build_scripts(proj).await.await??.is_success() {
+        return Ok(false);
+    }
+
     Ok(true)
 }

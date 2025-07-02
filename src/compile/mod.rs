@@ -2,6 +2,7 @@
 mod tests;
 
 mod assets;
+mod build_scripts;
 mod change;
 mod front;
 mod hash;
@@ -11,6 +12,7 @@ mod style;
 mod tailwind;
 
 pub use assets::assets;
+pub use build_scripts::run_build_scripts;
 pub use change::{Change, ChangeSet};
 pub use front::{front, front_cargo_process};
 pub use hash::add_hashes_to_site;
