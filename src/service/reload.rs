@@ -170,7 +170,7 @@ impl BrowserMessage {
 impl Display for BrowserMessage {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if let Some(css) = &self.css {
-            write!(f, "reload {}", css)
+            write!(f, "reload {css}")
         } else {
             write!(f, "reload all")
         }

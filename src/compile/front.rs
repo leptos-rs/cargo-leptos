@@ -4,8 +4,8 @@ use crate::{
     ext::{
         eyre::AnyhowCompatWrapErr,
         fs,
-        sync::{wait_interruptible, CommandResult},
-        PathBufExt,
+        sync::{wait_interruptible, wait_piped_interruptible, CommandResult, OutputExt},
+        Exe, PathBufExt,
     },
     internal_prelude::*,
     logger::GRAY,
@@ -160,7 +160,7 @@ async fn bindgen(proj: &Project) -> Result<Outcome<Product>> {
     .dot()?;
 
     if proj.release {
-        optimize(&wasm_file.dest).await?;
+        optimize(proj, &wasm_file.dest).await?;
     }
 
     let wasm_optimize_end_time = tokio::time::Instant::now();
@@ -196,29 +196,20 @@ async fn bindgen(proj: &Project) -> Result<Outcome<Product>> {
     Ok(Outcome::Success(Product::Front))
 }
 
-async fn optimize(file: &Utf8Path) -> Result<()> {
-    use crate::ext::{
-        sync::{wait_piped_interruptible, CommandResult, OutputExt},
-        Exe,
-    };
-    use tokio::process::Command;
-
+async fn optimize(proj: &Project, file: &Utf8Path) -> Result<()> {
     let wasm_opt = Exe::WasmOpt.get().await.dot()?;
 
-    let mut cmd = Command::new(wasm_opt);
-    cmd.args([
-        "-Oz",
-        "--enable-bulk-memory",
-        file.as_str(),
-        "-o",
-        file.as_str(),
-    ]);
+    let mut args: Vec<&str> = if let Some(features) = &proj.wasm_opt_features {
+        features.iter().map(|f| f.as_str()).collect()
+    } else {
+        vec!["-Oz", "--enable-bulk-memory"]
+    };
+    args.extend_from_slice(&[file.as_str(), "-o", file.as_str()]);
 
-    trace!(
-        "WASM running wasm-opt -Oz --enable-bulk-memory {} -o {}",
-        file,
-        file
-    );
+    let mut cmd = Command::new(wasm_opt);
+    cmd.args(args.clone());
+
+    trace!("WASM running wasm-opt {}", args.join(" "));
 
     match wait_piped_interruptible("wasm-opt", cmd, crate::signal::Interrupt::subscribe_any())
         .await?
