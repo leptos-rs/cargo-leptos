@@ -1,18 +1,16 @@
 use leptos::prelude::*;
-use leptos_meta::*;
+use leptos::task::spawn_local;
 
 #[component]
 pub fn App() -> impl IntoView {
-    provide_meta_context();
-
     view! {
-        <Stylesheet id="leptos" href="/pkg/example.css" />
-        <Title text="Cargo Leptos" />
-        <main class="my-0 mx-auto max-w-3xl text-center">
-            <h2 class="p-6 text-4xl">"Welcome to Leptos"</h2>
-            <p class="px-10 pb-10 text-left">"This setup includes Tailwind and SASS"</p>
-        </main>
+        <button on:click=|_| spawn_local(on_click())>"click me"</button>
     }
+}
+
+#[lazy]
+pub async fn on_click() {
+    leptos::logging::log!("hello from a lazy function! hello from a lazy function! hello from a lazy function! hello from a lazy function! hello from a lazy function! hello from a lazy function! hello from a lazy function! hello from a lazy function! hello from a lazy function! hello from a lazy function! hello from a lazy function! hello from a lazy function! hello from a lazy function! hello from a lazy function! hello from a lazy function! hello from a lazy function!");
 }
 
 #[cfg(feature = "hydrate")]

@@ -52,13 +52,16 @@ leptos_hot_reload = "0.8.2"
 pathdiff = { version = "0.2.3", features = ["camino"] }
 semver = "1.0"
 md-5 = "0.10.6"
-base64ct = { version = "1.7.3", features = ["alloc"] }
+base64ct = { version = "1.7.3", features = ["std"] }
 swc = "26.0"
 swc_common = "12.0"
 shlex = "1.3"
 cargo-generate = { version = "0.23.3", features = ["vendored-openssl"] }
 ignore = "0.4.23"
 walkdir = "2.5"
+regex = "1.11.1"
+wasm-encoder = { version = "0.206.0", features = ["wasmparser"] }
+wasmparser = "0.206.0"
 
 [dev-dependencies]
 insta = { version = "1.43", features = ["yaml"] }

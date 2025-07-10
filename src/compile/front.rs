@@ -10,6 +10,7 @@ use crate::{
     internal_prelude::*,
     logger::GRAY,
     signal::{Interrupt, Outcome, Product},
+    wasm_split_tools,
 };
 use camino::Utf8Path;
 use std::sync::Arc;
@@ -36,7 +37,9 @@ pub async fn front(
             return Ok(Outcome::Success(Product::None));
         }
 
-        fs::create_dir_all(&proj.site.root_relative_pkg_dir()).await?;
+        let pkg_dir = proj.site.root_relative_pkg_dir();
+
+        fs::create_dir_all(&pkg_dir).await?;
 
         let (envs, line, process) = front_cargo_process("build", true, &proj)?;
 
@@ -48,6 +51,19 @@ pub async fn front(
         }
         debug!("Cargo envs: {}", GRAY.paint(envs));
         info!("Cargo finished {}", GRAY.paint(line));
+
+        if proj.split {
+            info!("Front splitting out lazy-loaded WASM files");
+            let start_time = tokio::time::Instant::now();
+
+            let input_wasm = tokio::fs::read(&proj.lib.wasm_file.source).await?;
+
+            wasm_split_tools::wasm_split(&input_wasm, false, &proj).await?;
+
+            let end_time = tokio::time::Instant::now();
+
+            info!("Finished WASM splitting in {:?}", end_time - start_time);
+        }
 
         bindgen(&proj).await.dot()
     })
@@ -120,6 +136,8 @@ async fn bindgen(proj: &Project) -> Result<Outcome<Product>> {
     // https://github.com/rustwasm/wasm-bindgen/blob/main/crates/cli-support/src/lib.rs#L95
     // https://github.com/rustwasm/wasm-bindgen/blob/main/crates/cli/src/bin/wasm-bindgen.rs#L13
     let mut bindgen = Bindgen::new()
+        .keep_lld_exports(proj.split)
+        .demangle(false)
         .debug(proj.wasm_debug)
         .keep_debug(proj.wasm_debug)
         .input_path(&wasm_file.source)

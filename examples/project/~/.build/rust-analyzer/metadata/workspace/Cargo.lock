@@ -264,7 +264,7 @@ dependencies = [
 [[package]]
 name = "any_spawner"
 version = "0.3.0"
-source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#bb3f1deb1f69f57b76b69c557c55b1dd10244eeb"
+source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#5d9df592d5c131c7c61f7883939b3387b3d729cd"
 dependencies = [
  "futures",
  "thiserror 2.0.12",
@@ -493,9 +493,9 @@ dependencies = [
 
 [[package]]
 name = "config"
-version = "0.15.13"
+version = "0.15.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5b1eb4fb07bc7f012422df02766c7bd5971effb894f573865642f06fa3265440"
+checksum = "9baeea16b4f8fc242a701d2abacd87d3b024af0325fb0b59dd16bc14c214c2af"
 dependencies = [
  "convert_case 0.6.0",
  "pathdiff",
@@ -553,7 +553,7 @@ dependencies = [
 [[package]]
 name = "const_str_slice_concat"
 version = "0.1.0"
-source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#bb3f1deb1f69f57b76b69c557c55b1dd10244eeb"
+source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#5d9df592d5c131c7c61f7883939b3387b3d729cd"
 
 [[package]]
 name = "convert_case"
@@ -750,7 +750,7 @@ checksum = "48c757948c5ede0e46177b7add2e67155f70e33c07fea8284df6576da70b3719"
 [[package]]
 name = "either_of"
 version = "0.1.6"
-source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#bb3f1deb1f69f57b76b69c557c55b1dd10244eeb"
+source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#5d9df592d5c131c7c61f7883939b3387b3d729cd"
 dependencies = [
  "paste",
  "pin-project-lite",
@@ -1186,10 +1186,11 @@ checksum = "df3b46402a9d5adb4c86a0cf463f42e19994e3ee891101b1841f30a545cb49a9"
 [[package]]
 name = "hydration_context"
 version = "0.3.0"
-source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#bb3f1deb1f69f57b76b69c557c55b1dd10244eeb"
+source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#5d9df592d5c131c7c61f7883939b3387b3d729cd"
 dependencies = [
  "futures",
  "js-sys",
+ "once_cell",
  "or_poisoned",
  "pin-project-lite",
  "serde",
@@ -1490,7 +1491,7 @@ checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 [[package]]
 name = "leptos"
 version = "0.8.2"
-source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#bb3f1deb1f69f57b76b69c557c55b1dd10244eeb"
+source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#5d9df592d5c131c7c61f7883939b3387b3d729cd"
 dependencies = [
  "any_spawner",
  "base64",
@@ -1529,7 +1530,7 @@ dependencies = [
 [[package]]
 name = "leptos_actix"
 version = "0.8.2"
-source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#bb3f1deb1f69f57b76b69c557c55b1dd10244eeb"
+source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#5d9df592d5c131c7c61f7883939b3387b3d729cd"
 dependencies = [
  "actix-files",
  "actix-http",
@@ -1543,6 +1544,7 @@ dependencies = [
  "leptos_macro",
  "leptos_meta",
  "leptos_router",
+ "once_cell",
  "parking_lot",
  "send_wrapper",
  "serde_json",
@@ -1554,7 +1556,7 @@ dependencies = [
 [[package]]
 name = "leptos_config"
 version = "0.8.2"
-source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#bb3f1deb1f69f57b76b69c557c55b1dd10244eeb"
+source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#5d9df592d5c131c7c61f7883939b3387b3d729cd"
 dependencies = [
  "config",
  "regex",
@@ -1566,7 +1568,7 @@ dependencies = [
 [[package]]
 name = "leptos_dom"
 version = "0.8.2"
-source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#bb3f1deb1f69f57b76b69c557c55b1dd10244eeb"
+source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#5d9df592d5c131c7c61f7883939b3387b3d729cd"
 dependencies = [
  "js-sys",
  "or_poisoned",
@@ -1580,7 +1582,7 @@ dependencies = [
 [[package]]
 name = "leptos_hot_reload"
 version = "0.8.2"
-source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#bb3f1deb1f69f57b76b69c557c55b1dd10244eeb"
+source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#5d9df592d5c131c7c61f7883939b3387b3d729cd"
 dependencies = [
  "anyhow",
  "camino",
@@ -1597,7 +1599,7 @@ dependencies = [
 [[package]]
 name = "leptos_integration_utils"
 version = "0.8.2"
-source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#bb3f1deb1f69f57b76b69c557c55b1dd10244eeb"
+source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#5d9df592d5c131c7c61f7883939b3387b3d729cd"
 dependencies = [
  "futures",
  "hydration_context",
@@ -1611,7 +1613,7 @@ dependencies = [
 [[package]]
 name = "leptos_macro"
 version = "0.8.2"
-source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#bb3f1deb1f69f57b76b69c557c55b1dd10244eeb"
+source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#5d9df592d5c131c7c61f7883939b3387b3d729cd"
 dependencies = [
  "attribute-derive",
  "cfg-if",
@@ -1633,11 +1635,12 @@ dependencies = [
 [[package]]
 name = "leptos_meta"
 version = "0.8.2"
-source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#bb3f1deb1f69f57b76b69c557c55b1dd10244eeb"
+source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#5d9df592d5c131c7c61f7883939b3387b3d729cd"
 dependencies = [
  "futures",
  "indexmap",
  "leptos",
+ "once_cell",
  "or_poisoned",
  "send_wrapper",
  "wasm-bindgen",
@@ -1647,7 +1650,7 @@ dependencies = [
 [[package]]
 name = "leptos_router"
 version = "0.8.2"
-source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#bb3f1deb1f69f57b76b69c557c55b1dd10244eeb"
+source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#5d9df592d5c131c7c61f7883939b3387b3d729cd"
 dependencies = [
  "any_spawner",
  "either_of",
@@ -1656,6 +1659,7 @@ dependencies = [
  "js-sys",
  "leptos",
  "leptos_router_macro",
+ "once_cell",
  "or_poisoned",
  "percent-encoding",
  "reactive_graph",
@@ -1671,7 +1675,7 @@ dependencies = [
 [[package]]
 name = "leptos_router_macro"
 version = "0.8.2"
-source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#bb3f1deb1f69f57b76b69c557c55b1dd10244eeb"
+source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#5d9df592d5c131c7c61f7883939b3387b3d729cd"
 dependencies = [
  "proc-macro-error2",
  "proc-macro2",
@@ -1682,7 +1686,7 @@ dependencies = [
 [[package]]
 name = "leptos_server"
 version = "0.8.2"
-source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#bb3f1deb1f69f57b76b69c557c55b1dd10244eeb"
+source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#5d9df592d5c131c7c61f7883939b3387b3d729cd"
 dependencies = [
  "any_spawner",
  "base64",
@@ -1841,7 +1845,7 @@ dependencies = [
 [[package]]
 name = "next_tuple"
 version = "0.1.0"
-source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#bb3f1deb1f69f57b76b69c557c55b1dd10244eeb"
+source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#5d9df592d5c131c7c61f7883939b3387b3d729cd"
 
 [[package]]
 name = "num-conv"
@@ -1880,7 +1884,7 @@ dependencies = [
 [[package]]
 name = "oco_ref"
 version = "0.2.0"
-source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#bb3f1deb1f69f57b76b69c557c55b1dd10244eeb"
+source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#5d9df592d5c131c7c61f7883939b3387b3d729cd"
 dependencies = [
  "serde",
  "thiserror 2.0.12",
@@ -1939,7 +1943,7 @@ dependencies = [
 [[package]]
 name = "or_poisoned"
 version = "0.1.0"
-source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#bb3f1deb1f69f57b76b69c557c55b1dd10244eeb"
+source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#5d9df592d5c131c7c61f7883939b3387b3d729cd"
 
 [[package]]
 name = "parking"
@@ -2184,7 +2188,7 @@ dependencies = [
 [[package]]
 name = "reactive_graph"
 version = "0.2.2"
-source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#bb3f1deb1f69f57b76b69c557c55b1dd10244eeb"
+source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#5d9df592d5c131c7c61f7883939b3387b3d729cd"
 dependencies = [
  "any_spawner",
  "async-lock",
@@ -2205,7 +2209,7 @@ dependencies = [
 [[package]]
 name = "reactive_stores"
 version = "0.2.2"
-source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#bb3f1deb1f69f57b76b69c557c55b1dd10244eeb"
+source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#5d9df592d5c131c7c61f7883939b3387b3d729cd"
 dependencies = [
  "dashmap",
  "guardian",
@@ -2221,7 +2225,7 @@ dependencies = [
 [[package]]
 name = "reactive_stores_macro"
 version = "0.2.2"
-source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#bb3f1deb1f69f57b76b69c557c55b1dd10244eeb"
+source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#5d9df592d5c131c7c61f7883939b3387b3d729cd"
 dependencies = [
  "convert_case 0.8.0",
  "proc-macro-error2",
@@ -2379,9 +2383,9 @@ dependencies = [
 
 [[package]]
 name = "rustls"
-version = "0.23.29"
+version = "0.23.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2491382039b29b9b11ff08b76ff6c97cf287671dbb74f0be44bda389fffe9bd1"
+checksum = "7160e3e10bf4535308537f3c4e1641468cd0e485175d6163087c0393c7d46643"
 dependencies = [
  "once_cell",
  "rustls-pki-types",
@@ -2401,9 +2405,9 @@ dependencies = [
 
 [[package]]
 name = "rustls-webpki"
-version = "0.103.4"
+version = "0.103.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0a17884ae0c1b773f1ccd2bd4a8c72f16da897310a98b0e84bf349ad5ead92fc"
+checksum = "e4a72fe2bcf7a6ac6fd7d0b9e5cb68aeb7d4c0a0271730218b3e92d43b4eb435"
 dependencies = [
  "ring",
  "rustls-pki-types",
@@ -2551,7 +2555,7 @@ dependencies = [
 [[package]]
 name = "server_fn"
 version = "0.8.2"
-source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#bb3f1deb1f69f57b76b69c557c55b1dd10244eeb"
+source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#5d9df592d5c131c7c61f7883939b3387b3d729cd"
 dependencies = [
  "actix-web",
  "actix-ws",
@@ -2565,6 +2569,7 @@ dependencies = [
  "http 1.3.1",
  "inventory",
  "js-sys",
+ "once_cell",
  "pin-project-lite",
  "rustc_version",
  "rustversion",
@@ -2586,7 +2591,7 @@ dependencies = [
 [[package]]
 name = "server_fn_macro"
 version = "0.8.2"
-source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#bb3f1deb1f69f57b76b69c557c55b1dd10244eeb"
+source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#5d9df592d5c131c7c61f7883939b3387b3d729cd"
 dependencies = [
  "const_format",
  "convert_case 0.8.0",
@@ -2600,7 +2605,7 @@ dependencies = [
 [[package]]
 name = "server_fn_macro_default"
 version = "0.8.2"
-source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#bb3f1deb1f69f57b76b69c557c55b1dd10244eeb"
+source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#5d9df592d5c131c7c61f7883939b3387b3d729cd"
 dependencies = [
  "server_fn_macro",
  "syn",
@@ -2764,8 +2769,8 @@ dependencies = [
 
 [[package]]
 name = "tachys"
-version = "0.2.3"
-source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#bb3f1deb1f69f57b76b69c557c55b1dd10244eeb"
+version = "0.2.2"
+source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#5d9df592d5c131c7c61f7883939b3387b3d729cd"
 dependencies = [
  "any_spawner",
  "async-trait",
@@ -2781,6 +2786,7 @@ dependencies = [
  "linear-map",
  "next_tuple",
  "oco_ref",
+ "once_cell",
  "or_poisoned",
  "parking_lot",
  "paste",
@@ -2851,7 +2857,7 @@ dependencies = [
 [[package]]
 name = "throw_error"
 version = "0.3.0"
-source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#bb3f1deb1f69f57b76b69c557c55b1dd10244eeb"
+source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#5d9df592d5c131c7c61f7883939b3387b3d729cd"
 dependencies = [
  "pin-project-lite",
 ]
@@ -2953,9 +2959,9 @@ dependencies = [
 
 [[package]]
 name = "toml"
-version = "0.9.1"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0207d6ed1852c2a124c1fbec61621acb8330d2bf969a5d0643131e9affd985a5"
+checksum = "f271e09bde39ab52250160a67e88577e0559ad77e9085de6e9051a2c4353f8f8"
 dependencies = [
  "serde",
  "serde_spanned",
@@ -3294,7 +3300,7 @@ dependencies = [
 [[package]]
 name = "wasm_split"
 version = "0.1.0"
-source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#bb3f1deb1f69f57b76b69c557c55b1dd10244eeb"
+source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#5d9df592d5c131c7c61f7883939b3387b3d729cd"
 dependencies = [
  "async-once-cell",
  "wasm_split_macros",
@@ -3303,7 +3309,7 @@ dependencies = [
 [[package]]
 name = "wasm_split_macros"
 version = "0.1.0"
-source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#bb3f1deb1f69f57b76b69c557c55b1dd10244eeb"
+source = "git+https://github.com/leptos-rs/leptos?branch=wasm-splitting-support#5d9df592d5c131c7c61f7883939b3387b3d729cd"
 dependencies = [
  "base16",
  "digest",

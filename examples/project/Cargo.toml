@@ -12,10 +12,10 @@ crate-type = ["cdylib", "rlib"]
 
 
 [dependencies]
-leptos_router = { version = "0.7.7", default-features = false }
-leptos = { version = "0.7.7", default-features = false }
-leptos_meta = { version = "0.7.7", default-features = false }
-leptos_dom = { version = "0.7.7", default-features = false }
+leptos_router = { git = "https://github.com/leptos-rs/leptos", branch = "wasm-splitting-support", default-features = false }
+leptos = { git = "https://github.com/leptos-rs/leptos", branch = "wasm-splitting-support", default-features = false }
+leptos_meta = { git = "https://github.com/leptos-rs/leptos", branch = "wasm-splitting-support", default-features = false }
+leptos_dom = { git = "https://github.com/leptos-rs/leptos", branch = "wasm-splitting-support" }
 
 
 gloo-net = { version = "0.6", features = ["http"] }
@@ -34,7 +34,7 @@ futures = { version = "0.3.31", optional = true }
 simple_logger = { version = "5.0.0", optional = true }
 serde_json = { version = "1.0.140", optional = true }
 reqwest = { version = "0.12.12", features = ["json"], optional = true }
-leptos_actix = { version = "0.7.7", optional = true }
+leptos_actix = { git = "https://github.com/leptos-rs/leptos", branch = "wasm-splitting-support", optional = true }
 dotenvy = { version = "0.15.7", optional = true }
 
 [profile.release]
@@ -118,7 +118,7 @@ env = "dev"
 # Enables additional file hashes on outputted css, js, and wasm files
 #
 # Optional: Defaults to false. Can also be set with the LEPTOS_HASH_FILES=false env var
-hash-files = true
+#hash-files = true
 
 server-fn-prefix = "/custom/prefix"
 disable-server-fn-hash = true
