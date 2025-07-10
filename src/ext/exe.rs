@@ -508,42 +508,28 @@ impl Command for CommandWasmOpt {
     }
 
     fn download_url(&self, target_os: &str, target_arch: &str, version: &str) -> Result<String> {
+        // https://github.com/WebAssembly/binaryen/releases/download/version_123/binaryen-version_123-x86_64-windows.tar.gz - ✅
+        // https://github.com/WebAssembly/binaryen/releases/download/version_123/binaryen-version_123-x86_64-macos.tar.gz - ✅
+        // https://github.com/WebAssembly/binaryen/releases/download/version_123/binaryen-version_123-arm64-macos.tar.gz - ✅
+        // https://github.com/WebAssembly/binaryen/releases/download/version_123/binaryen-version_123-aarch64-linux.tar.gz - ✅
+        // https://github.com/WebAssembly/binaryen/releases/download/version_123/binaryen-version_123-x86_64-linux.tar.gz - ✅
+        // https://github.com/WebAssembly/binaryen/releases/download/version_123/binaryen-version_123-node.tar.gz
+
+        let base_url = format!(
+            "https://github.com/{}/{}/releases/download/{}/binaryen-{}",
+            self.github_owner(),
+            self.github_repo(),
+            version,
+            version
+        );
         match (target_os, target_arch) {
-            ("windows", "x86_64") => Ok(format!(
-                "https://github.com/{}/{}/releases/download/{}/binaryen-{}-x86_64-windows.tar.gz",
-                self.github_owner(),
-                self.github_repo(),
-                version,
-                version
-            )),
-            ("macos", "x86_64") => Ok(format!(
-                "https://github.com/{}/{}/releases/download/{}/binaryen-{}-x86_64-macos.tar.gz",
-                self.github_owner(),
-                self.github_repo(),
-                version,
-                version
-            )),
-            ("macos", "aarch64") => Ok(format!(
-                "https://github.com/{}/{}/releases/download/{}/binaryen-{}-arm64-macos.tar.gz",
-                self.github_owner(),
-                self.github_repo(),
-                version,
-                version
-            )),
-            ("linux", "x86_64") => Ok(format!(
-                "https://github.com/{}/{}/releases/download/{}/binaryen-{}-x86_64-linux.tar.gz",
-                self.github_owner(),
-                self.github_repo(),
-                version,
-                version
-            )),
-            ("linux", "aarch64") => Ok(format!(
-                "https://github.com/{}/{}/releases/download/{}/binaryen-{}-arm64-linux.tar.gz",
-                self.github_owner(),
-                self.github_repo(),
-                version,
-                version
-            )),
+            ("windows", "x86_64") => Ok(format!("{base_url}-x86_64-windows.tar.gz")),
+            ("macos", "x86_64") => Ok(format!("{base_url}-x86_64-macos.tar.gz")),
+            ("macos", "aarch64") => Ok(format!("{base_url}-arm64-macos.tar.gz")),
+            ("macos", "arm64") => Ok(format!("{base_url}-arm64-macos.tar.gz")),
+            ("linux", "aarch64") => Ok(format!("{base_url}-aarch64-linux.tar.gz")),
+            ("linux", "arm64") => Ok(format!("{base_url}-aarch64-linux.tar.gz")),
+            ("linux", "x86_64") => Ok(format!("{base_url}-x86_64-linux.tar.gz")),
             _ => bail!(
                 "Command [{}] failed to find a match for {}-{} ",
                 self.name(),
