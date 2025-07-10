@@ -230,9 +230,9 @@ disable-erase-components = false
 
 # Enabling wasm-opt features
 #
-# Optional. By default, "-Oz" and "--enable-bulk-memory" are used. For all features, consult `wasm-opt --help`.
+# Optional. By default, "-Oz", "--enable-bulk-memory" and "--enable-nontrapping-float-to-int"  are used. For all features, consult `wasm-opt --help`.
 # By providing features, you will override the default enabled features.
-wasm-opt-features = ["-Oz","--enable-bulk-memory"]
+wasm-opt-features = ["-Oz","--enable-bulk-memory","--enable-nontrapping-float-to-int"]
 ```
 
 ## Site parameters
