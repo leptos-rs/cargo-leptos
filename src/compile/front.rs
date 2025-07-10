@@ -137,7 +137,7 @@ async fn bindgen(proj: &Project) -> Result<Outcome<Product>> {
     // https://github.com/rustwasm/wasm-bindgen/blob/main/crates/cli/src/bin/wasm-bindgen.rs#L13
     let mut bindgen = Bindgen::new()
         .keep_lld_exports(proj.split)
-        .demangle(false)
+        .demangle(!proj.split)
         .debug(proj.wasm_debug)
         .keep_debug(proj.wasm_debug)
         .input_path(&wasm_file.source)
