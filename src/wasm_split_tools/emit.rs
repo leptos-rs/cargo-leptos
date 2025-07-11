@@ -915,7 +915,7 @@ pub fn emit_modules(
     module: &InputModule,
     program_info: &mut SplitProgramInfo,
     // returns the hash of the contents
-    emit_fn: impl Fn(&SplitModuleIdentifier, &[u8], &str) -> Result<()>,
+    mut emit_fn: impl FnMut(&SplitModuleIdentifier, &[u8], &str) -> Result<()>,
 ) -> Result<()> {
     // For now we will ignore data symbols because that simplifies things quite a bit.
 

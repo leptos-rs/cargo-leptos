@@ -8,10 +8,17 @@ mod read;
 mod split_point;
 
 use crate::{config::Project, ext::PathBufExt, internal_prelude::*};
+use camino::Utf8PathBuf;
 use split_point::SplitModuleIdentifier;
 use std::{collections::HashMap, path::Path};
 
-pub async fn wasm_split(input_wasm: &[u8], verbose: bool, proj: &Project) -> Result<()> {
+pub async fn wasm_split(
+    input_wasm: &[u8],
+    verbose: bool,
+    proj: &Project,
+) -> Result<Vec<Utf8PathBuf>> {
+    let mut split_files = vec![];
+
     let module = self::read::InputModule::parse(input_wasm)?;
     let dep_graph = dep_graph::get_dependencies(&module)?;
     let split_points = split_point::get_split_points(&module)?;
@@ -35,14 +42,19 @@ pub async fn wasm_split(input_wasm: &[u8], verbose: bool, proj: &Project) -> Res
     self::emit::emit_modules(
         &module,
         &mut split_program_info,
-        move |identifier: &SplitModuleIdentifier, data: &[u8], hash: &str| -> Result<()> {
+        |identifier: &SplitModuleIdentifier, data: &[u8], hash: &str| -> Result<()> {
             let name = identifier.name_hashed(&proj);
             let output_path = match identifier {
                 SplitModuleIdentifier::Main => proj.lib.wasm_file.source.clone(),
                 _ => dest_dir.join(format!("{name}.{hash}.wasm", name = identifier.name(&proj))),
             };
 
-            std::fs::write(output_path, data)?;
+            std::fs::write(&output_path, data)?;
+
+            if !matches!(identifier, SplitModuleIdentifier::Main) {
+                split_files.push(output_path);
+            }
+
             Ok(())
         },
     )?;
@@ -139,5 +151,5 @@ function makeLoad(url, deps) {
     )
     .await?;
 
-    Ok(())
+    Ok(split_files)
 }
