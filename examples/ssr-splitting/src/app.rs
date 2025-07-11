@@ -10,8 +10,6 @@ use serde::{Deserialize, Serialize};
 // This component sets up the router and navigation links.
 #[component]
 pub fn App() -> impl IntoView {
-    let count = RwSignal::new(0);
-    provide_context(count);
     let (is_routing, set_is_routing) = signal(false);
 
     view! {
