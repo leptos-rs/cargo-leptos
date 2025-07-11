@@ -74,6 +74,7 @@ async fn lazy_value() -> String {
 // The `deserialize_comments` function is marked with `#[lazy]`,
 // so its code is loaded only when needed.
 #[derive(Debug, Clone, Deserialize)]
+#[allow(dead_code)]
 pub struct Comment {
     #[serde(rename = "postId")]
     post_id: usize,
