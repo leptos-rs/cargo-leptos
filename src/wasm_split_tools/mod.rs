@@ -7,10 +7,10 @@ mod emit;
 mod read;
 mod split_point;
 
-use crate::{config::Project, ext::PathBufExt, internal_prelude::*};
+use crate::{config::Project, internal_prelude::*};
 use camino::Utf8PathBuf;
 use split_point::SplitModuleIdentifier;
-use std::{collections::HashMap, path::Path};
+use std::collections::HashMap;
 
 pub async fn wasm_split(
     input_wasm: &[u8],
@@ -37,16 +37,16 @@ pub async fn wasm_split(
         .dest
         .parent()
         .expect("no destination directory");
-    std::fs::create_dir_all(&dest_dir)?;
+    std::fs::create_dir_all(dest_dir)?;
 
     self::emit::emit_modules(
         &module,
         &mut split_program_info,
         |identifier: &SplitModuleIdentifier, data: &[u8], hash: &str| -> Result<()> {
-            let name = identifier.name_hashed(&proj);
+            let name = identifier.name_hashed(proj);
             let output_path = match identifier {
                 SplitModuleIdentifier::Main => proj.lib.wasm_file.source.clone(),
-                _ => dest_dir.join(format!("{name}.{hash}.wasm", name = identifier.name(&proj))),
+                _ => dest_dir.join(format!("{name}.{hash}.wasm", name = identifier.name(proj))),
             };
 
             std::fs::write(&output_path, data)?;
@@ -115,19 +115,19 @@ function makeLoad(url, deps) {
             split_deps
                 .entry(split.clone())
                 .or_default()
-                .push(name.name_hashed(&proj));
+                .push(name.name_hashed(proj));
         }
         javascript.push_str(format!(
             "const __wasm_split_load_{name} = makeLoad(new URL(\"./{name}.{hash}.wasm\", import.meta.url), []);\n",
-            name = name.name(&proj),
+            name = name.name(proj),
         ).as_str())
     }
     for (identifier, _) in split_program_info.output_modules.iter().rev() {
         if matches!(identifier, SplitModuleIdentifier::Chunk { .. }) {
             continue;
         }
-        let name = identifier.name(&proj);
-        let name_hashed = identifier.name_hashed(&proj);
+        let name = identifier.name(proj);
+        let name_hashed = identifier.name_hashed(proj);
         javascript.push_str(format!(
             "export const __wasm_split_load_{name} = makeLoad(new URL(\"./{name_hashed}.wasm\", import.meta.url), [{deps}]);\n",
             deps = split_deps
