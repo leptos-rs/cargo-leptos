@@ -7,14 +7,10 @@ pub use wasmparser::{
 };
 use wasmparser::{Payload, TypeRef};
 
-pub type InputRange = Range<usize>;
-
 pub struct CustomSection<'a> {
     pub name: &'a str,
     pub data_offset: usize,
     pub data: &'a [u8],
-    pub section_index: usize,
-    pub range: InputRange,
 }
 
 pub type FuncTypeId = usize;
@@ -289,9 +285,7 @@ impl<'a> InputModule<'a> {
                 Payload::CustomSection(reader) => {
                     module.custom_sections.push(CustomSection {
                         name: reader.name(),
-                        section_index,
                         data: reader.data(),
-                        range: reader.range(),
                         data_offset: reader.data_offset(),
                     });
                     section_index += 1;

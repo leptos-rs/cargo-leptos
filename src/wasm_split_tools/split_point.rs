@@ -22,32 +22,6 @@ pub struct SplitPoint {
     pub export_func: InputFuncId,
 }
 
-pub fn get_split_modules(module: &InputModule) -> HashMap<String, SplitModule> {
-    const PREFIX: &str = "__wasm_split_load_";
-    let mut split_modules: HashMap<String, SplitModule> = HashMap::new();
-    for (i, info) in module.symbols.iter().enumerate() {
-        let wasmparser::SymbolInfo::Func {
-            name: Some(symbol_name),
-            ..
-        } = info
-        else {
-            continue;
-        };
-        if !symbol_name.starts_with(PREFIX) {
-            continue;
-        }
-        let name = &symbol_name[PREFIX.len()..];
-        split_modules.insert(
-            name.into(),
-            SplitModule {
-                module_name: String::from(name),
-                load_func: i,
-            },
-        );
-    }
-    split_modules
-}
-
 pub fn get_split_points(module: &InputModule) -> Result<Vec<SplitPoint>> {
     macro_rules! process_imports_or_exports {
         ($pattern:expr, $map:ident, $member:ident, $id_ty:ty) => {
@@ -179,12 +153,7 @@ fn print_deps(
         };
         let size = index
             .checked_sub(module.imported_funcs.len())
-            .map(|defined_index| {
-                module.defined_funcs[index - module.imported_funcs.len()]
-                    .body
-                    .range()
-                    .len()
-            })
+            .map(|defined_index| module.defined_funcs[defined_index].body.range().len())
             .unwrap_or_default();
         total_size += size;
         trace!("wasm_split    {} size={size:?}", format_dep(dep));
@@ -198,6 +167,7 @@ fn print_deps(
 }
 
 impl ReachabilityGraph {
+    #[allow(unused)] // useful to keep this function for future debugging as needed
     pub fn print(&self, module_name: &str, module: &InputModule) {
         print_deps(module_name, module, &self.reachable, &self.parents);
     }

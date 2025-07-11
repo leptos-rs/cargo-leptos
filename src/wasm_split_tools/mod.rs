@@ -43,7 +43,6 @@ pub async fn wasm_split(
         &module,
         &mut split_program_info,
         |identifier: &SplitModuleIdentifier, data: &[u8], hash: &str| -> Result<()> {
-            let name = identifier.name_hashed(proj);
             let output_path = match identifier {
                 SplitModuleIdentifier::Main => proj.lib.wasm_file.source.clone(),
                 _ => dest_dir.join(format!("{name}.{hash}.wasm", name = identifier.name(proj))),

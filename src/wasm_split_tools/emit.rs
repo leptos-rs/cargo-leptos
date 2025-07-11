@@ -1,3 +1,5 @@
+#![allow(clippy::needless_range_loop)]
+
 use crate::internal_prelude::*;
 use md5::{Digest, Md5};
 use std::{
@@ -8,7 +10,7 @@ use std::{
 
 use super::{
     dep_graph::DepNode,
-    read::{ImportId, InputFuncId, InputModule},
+    read::{InputFuncId, InputModule},
     split_point::{OutputModuleInfo, SplitModuleIdentifier, SplitProgramInfo},
 };
 use base64ct::{Base64UrlUnpadded, Encoding};
@@ -54,9 +56,6 @@ struct EmitState {
     // All relocations, ordered by offset, which are relative to the start of
     // the file rather than the start of the section.
     all_relocations: Vec<RelocationEntry>,
-
-    // Imports (corresponding to split points) to exclude from all modules.
-    split_point_imports: HashSet<ImportId>,
 }
 
 impl EmitState {
@@ -85,16 +84,10 @@ impl EmitState {
             }
         }
         all_relocations.sort_by_key(|reloc| reloc.offset);
-        let mut split_point_imports = HashSet::<InputFuncId>::new();
-        for (_, output_module) in program_info.output_modules.iter() {
-            for split_point in output_module.split_points.iter() {
-                split_point_imports.insert(split_point.import);
-            }
-        }
+
         Ok(EmitState {
             indirect_functions,
             all_relocations,
-            split_point_imports,
         })
     }
 
@@ -109,26 +102,6 @@ impl EmitState {
             .map_or_else(identity, identity);
         &self.all_relocations[start..end]
     }
-}
-
-fn emit_main_module(
-    module_info: &InputModule,
-    program_info: &SplitProgramInfo,
-    emit_state: &EmitState,
-) -> Result<()> {
-    // // Currently it is not possible to clone an existing `walrus::Module`.
-    // // Therefore, we simply reparse the wasm.
-    // let mut new_module = walrus::Module::from_buffer(module_info.wasm)?;
-
-    // // Modify indirect function table.
-    // let table = new_module
-    //     .tables
-    //     .get_mut(emit_state.indirect_function_table_id);
-    // if let Some(mut max) = table.maximum {
-    //     max = max.max(emit_state.max_indirect_function_index);
-    // };
-
-    Ok(())
 }
 
 #[derive(Debug, Default)]
@@ -216,16 +189,6 @@ fn encode_leb128_i32_5byte(mut value: i32, buf: &mut [u8; 5]) {
     }
 }
 
-fn encode_leb128_u64_10byte(mut value: u64, buf: &mut [u8; 10]) {
-    for i in 0..10 {
-        buf[i] = (value as u8) & 0x7f;
-        value >>= 7;
-    }
-    for i in 0..9 {
-        buf[i] |= 0x80;
-    }
-}
-
 fn encode_leb128_i64_10byte(mut value: i64, buf: &mut [u8; 10]) {
     for i in 0..10 {
         buf[i] = (value as u8) & 0x7f;
@@ -241,14 +204,6 @@ fn encode_u32(value: u32, buf: &mut [u8; 4]) {
 }
 
 fn encode_u64(value: u64, buf: &mut [u8; 8]) {
-    *buf = value.to_le_bytes();
-}
-
-fn encode_i32(value: i32, buf: &mut [u8; 4]) {
-    *buf = value.to_le_bytes();
-}
-
-fn encode_i64(value: i64, buf: &mut [u8; 8]) {
     *buf = value.to_le_bytes();
 }
 
@@ -270,7 +225,6 @@ struct ModuleEmitState<'a> {
     output_module_index: usize,
     output_module_info: &'a OutputModuleInfo,
     emit_state: &'a EmitState,
-    program_info: &'a SplitProgramInfo,
     output_module: wasm_encoder::Module,
     output_functions: Vec<OutputFunction>,
     input_function_output_id: HashMap<InputFuncId, usize>,
@@ -353,7 +307,6 @@ impl<'a> ModuleEmitState<'a> {
             output_module_index,
             output_module_info,
             emit_state,
-            program_info,
             output_module: wasm_encoder::Module::new(),
             output_functions,
             input_function_output_id,
@@ -473,7 +426,7 @@ impl<'a> ModuleEmitState<'a> {
         // Encode type section
         self.generate_type_section()?;
         self.generate_import_section();
-        self.generate_function_section();
+        self.generate_function_section()?;
         self.generate_table_section();
         self.generate_memory_section();
         self.generate_global_section();
