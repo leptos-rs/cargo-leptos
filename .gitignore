@@ -17,3 +17,6 @@ playwright/.cache/
 .idea/
 
 .direnv/
+
+
+**/rust-analyzer/*

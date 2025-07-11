@@ -13,11 +13,7 @@ cfg_if! {
                     console_error_panic_hook::set_once();
                     _ = console_log::init_with_level(log::Level::Debug);
 
-                    logging::log!("hydrate mode - hydrating ({})", app::message());
-
-                    leptos::mount::hydrate_body(|| {
-                        view! { <App/> }
-                    });
+                    leptos::mount::hydrate_body(App);
             }
     }
 }

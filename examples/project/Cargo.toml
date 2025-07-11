@@ -17,10 +17,12 @@ leptos = { git = "https://github.com/leptos-rs/leptos", branch = "wasm-splitting
 leptos_meta = { git = "https://github.com/leptos-rs/leptos", branch = "wasm-splitting-support", default-features = false }
 leptos_dom = { git = "https://github.com/leptos-rs/leptos", branch = "wasm-splitting-support" }
 
-
 gloo-net = { version = "0.6", features = ["http"] }
 log = "0.4.26"
 cfg-if = "1.0.0"
+futures = "0.3"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 
 # dependecies for client (enable hydrate set)
 wasm-bindgen = { version = "=0.2.100", optional = true }
@@ -30,9 +32,7 @@ console_error_panic_hook = { version = "0.1.7", optional = true }
 # dependecies for server (enable when ssr set)
 actix-files = { version = "0.6.6", optional = true }
 actix-web = { version = "4.9.0", features = ["macros"], optional = true }
-futures = { version = "0.3.31", optional = true }
 simple_logger = { version = "5.0.0", optional = true }
-serde_json = { version = "1.0.140", optional = true }
 reqwest = { version = "0.12.12", features = ["json"], optional = true }
 leptos_actix = { git = "https://github.com/leptos-rs/leptos", branch = "wasm-splitting-support", optional = true }
 dotenvy = { version = "0.15.7", optional = true }
@@ -58,9 +58,7 @@ ssr = [
     "dep:reqwest",
     "dep:actix-web",
     "dep:actix-files",
-    "dep:futures",
     "dep:simple_logger",
-    "dep:serde_json",
     "dep:dotenvy",
 ]
 
