@@ -45,7 +45,11 @@ pub async fn wasm_split(
         |identifier: &SplitModuleIdentifier, data: &[u8], hash: &str| -> Result<()> {
             let output_path = match identifier {
                 SplitModuleIdentifier::Main => proj.lib.wasm_file.source.clone(),
-                _ => dest_dir.join(format!("{name}.{hash}.wasm", name = identifier.name(proj))),
+                _ => {
+                    let name = identifier.name(proj);
+                    let name_hashed = format!("{name}.{hash}");
+                    dest_dir.join(name_hashed + ".wasm")
+                }
             };
 
             std::fs::write(&output_path, data)?;
@@ -106,37 +110,50 @@ function makeLoad(url, deps) {
 "#,
     );
     let mut split_deps = HashMap::<String, Vec<String>>::new();
-    for (name, _) in split_program_info.output_modules.iter() {
-        let SplitModuleIdentifier::Chunk { splits, hash } = name else {
+    for (identifier, _) in split_program_info.output_modules.iter() {
+        let SplitModuleIdentifier::Chunk { splits, .. } = identifier else {
             continue;
         };
-        for split in splits {
+        let chunk_name_hashed = identifier.name_hashed(proj);
+        let chunk_name_sanitized = chunk_name_hashed.replace(['.', '-'], "_");
+
+        for split_name in splits {
             split_deps
-                .entry(split.clone())
+                .entry(split_name.clone())
                 .or_default()
-                .push(name.name_hashed(proj));
+                .push(chunk_name_sanitized.clone());
         }
-        javascript.push_str(format!(
-            "const __wasm_split_load_{name} = makeLoad(new URL(\"./{name}.{hash}.wasm\", import.meta.url), []);\n",
-            name = name.name(proj),
-        ).as_str())
+
+        if !chunk_name_hashed.is_empty() {
+            javascript.push_str(
+                format!(
+                    "const __wasm_split_load_{chunk_name_sanitized} = makeLoad(new URL(\"./{chunk_name_hashed}.wasm\", import.meta.url), []);\n",
+                ).as_str()
+            )
+        }
     }
+
     for (identifier, _) in split_program_info.output_modules.iter().rev() {
-        if matches!(identifier, SplitModuleIdentifier::Chunk { .. }) {
+        if !matches!(identifier, SplitModuleIdentifier::Split { .. }) {
             continue;
         }
-        let name = identifier.name(proj);
         let name_hashed = identifier.name_hashed(proj);
-        javascript.push_str(format!(
-            "export const __wasm_split_load_{name} = makeLoad(new URL(\"./{name_hashed}.wasm\", import.meta.url), [{deps}]);\n",
-            deps = split_deps
-            .remove(&name_hashed)
-            .unwrap_or_default()
-            .iter()
-            .map(|x| format!("__wasm_split_load_{x}"))
-            .collect::<Vec<_>>()
-            .join(", "),
-        ).as_str())
+        if !name_hashed.is_empty() {
+            if let SplitModuleIdentifier::Split { name, .. } = identifier {
+                javascript.push_str(
+                    format!(
+                        "export const __wasm_split_load_{name} = makeLoad(new URL(\"./{name_hashed}.wasm\", import.meta.url), [{deps}]);\n",
+                        deps = split_deps
+                            .remove(name)
+                            .unwrap_or_default()
+                            .iter()
+                            .map(|x| format!("__wasm_split_load_{x}"))
+                            .collect::<Vec<_>>()
+                            .join(", "),
+                    ).as_str()
+                )
+            }
+        }
     }
 
     tokio::fs::write(
