@@ -216,11 +216,11 @@ impl Project {
                 let _ = rustflags
                     .encode_space_separated()
                     .inspect(|rustflags| {
-                        vec.push(("RUSTFLAGS", format!("{rustflags} {additional_rustflags}")))
+                        vec.push(("RUSTFLAGS", format!("{rustflags}{additional_rustflags}")))
                     })
                     .inspect_err(|err| error!("Failed to set 'RUSTFLAGS': {}", err));
             } else {
-                vec.push(("RUSTFLAGS", additional_rustflags))
+                vec.push(("RUSTFLAGS", additional_rustflags.trim().to_string()))
             }
         }
 
