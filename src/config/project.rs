@@ -44,6 +44,7 @@ pub struct Project {
     pub hash_file: HashFile,
     pub hash_files: bool,
     pub js_minify: bool,
+    pub split: bool,
     pub server_fn_prefix: Option<String>,
     pub disable_server_fn_hash: bool,
     pub disable_erase_components: bool,
@@ -63,6 +64,7 @@ impl Debug for Project {
             .field("release", &self.release)
             .field("precompress", &self.precompress)
             .field("js_minify", &self.js_minify)
+            .field("split", &self.split)
             .field("hot_reload", &self.hot_reload)
             .field("site", &self.site)
             .field("end2end", &self.end2end)
@@ -135,6 +137,7 @@ impl Project {
                 hash_file,
                 hash_files: config.hash_files,
                 js_minify: cli.release && (cli.js_minify || config.js_minify),
+                split: cli.split,
                 server_fn_prefix: config.server_fn_prefix,
                 disable_server_fn_hash: config.disable_server_fn_hash,
                 disable_erase_components: config.disable_erase_components,
@@ -189,9 +192,19 @@ impl Project {
             vec.push(("SERVER_FN_MOD_PATH", self.server_fn_mod_path.to_string()));
         }
 
+        // add -Clink-args=--emit-relocs for wasm-splitting
+        let mut additional_rustflags = String::new();
+        if wasm && self.split {
+            additional_rustflags.push_str(" -Clink-args=--emit-relocs");
+        }
+
         // Set the default to erase-components mode if in debug mode and not explicitly disabled
         // or always enabled
         if (!self.disable_erase_components && !self.release) || (self.always_erase_components) {
+            additional_rustflags.push_str(" --cfg erase_components");
+        }
+
+        if !additional_rustflags.is_empty() {
             let config = cargo_config2::Config::load().expect("Valid config file");
             let rustflags = if wasm {
                 config.rustflags("wasm32-unknown-unknown")
@@ -203,13 +216,14 @@ impl Project {
                 let _ = rustflags
                     .encode_space_separated()
                     .inspect(|rustflags| {
-                        vec.push(("RUSTFLAGS", format!("{rustflags} --cfg erase_components")))
+                        vec.push(("RUSTFLAGS", format!("{rustflags}{additional_rustflags}")))
                     })
-                    .inspect_err(|err| error!("Failed to set '--cfg erase_components': {}", err));
+                    .inspect_err(|err| error!("Failed to set 'RUSTFLAGS': {}", err));
             } else {
-                vec.push(("RUSTFLAGS", "--cfg erase_components".to_string()))
+                vec.push(("RUSTFLAGS", additional_rustflags.trim().to_string()))
             }
         }
+
         vec
     }
 }

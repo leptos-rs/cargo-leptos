@@ -14,6 +14,7 @@ fn opts(project: Option<&str>) -> crate::config::Opts {
         bin_cargo_args: None,
         lib_cargo_args: None,
         wasm_debug: false,
+        split: false,
     }
 }
 

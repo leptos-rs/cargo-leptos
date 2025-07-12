@@ -6,6 +6,7 @@ pub mod compile;
 pub mod config;
 pub mod ext;
 pub mod logger;
+pub mod wasm_split_tools;
 pub mod service;
 pub mod signal;
 mod internal_prelude {

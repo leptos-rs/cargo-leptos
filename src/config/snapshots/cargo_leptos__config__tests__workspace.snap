@@ -56,6 +56,7 @@ Config {
             release: false,
             precompress: false,
             js_minify: false,
+            split: false,
             hot_reload: false,
             site: Site {
                 addr: 127.0.0.1:3000,
@@ -137,6 +138,7 @@ Config {
             release: false,
             precompress: false,
             js_minify: false,
+            split: false,
             hot_reload: false,
             site: Site {
                 addr: 127.0.0.1:3000,
@@ -174,6 +176,7 @@ Config {
         wasm_debug: false,
         verbose: 0,
         js_minify: false,
+        split: false,
     },
     watch: true,
     ..

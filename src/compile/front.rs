@@ -10,8 +10,9 @@ use crate::{
     internal_prelude::*,
     logger::GRAY,
     signal::{Interrupt, Outcome, Product},
+    wasm_split_tools,
 };
-use camino::Utf8Path;
+use camino::{Utf8Path, Utf8PathBuf};
 use std::sync::Arc;
 use swc::{
     config::{IsModule, JsMinifyOptions},
@@ -36,7 +37,11 @@ pub async fn front(
             return Ok(Outcome::Success(Product::None));
         }
 
-        fs::create_dir_all(&proj.site.root_relative_pkg_dir()).await?;
+        let pkg_dir = proj.site.root_relative_pkg_dir();
+
+        let mut files = vec![proj.lib.wasm_file.dest.clone()];
+
+        fs::create_dir_all(&pkg_dir).await?;
 
         let (envs, line, process) = front_cargo_process("build", true, &proj)?;
 
@@ -49,7 +54,21 @@ pub async fn front(
         debug!("Cargo envs: {}", GRAY.paint(envs));
         info!("Cargo finished {}", GRAY.paint(line));
 
-        bindgen(&proj).await.dot()
+        if proj.split {
+            info!("Front splitting out lazy-loaded WASM files");
+            let start_time = tokio::time::Instant::now();
+
+            let input_wasm = tokio::fs::read(&proj.lib.wasm_file.source).await?;
+
+            let split_files = wasm_split_tools::wasm_split(&input_wasm, false, &proj).await?;
+            files.extend(split_files);
+
+            let end_time = tokio::time::Instant::now();
+
+            info!("Finished WASM splitting in {:?}", end_time - start_time);
+        }
+
+        bindgen(&proj, &files).await.dot()
     })
 }
 
@@ -110,7 +129,7 @@ pub fn build_cargo_front_cmd(
     (envs_str, line)
 }
 
-async fn bindgen(proj: &Project) -> Result<Outcome<Product>> {
+async fn bindgen(proj: &Project, all_wasm_files: &[Utf8PathBuf]) -> Result<Outcome<Product>> {
     let wasm_file = &proj.lib.wasm_file;
 
     info!("Front generating JS/WASM with wasm-bindgen");
@@ -120,6 +139,8 @@ async fn bindgen(proj: &Project) -> Result<Outcome<Product>> {
     // https://github.com/rustwasm/wasm-bindgen/blob/main/crates/cli-support/src/lib.rs#L95
     // https://github.com/rustwasm/wasm-bindgen/blob/main/crates/cli/src/bin/wasm-bindgen.rs#L13
     let mut bindgen = Bindgen::new()
+        .keep_lld_exports(proj.split)
+        .demangle(!proj.split)
         .debug(proj.wasm_debug)
         .keep_debug(proj.wasm_debug)
         .input_path(&wasm_file.source)
@@ -160,7 +181,9 @@ async fn bindgen(proj: &Project) -> Result<Outcome<Product>> {
     .dot()?;
 
     if proj.release {
-        optimize(proj, &wasm_file.dest).await?;
+        for file in all_wasm_files {
+            optimize(proj, file).await?;
+        }
     }
 
     let wasm_optimize_end_time = tokio::time::Instant::now();

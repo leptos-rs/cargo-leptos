@@ -250,7 +250,7 @@ impl GitAwareWatcher {
                         if is_forced_path {
                             forced_watch_paths.insert(d.path().into());
                         }
-                        return d.path().to_owned();
+                        d.path().to_owned()
                     })
                     .collect::<HashSet<_>>()
             })
