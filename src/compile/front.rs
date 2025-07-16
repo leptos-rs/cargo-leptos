@@ -225,7 +225,7 @@ async fn optimize(proj: &Project, file: &Utf8Path) -> Result<()> {
     let mut args: Vec<&str> = if let Some(features) = &proj.wasm_opt_features {
         features.iter().map(|f| f.as_str()).collect()
     } else {
-        vec!["-Oz", "--enable-bulk-memory"]
+        vec!["-Oz", "--enable-bulk-memory", "--enable-nontrapping-float-to-int"]
     };
     args.extend_from_slice(&[file.as_str(), "-o", file.as_str()]);
 
