@@ -63,6 +63,14 @@ pub struct Opts {
     /// Split WASM binary based on #[lazy] macros.
     #[arg(long)]
     pub split: bool,
+
+    /// Only build the frontend.
+    #[arg(long)]
+    pub frontend_only: bool,
+
+    /// Only build the server.
+    #[arg(long, conflicts_with="frontend_only")]
+    pub server_only: bool,
 }
 
 #[derive(Debug, Clone, Parser, PartialEq, Default)]
