@@ -106,18 +106,29 @@ function makeLoad(url, deps) {
 "#,
     );
     let mut split_deps = HashMap::<String, Vec<String>>::new();
+    let mut manifest = HashMap::<String, Vec<String>>::new();
     for (name, _) in split_program_info.output_modules.iter() {
         let SplitModuleIdentifier::Chunk { splits, .. } = name else {
             continue;
         };
+        let chunk_name = name.name(proj);
         let chunk_name_hashed = name.name_hashed(proj);
         let chunk_name_sanitized = chunk_name_hashed.replace(['.', '-'], "_");
+
+        manifest
+            .entry(chunk_name)
+            .or_default()
+            .push(chunk_name_hashed.clone());
 
         for split in splits {
             split_deps
                 .entry(split.clone())
                 .or_default()
                 .push(chunk_name_sanitized.clone());
+            manifest
+                .entry(split.clone())
+                .or_default()
+                .push(chunk_name_hashed.clone());
         }
 
         javascript.push_str(
@@ -131,6 +142,12 @@ function makeLoad(url, deps) {
             continue;
         };
         let name_hashed = identifier.name_hashed(proj);
+
+        manifest
+            .entry(identifier.name(proj))
+            .or_default()
+            .push(name_hashed.clone());
+
         javascript.push_str(format!(
             "export const __wasm_split_load_{name} = makeLoad(new URL(\"./{name_hashed}.wasm\", import.meta.url), [{deps}]);\n",
             deps = split_deps
@@ -142,6 +159,17 @@ function makeLoad(url, deps) {
             .join(", "),
         ).as_str());
     }
+
+    tokio::fs::write(
+        proj.lib
+            .wasm_file
+            .dest
+            .parent()
+            .expect("no destination directory")
+            .join("__wasm_split_manifest.json"),
+        serde_json::to_string_pretty(&manifest).expect("could not serialize manifest file"),
+    )
+    .await?;
 
     tokio::fs::write(
         proj.lib
