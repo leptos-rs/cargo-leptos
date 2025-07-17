@@ -177,6 +177,8 @@ Config {
         verbose: 0,
         js_minify: false,
         split: false,
+        frontend_only: false,
+        server_only: false,
     },
     watch: true,
     ..
