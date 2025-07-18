@@ -51,6 +51,8 @@ pub struct Project {
     pub always_erase_components: bool,
     pub server_fn_mod_path: bool,
     pub wasm_opt_features: Option<HashSet<String>>,
+    pub build_frontend_only: bool,
+    pub build_server_only: bool,
 }
 
 impl Debug for Project {
@@ -144,6 +146,8 @@ impl Project {
                 always_erase_components: config.always_erase_components,
                 server_fn_mod_path: config.server_fn_mod_path,
                 wasm_opt_features: config.wasm_opt_features,
+                build_frontend_only: cli.frontend_only,
+                build_server_only: cli.server_only,
             };
             resolved.push(Arc::new(proj));
         }

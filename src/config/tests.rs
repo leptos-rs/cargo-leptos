@@ -15,6 +15,8 @@ fn opts(project: Option<&str>) -> crate::config::Opts {
         lib_cargo_args: None,
         wasm_debug: false,
         split: false,
+        frontend_only: false,
+        server_only: false,
     }
 }
 
