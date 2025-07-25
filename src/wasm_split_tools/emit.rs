@@ -882,10 +882,27 @@ pub fn emit_modules(
         emit_state
             .generate()
             .wrap_err(format!("Error generating {identifier:?}"))?;
+        let mut data = emit_state.output_module.finish();
 
-        let data = emit_state.output_module.as_slice();
-        let hash = Base64UrlUnpadded::encode_string(&Md5::new().chain_update(data).finalize());
-        emit_fn(identifier, data, &hash).wrap_err(format!("Error emitting {identifier:?}"))?;
+        // replace the string 'reference-types' in the binary
+        // this is truly a silly hack: it exists because wasm-bindgen's externref
+        // support breaks the wasm-splitting code at present, but it cannot be turned off
+        // because wasm-bindgen using auto-detection, by looking for 'reference-types' in the
+        // binary's list of supported features. replacing it with a different string of the same length
+        // causes wasm-bindgen not to apply its externref support, which fixes the issue
+        if matches!(identifier, SplitModuleIdentifier::Main) {
+            let needle = b"reference-types";
+            if let Some(start) = data
+                .windows(needle.len())
+                .position(|window| window == needle)
+            {
+                data[start..start + needle.len()].copy_from_slice(b"REFERENCE_TYPES");
+            }
+        }
+
+        let hash = Base64UrlUnpadded::encode_string(&Md5::new().chain_update(&data).finalize());
+
+        emit_fn(identifier, &data, &hash).wrap_err(format!("Error emitting {identifier:?}"))?;
 
         let identifier = &mut program_info.output_modules[output_module_index].0;
         identifier.set_hash(hash);
