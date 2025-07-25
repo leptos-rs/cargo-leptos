@@ -28,7 +28,7 @@ pub async fn end2end_proj(proj: &Arc<Project>) -> Result<()> {
         Interrupt::request_shutdown().await;
         server.await.dot()??;
     } else {
-        info!("end2end the Crate.toml package.metadata.leptos.end2end_cmd parameter not set")
+        info!("end2end the Crate.toml package.metadata.leptos.end2end-cmd parameter not set")
     }
     Ok(())
 }
