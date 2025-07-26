@@ -1,4 +1,8 @@
-use crate::{config::Project, ext::eyre::CustomWrapErr, internal_prelude::*};
+use crate::{
+    config::Project,
+    ext::{eyre::CustomWrapErr, PathBufExt},
+    internal_prelude::*,
+};
 use base64ct::{Base64UrlUnpadded, Encoding};
 use camino::Utf8PathBuf;
 use eyre::{ContextCompat, Result};
@@ -12,12 +16,50 @@ pub fn add_hashes_to_site(proj: &Project) -> Result<()> {
     debug!("Hash computed: {files_to_hashes:?}");
 
     let renamed_files = rename_files(&files_to_hashes).dot()?;
+    let pkg_dir = proj.site.root_relative_pkg_dir();
 
     replace_in_file(
         &renamed_files[&proj.lib.js_file.dest],
         &renamed_files,
-        &proj.site.root_relative_pkg_dir(),
+        &pkg_dir,
     );
+
+    if proj.split {
+        let old_wasm_split = proj
+            .lib
+            .js_file
+            .dest
+            .clone()
+            .without_last()
+            .join("__wasm_split.______________________.js");
+        let new_wasm_split = &renamed_files[&old_wasm_split];
+        replace_in_file(new_wasm_split, &renamed_files, &pkg_dir);
+
+        let old_wasm_split_filename = old_wasm_split.file_name().unwrap();
+        let new_wasm_split_filename = new_wasm_split.file_name().unwrap();
+
+        for entry in fs::read_dir(&pkg_dir)? {
+            let entry = entry?;
+            let path = entry.path();
+            if path.is_file() {
+                if let Some(filename) = path.file_name().and_then(|f| f.to_str()) {
+                    if filename.ends_with(".wasm") {
+                        replace_in_binary_file(
+                            &Utf8PathBuf::try_from(path).unwrap(),
+                            old_wasm_split_filename,
+                            new_wasm_split_filename,
+                        );
+                    } else if filename.starts_with("__wasm_split") {
+                        replace_in_file(
+                            &Utf8PathBuf::try_from(path).unwrap(),
+                            &renamed_files,
+                            &pkg_dir,
+                        );
+                    }
+                }
+            }
+        }
+    }
 
     fs::create_dir_all(
         proj.hash_file
@@ -115,17 +157,31 @@ fn compute_front_file_hashes(proj: &Project) -> Result<HashMap<Utf8PathBuf, Stri
 fn rename_files(
     files_to_hashes: &HashMap<Utf8PathBuf, String>,
 ) -> Result<HashMap<Utf8PathBuf, Utf8PathBuf>> {
+    const HASH_PLACEHOLDER: &str = "______________________";
     let mut old_to_new_paths = HashMap::new();
 
     for (path, hash) in files_to_hashes {
         let mut new_path = path.clone();
 
-        new_path.set_file_name(format!(
-            "{}.{}.{}",
-            path.file_stem().ok_or(eyre!("no file stem"))?,
-            hash,
-            path.extension().ok_or(eyre!("no extension"))?,
-        ));
+        let file_name = new_path.file_name().unwrap_or_default();
+
+        let new_file_name = if file_name.contains(HASH_PLACEHOLDER) {
+            if hash.len() != HASH_PLACEHOLDER.len() {
+                return Err(anyhow!(
+                    "File hash length did not match placeholder hash length."
+                ));
+            }
+            file_name.replace(HASH_PLACEHOLDER, hash)
+        } else {
+            format!(
+                "{}.{}.{}",
+                path.file_stem().ok_or(eyre!("no file stem"))?,
+                hash,
+                path.extension().ok_or(eyre!("no extension"))?,
+            )
+        };
+
+        new_path.set_file_name(new_file_name);
 
         fs::rename(path, &new_path)
             .wrap_err_with(|| format!("Failed to rename {path} to {new_path}"))?;
@@ -153,6 +209,22 @@ fn replace_in_file(
             .expect("could not strip root path");
 
         contents = contents.replace(old_path.as_str(), new_path.as_str());
+    }
+
+    fs::write(path, contents).expect("could not write file");
+}
+
+fn replace_in_binary_file(path: &Utf8PathBuf, old_wasm_split: &str, new_wasm_split: &str) {
+    let mut contents =
+        fs::read(path).unwrap_or_else(|e| panic!("error {e}: could not read file {path}"));
+
+    let old_path = old_wasm_split.as_bytes();
+    let new_path = new_wasm_split.as_bytes();
+
+    for i in 0..=contents.len() - old_path.len() {
+        if contents[i..].starts_with(old_path) {
+            contents[i..(i + old_path.len())].clone_from_slice(new_path);
+        }
     }
 
     fs::write(path, contents).expect("could not write file");
