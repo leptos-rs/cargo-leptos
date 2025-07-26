@@ -177,7 +177,7 @@ function makeLoad(url, deps) {
             .dest
             .parent()
             .expect("no destination directory")
-            .join("__wasm_split.js"),
+            .join("__wasm_split.______________________.js"),
         javascript,
     )
     .await?;
