@@ -448,7 +448,7 @@ impl<'a> ModuleEmitState<'a> {
         for input_func_type in self.input_module.types.iter() {
             let output_func_type: wasm_encoder::FuncType =
                 input_func_type.clone().try_into().unwrap();
-            section.function(
+            section.ty().function(
                 output_func_type.params().iter().cloned(),
                 output_func_type.results().iter().cloned(),
             );
@@ -492,8 +492,10 @@ impl<'a> ModuleEmitState<'a> {
         let indirect_table_size = self.emit_state.indirect_functions.table_entries.len() + 1;
         wasm_encoder::TableType {
             element_type: wasm_encoder::RefType::FUNCREF,
-            minimum: indirect_table_size as u32,
-            maximum: Some(indirect_table_size as u32),
+            minimum: indirect_table_size as u64,
+            maximum: Some(indirect_table_size as u64),
+            table64: false,
+            shared: false,
         }
     }
 
@@ -598,7 +600,7 @@ impl<'a> ModuleEmitState<'a> {
         for global in self.input_module.globals.iter() {
             section.global(
                 global.ty.try_into().unwrap(),
-                &global.init_expr.try_into().unwrap(),
+                &global.init_expr.clone().try_into().unwrap(),
             );
         }
         self.output_module.section(&section);
@@ -692,7 +694,7 @@ impl<'a> ModuleEmitState<'a> {
                 table: Some(0),
                 offset: &wasm_encoder::ConstExpr::i32_const(indirect_range.start as i32),
             },
-            elements: wasm_encoder::Elements::Functions(&func_ids),
+            elements: wasm_encoder::Elements::Functions(func_ids.into()),
         });
         self.output_module.section(&section);
         Ok(())
@@ -721,8 +723,8 @@ impl<'a> ModuleEmitState<'a> {
         }
         func.instruction(&wasm_encoder::Instruction::I32Const(indirect_index as i32));
         func.instruction(&wasm_encoder::Instruction::CallIndirect {
-            ty: type_id as u32,
-            table: 0,
+            type_index: type_id as u32,
+            table_index: 0,
         });
         func.instruction(&wasm_encoder::Instruction::End);
         func
@@ -767,12 +769,12 @@ impl<'a> ModuleEmitState<'a> {
             let range_end = input_segment.range.end;
             let data =
                 self.get_relocated_data((range_end - input_segment.data.len())..range_end)?;
-            match input_segment.kind {
+            match &input_segment.kind {
                 DataKind::Passive => section.passive(data),
                 DataKind::Active {
                     memory_index,
                     offset_expr,
-                } => section.active(memory_index, &offset_expr.try_into()?, data),
+                } => section.active(*memory_index, &offset_expr.clone().try_into()?, data),
             };
         }
         self.output_module.section(&section);
