@@ -81,12 +81,12 @@ impl BinPackage {
             &config.bin_profile_dev,
         );
         let exe_file = {
-            let file_ext = if cfg!(target_os = "windows")
-                && config
-                    .bin_target_triple
-                    .as_ref()
-                    .is_none_or(|triple| triple.contains("-pc-windows-"))
-            {
+            let file_ext = if config
+                .bin_target_triple
+                .as_ref()
+                .map_or(cfg!(target_os = "windows"), |triple| {
+                    triple.contains("-pc-windows-")
+                }) {
                 "exe"
             } else if config
                 .bin_target_triple
