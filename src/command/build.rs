@@ -29,13 +29,13 @@ pub async fn build_all(conf: &Config) -> Result<()> {
 async fn build_frontend(proj: &Arc<Project>, changes: &ChangeSet) -> Result<bool> {
     let mut success = true;
 
-    if !compile::front(proj, &changes).await.await??.is_success() {
+    if !compile::front(proj, changes).await.await??.is_success() {
         success = false;
     }
-    if !compile::assets(proj, &changes).await.await??.is_success() {
+    if !compile::assets(proj, changes).await.await??.is_success() {
         success = false;
     }
-    if !compile::style(proj, &changes).await.await??.is_success() {
+    if !compile::style(proj, changes).await.await??.is_success() {
         success = false;
     }
 
@@ -53,7 +53,7 @@ async fn build_frontend(proj: &Arc<Project>, changes: &ChangeSet) -> Result<bool
         compress::compress_static_files(proj.site.root_dir.clone().into()).await?;
     }
 
-    return Ok(true);
+    Ok(true)
 }
 
 /// Build the project. Returns true if the build was successful
@@ -64,17 +64,15 @@ pub async fn build_proj(proj: &Arc<Project>) -> Result<bool> {
 
     let changes = ChangeSet::all_changes();
 
-    if !proj.build_server_only {
-        if !build_frontend(proj, &changes).await? {
+    if !proj.build_server_only
+        && !build_frontend(proj, &changes).await? {
             return Ok(false);
         }
-    }
 
-    if !proj.build_frontend_only {
-        if !compile::server(proj, &changes).await.await??.is_success() {
+    if !proj.build_frontend_only
+        && !compile::server(proj, &changes).await.await??.is_success() {
             return Ok(false);
         }
-    }
 
     Ok(true)
 }
