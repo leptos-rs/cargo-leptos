@@ -1,11 +1,11 @@
 use crate::internal_prelude::*;
 use std::collections::HashMap;
 pub use std::ops::Range;
+use wasmparser::{BinaryReader, Payload, TypeRef};
 pub use wasmparser::{
     Data, Element, Export, FuncType, FunctionBody, Global, Import, MemoryType, RelocationEntry,
     SymbolInfo, Table, TagType,
 };
-use wasmparser::{Payload, TypeRef};
 
 pub struct CustomSection<'a> {
     pub name: &'a str,
@@ -69,7 +69,7 @@ fn convert_indirect_name_map<'a>(
 impl<'a> Names<'a> {
     fn new(data: &'a [u8], original_offset: usize) -> Result<Self> {
         let mut names: Self = Default::default();
-        for part in wasmparser::NameSectionReader::new(data, original_offset) {
+        for part in wasmparser::NameSectionReader::new(BinaryReader::new(data, original_offset)) {
             use wasmparser::Name;
             match part? {
                 Name::Module { name, .. } => {
@@ -298,19 +298,18 @@ impl<'a> InputModule<'a> {
         }
 
         for section in module.custom_sections.iter() {
+            let binary_reader = BinaryReader::new(section.data, section.data_offset);
             if section.name == "name" {
                 module.names = Names::new(section.data, section.data_offset)?;
             } else if section.name == "linking" {
-                let reader =
-                    wasmparser::LinkingSectionReader::new(section.data, section.data_offset)?;
+                let reader = wasmparser::LinkingSectionReader::new(binary_reader)?;
                 for subsection in reader.subsections() {
                     if let wasmparser::Linking::SymbolTable(map) = subsection? {
                         module.symbols = map.into_iter().collect::<Result<Vec<_>, _>>()?;
                     }
                 }
             } else if section.name.starts_with("reloc.") {
-                let reader =
-                    wasmparser::RelocSectionReader::new(section.data, section.data_offset)?;
+                let reader = wasmparser::RelocSectionReader::new(binary_reader)?;
                 module.relocs.insert(
                     reader.section_index() as SectionIndex,
                     reader

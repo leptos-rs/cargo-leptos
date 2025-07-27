@@ -550,7 +550,7 @@ impl Command for CommandWasmOpt {
         } else {
             "wasm-opt"
         };
-        Ok(format!("binaryen-{}/bin/{}", version, exe_name))
+        Ok(format!("binaryen-{version}/bin/{exe_name}"))
     }
 
     fn manual_install_instructions(&self) -> String {
