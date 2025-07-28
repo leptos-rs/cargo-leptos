@@ -16,6 +16,7 @@ mod internal_prelude {
 
 use crate::{config::Commands, ext::PathBufExt, logger::GRAY};
 use camino::Utf8PathBuf;
+use clap::CommandFactory;
 use config::{Cli, Config};
 use ext::{fs, Paint};
 use signal::Interrupt;
@@ -26,6 +27,16 @@ use crate::internal_prelude::*;
 pub async fn run(args: Cli) -> Result<()> {
     if let New(new) = args.command {
         return new.run();
+    }
+
+    if let Completions { shell } = args.command {
+        clap_complete::generate(
+            shell,
+            &mut Cli::command(),
+            "cargo-leptos",
+            &mut std::io::stdout(),
+        );
+        return Ok(());
     }
 
     let manifest_path = args
@@ -70,7 +81,7 @@ pub async fn run(args: Cli) -> Result<()> {
     }
 
     let _monitor = Interrupt::run_ctrl_c_monitor();
-    use Commands::{Build, EndToEnd, New, Serve, Test, Watch};
+    use Commands::{Build, Completions, EndToEnd, New, Serve, Test, Watch};
     match args.command {
         Build(_) => command::build_all(&config).await,
         Serve(_) => command::serve(&config.current_project()?).await,
@@ -78,5 +89,6 @@ pub async fn run(args: Cli) -> Result<()> {
         EndToEnd(_) => command::end2end_all(&config).await,
         Watch(_) => command::watch(&config.current_project()?).await,
         New(_) => unreachable!(r#""new" command should have already been run"#),
+        Completions { .. } => unreachable!(r#""completions" command should have already been run"#),
     }
 }
