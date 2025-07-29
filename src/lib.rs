@@ -6,9 +6,9 @@ pub mod compile;
 pub mod config;
 pub mod ext;
 pub mod logger;
-pub mod wasm_split_tools;
 pub mod service;
 pub mod signal;
+pub mod wasm_split_tools;
 mod internal_prelude {
     pub use crate::ext::{eyre::reexports::*, Paint as _};
     pub use tracing::*;

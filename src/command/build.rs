@@ -64,15 +64,13 @@ pub async fn build_proj(proj: &Arc<Project>) -> Result<bool> {
 
     let changes = ChangeSet::all_changes();
 
-    if !proj.build_server_only
-        && !build_frontend(proj, &changes).await? {
-            return Ok(false);
-        }
+    if !proj.build_server_only && !build_frontend(proj, &changes).await? {
+        return Ok(false);
+    }
 
-    if !proj.build_frontend_only
-        && !compile::server(proj, &changes).await.await??.is_success() {
-            return Ok(false);
-        }
+    if !proj.build_frontend_only && !compile::server(proj, &changes).await.await??.is_success() {
+        return Ok(false);
+    }
 
     Ok(true)
 }
