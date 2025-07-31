@@ -86,7 +86,10 @@ For at least some shells (`bash` and `zsh` are confirmed to work) `cargo` is abl
 commands like `cargo leptos` back to the underlying `cargo-leptos` binary.
 
 For that purpose `cargo-leptos` supports generating completions using `cargo leptos completions <SHELL>`.
-Which you then can install/source for your shell.
+Which you then can install/source for your shell. For bash, the command could like this 
+```bash
+cargo leptos completions bash > "${XDG_DATA_HOME:-"$HOME/.local/share}/bash-completion/completions/cargo-leptos"
+```
 
 # Single-package setup
 
