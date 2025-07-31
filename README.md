@@ -80,6 +80,14 @@ install it with the `no_downloads` feature enabled to prevent cargo-leptos from 
 
 <br/>
 
+## Completions
+
+For at least some shells (`bash` and `zsh` are confirmed to work) `cargo` is able to forward completions from custom
+commands like `cargo leptos` back to the underlying `cargo-leptos` binary.
+
+For that purpose `cargo-leptos` supports generating completions using `cargo leptos completions <SHELL>`.
+Which you then can install/source for your shell.
+
 # Single-package setup
 
 The single-package setup is where the code for both the frontend and the server is defined in a single package.
