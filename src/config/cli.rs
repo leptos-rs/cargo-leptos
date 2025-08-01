@@ -1,6 +1,7 @@
 use crate::command::NewCommand;
 use camino::Utf8PathBuf;
 use clap::{Parser, Subcommand, ValueEnum};
+use clap_complete::Shell;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 pub enum Log {
@@ -69,7 +70,7 @@ pub struct Opts {
     pub frontend_only: bool,
 
     /// Only build the server.
-    #[arg(long, conflicts_with="frontend_only")]
+    #[arg(long, conflicts_with = "frontend_only")]
     pub server_only: bool,
 }
 
@@ -105,6 +106,7 @@ impl Cli {
             Commands::Build(opts) | Commands::Test(opts) | Commands::EndToEnd(opts) => {
                 Some(opts.clone())
             }
+            _ => None,
         }
     }
 
@@ -113,6 +115,7 @@ impl Cli {
             Commands::New(_) => None,
             Commands::Serve(bin_opts) | Commands::Watch(bin_opts) => Some(&mut bin_opts.opts),
             Commands::Build(opts) | Commands::Test(opts) | Commands::EndToEnd(opts) => Some(opts),
+            _ => None,
         }
     }
 
@@ -140,4 +143,7 @@ pub enum Commands {
     Watch(BinOpts),
     /// Start a wizard for creating a new project (using cargo-generate).
     New(NewCommand),
+
+    /// Generate shell for `cargo-leptos`
+    Completions { shell: Shell },
 }

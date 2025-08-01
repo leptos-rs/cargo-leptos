@@ -21,16 +21,16 @@ use itertools::Itertools;
 use tokio::process::Command;
 
 fn build_cargo_command_string(command: &Command) -> String {
-  let std_command = command.as_std();
-  let program = std_command.get_program();
-  let args = std_command.get_args();
+    let std_command = command.as_std();
+    let program = std_command.get_program();
+    let args = std_command.get_args();
 
-  [program]
-    .into_iter()
-    .chain(args)
-    .map(|arg| match arg.to_string_lossy() {
-      arg if arg.contains(' ') => format!("'{arg}'"),
-      arg => arg.into_owned(),
-    })
-    .join(" ")
+    [program]
+        .into_iter()
+        .chain(args)
+        .map(|arg| match arg.to_string_lossy() {
+            arg if arg.contains(' ') => format!("'{arg}'"),
+            arg => arg.into_owned(),
+        })
+        .join(" ")
 }
