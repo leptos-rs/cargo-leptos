@@ -254,7 +254,14 @@ impl SplitModuleIdentifier {
         match self {
             Self::Main => proj.lib.output_name.clone(),
             Self::Split { name, .. } => name.clone(),
-            Self::Chunk { splits, .. } => splits.join("_"),
+            Self::Chunk { splits, hash } => {
+                let mut full_name = splits.join("_");
+                if full_name.len() > 128 {
+                    full_name.truncate(128);
+                    full_name.push_str(hash);
+                }
+                full_name
+            }
         }
     }
 
@@ -262,7 +269,13 @@ impl SplitModuleIdentifier {
         match self {
             Self::Main => proj.lib.output_name.clone(),
             Self::Split { name, hash } => format!("{name}.{hash}"),
-            Self::Chunk { splits, hash } => format!("{}.{}", splits.join("_"), hash),
+            Self::Chunk { splits, hash } => {
+                let mut splits = splits.join("_");
+                if splits.len() > 128 {
+                    splits.truncate(128);
+                }
+                format!("{splits}.{hash}")
+            }
         }
     }
 
