@@ -258,8 +258,8 @@ impl SplitModuleIdentifier {
             Self::Split { name, .. } => name.clone(),
             Self::Chunk { splits, hash } => {
                 let mut full_name = splits.join("_");
-                if full_name.len() > 200 {
-                    full_name.truncate(200);
+                if full_name.len() > 128 {
+                    full_name.truncate(128);
                     full_name.push_str(hash);
 
                     let mut hasher = DefaultHasher::new();
@@ -279,8 +279,8 @@ impl SplitModuleIdentifier {
             Self::Split { name, hash } => format!("{name}.{hash}"),
             Self::Chunk { splits, hash } => {
                 let mut splits = splits.join("_");
-                if splits.len() > 200 {
-                    splits.truncate(200);
+                if splits.len() > 128 {
+                    splits.truncate(128);
                 }
                 format!("{splits}.{hash}")
             }
