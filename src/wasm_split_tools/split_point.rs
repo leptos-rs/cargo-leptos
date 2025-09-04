@@ -358,6 +358,13 @@ pub fn compute_split_modules(
         })
         .collect();
 
+    // remove deps that use wasm-bindgen descriptors and put them in the main module
+    for (module_name, deps) in split_module_candidates.iter_mut() {
+        for dep in &uses_wb_descriptor {
+            deps.reachable.remove(dep);
+        }
+    }
+
     // Set of split modules from which each symbol is reachable.
     let mut dep_candidate_modules = HashMap::<DepNode, Vec<String>>::new();
     for (module_name, deps) in split_module_candidates.iter() {
