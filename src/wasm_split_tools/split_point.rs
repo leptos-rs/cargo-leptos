@@ -5,6 +5,8 @@ use super::read::{ExportId, ImportId, InputFuncId, InputModule, SymbolIndex};
 use crate::config::Project;
 use crate::internal_prelude::*;
 use regex::Regex;
+use std::fmt::Write;
+use std::hash::{DefaultHasher, Hash, Hasher};
 use std::sync::LazyLock;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -267,7 +269,20 @@ impl SplitModuleIdentifier {
         match self {
             Self::Main => proj.lib.output_name.clone(),
             Self::Split { name, .. } => name.clone(),
-            Self::Chunk { splits, .. } => splits.join("_"),
+            Self::Chunk { splits, hash } => {
+                let mut full_name = splits.join("_");
+                if full_name.len() > 128 {
+                    full_name.truncate(128);
+                    full_name.push_str(hash);
+
+                    let mut hasher = DefaultHasher::new();
+                    splits.hash(&mut hasher);
+                    let hash = hasher.finish();
+                    full_name.push('_');
+                    write!(&mut full_name, "{:?}", hash).unwrap();
+                }
+                full_name
+            }
         }
     }
 
@@ -275,7 +290,13 @@ impl SplitModuleIdentifier {
         match self {
             Self::Main => proj.lib.output_name.clone(),
             Self::Split { name, hash } => format!("{name}.{hash}"),
-            Self::Chunk { splits, hash } => format!("{}.{}", splits.join("_"), hash),
+            Self::Chunk { splits, hash } => {
+                let mut splits = splits.join("_");
+                if splits.len() > 128 {
+                    splits.truncate(128);
+                }
+                format!("{splits}.{hash}")
+            }
         }
     }
 
