@@ -177,6 +177,8 @@ pub fn find_reachable_deps(
     deps: &DepGraph,
     roots: &HashSet<DepNode>,
     exclude: &HashSet<DepNode>,
+    wb_descriptors: &HashSet<DepNode>,
+    uses_wb_descriptor: &mut HashSet<DepNode>,
 ) -> ReachabilityGraph {
     let mut queue: VecDeque<DepNode> = roots.iter().copied().collect();
     let mut seen = HashSet::<DepNode>::new();
@@ -187,6 +189,17 @@ pub fn find_reachable_deps(
             continue;
         };
         for child in children {
+            // if a function calls a wasm-bindgen descriptor, this needs to be
+            // expanded during wasm-bindgen, which is only run on the main bundle
+            //
+            // the caller needs to be moved into the main bundle, so the descriptor will be processed
+            // all other functions that the caller calls *also* need to be moved into the main bundle, so
+            // they will be available during this processing
+            if wb_descriptors.contains(child) {
+                uses_wb_descriptor.insert(node);
+                uses_wb_descriptor.extend(children.iter().copied());
+                continue;
+            }
             if seen.contains(child) || exclude.contains(child) {
                 continue;
             }
@@ -287,6 +300,7 @@ pub fn compute_split_modules(
     module: &InputModule,
     dep_graph: &DepGraph,
     split_points: &[SplitPoint],
+    wb_descriptors: &HashSet<DepNode>,
 ) -> Result<SplitProgramInfo> {
     let split_points_by_module = get_split_points_by_module(split_points);
 
@@ -310,7 +324,14 @@ pub fn compute_split_modules(
 
     let main_roots = get_main_module_roots(module, split_points);
 
-    let mut main_deps = find_reachable_deps(dep_graph, &main_roots, &HashSet::new());
+    let mut uses_wb_descriptor = HashSet::new();
+    let mut main_deps = find_reachable_deps(
+        dep_graph,
+        &main_roots,
+        &HashSet::new(),
+        &HashSet::new(),
+        &mut uses_wb_descriptor,
+    );
 
     remove_ignored_deps(&mut main_deps.reachable);
 
@@ -324,11 +345,25 @@ pub fn compute_split_modules(
             for entry_point in entry_points.iter() {
                 roots.insert(DepNode::Function(entry_point.export_func));
             }
-            let mut split_functions = find_reachable_deps(dep_graph, &roots, &main_deps.reachable);
+            let mut split_functions = find_reachable_deps(
+                dep_graph,
+                &roots,
+                &main_deps.reachable,
+                wb_descriptors,
+                &mut uses_wb_descriptor,
+            );
+
             remove_ignored_deps(&mut split_functions.reachable);
             (module_name.clone(), split_functions)
         })
         .collect();
+
+    // remove deps that use wasm-bindgen descriptors and put them in the main module
+    for (module_name, deps) in split_module_candidates.iter_mut() {
+        for dep in &uses_wb_descriptor {
+            deps.reachable.remove(dep);
+        }
+    }
 
     // Set of split modules from which each symbol is reachable.
     let mut dep_candidate_modules = HashMap::<DepNode, Vec<String>>::new();
@@ -340,6 +375,8 @@ pub fn compute_split_modules(
                 .push(module_name.clone());
         }
     }
+
+    main_deps.reachable.extend(uses_wb_descriptor);
 
     let mut program_info = SplitProgramInfo::default();
 

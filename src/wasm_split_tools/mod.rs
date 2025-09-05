@@ -7,10 +7,10 @@ mod emit;
 mod read;
 mod split_point;
 
-use crate::{config::Project, internal_prelude::*};
+use crate::{config::Project, internal_prelude::*, wasm_split_tools::dep_graph::DepNode};
 use camino::Utf8PathBuf;
 use split_point::SplitModuleIdentifier;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 pub async fn wasm_split(
     input_wasm: &[u8],
@@ -20,10 +20,18 @@ pub async fn wasm_split(
     let mut split_files = vec![];
 
     let module = self::read::InputModule::parse(input_wasm)?;
+
+    let wb_descriptors = module
+        .names
+        .functions
+        .iter()
+        .filter_map(|(id, name)| is_wasm_bindgen_descriptor(name).then_some(DepNode::Function(*id)))
+        .collect::<HashSet<_>>();
+
     let dep_graph = dep_graph::get_dependencies(&module)?;
     let split_points = split_point::get_split_points(&module)?;
     let mut split_program_info =
-        split_point::compute_split_modules(&module, &dep_graph, &split_points)?;
+        split_point::compute_split_modules(&module, &dep_graph, &split_points, &wb_descriptors)?;
 
     if verbose {
         for (name, split_deps) in split_program_info.output_modules.iter() {
@@ -183,4 +191,8 @@ function makeLoad(url, deps) {
     .await?;
 
     Ok(split_files)
+}
+
+fn is_wasm_bindgen_descriptor(name: &str) -> bool {
+    name == "__wbindgen_describe_closure" || name == "__wbindgen_describe"
 }
