@@ -50,10 +50,13 @@ pub async fn wasm_split(
     self::emit::emit_modules(
         &module,
         &mut split_program_info,
-        |identifier: &SplitModuleIdentifier, data: &[u8], hash: &str| -> Result<()> {
-            let output_path = match identifier {
-                SplitModuleIdentifier::Main => proj.lib.wasm_file.source.clone(),
-                _ => dest_dir.join(format!("{name}.{hash}.wasm", name = identifier.name(proj))),
+        |identifier: &SplitModuleIdentifier, data: &[u8]| -> Result<()> {
+            let output_path = if matches!(identifier, SplitModuleIdentifier::Main) {
+                let mut source = proj.lib.wasm_file.source.clone();
+                source.set_file_name(format!("{}_split.wasm", source.file_stem().unwrap()));
+                source
+            } else {
+                dest_dir.join(format!("{}.wasm", identifier.name_hashed(proj)))
             };
 
             std::fs::write(&output_path, data)?;
@@ -121,10 +124,9 @@ function makeLoad(url, deps) {
         };
         let chunk_name = name.name(proj);
         let chunk_name_hashed = name.name_hashed(proj);
-        let chunk_name_sanitized = chunk_name_hashed.replace(['.', '-'], "_");
 
         manifest
-            .entry(chunk_name)
+            .entry(chunk_name.clone())
             .or_default()
             .push(chunk_name_hashed.clone());
 
@@ -132,7 +134,7 @@ function makeLoad(url, deps) {
             split_deps
                 .entry(split.clone())
                 .or_default()
-                .push(chunk_name_sanitized.clone());
+                .push(chunk_name.clone());
             manifest
                 .entry(split.clone())
                 .or_default()
@@ -141,7 +143,7 @@ function makeLoad(url, deps) {
 
         javascript.push_str(
             format!(
-                "const __wasm_split_load_{chunk_name_sanitized} = makeLoad(new URL(\"./{chunk_name_hashed}.wasm\", import.meta.url), []);\n",
+                "const __wasm_split_load_{chunk_name} = makeLoad(new URL(\"./{chunk_name_hashed}.wasm\", import.meta.url), []);\n",
             ).as_str()
         );
     }
