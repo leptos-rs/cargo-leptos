@@ -134,6 +134,14 @@ async fn bindgen(proj: &Project, all_wasm_files: &[Utf8PathBuf]) -> Result<Outco
 
     info!("Front generating JS/WASM with wasm-bindgen");
 
+    let wasm_file_input = if proj.split {
+        let mut source = proj.lib.wasm_file.source.clone();
+        source.set_file_name(format!("{}_split.wasm", source.file_stem().unwrap()));
+        source
+    } else {
+        proj.lib.wasm_file.source.clone()
+    };
+
     let start_time = tokio::time::Instant::now();
     // see:
     // https://github.com/rustwasm/wasm-bindgen/blob/main/crates/cli-support/src/lib.rs#L95
@@ -143,7 +151,7 @@ async fn bindgen(proj: &Project, all_wasm_files: &[Utf8PathBuf]) -> Result<Outco
         .demangle(!proj.split)
         .debug(proj.wasm_debug)
         .keep_debug(proj.wasm_debug)
-        .input_path(&wasm_file.source)
+        .input_path(&wasm_file_input)
         .out_name(&proj.lib.output_name)
         .web(true)
         .dot_anyhow()?
