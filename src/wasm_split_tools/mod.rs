@@ -50,10 +50,13 @@ pub async fn wasm_split(
     self::emit::emit_modules(
         &module,
         &mut split_program_info,
-        |identifier: &SplitModuleIdentifier, data: &[u8], hash: &str| -> Result<()> {
-            let output_path = match identifier {
-                SplitModuleIdentifier::Main => proj.lib.wasm_file.source.clone(),
-                _ => dest_dir.join(format!("{hash}.wasm")),
+        |identifier: &SplitModuleIdentifier, data: &[u8]| -> Result<()> {
+            let output_path = if matches!(identifier, SplitModuleIdentifier::Main) {
+                let mut source = proj.lib.wasm_file.source.clone();
+                source.set_file_name(format!("{}_split.wasm", source.file_stem().unwrap()));
+                source
+            } else {
+                dest_dir.join(format!("{}.wasm", identifier.name_hashed(proj)))
             };
 
             std::fs::write(&output_path, data)?;
