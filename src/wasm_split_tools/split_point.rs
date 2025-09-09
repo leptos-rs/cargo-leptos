@@ -274,7 +274,7 @@ impl SplitModuleIdentifier {
         }
     }
 
-    pub fn name_hashed(&self, proj: &Project) -> String {
+    pub fn hash(&self, proj: &Project) -> String {
         match self {
             Self::Main => proj.lib.output_name.clone(),
             Self::Split { hash, .. } => hash.clone(),

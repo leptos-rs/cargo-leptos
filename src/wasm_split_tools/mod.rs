@@ -56,7 +56,7 @@ pub async fn wasm_split(
                 source.set_file_name(format!("{}_split.wasm", source.file_stem().unwrap()));
                 source
             } else {
-                dest_dir.join(format!("{}.wasm", identifier.name_hashed(proj)))
+                dest_dir.join(format!("{}.wasm", identifier.hash(proj)))
             };
 
             std::fs::write(&output_path, data)?;
@@ -123,12 +123,12 @@ function makeLoad(url, deps) {
             continue;
         };
         let chunk_name = name.name(proj);
-        let chunk_name_hashed = name.name_hashed(proj);
+        let chunk_hash = name.hash(proj);
 
         manifest
             .entry(chunk_name.clone())
             .or_default()
-            .push(chunk_name_hashed.clone());
+            .push(chunk_hash.clone());
 
         for split in splits {
             split_deps
@@ -138,12 +138,12 @@ function makeLoad(url, deps) {
             manifest
                 .entry(split.clone())
                 .or_default()
-                .push(chunk_name_hashed.clone());
+                .push(chunk_hash.clone());
         }
 
         javascript.push_str(
             format!(
-                "const __wasm_split_load_{chunk_name} = makeLoad(new URL(\"./{chunk_name_hashed}.wasm\", import.meta.url), []);\n",
+                "const __wasm_split_load_{chunk_name} = makeLoad(new URL(\"./{chunk_hash}.wasm\", import.meta.url), []);\n",
             ).as_str()
         );
     }
@@ -151,15 +151,15 @@ function makeLoad(url, deps) {
         let SplitModuleIdentifier::Split { name, .. } = identifier else {
             continue;
         };
-        let name_hashed = identifier.name_hashed(proj);
+        let hash = identifier.hash(proj);
 
         manifest
             .entry(identifier.name(proj))
             .or_default()
-            .push(name_hashed.clone());
+            .push(hash.clone());
 
         javascript.push_str(format!(
-            "export const __wasm_split_load_{name} = makeLoad(new URL(\"./{name_hashed}.wasm\", import.meta.url), [{deps}]);\n",
+            "export const __wasm_split_load_{name} = makeLoad(new URL(\"./{hash}.wasm\", import.meta.url), [{deps}]);\n",
             deps = split_deps
             .remove(name)
             .unwrap_or_default()
