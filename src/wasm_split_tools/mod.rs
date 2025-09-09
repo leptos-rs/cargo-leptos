@@ -118,40 +118,35 @@ function makeLoad(url, deps) {
     );
     let mut split_deps = HashMap::<String, Vec<String>>::new();
     let mut manifest = HashMap::<String, Vec<String>>::new();
-    for (name, _) in split_program_info.output_modules.iter() {
-        let SplitModuleIdentifier::Chunk { splits, .. } = name else {
+    for (identifier, _) in split_program_info.output_modules.iter() {
+        let SplitModuleIdentifier::Chunk { splits, hash } = identifier else {
             continue;
         };
-        let chunk_name = name.name(proj);
-        let chunk_hash = name.hash(proj);
+        let name = identifier.name(proj);
 
-        manifest
-            .entry(chunk_name.clone())
-            .or_default()
-            .push(chunk_hash.clone());
+        manifest.entry(name.clone()).or_default().push(hash.clone());
 
         for split in splits {
             split_deps
                 .entry(split.clone())
                 .or_default()
-                .push(chunk_name.clone());
+                .push(name.clone());
             manifest
                 .entry(split.clone())
                 .or_default()
-                .push(chunk_hash.clone());
+                .push(hash.clone());
         }
 
         javascript.push_str(
             format!(
-                "const __wasm_split_load_{chunk_name} = makeLoad(new URL(\"./{chunk_hash}.wasm\", import.meta.url), []);\n",
+                "const __wasm_split_load_{name} = makeLoad(new URL(\"./{hash}.wasm\", import.meta.url), []);\n",
             ).as_str()
         );
     }
     for (identifier, _) in split_program_info.output_modules.iter().rev() {
-        let SplitModuleIdentifier::Split { name, .. } = identifier else {
+        let SplitModuleIdentifier::Split { name, hash } = identifier else {
             continue;
         };
-        let hash = identifier.hash(proj);
 
         manifest
             .entry(identifier.name(proj))
