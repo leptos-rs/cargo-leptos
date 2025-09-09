@@ -30,7 +30,7 @@ pub fn is_linux_musl_env() -> bool {
 
 pub trait StrAdditions {
     fn with(&self, append: &str) -> String;
-    fn pad_left_to(&self, len: usize) -> Cow<str>;
+    fn pad_left_to(&self, len: usize) -> Cow<'_, str>;
     /// returns the string as a canonical path (creates the dir if necessary)
     fn to_created_dir(&self) -> Result<Utf8PathBuf>;
 }
@@ -42,7 +42,7 @@ impl StrAdditions for str {
         s
     }
 
-    fn pad_left_to(&self, len: usize) -> Cow<str> {
+    fn pad_left_to(&self, len: usize) -> Cow<'_, str> {
         let chars = self.chars().count();
         if chars < len {
             Cow::Owned(format!("{}{self}", " ".repeat(len - chars)))
@@ -67,7 +67,7 @@ impl StrAdditions for String {
         s
     }
 
-    fn pad_left_to(&self, len: usize) -> Cow<str> {
+    fn pad_left_to(&self, len: usize) -> Cow<'_, str> {
         self.as_str().pad_left_to(len)
     }
 
