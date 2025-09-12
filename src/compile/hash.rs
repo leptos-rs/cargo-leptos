@@ -140,6 +140,14 @@ fn compute_front_file_hashes(proj: &Project) -> Result<HashMap<Utf8PathBuf, Stri
                         &Md5::new().chain_update(fs::read(&path)?).finalize(),
                     );
 
+                    if path
+                        .file_stem()
+                        .and_then(|name| name.to_str())
+                        .is_some_and(|name| name == hash)
+                    {
+                        continue;
+                    }
+
                     files_to_hashes.insert(
                         Utf8PathBuf::from_path_buf(path).expect("invalid path"),
                         hash,

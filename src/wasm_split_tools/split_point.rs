@@ -1,11 +1,14 @@
-use std::collections::{HashMap, HashSet, VecDeque};
-
-use super::dep_graph::{DepGraph, DepNode};
-use super::read::{ExportId, ImportId, InputFuncId, InputModule, SymbolIndex};
-use crate::config::Project;
-use crate::internal_prelude::*;
+use super::{
+    dep_graph::{DepGraph, DepNode},
+    read::{ExportId, ImportId, InputFuncId, InputModule, SymbolIndex},
+};
+use crate::{config::Project, internal_prelude::*};
 use regex::Regex;
-use std::sync::LazyLock;
+use std::{
+    collections::{HashMap, HashSet, VecDeque},
+    hash::Hash,
+    sync::LazyLock,
+};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct SplitModule {
@@ -271,11 +274,11 @@ impl SplitModuleIdentifier {
         }
     }
 
-    pub fn name_hashed(&self, proj: &Project) -> String {
+    pub fn hash(&self, proj: &Project) -> String {
         match self {
             Self::Main => proj.lib.output_name.clone(),
-            Self::Split { name, hash } => format!("{name}.{hash}"),
-            Self::Chunk { splits, hash } => format!("{}.{}", splits.join("_"), hash),
+            Self::Split { hash, .. } => hash.clone(),
+            Self::Chunk { hash, .. } => hash.clone(),
         }
     }
 

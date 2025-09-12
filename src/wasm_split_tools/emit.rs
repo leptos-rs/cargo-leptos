@@ -870,7 +870,7 @@ pub fn emit_modules(
     module: &InputModule,
     program_info: &mut SplitProgramInfo,
     // returns the hash of the contents
-    mut emit_fn: impl FnMut(&SplitModuleIdentifier, &[u8], &str) -> Result<()>,
+    mut emit_fn: impl FnMut(&SplitModuleIdentifier, &[u8]) -> Result<()>,
 ) -> Result<()> {
     // For now we will ignore data symbols because that simplifies things quite a bit.
 
@@ -904,10 +904,10 @@ pub fn emit_modules(
 
         let hash = Base64UrlUnpadded::encode_string(&Md5::new().chain_update(&data).finalize());
 
-        emit_fn(identifier, &data, &hash).wrap_err(format!("Error emitting {identifier:?}"))?;
-
         let identifier = &mut program_info.output_modules[output_module_index].0;
         identifier.set_hash(hash);
+
+        emit_fn(identifier, &data).wrap_err(format!("Error emitting {identifier:?}"))?;
     }
 
     Ok(())
