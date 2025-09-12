@@ -58,10 +58,11 @@ pub fn get_split_points(module: &InputModule) -> Result<Vec<SplitPoint>> {
 
     let split_points = import_map
         .drain()
-        .map(|(key, import_id)| -> Result<SplitPoint> {
-            let export_id = export_map
-                .remove(&key)
-                .ok_or_else(|| anyhow!("No corresponding export for split import {key:?}"))?;
+        .filter_map(|(key, import_id)| -> Option<SplitPoint> {
+            let Some(export_id) = export_map.remove(&key) else {
+                warn!("No corresponding export for split import {key:?}");
+                return None;
+            };
             let export = module.exports[export_id];
             let wasmparser::Export {
                 kind: wasmparser::ExternalKind::Func,
@@ -69,15 +70,17 @@ pub fn get_split_points(module: &InputModule) -> Result<Vec<SplitPoint>> {
                 ..
             } = export
             else {
-                bail!("Expected exported function but received: {export:?}");
+                warn!("Expected exported function but received: {export:?}");
+                return None;
             };
-            let &import_func = module.imported_func_map.get(&import_id).ok_or_else(|| {
-                anyhow!(
+            let Some(import_func) = module.imported_func_map.get(&import_id).copied() else {
+                warn!(
                     "Expected imported function but received: {:?}",
                     &module.imports[import_id]
-                )
-            })?;
-            Ok(SplitPoint {
+                );
+                return None;
+            };
+            Some(SplitPoint {
                 module_name: key.0,
                 import: import_id,
                 import_func,
@@ -85,14 +88,14 @@ pub fn get_split_points(module: &InputModule) -> Result<Vec<SplitPoint>> {
                 export_func: index as InputFuncId,
             })
         })
-        .collect::<Result<Vec<SplitPoint>>>()?;
+        .collect::<Vec<SplitPoint>>();
 
     /* for (key, _) in export_map.iter() {
         bail!("No corresponding import for split export {key:?}");
     } */
 
     if !export_map.is_empty() {
-        bail!(
+        warn!(
             "No corresponding imports for split export(s) {:?}",
             export_map.keys().collect::<Vec<_>>()
         );
