@@ -24,7 +24,7 @@ pub fn add_hashes_to_site(proj: &Project) -> Result<()> {
         &pkg_dir,
     );
 
-    if proj.split {
+    let wasm_split_hash = if proj.split {
         let old_wasm_split = proj
             .lib
             .js_file
@@ -59,7 +59,20 @@ pub fn add_hashes_to_site(proj: &Project) -> Result<()> {
                 }
             }
         }
-    }
+        Some(&files_to_hashes[&old_wasm_split])
+    } else {
+        None
+    };
+
+    let manifest_file = files_to_hashes
+        .iter()
+        .find_map(|(f, h)| (f.ends_with("__wasm_split_manifest.json")).then_some(h));
+    let manifest_file = manifest_file
+        .map(|f| format!("manifest: {f}\n"))
+        .unwrap_or_default();
+    let wasm_split_file = wasm_split_hash
+        .map(|f| format!("split: {f}\n"))
+        .unwrap_or_default();
 
     fs::create_dir_all(
         proj.hash_file
@@ -72,7 +85,7 @@ pub fn add_hashes_to_site(proj: &Project) -> Result<()> {
     fs::write(
         &proj.hash_file.abs,
         format!(
-            "{}: {}\n{}: {}\n{}: {}\n",
+            "{}: {}\n{}: {}\n{}: {}\n{}{}",
             proj.lib
                 .js_file
                 .dest
@@ -90,7 +103,9 @@ pub fn add_hashes_to_site(proj: &Project) -> Result<()> {
                 .dest
                 .extension()
                 .ok_or(eyre!("no extension"))?,
-            files_to_hashes[&proj.style.site_file.dest]
+            files_to_hashes[&proj.style.site_file.dest],
+            manifest_file,
+            wasm_split_file
         ),
     )
     .wrap_err_with(|| format!("Failed to write hash file to {}", proj.hash_file.abs))?;
