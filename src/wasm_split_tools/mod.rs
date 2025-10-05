@@ -191,5 +191,9 @@ function makeLoad(url, deps) {
 }
 
 fn is_wasm_bindgen_descriptor(name: &str) -> bool {
-    name == "__wbindgen_describe_closure" || name == "__wbindgen_describe"
+    name == "__wbindgen_describe_closure"
+        || name == "__wbindgen_describe"
+        || name.contains("wasm_bindgen..describe..WasmDescribe")
+        || name.contains("wasm_bindgen..closure..WasmClosure")
+        || name.contains("wasm_bindgen7closure16Closure")
 }
