@@ -630,6 +630,7 @@ dependencies = [
  "walkdir",
  "wasm-bindgen-cli-support",
  "wasm-encoder 0.235.0",
+ "wasm_split_cli_support",
  "wasmparser 0.235.0",
  "which",
  "zip",
@@ -6112,6 +6113,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "wasm-encoder"
+version = "0.239.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5be00faa2b4950c76fe618c409d2c3ea5a3c9422013e079482d78544bb2d184c"
+dependencies = [
+ "leb128fmt",
+ "wasmparser 0.239.0",
+]
+
+[[package]]
+name = "wasm_split_cli_support"
+version = "0.1.0"
+source = "git+https://github.com/WorldSEnder/wasm-split-prototype.git?rev=9b4876034a3be928a634c55be9c55085a9395f46#9b4876034a3be928a634c55be9c55085a9395f46"
+dependencies = [
+ "eyre",
+ "lazy_static",
+ "regex",
+ "tracing",
+ "wasm-encoder 0.239.0",
+ "wasmparser 0.239.0",
+]
+
+[[package]]
 name = "wasmparser"
 version = "0.214.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6130,6 +6154,19 @@ name = "wasmparser"
 version = "0.235.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "161296c618fa2d63f6ed5fffd1112937e803cb9ec71b32b01a76321555660917"
+dependencies = [
+ "bitflags 2.9.4",
+ "hashbrown 0.15.5",
+ "indexmap 2.11.3",
+ "semver",
+ "serde",
+]
+
+[[package]]
+name = "wasmparser"
+version = "0.239.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8c9d90bb93e764f6beabf1d02028c70a2156a6583e63ac4218dd07ef733368b0"
 dependencies = [
  "bitflags 2.9.4",
  "hashbrown 0.15.5",

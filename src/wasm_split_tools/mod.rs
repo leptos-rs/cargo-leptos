@@ -7,31 +7,55 @@ mod emit;
 mod read;
 mod split_point;
 
-use crate::{config::Project, internal_prelude::*, wasm_split_tools::dep_graph::DepNode};
-use camino::Utf8PathBuf;
+use crate::{config::Project, internal_prelude::*};
+use camino::{Utf8Path, Utf8PathBuf};
 use split_point::SplitModuleIdentifier;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 pub async fn wasm_split(
     input_wasm: &[u8],
     verbose: bool,
     proj: &Project,
 ) -> Result<Vec<Utf8PathBuf>> {
+    let dest_file = &proj.lib.wasm_file.dest;
+    let dest_dir = dest_file.parent().expect("no destination directory");
+    let source_file = &proj.lib.wasm_file.source;
+    let main_module = &format!("/pkg/{}.js", proj.lib.output_name);
+
+    let mut main_out_file = source_file.clone();
+    main_out_file.set_file_name(format!("{}_split.wasm", source_file.file_stem().unwrap()));
+    let main_out_file = main_out_file;
+
+    if true {
+        let split_wasm = wasm_split_cli_support::transform(wasm_split_cli_support::Options {
+            input_wasm,
+            output_dir: dest_dir.as_std_path(),
+            main_out_path: main_out_file.as_std_path(),
+            main_module,
+            link_name: Utf8Path::new("__wasm_split.______________________.js").as_std_path(),
+            verbose,
+        })?;
+        tokio::fs::write(
+            dest_dir.join("__wasm_split_manifest.json"),
+            serde_json::to_string_pretty(&split_wasm.prefetch_map)
+                .expect("could not serialize manifest file"),
+        )
+        .await?;
+        return Ok(split_wasm
+            .split_modules
+            .into_iter()
+            .map(|path| path.try_into().unwrap())
+            .collect());
+    }
+
     let mut split_files = vec![];
 
     let module = self::read::InputModule::parse(input_wasm)?;
 
-    let wb_descriptors = module
-        .names
-        .functions
-        .iter()
-        .filter_map(|(id, name)| is_wasm_bindgen_descriptor(name).then_some(DepNode::Function(*id)))
-        .collect::<HashSet<_>>();
-
     let dep_graph = dep_graph::get_dependencies(&module)?;
     let split_points = split_point::get_split_points(&module)?;
     let mut split_program_info =
-        split_point::compute_split_modules(&module, &dep_graph, &split_points, &wb_descriptors)?;
+        split_point::compute_split_modules(&module, &dep_graph, &split_points)?;
 
     if verbose {
         for (name, split_deps) in split_program_info.output_modules.iter() {
@@ -39,12 +63,6 @@ pub async fn wasm_split(
         }
     }
 
-    let dest_dir = proj
-        .lib
-        .wasm_file
-        .dest
-        .parent()
-        .expect("no destination directory");
     std::fs::create_dir_all(dest_dir)?;
 
     self::emit::emit_modules(
@@ -52,11 +70,9 @@ pub async fn wasm_split(
         &mut split_program_info,
         |identifier: &SplitModuleIdentifier, data: &[u8]| -> Result<()> {
             let output_path = if matches!(identifier, SplitModuleIdentifier::Main) {
-                let mut source = proj.lib.wasm_file.source.clone();
-                source.set_file_name(format!("{}_split.wasm", source.file_stem().unwrap()));
-                source
+                main_out_file.clone()
             } else {
-                dest_dir.join(format!("{}.wasm", identifier.hash(proj)))
+                dest_dir.join(format!("{}.wasm", identifier.hash()))
             };
 
             std::fs::write(&output_path, data)?;
@@ -70,10 +86,10 @@ pub async fn wasm_split(
     )?;
 
     let mut javascript = String::new();
-    javascript.push_str(r#"import { initSync } from "/pkg/"#);
-    javascript.push_str(&proj.lib.output_name);
+    javascript.push_str(r#"import { initSync } from ""#);
+    javascript.push_str(main_module);
     javascript.push_str(
-        r#".js";
+        r#"";
 function makeLoad(url, deps) {
   let alreadyLoaded = false;
   return async(callbackIndex, callbackData) => {
@@ -122,7 +138,7 @@ function makeLoad(url, deps) {
         let SplitModuleIdentifier::Chunk { splits, hash } = identifier else {
             continue;
         };
-        let name = identifier.name(proj);
+        let name = identifier.name();
 
         manifest.entry(name.clone()).or_default().push(hash.clone());
 
@@ -149,7 +165,7 @@ function makeLoad(url, deps) {
         };
 
         manifest
-            .entry(identifier.name(proj))
+            .entry(identifier.name())
             .or_default()
             .push(hash.clone());
 
@@ -166,30 +182,16 @@ function makeLoad(url, deps) {
     }
 
     tokio::fs::write(
-        proj.lib
-            .wasm_file
-            .dest
-            .parent()
-            .expect("no destination directory")
-            .join("__wasm_split_manifest.json"),
+        dest_dir.join("__wasm_split_manifest.json"),
         serde_json::to_string_pretty(&manifest).expect("could not serialize manifest file"),
     )
     .await?;
 
     tokio::fs::write(
-        proj.lib
-            .wasm_file
-            .dest
-            .parent()
-            .expect("no destination directory")
-            .join("__wasm_split.______________________.js"),
+        dest_dir.join("__wasm_split.______________________.js"),
         javascript,
     )
     .await?;
 
     Ok(split_files)
-}
-
-fn is_wasm_bindgen_descriptor(name: &str) -> bool {
-    name == "__wbindgen_describe_closure" || name == "__wbindgen_describe"
 }

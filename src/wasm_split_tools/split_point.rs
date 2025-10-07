@@ -2,7 +2,7 @@ use super::{
     dep_graph::{DepGraph, DepNode},
     read::{ExportId, ImportId, InputFuncId, InputModule, SymbolIndex},
 };
-use crate::{config::Project, internal_prelude::*};
+use crate::internal_prelude::{trace, warn, Result};
 use regex::Regex;
 use std::{
     collections::{HashMap, HashSet, VecDeque},
@@ -269,17 +269,17 @@ pub enum SplitModuleIdentifier {
 }
 
 impl SplitModuleIdentifier {
-    pub fn name(&self, proj: &Project) -> String {
+    pub fn name(&self) -> String {
         match self {
-            Self::Main => proj.lib.output_name.clone(),
+            Self::Main => unreachable!("main module doesn't have a loader"),
             Self::Split { name, .. } => name.clone(),
             Self::Chunk { splits, .. } => splits.join("_"),
         }
     }
 
-    pub fn hash(&self, proj: &Project) -> String {
+    pub fn hash(&self) -> String {
         match self {
-            Self::Main => proj.lib.output_name.clone(),
+            Self::Main => unreachable!("main module filehash determined by options"),
             Self::Split { hash, .. } => hash.clone(),
             Self::Chunk { hash, .. } => hash.clone(),
         }
@@ -302,12 +302,21 @@ pub struct SplitProgramInfo {
     pub symbol_output_module: HashMap<DepNode, usize>,
 }
 
+fn is_wasm_bindgen_descriptor(name: &str) -> bool {
+    name == "__wbindgen_describe_closure" || name == "__wbindgen_describe"
+}
+
 pub fn compute_split_modules(
     module: &InputModule,
     dep_graph: &DepGraph,
     split_points: &[SplitPoint],
-    wb_descriptors: &HashSet<DepNode>,
 ) -> Result<SplitProgramInfo> {
+    let wb_descriptors = &module
+        .names
+        .functions
+        .iter()
+        .filter_map(|(id, name)| is_wasm_bindgen_descriptor(name).then_some(DepNode::Function(*id)))
+        .collect::<HashSet<_>>();
     let split_points_by_module = get_split_points_by_module(split_points);
 
     trace!("wasm_split split_points={split_points:?}");
@@ -365,7 +374,7 @@ pub fn compute_split_modules(
         .collect();
 
     // remove deps that use wasm-bindgen descriptors and put them in the main module
-    for (module_name, deps) in split_module_candidates.iter_mut() {
+    for (_module_name, deps) in split_module_candidates.iter_mut() {
         for dep in &uses_wb_descriptor {
             deps.reachable.remove(dep);
         }
