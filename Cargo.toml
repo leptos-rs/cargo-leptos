@@ -63,7 +63,7 @@ regex = "1.11.1"
 wasm-encoder = { version = "0.235.0", features = ["wasmparser"] }
 wasmparser = "0.235.0"
 clap_complete = "4.5.55"
-wasm_split_cli_support = { git = "https://github.com/WorldSEnder/wasm-split-prototype.git", version = "0.1", rev = "9b4876034a3be928a634c55be9c55085a9395f46" }
+wasm_split_cli_support = { git = "https://github.com/WorldSEnder/wasm-split-prototype.git", version = "0.1", rev = "be660c8761a4b1fcaa7f9b5ed6b2f33050e2720c" }
 
 [dev-dependencies]
 insta = { version = "1.43", features = ["yaml"] }
