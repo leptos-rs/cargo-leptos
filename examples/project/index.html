@@ -1,0 +1,11 @@
+<html>
+	<head>
+		<script>
+			WebAssembly.instantiateStreaming(fetch("test.wasm"), importObject).then(
+  (results) => {
+	  console.log(results);
+  },
+);
+		</script>
+	</head>
+</html>

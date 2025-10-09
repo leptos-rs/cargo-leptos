@@ -189,6 +189,7 @@ pub fn find_reachable_deps(
     let mut queue: VecDeque<DepNode> = roots.iter().copied().collect();
     let mut seen = HashSet::<DepNode>::new();
     let mut parents = HashMap::<DepNode, DepNode>::new();
+
     while let Some(node) = queue.pop_front() {
         seen.insert(node);
         let Some(children) = deps.get(&node) else {
@@ -331,6 +332,23 @@ pub fn compute_split_modules(
     let main_roots = get_main_module_roots(module, split_points);
 
     let mut uses_wb_descriptor = HashSet::new();
+
+    // *children* of any wasm-bindgen descriptor need to be moved into the main-only set
+    // this applies, for example, to the contents of a Closure::wrap()
+    let mut queue = VecDeque::new();
+    queue.extend(wb_descriptors.iter().cloned());
+    let mut seen = HashSet::new();
+    while let Some(node) = queue.pop_front() {
+        if seen.contains(&node) {
+            continue;
+        }
+        seen.insert(node);
+        if let Some(children) = dep_graph.get(&node) {
+            queue.extend(children.iter().cloned());
+            uses_wb_descriptor.extend(children.iter().cloned());
+        }
+    }
+
     let mut main_deps = find_reachable_deps(
         dep_graph,
         &main_roots,
