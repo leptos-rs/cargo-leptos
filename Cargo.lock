@@ -6125,7 +6125,7 @@ dependencies = [
 [[package]]
 name = "wasm_split_cli_support"
 version = "0.1.0"
-source = "git+https://github.com/WorldSEnder/wasm-split-prototype.git?rev=9b4876034a3be928a634c55be9c55085a9395f46#9b4876034a3be928a634c55be9c55085a9395f46"
+source = "git+https://github.com/WorldSEnder/wasm-split-prototype.git?rev=58a1687f830b87418e6e55fcdbb68c2fbee639f8#58a1687f830b87418e6e55fcdbb68c2fbee639f8"
 dependencies = [
  "eyre",
  "lazy_static",
