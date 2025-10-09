@@ -29,6 +29,7 @@ pub async fn wasm_split(
         .collect::<HashSet<_>>();
 
     let dep_graph = dep_graph::get_dependencies(&module)?;
+
     let split_points = split_point::get_split_points(&module)?;
     let mut split_program_info =
         split_point::compute_split_modules(&module, &dep_graph, &split_points, &wb_descriptors)?;
