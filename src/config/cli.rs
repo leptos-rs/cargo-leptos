@@ -57,6 +57,10 @@ pub struct Opts {
     #[arg(short, action = clap::ArgAction::Count)]
     pub verbose: u8,
 
+    /// Clear the terminal before rebuilding
+    #[arg(long, short)]
+    pub clear: bool,
+
     /// Minify javascript assets with swc. Applies to release builds only.
     #[arg(long, default_value = "true", value_parser=clap::builder::BoolishValueParser::new(), action = clap::ArgAction::Set)]
     pub js_minify: bool,

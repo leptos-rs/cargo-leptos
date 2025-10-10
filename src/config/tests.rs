@@ -17,6 +17,7 @@ fn opts(project: Option<&str>) -> crate::config::Opts {
         split: false,
         frontend_only: false,
         server_only: false,
+        clear: false,
     }
 }
 
