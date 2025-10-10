@@ -70,6 +70,11 @@ pub async fn run_loop(proj: &Arc<Project>) -> Result<()> {
 pub async fn runner(proj: &Arc<Project>) -> Result<()> {
     let changes = Interrupt::get_source_changes().await;
 
+    // if there were sourcecode changes and the clear cli option is set we clear the terminal
+    if !changes.is_empty() && proj.clear_terminal_on_rebuild {
+        clearscreen::clear()?;
+    }
+
     let server_hdl = compile::server(proj, &changes).await;
     let front_hdl = compile::front(proj, &changes).await;
     let assets_hdl = compile::assets(proj, &changes).await;

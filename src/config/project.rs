@@ -53,6 +53,7 @@ pub struct Project {
     pub wasm_opt_features: Option<HashSet<String>>,
     pub build_frontend_only: bool,
     pub build_server_only: bool,
+    pub clear_terminal_on_rebuild: bool,
 }
 
 impl Debug for Project {
@@ -131,6 +132,7 @@ impl Project {
                 precompress: cli.precompress,
                 hot_reload: cli.hot_reload,
                 wasm_debug: cli.wasm_debug,
+                clear_terminal_on_rebuild: cli.clear,
                 site: Arc::new(Site::new(&config)),
                 end2end: End2EndConfig::resolve(&config),
                 assets: AssetsConfig::resolve(&config),
