@@ -60,10 +60,8 @@ cargo-generate = { version = "0.23.4", features = ["vendored-openssl"] }
 ignore = "0.4.23"
 walkdir = "2.5"
 regex = "1.11.1"
-wasm-encoder = { version = "0.235.0", features = ["wasmparser"] }
-wasmparser = "0.235.0"
 clap_complete = "4.5.55"
-wasm_split_cli_support = { git = "https://github.com/WorldSEnder/wasm-split-prototype.git", version = "0.1", rev = "58a1687f830b87418e6e55fcdbb68c2fbee639f8" }
+wasm_split_cli_support = "0.2.0-rc.0"
 
 [dev-dependencies]
 insta = { version = "1.43", features = ["yaml"] }
