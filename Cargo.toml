@@ -61,7 +61,7 @@ ignore = "0.4.23"
 walkdir = "2.5"
 regex = "1.11.1"
 clap_complete = "4.5.55"
-wasm_split_cli_support = "0.2.0-rc.0"
+wasm_split_cli_support = "0.2.0-rc.1"
 
 [dev-dependencies]
 insta = { version = "1.43", features = ["yaml"] }
