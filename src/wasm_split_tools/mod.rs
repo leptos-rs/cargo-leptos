@@ -17,15 +17,15 @@ pub async fn wasm_split(
 
     let mut main_out_file = source_file.clone();
     main_out_file.set_file_name(format!("{}_split.wasm", source_file.file_stem().unwrap()));
-    let main_out_file = main_out_file;
 
-    let split_wasm = wasm_split_cli_support::transform(wasm_split_cli_support::Options {
-        input_wasm,
-        output_dir: dest_dir.as_std_path(),
-        main_out_path: main_out_file.as_std_path(),
-        main_module,
-        link_name: Utf8Path::new("__wasm_split.______________________.js").as_std_path(),
-        verbose,
+    let split_wasm = wasm_split_cli_support::transform({
+        let mut opts = wasm_split_cli_support::Options::new(input_wasm);
+        opts.output_dir = dest_dir.as_std_path();
+        opts.main_out_path = main_out_file.as_std_path();
+        opts.main_module = main_module;
+        opts.link_name = Utf8Path::new("__wasm_split.______________________.js").as_std_path();
+        opts.verbose = verbose;
+        opts
     })?;
     tokio::fs::write(
         dest_dir.join("__wasm_split_manifest.json"),
