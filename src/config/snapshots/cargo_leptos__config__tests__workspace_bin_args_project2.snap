@@ -1,5 +1,6 @@
 ---
 source: src/config/tests.rs
+assertion_line: 89
 expression: conf
 ---
 Config {
@@ -104,6 +105,7 @@ Config {
         bin_cargo_args: None,
         wasm_debug: false,
         verbose: 0,
+        clear: false,
         js_minify: false,
         split: false,
         frontend_only: false,
