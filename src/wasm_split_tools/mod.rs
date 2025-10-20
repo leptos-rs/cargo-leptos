@@ -3,7 +3,7 @@
 //! under the Apache License: https://github.com/jbms/wasm-split-prototype/blob/main/LICENSE
 
 use crate::{config::Project, internal_prelude::*};
-use camino::{Utf8Path, Utf8PathBuf};
+use camino::Utf8PathBuf;
 
 pub async fn wasm_split(
     input_wasm: &[u8],
@@ -23,7 +23,7 @@ pub async fn wasm_split(
         opts.output_dir = dest_dir.as_std_path();
         opts.main_out_path = main_out_file.as_std_path();
         opts.main_module = main_module;
-        opts.link_name = Utf8Path::new("__wasm_split.______________________.js").as_std_path();
+        opts.link_name = "./__wasm_split.______________________.js";
         opts.verbose = verbose;
         opts
     })?;
