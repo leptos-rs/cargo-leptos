@@ -50,6 +50,11 @@ Install:
 
 > `cargo install --locked cargo-leptos`
 
+Note that this may require additional dependencies for SSL on some systems.
+If the installation fails while building `openssl-sys`, you will need to
+[install additional tools](https://docs.rs/openssl/latest/openssl/#automatic),
+before retrying the build.
+
 If you, for any reason, need the bleeding-edge super fresh version:
 
 > `cargo install --git https://github.com/leptos-rs/cargo-leptos --locked cargo-leptos`
