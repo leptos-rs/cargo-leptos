@@ -60,9 +60,8 @@ cargo-generate = { version = "0.23.4", features = ["vendored-openssl"] }
 ignore = "0.4.23"
 walkdir = "2.5"
 regex = "1.11.1"
-wasm-encoder = { version = "0.235.0", features = ["wasmparser"] }
-wasmparser = "0.235.0"
 clap_complete = "4.5.55"
+wasm_split_cli_support = "0.2.0"
 clearscreen = "4.0.1"
 
 [dev-dependencies]
