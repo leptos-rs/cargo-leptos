@@ -1,4 +1,3 @@
-
 name: Test
 
 on: [push, pull_request]
@@ -15,24 +14,30 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
-        - name: "Checkout repo"
-          uses: actions/checkout@v4
+      - name: "Checkout repo"
+        uses: actions/checkout@v4
 
-        - name: "Install wasm32-unknown-unknown"
-          uses: dtolnay/rust-toolchain@stable
-          with:
-            toolchain: "stable"
-            targets: "wasm32-unknown-unknown"
+      - name: "Install wasm32-unknown-unknown"
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: "stable"
+          targets: "wasm32-unknown-unknown"
 
-        - name: "Use rust-cache"
-          uses: Swatinem/rust-cache@v2
-          with:
-            workspaces: |
-              .
-              examples/workspace
-              
-        - name: "Run cargo test --features=full_tests"
-          uses: actions-rs/cargo@v1
-          with:
-            command: test
-            args: --features=full_tests
+      - name: Install binstall
+        uses: cargo-bins/cargo-binstall@main
+
+      - name: Install wasm-bindgen
+        run: cargo binstall wasm-bindgen-cli --no-confirm
+
+      - name: "Use rust-cache"
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            .
+            examples/workspace
+
+      - name: "Run cargo test --features=full_tests"
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --features=full_tests

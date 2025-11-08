@@ -213,6 +213,7 @@ pub enum Exe {
     Sass,
     Tailwind,
     WasmOpt,
+    WasmBindgen,
 }
 
 impl Exe {
@@ -247,6 +248,10 @@ impl Exe {
                 .await
                 .dot()?,
             Exe::WasmOpt => CommandWasmOpt
+                .exe_meta(target_os, target_arch)
+                .await
+                .dot()?,
+            Exe::WasmBindgen => CommandWasmBindgen
                 .exe_meta(target_os, target_arch)
                 .await
                 .dot()?,
@@ -303,6 +308,7 @@ fn normalize_version(ver_string: &str) -> Option<Version> {
 struct CommandTailwind;
 struct CommandSass;
 struct CommandWasmOpt;
+struct CommandWasmBindgen;
 
 impl Command for CommandTailwind {
     fn name(&self) -> &'static str {
@@ -556,6 +562,98 @@ impl Command for CommandWasmOpt {
     fn manual_install_instructions(&self) -> String {
         "Try manually installing wasm-opt from Binaryen: https://github.com/WebAssembly/binaryen"
             .to_string()
+    }
+}
+
+impl Command for CommandWasmBindgen {
+    fn name(&self) -> &'static str {
+        "wasm-bindgen"
+    }
+    fn version(&self) -> Cow<'_, str> {
+        VersionConfig::WasmBindgen.version()
+    }
+    fn default_version(&self) -> &'static str {
+        VersionConfig::WasmBindgen.default_version()
+    }
+    fn env_var_version_name(&self) -> &'static str {
+        VersionConfig::WasmBindgen.env_var_version_name()
+    }
+    fn github_owner(&self) -> &'static str {
+        "wasm-bindgen"
+    }
+    fn github_repo(&self) -> &'static str {
+        "wasm-bindgen"
+    }
+
+    /// Tool binary download url for the given OS and platform arch
+    fn download_url(&self, target_os: &str, target_arch: &str, version: &str) -> Result<String> {
+        // https://github.com/wasm-bindgen/wasm-bindgen/releases/download/0.2.104/wasm-bindgen-0.2.104-aarch64-apple-darwin.tar.gz - ✅
+        // https://github.com/wasm-bindgen/wasm-bindgen/releases/download/0.2.104/wasm-bindgen-0.2.104-aarch64-unknown-linux-gnu.tar.gz - ✅
+        // https://github.com/wasm-bindgen/wasm-bindgen/releases/download/0.2.104/wasm-bindgen-0.2.104-aarch64-unknown-linux-musl.tar.gz - ✅
+        // https://github.com/wasm-bindgen/wasm-bindgen/releases/download/0.2.104/wasm-bindgen-0.2.104-x86_64-apple-darwin.tar.gz - ✅
+        // https://github.com/wasm-bindgen/wasm-bindgen/releases/download/0.2.104/wasm-bindgen-0.2.104-x86_64-pc-windows-msvc.tar.gz - ✅
+        // https://github.com/wasm-bindgen/wasm-bindgen/releases/download/0.2.104/wasm-bindgen-0.2.104-x86_64-unknown-linux-musl.tar.gz - ✅
+
+        let use_musl = is_linux_musl_env();
+
+        let base_url = format!(
+            "https://github.com/{}/{}/releases/download/{}/wasm-bindgen-{}",
+            self.github_owner(),
+            self.github_repo(),
+            version,
+            version
+        );
+        match (target_os, target_arch) {
+            ("windows", "x86_64") => Ok(format!("{base_url}-x86_64-pc-windows-msvc.tar.gz")),
+            ("macos", "x86_64") => Ok(format!("{base_url}-x86_64-apple-darwin.tar.gz")),
+            ("macos", "aarch64" | "arm64") => Ok(format!("{base_url}-aarch64-apple-darwin.tar.gz")),
+            ("linux", "aarch64" | "arm64") if use_musl => {
+                Ok(format!("{base_url}-aarch64-unknown-linux-musl.tar.gz"))
+            }
+            ("linux", "aarch64" | "arm64") if !use_musl => {
+                Ok(format!("{base_url}-aarch64-unknown-linux-gnu.tar.gz"))
+            }
+            ("linux", "x86_64") => Ok(format!("{base_url}-x86_64-unknown-linux-musl.tar.gz")),
+            _ => bail!(
+                "Command [{}] failed to find a match for {}-{} ",
+                self.name(),
+                target_os,
+                target_arch
+            ),
+        }
+    }
+
+    fn executable_name(&self, target_os: &str, target_arch: &str, version: &str) -> Result<String> {
+        let use_musl = is_linux_musl_env();
+        let base_name = format_args!("wasm-bindgen-{version}");
+        match (target_os, target_arch) {
+            ("windows", "x86_64") => Ok(format!(
+                "{base_name}-x86_64-pc-windows-msvc/wasm-bindgen.exe"
+            )),
+            ("macos", "x86_64") => Ok(format!("{base_name}-x86_64-apple-darwin/wasm-bindgen")),
+            ("macos", "aarch64" | "arm64") => {
+                Ok(format!("{base_name}-aarch64-apple-darwin/wasm-bindgen"))
+            }
+            ("linux", "aarch64" | "arm64") if use_musl => Ok(format!(
+                "{base_name}-aarch64-unknown-linux-musl/wasm-bindgen"
+            )),
+            ("linux", "aarch64" | "arm64") if !use_musl => Ok(format!(
+                "{base_name}-aarch64-unknown-linux-gnu/wasm-bindgen"
+            )),
+            ("linux", "x86_64") => Ok(format!(
+                "{base_name}-x86_64-unknown-linux-musl/wasm-bindgen"
+            )),
+            _ => bail!(
+                "Command [{}] failed to find a match for {}-{} ",
+                self.name(),
+                target_os,
+                target_arch
+            ),
+        }
+    }
+
+    fn manual_install_instructions(&self) -> String {
+        "Try manually installing wasm-bindgen: https://github.com/wasm-bindgen/wasm-bindgen/?tab=readme-ov-file#install-wasm-bindgen-cli".to_string()
     }
 }
 
