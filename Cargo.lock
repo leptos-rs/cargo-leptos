@@ -574,7 +574,7 @@ dependencies = [
 
 [[package]]
 name = "cargo-leptos"
-version = "0.2.47"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "axum",
