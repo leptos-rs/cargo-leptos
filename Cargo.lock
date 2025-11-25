@@ -584,6 +584,7 @@ dependencies = [
  "camino",
  "cargo-config2",
  "cargo-generate",
+ "cargo-lock",
  "cargo_metadata",
  "clap",
  "clap_complete",
@@ -622,6 +623,18 @@ dependencies = [
  "wasm_split_cli_support",
  "which",
  "zip",
+]
+
+[[package]]
+name = "cargo-lock"
+version = "11.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cf53e0ebbbc6e45357b199f3b213f3eb330792c8b370e548499f5685470ecb11"
+dependencies = [
+ "semver",
+ "serde",
+ "toml 0.9.8",
+ "url",
 ]
 
 [[package]]

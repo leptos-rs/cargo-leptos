@@ -157,7 +157,12 @@ async fn bindgen(proj: &Project, all_wasm_files: &[Utf8PathBuf]) -> Result<Outco
         .generate_output()
         .dot_anyhow()?; */
 
-    let wasm_opt = Exe::WasmBindgen.get().await.dot()?;
+    let wasm_bindgen = Exe::WasmBindgen {
+        project_root: &proj.working_dir,
+    }
+    .get()
+    .await
+    .dot()?;
 
     let args = [
         Some("--target=web".to_string()),
@@ -175,7 +180,7 @@ async fn bindgen(proj: &Project, all_wasm_files: &[Utf8PathBuf]) -> Result<Outco
     .into_iter()
     .flatten();
 
-    let mut cmd = Command::new(wasm_opt);
+    let mut cmd = Command::new(wasm_bindgen);
     cmd.args(args.clone());
 
     match wait_piped_interruptible(

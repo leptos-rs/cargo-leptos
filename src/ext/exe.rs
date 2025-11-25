@@ -1,5 +1,6 @@
 use crate::{config::VersionConfig, ext::Paint, internal_prelude::*, logger::GRAY};
 use bytes::Bytes;
+use camino::Utf8Path;
 use std::{
     borrow::Cow,
     fs::{self, File},
@@ -209,14 +210,14 @@ fn get_cache_dir() -> Result<PathBuf> {
 }
 
 #[derive(Debug, Hash, Eq, PartialEq)]
-pub enum Exe {
+pub enum Exe<'a> {
     Sass,
     Tailwind,
     WasmOpt,
-    WasmBindgen,
+    WasmBindgen { project_root: &'a Utf8Path },
 }
 
-impl Exe {
+impl Exe<'_> {
     pub async fn get(&self) -> Result<PathBuf> {
         let meta = self.meta().await?;
 
@@ -251,7 +252,7 @@ impl Exe {
                 .exe_meta(target_os, target_arch)
                 .await
                 .dot()?,
-            Exe::WasmBindgen => CommandWasmBindgen
+            Exe::WasmBindgen { project_root } => CommandWasmBindgen { project_root }
                 .exe_meta(target_os, target_arch)
                 .await
                 .dot()?,
@@ -308,7 +309,9 @@ fn normalize_version(ver_string: &str) -> Option<Version> {
 struct CommandTailwind;
 struct CommandSass;
 struct CommandWasmOpt;
-struct CommandWasmBindgen;
+struct CommandWasmBindgen<'a> {
+    project_root: &'a Utf8Path,
+}
 
 impl Command for CommandTailwind {
     fn name(&self) -> &'static str {
@@ -565,7 +568,7 @@ impl Command for CommandWasmOpt {
     }
 }
 
-impl Command for CommandWasmBindgen {
+impl Command for CommandWasmBindgen<'_> {
     fn name(&self) -> &'static str {
         "wasm-bindgen"
     }
@@ -654,6 +657,35 @@ impl Command for CommandWasmBindgen {
 
     fn manual_install_instructions(&self) -> String {
         "Try manually installing wasm-bindgen: https://github.com/wasm-bindgen/wasm-bindgen/?tab=readme-ov-file#install-wasm-bindgen-cli".to_string()
+    }
+
+    /// Detects the `wasm-bindgen` version from the project's `Cargo.lock` file.
+    /// Returns `None` if the file doesn't exist, is malformed, or doesn't contain `wasm-bindgen`.
+    async fn detect_version_from_project(&self) -> Option<String> {
+        let lockfile_path = self.project_root.join("Cargo.lock");
+
+        if !lockfile_path.exists() {
+            debug!("Cargo.lock not found at {}", lockfile_path);
+            return None;
+        }
+
+        match cargo_lock::Lockfile::load(&lockfile_path) {
+            Ok(lockfile) => {
+                for package in &lockfile.packages {
+                    if package.name.as_str() == "wasm-bindgen" {
+                        let version = package.version.to_string();
+                        debug!("Found wasm-bindgen version {} in Cargo.lock", version);
+                        return Some(version);
+                    }
+                }
+                debug!("wasm-bindgen not found in Cargo.lock");
+                None
+            }
+            Err(e) => {
+                debug!("Failed to parse Cargo.lock: {}", e);
+                None
+            }
+        }
     }
 }
 
@@ -833,7 +865,21 @@ trait Command {
             env::var(self.env_var_version_name())
         );
 
-        if !is_force_pin_version && !self.should_check_for_new_version().await {
+        if is_force_pin_version {
+            return self.version().to_string();
+        }
+
+        // Try to detect from project before falling back to default
+        if let Some(version) = self.detect_version_from_project().await {
+            info!(
+                "Using {} version {} detected in project",
+                self.name(),
+                version
+            );
+            return version;
+        }
+
+        if !self.should_check_for_new_version().await {
             trace!(
                 "Command [{}] NOT checking for the latest available version",
                 &self.name()
@@ -873,6 +919,10 @@ trait Command {
         }
 
         version.to_string()
+    }
+
+    async fn detect_version_from_project(&self) -> Option<String> {
+        None
     }
 }
 
