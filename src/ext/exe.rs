@@ -1,5 +1,6 @@
 use crate::{config::VersionConfig, ext::Paint, internal_prelude::*, logger::GRAY};
 use bytes::Bytes;
+use camino::Utf8Path;
 use std::{
     borrow::Cow,
     fs::{self, File},
@@ -217,8 +218,8 @@ pub enum Exe {
 }
 
 impl Exe {
-    pub async fn get(&self) -> Result<PathBuf> {
-        let meta = self.meta().await?;
+    pub async fn get(&self, project_root: Option<&Utf8Path>) -> Result<PathBuf> {
+        let meta = self.meta(project_root).await?;
 
         let path = if let Some(path) = meta.from_global_path() {
             path
@@ -238,21 +239,21 @@ impl Exe {
         Ok(path)
     }
 
-    pub async fn meta(&self) -> Result<ExeMeta> {
+    pub async fn meta(&self, project_root: Option<&Utf8Path>) -> Result<ExeMeta> {
         let (target_os, target_arch) = os_arch().unwrap();
 
         let exe = match self {
-            Exe::Sass => CommandSass.exe_meta(target_os, target_arch).await.dot()?,
+            Exe::Sass => CommandSass.exe_meta(target_os, target_arch, project_root).await.dot()?,
             Exe::Tailwind => CommandTailwind
-                .exe_meta(target_os, target_arch)
+                .exe_meta(target_os, target_arch, project_root)
                 .await
                 .dot()?,
             Exe::WasmOpt => CommandWasmOpt
-                .exe_meta(target_os, target_arch)
+                .exe_meta(target_os, target_arch, project_root)
                 .await
                 .dot()?,
             Exe::WasmBindgen => CommandWasmBindgen
-                .exe_meta(target_os, target_arch)
+                .exe_meta(target_os, target_arch, project_root)
                 .await
                 .dot()?,
         };
@@ -303,6 +304,35 @@ fn normalize_version(ver_string: &str) -> Option<Version> {
 
             version
         })
+}
+
+/// Detects the wasm-bindgen version from the project's Cargo.lock file.
+/// Returns None if the file doesn't exist, is malformed, or doesn't contain wasm-bindgen.
+fn detect_wasm_bindgen_from_lockfile(project_root: &Utf8Path) -> Option<String> {
+    let lockfile_path = project_root.join("Cargo.lock");
+
+    if !lockfile_path.exists() {
+        debug!("Cargo.lock not found at {}", lockfile_path);
+        return None;
+    }
+
+    match cargo_lock::Lockfile::load(&lockfile_path) {
+        Ok(lockfile) => {
+            for package in &lockfile.packages {
+                if package.name.as_str() == "wasm-bindgen" {
+                    let version = package.version.to_string();
+                    debug!("Found wasm-bindgen version {} in Cargo.lock", version);
+                    return Some(version);
+                }
+            }
+            debug!("wasm-bindgen not found in Cargo.lock");
+            None
+        }
+        Err(e) => {
+            debug!("Failed to parse Cargo.lock: {}", e);
+            None
+        }
+    }
 }
 
 struct CommandTailwind;
@@ -685,13 +715,14 @@ trait Command {
     ///
     /// * `target_os` - The target operating system.
     /// * `target_arch` - The target architecture.
+    /// * `project_root` - Optional path to the project root (for detecting versions from Cargo.lock).
     ///
     /// # Returns
     ///
     /// Returns a `Result` containing the `ExeMeta` struct on success, or an error on failure.
     ///
-    async fn exe_meta(&self, target_os: &str, target_arch: &str) -> Result<ExeMeta> {
-        let version = self.resolve_version().await;
+    async fn exe_meta(&self, target_os: &str, target_arch: &str, project_root: Option<&Utf8Path>) -> Result<ExeMeta> {
+        let version = self.resolve_version(project_root).await;
         let url = self.download_url(target_os, target_arch, version.as_str())?;
         let exe = self.executable_name(target_os, target_arch, version.as_str())?;
         Ok(ExeMeta {
@@ -822,7 +853,12 @@ trait Command {
     /// cache the last check timestamp
     /// compare with the currently requested version
     /// inform a user if a more recent compatible version is available
-    async fn resolve_version(&self) -> String {
+    ///
+    /// # Arguments
+    ///
+    /// * `project_root` - Optional path to the project root (for detecting versions from Cargo.lock).
+    ///                    Only used by WasmBindgen to detect the version from the lockfile.
+    async fn resolve_version(&self, project_root: Option<&Utf8Path>) -> String {
         // TODO revisit this logic when implementing the SemVer compatible ranges matching
         // if env var is set, use the requested version and bypass caching logic
         let is_force_pin_version = env::var(self.env_var_version_name()).is_ok();
@@ -833,7 +869,21 @@ trait Command {
             env::var(self.env_var_version_name())
         );
 
-        if !is_force_pin_version && !self.should_check_for_new_version().await {
+        if is_force_pin_version {
+            return self.version().to_string();
+        }
+
+        // For WasmBindgen, try to detect from lockfile before falling back to default
+        if self.name() == "wasm-bindgen" {
+            if let Some(root) = project_root {
+                if let Some(version) = detect_wasm_bindgen_from_lockfile(root) {
+                    info!("Using wasm-bindgen version {} from Cargo.lock", version);
+                    return version;
+                }
+            }
+        }
+
+        if !self.should_check_for_new_version().await {
             trace!(
                 "Command [{}] NOT checking for the latest available version",
                 &self.name()

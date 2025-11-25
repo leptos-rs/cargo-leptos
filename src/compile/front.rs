@@ -157,7 +157,7 @@ async fn bindgen(proj: &Project, all_wasm_files: &[Utf8PathBuf]) -> Result<Outco
         .generate_output()
         .dot_anyhow()?; */
 
-    let wasm_opt = Exe::WasmBindgen.get().await.dot()?;
+    let wasm_bindgen = Exe::WasmBindgen.get(Some(&proj.working_dir)).await.dot()?;
 
     let args = [
         Some("--target=web".to_string()),
@@ -175,7 +175,7 @@ async fn bindgen(proj: &Project, all_wasm_files: &[Utf8PathBuf]) -> Result<Outco
     .into_iter()
     .flatten();
 
-    let mut cmd = Command::new(wasm_opt);
+    let mut cmd = Command::new(wasm_bindgen);
     cmd.args(args.clone());
 
     match wait_piped_interruptible(
@@ -254,7 +254,7 @@ async fn bindgen(proj: &Project, all_wasm_files: &[Utf8PathBuf]) -> Result<Outco
 }
 
 async fn optimize(proj: &Project, file: &Utf8Path) -> Result<()> {
-    let wasm_opt = Exe::WasmOpt.get().await.dot()?;
+    let wasm_opt = Exe::WasmOpt.get(None).await.dot()?;
 
     let mut args: Vec<&str> = if let Some(features) = &proj.wasm_opt_features {
         features.iter().map(|f| f.as_str()).collect()

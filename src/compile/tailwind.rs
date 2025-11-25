@@ -83,7 +83,7 @@ pub async fn tailwind_process(
     cmd: &str,
     tw_conf: &TailwindConfig,
 ) -> Result<(String, Command)> {
-    let tailwind = Exe::Tailwind.get().await.dot()?;
+    let tailwind = Exe::Tailwind.get(None).await.dot()?;
 
     let mut args = vec!["--input", tw_conf.input_file.as_str()];
 

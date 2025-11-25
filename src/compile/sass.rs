@@ -15,7 +15,7 @@ pub async fn compile_sass(style_file: &SourcedSiteFile, optimise: bool) -> Resul
     let mut args = vec![style_file.source.as_str()];
     optimise.then(|| args.push("--no-source-map"));
 
-    let exe = Exe::Sass.get().await.dot()?;
+    let exe = Exe::Sass.get(None).await.dot()?;
 
     let mut cmd = Command::new(exe);
     cmd.args(&args);
