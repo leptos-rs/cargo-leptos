@@ -10,6 +10,8 @@ pub fn os_arch() -> Result<(&'static str, &'static str)> {
         "macos"
     } else if cfg!(target_os = "linux") {
         "linux"
+    } else if cfg!(target_os = "android") {
+        "android"
     } else {
         bail!("unsupported OS")
     };

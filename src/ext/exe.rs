@@ -222,8 +222,12 @@ impl Exe {
 
         let path = if let Some(path) = meta.from_global_path() {
             path
-        } else if cfg!(feature = "no_downloads") {
-            bail!("{} is required but was not found. Please install it using your OS's tool of choice", &meta.name);
+        } else if cfg!(any(feature = "no_downloads", target_os = "android")) {
+            bail!(
+                "{} is required but was not found. {}",
+                &meta.name,
+                &meta.manual
+            );
         } else {
             meta.cached().await.wrap_err(meta.manual)?
         };
@@ -692,8 +696,12 @@ trait Command {
     ///
     async fn exe_meta(&self, target_os: &str, target_arch: &str) -> Result<ExeMeta> {
         let version = self.resolve_version().await;
-        let url = self.download_url(target_os, target_arch, version.as_str())?;
-        let exe = self.executable_name(target_os, target_arch, version.as_str())?;
+        let mut url = String::new();
+        let mut exe = String::new();
+        if cfg!(not(any(feature = "no_downloads", target_os = "android"))) {
+            url = self.download_url(target_os, target_arch, version.as_str())?;
+            exe = self.executable_name(target_os, target_arch, version.as_str())?;
+        }
         Ok(ExeMeta {
             name: self.name(),
             version,

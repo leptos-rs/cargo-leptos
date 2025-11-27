@@ -83,6 +83,8 @@ install it with the `no_downloads` feature enabled to prevent cargo-leptos from 
 
 > `cargo install --features no_downloads --locked cargo-leptos`
 
+On Android OS cargo-leptos never trying to download any dependencies and you should do it himself.
+
 <br/>
 
 ## Completions
