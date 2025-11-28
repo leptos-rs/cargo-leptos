@@ -269,7 +269,7 @@ impl Exe<'_> {
             Exe::Sass => CommandSass.name(),
             Exe::Tailwind => CommandTailwind.name(),
             Exe::WasmOpt => CommandWasmOpt.name(),
-            Exe::WasmBindgen => CommandWasmBindgen.name(),
+            Exe::WasmBindgen { project_root } => CommandWasmBindgen { project_root }.name(),
         }
     }
 }
