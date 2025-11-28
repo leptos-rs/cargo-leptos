@@ -36,8 +36,8 @@ static ON_STARTUP_DEBUG_ONCE: Once = Once::new();
 
 impl ExeMeta {
     #[allow(clippy::wrong_self_convention)]
-    fn from_global_path(&self) -> Option<PathBuf> {
-        which::which(self.name).ok()
+    fn from_global_path(name: &str) -> Option<PathBuf> {
+        which::which(name).ok()
     }
 
     fn get_name(&self) -> String {
@@ -219,20 +219,23 @@ pub enum Exe<'a> {
 
 impl Exe<'_> {
     pub async fn get(&self) -> Result<PathBuf> {
-        let meta = self.meta().await?;
+        let name = self.name();
+        let mut version = String::from("{unknown version}");
 
-        let path = if let Some(path) = meta.from_global_path() {
+        let path = if let Some(path) = ExeMeta::from_global_path(name) {
             path
         } else if cfg!(feature = "no_downloads") {
-            bail!("{} is required but was not found. Please install it using your OS's tool of choice", &meta.name);
+            bail!("{} is required but was not found. Please install it using your OS's tool of choice", &name);
         } else {
+            let meta = self.meta().await?;
+            version = meta.version.clone();
             meta.cached().await.wrap_err(meta.manual)?
         };
 
         debug!(
             "Command using {} {} {}",
-            &meta.name,
-            &meta.version,
+            name,
+            version,
             GRAY.paint(path.to_string_lossy())
         );
 
@@ -259,6 +262,15 @@ impl Exe<'_> {
         };
 
         Ok(exe)
+    }
+
+    fn name(&self) -> &str {
+        match self {
+            Exe::Sass => CommandSass.name(),
+            Exe::Tailwind => CommandTailwind.name(),
+            Exe::WasmOpt => CommandWasmOpt.name(),
+            Exe::WasmBindgen => CommandWasmBindgen.name(),
+        }
     }
 }
 
