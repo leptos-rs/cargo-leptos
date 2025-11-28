@@ -23,12 +23,6 @@ jobs:
           toolchain: "stable"
           targets: "wasm32-unknown-unknown"
 
-      - name: Install binstall
-        uses: cargo-bins/cargo-binstall@main
-
-      - name: Install wasm-bindgen
-        run: cargo binstall wasm-bindgen-cli --no-confirm
-
       - name: "Use rust-cache"
         uses: Swatinem/rust-cache@v2
         with:
