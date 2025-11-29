@@ -243,7 +243,10 @@ impl Exe<'_> {
     }
 
     pub async fn meta(&self) -> Result<ExeMeta> {
-        let (target_os, target_arch) = os_arch().unwrap();
+        let Ok((target_os, target_arch)) = os_arch() else {
+            bail!("{} is required but was not found, and downloads are not supported on this platform. \
+            Please install it using your OS's tool of choice", &self.name());
+        };
 
         let exe = match self {
             Exe::Sass => CommandSass.exe_meta(target_os, target_arch).await.dot()?,
