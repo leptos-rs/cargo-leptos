@@ -92,8 +92,21 @@ async fn process_css(proj: &Project, css: String) -> Result<Product> {
     let browsers = browser_lists(&proj.style.browserquery).wrap_err("leptos.style.browserquery")?;
     let targets = Targets::from(browsers);
 
+    let filename: String = if let Some(tw) = proj.style.tailwind.clone() {
+        tw.tmp_file.to_string()
+    } else {
+        proj.style.file.as_ref()
+            .map(|f| f.source.to_string())
+            .unwrap_or_default()
+    };
+
+    let parse_options = ParserOptions {
+        filename,
+        ..Default::default()
+    };
+
     let mut stylesheet =
-        StyleSheet::parse(&css, ParserOptions::default()).map_err(|e| eyre!("{e}"))?;
+        StyleSheet::parse(&css, parse_options).map_err(|e| eyre!("{e}"))?;
 
     if proj.release {
         let minify_options = MinifyOptions {
