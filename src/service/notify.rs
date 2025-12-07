@@ -103,8 +103,7 @@ fn handle(
                 .iter()
                 .filter_map(|p| {
                     let mtime = fs::metadata(&p)
-                        .map(|meta| meta.modified())
-                        .flatten()
+                        .and_then(|meta| meta.modified())
                         .unwrap_or(SystemTime::UNIX_EPOCH);
 
                     if watcher
