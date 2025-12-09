@@ -105,26 +105,29 @@ async fn process_css(proj: &Project, css: String) -> Result<Product> {
         ..Default::default()
     };
 
-    let mut stylesheet =
-        StyleSheet::parse(&css, parse_options).map_err(|e| eyre!("{e}"))?;
-
-    if proj.release {
-        let minify_options = MinifyOptions {
-            targets,
-            ..Default::default()
-        };
-        stylesheet.minify(minify_options)?;
-    }
-
-    let options = PrinterOptions::<'_> {
-        targets,
-        minify: proj.release,
-        ..Default::default()
+    let css: String = match StyleSheet::parse(&css, parse_options) {
+        Ok(mut stylesheet) => {
+            if proj.release {
+                let minify_options = MinifyOptions {
+                    targets,
+                    ..Default::default()
+                };
+                stylesheet.minify(minify_options)?;
+            }
+            let options = PrinterOptions::<'_> {
+                targets,
+                minify: proj.release,
+                ..Default::default()
+            };
+            stylesheet.to_css(options)?.code
+        }
+        Err(e) => {
+            trace!("StyleSheet::parse error, unable to minify, falling back to input css: {e}");
+            css.clone()
+        }
     };
 
-    let style_output = stylesheet.to_css(options)?;
-
-    let bytes = style_output.code.as_bytes();
+    let bytes: &[u8] = css.as_bytes();
 
     let prod = match proj.site.updated_with(&proj.style.site_file, bytes).await? {
         true => {
@@ -141,3 +144,5 @@ async fn process_css(proj: &Project, css: String) -> Result<Product> {
     };
     Ok(prod)
 }
+
+
