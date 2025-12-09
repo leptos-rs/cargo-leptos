@@ -92,26 +92,42 @@ async fn process_css(proj: &Project, css: String) -> Result<Product> {
     let browsers = browser_lists(&proj.style.browserquery).wrap_err("leptos.style.browserquery")?;
     let targets = Targets::from(browsers);
 
-    let mut stylesheet =
-        StyleSheet::parse(&css, ParserOptions::default()).map_err(|e| eyre!("{e}"))?;
+    let filename: String = if let Some(tw) = proj.style.tailwind.clone() {
+        tw.tmp_file.to_string()
+    } else {
+        proj.style.file.as_ref()
+            .map(|f| f.source.to_string())
+            .unwrap_or_default()
+    };
 
-    if proj.release {
-        let minify_options = MinifyOptions {
-            targets,
-            ..Default::default()
-        };
-        stylesheet.minify(minify_options)?;
-    }
-
-    let options = PrinterOptions::<'_> {
-        targets,
-        minify: proj.release,
+    let parse_options = ParserOptions {
+        filename,
         ..Default::default()
     };
 
-    let style_output = stylesheet.to_css(options)?;
+    let css: String = match StyleSheet::parse(&css, parse_options) {
+        Ok(mut stylesheet) => {
+            if proj.release {
+                let minify_options = MinifyOptions {
+                    targets,
+                    ..Default::default()
+                };
+                stylesheet.minify(minify_options)?;
+            }
+            let options = PrinterOptions::<'_> {
+                targets,
+                minify: proj.release,
+                ..Default::default()
+            };
+            stylesheet.to_css(options)?.code
+        }
+        Err(e) => {
+            trace!("StyleSheet::parse error, unable to minify, falling back to input css: {e}");
+            css.clone()
+        }
+    };
 
-    let bytes = style_output.code.as_bytes();
+    let bytes: &[u8] = css.as_bytes();
 
     let prod = match proj.site.updated_with(&proj.style.site_file, bytes).await? {
         true => {
@@ -128,3 +144,5 @@ async fn process_css(proj: &Project, css: String) -> Result<Product> {
     };
     Ok(prod)
 }
+
+
