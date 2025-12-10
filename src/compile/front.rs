@@ -190,7 +190,9 @@ async fn bindgen(proj: &Project, all_wasm_files: &[Utf8PathBuf]) -> Result<Outco
     )
     .await?
     {
-        CommandResult::Interrupted => bail!("wasm-bindgen interrupted"),
+        CommandResult::Interrupted => {
+            Ok(Outcome::Stopped)
+        },
         CommandResult::Failure(output) => {
             error!("wasm-bindgen failed with:");
             println!("{}", output.stderr());
