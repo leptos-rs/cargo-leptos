@@ -16,10 +16,11 @@ use notify_debouncer_full::{
     DebounceEventResult, DebouncedEvent, Debouncer, RecommendedCache,
 };
 use std::{
-    collections::HashSet,
+    collections::{HashMap, HashSet},
+    fs,
     path::{Path, PathBuf},
     sync::{mpsc::Sender, Arc, Mutex},
-    time::Duration,
+    time::{Duration, SystemTime},
 };
 use tokio::task::JoinHandle;
 use tracing::*;
@@ -101,6 +102,20 @@ fn handle(
                 .paths
                 .iter()
                 .filter_map(|p| {
+                    let mtime = fs::metadata(&p)
+                        .and_then(|meta| meta.modified())
+                        .unwrap_or(SystemTime::UNIX_EPOCH);
+
+                    if watcher
+                        .lock()
+                        .unwrap()
+                        .file_mtimes
+                        .insert(p.to_path_buf(), mtime)
+                        == Some(mtime)
+                    {
+                        return None;
+                    }
+
                     let p = match convert(p, &proj) {
                         Ok(p) => p,
                         Err(e) => {
@@ -211,6 +226,7 @@ struct GitAwareWatcher {
     paths: HashSet<PathBuf>,
     sync_tx: Sender<notify_debouncer_full::DebounceEventResult>,
     forced_watch_paths: HashSet<PathBuf>,
+    file_mtimes: HashMap<PathBuf, SystemTime>,
 }
 
 impl GitAwareWatcher {
@@ -267,6 +283,7 @@ impl GitAwareWatcher {
             sync_tx,
             paths: paths.clone(),
             forced_watch_paths,
+            file_mtimes: HashMap::new(),
         };
 
         watcher.watch(paths.iter());
