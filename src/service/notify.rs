@@ -294,7 +294,14 @@ impl GitAwareWatcher {
     fn new_gitignore(gitignore_path: &Path) -> Gitignore {
         info!("Creating ignore list from '.gitignore' file");
 
-        let mut builder = GitignoreBuilder::new(gitignore_path.parent().unwrap_or(Path::new("/")));
+        let glob_dir = match gitignore_path.parent() {
+            Some(dir) => dir,
+            None => {
+                error!("Could not determine parent directory of '.gitignore' file\nThis causes the watcher to work expensively on file changes like changes in the 'target' path.\nCreate a '.gitignore' file and exclude common build and cache paths like 'target'");
+                return Gitignore::empty();
+            }
+        };
+        let mut builder = GitignoreBuilder::new(glob_dir);
         let err = builder.add(gitignore_path);
         if let Some(err) = err {
             error!("Failed reading '.gitignore' file in the working directory: {err}\nThis causes the watcher to work expensively on file changes like changes in the 'target' path.\nCreate a '.gitignore' file and exclude common build and cache paths like 'target'");
