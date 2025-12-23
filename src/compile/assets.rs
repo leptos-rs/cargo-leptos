@@ -1,11 +1,14 @@
 use std::sync::Arc;
 
 use super::ChangeSet;
-use crate::config::Project;
-use crate::ext::Paint;
-use crate::internal_prelude::*;
-use crate::signal::{Outcome, Product};
-use crate::{ext::PathExt, fs, logger::GRAY};
+use crate::{
+    config::Project,
+    ext::{Paint, PathExt},
+    fs,
+    internal_prelude::*,
+    logger::GRAY,
+    signal::{Outcome, Product},
+};
 use camino::{Utf8Path, Utf8PathBuf};
 use tokio::task::JoinHandle;
 
@@ -64,24 +67,16 @@ async fn resync(src: &Utf8Path, dest: &Utf8Path, pkg_dir: &Utf8Path) -> Result<(
 }
 
 async fn clean_dest(dest: &Utf8Path, pkg_dir: &Utf8Path) -> Result<()> {
-    let pkg_dir_name = match pkg_dir.file_name() {
-        Some(name) => name,
-        None => {
-            warn!("Assets No site-pkg-dir given, defaulting to 'pkg' for checks what to delete.");
-            warn!("Assets This will probably delete already generated files.");
-            "pkg"
-        }
-    };
-
+    let pkg_dir = dest.join(pkg_dir);
     let mut entries = fs::read_dir(dest).await?;
     while let Some(entry) = entries.next_entry().await? {
         let path = entry.path();
 
         if entry.file_type().await?.is_dir() {
-            if entry.file_name() != pkg_dir_name {
+            if !pkg_dir.starts_with(&path) {
                 debug!(
                     "Assets removing folder {}",
-                    GRAY.paint(path.to_string_lossy())
+                    GRAY.paint(path.to_string_lossy()),
                 );
                 fs::remove_dir_all(path).await?;
             }
