@@ -92,6 +92,14 @@ async fn clean_dest(dest: &Utf8Path, pkg_dir: &Utf8Path) -> Result<()> {
 }
 
 async fn mirror(src_root: &Utf8Path, dest_root: &Utf8Path, reserved: &[Utf8PathBuf]) -> Result<()> {
+    if !src_root.exists() {
+        warn!(
+            "Assets source {} does not exist, skipping copying assets.",
+            GRAY.paint(src_root.as_str())
+        );
+        return Ok(());
+    }
+
     let mut entries = src_root.read_dir_utf8()?;
     while let Some(Ok(entry)) = entries.next() {
         let from = entry.path().to_path_buf();
