@@ -41,7 +41,7 @@ pub async fn assets(
 }
 
 pub fn reserved(src: &Utf8Path, pkg_dir: &Utf8Path) -> Vec<Utf8PathBuf> {
-    vec![src.join("index.html"), pkg_dir.to_path_buf()]
+    vec![src.join("index.html"), src.join(pkg_dir)]
 }
 
 // pub async fn update(config: &Config) -> Result<()> {
@@ -100,14 +100,22 @@ async fn mirror(src_root: &Utf8Path, dest_root: &Utf8Path, reserved: &[Utf8PathB
         return Ok(());
     }
 
+    // reserved paths should be relative to the source root
+    for r in reserved {
+        if r.exists() {
+            error!(
+                "Assets source {} contains path {} reserved for Leptos. Please move or remove it.",
+                GRAY.paint(src_root.as_str()),
+                GRAY.paint(r.as_str())
+            );
+            return Err(Error::msg("Assets reserved path exists in source"));
+        }
+    }
+
     let mut entries = src_root.read_dir_utf8()?;
     while let Some(Ok(entry)) = entries.next() {
         let from = entry.path().to_path_buf();
         let to = from.rebase(src_root, dest_root)?;
-        if reserved.contains(&from) {
-            warn!("");
-            continue;
-        }
 
         if entry.file_type()?.is_dir() {
             debug!(
