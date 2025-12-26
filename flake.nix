@@ -31,10 +31,13 @@
               extensions= [ "rust-src" "rust-analyzer" ];
               targets = [ "wasm32-unknown-unknown" ];
             })
+	    eza
+	    fd
+	    ripgrep
           ];
 
           shellHook = ''
-            alias ls=exa
+            alias ls=eza
             alias find=fd
             alias grep=ripgrep
             '';
