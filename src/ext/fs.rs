@@ -127,7 +127,7 @@ async fn cp_dir_all(src: impl AsRef<Utf8Path>, dst: impl AsRef<Path>) -> Result<
             let to = from.rebase(src, &dst)?;
 
             if entry.file_type()?.is_dir() {
-                self::create_dir(&to).await?;
+                self::create_dir_all(&to).await?;
                 dirs.push_back(from);
             } else {
                 self::copy(from, to).await?;
