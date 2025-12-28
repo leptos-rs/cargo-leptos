@@ -103,12 +103,11 @@ async fn mirror(src_root: &Utf8Path, dest_root: &Utf8Path, reserved: &[Utf8PathB
     // reserved paths should be relative to the source root
     for r in reserved {
         if r.exists() {
-            error!(
-                "Assets source {} contains path {} reserved for Leptos. Please move or remove it.",
-                GRAY.paint(src_root.as_str()),
-                GRAY.paint(r.as_str())
-            );
-            return Err(Error::msg("Assets reserved path exists in source"));
+            return Err(eyre!(
+                "Assets source {} contains path {} reserved for Leptos.\nThe build process potentially generates files at the same location in the site directory, so the asset cannot be copied to the site directory.\nPlease move, rename or remove this file or directory.",
+                src_root,
+                r,
+            ));
         }
     }
 
