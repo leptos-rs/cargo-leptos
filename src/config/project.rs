@@ -363,16 +363,21 @@ pub struct ProjectConfig {
 }
 
 impl ProjectConfig {
-    fn parse(
+    /*fn parse(
         dir: &Utf8Path,
         metadata: &serde_json::Value,
         cargo_metadata: &Metadata,
     ) -> Result<Self> {
         let mut conf: ProjectConfig = serde_json::from_value(metadata.clone())?;
+        Self::parse_raw(dir, &mut conf, cargo_metadata)?;
+        Ok(conf)
+    }*/
+
+    fn parse_raw(dir: &Utf8Path, conf: &mut Self, cargo_metadata: &Metadata) -> Result<()> {
         conf.config_dir = dir.to_path_buf();
         conf.tmp_dir = cargo_metadata.target_directory.join("tmp");
         let dotenvs = load_dotenvs(dir)?;
-        overlay_env(&mut conf, dotenvs)?;
+        overlay_env(conf, dotenvs)?;
         if conf.site_root == "/"
             || conf.site_root == "."
             || conf.site_root == CARGO_TARGET_DIR_MARKER
@@ -420,7 +425,41 @@ impl ProjectConfig {
             warn!("It is now unconditionally enabled; you can remove it from your Cargo.toml")
         }
 
-        Ok(conf)
+        Ok(())
+    }
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "kebab-case")]
+struct LeptosMetadataWorkspaceSection {
+    #[serde(flatten)]
+    def: ProjectDefinition,
+    #[serde(flatten)]
+    conf: ProjectConfig,
+    #[serde(flatten)]
+    extra: std::collections::BTreeMap<String, serde::de::IgnoredAny>,
+}
+impl LeptosMetadataWorkspaceSection {
+    fn check(&self) {
+        if !self.extra.is_empty() {
+            unused_metadata_warning(self.extra.keys().collect());
+        }
+    }
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "kebab-case")]
+struct LeptosMetadataPackage {
+    #[serde(flatten)]
+    conf: ProjectConfig,
+    #[serde(flatten)]
+    extra: std::collections::BTreeMap<String, serde::de::IgnoredAny>,
+}
+impl LeptosMetadataPackage {
+    fn check(&self) {
+        if !self.extra.is_empty() {
+            unused_metadata_warning(self.extra.keys().collect());
+        }
     }
 }
 
@@ -440,9 +479,10 @@ impl ProjectDefinition {
         let mut found = Vec::new();
         if let Some(arr) = metadata.as_array() {
             for section in arr {
-                let conf = ProjectConfig::parse(dir, section, cargo_metadata)?;
-                let def: Self = serde_json::from_value(section.clone())?;
-                found.push((def, conf))
+                let mut p = LeptosMetadataWorkspaceSection::deserialize(section)?;
+                p.check();
+                ProjectConfig::parse_raw(dir, &mut p.conf, cargo_metadata)?;
+                found.push((p.def, p.conf))
             }
         }
         Ok(found)
@@ -454,7 +494,10 @@ impl ProjectDefinition {
         dir: &Utf8Path,
         cargo_metadata: &Metadata,
     ) -> Result<(Self, ProjectConfig)> {
-        let conf = ProjectConfig::parse(dir, metadata, cargo_metadata)?;
+        let p = LeptosMetadataPackage::deserialize(metadata)?;
+        p.check();
+        let mut conf = p.conf;
+        ProjectConfig::parse_raw(dir, &mut conf, cargo_metadata)?;
 
         ensure!(
             package.cdylib_target().is_some(),
@@ -532,4 +575,11 @@ fn default_hash_files() -> bool {
 
 fn default_js_minify() -> bool {
     true
+}
+
+fn unused_metadata_warning(keys: Vec<&String>) {
+    warn!(
+        "Metadata keys {:?} from metadata.leptos are not recognized and will be ignored",
+        keys
+    );
 }
