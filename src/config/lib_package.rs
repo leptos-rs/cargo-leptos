@@ -1,7 +1,8 @@
 use crate::{
     config::Opts,
-    ext::{MetadataExt, PathBufExt, PathExt},
+    ext::{MetadataExt, PackageExt, PathBufExt, PathExt},
     internal_prelude::*,
+    logger::GRAY,
     service::site::{SiteFile, SourcedSiteFile},
 };
 use camino::Utf8PathBuf;
@@ -45,6 +46,13 @@ impl LibPackage {
             .find(|p| *p.name == name)
             .ok_or_else(|| eyre!(r#"Could not find the project lib-package "{name}""#,))?;
 
+        let Some(target_lib) = package.cdylib_target() else {
+            return Err(eyre!(
+                "Cargo.toml has leptos metadata but is missing a cdylib library target. {}",
+                GRAY.paint(package.manifest_path.as_str())
+            ));
+        };
+
         let mut features = if !cli.lib_features.is_empty() {
             cli.lib_features.clone()
         } else if !config.lib_features.is_empty() {
@@ -70,7 +78,7 @@ impl LibPackage {
                 .join("front")
                 .join("wasm32-unknown-unknown")
                 .join(profile.to_string())
-                .join(name.replace('-', "_"))
+                .join(target_lib.name.replace('-', "_"))
                 .with_extension("wasm");
             let site = config
                 .site_pkg_dir
