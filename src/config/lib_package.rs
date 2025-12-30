@@ -48,8 +48,9 @@ impl LibPackage {
 
         let Some(target_lib) = package.cdylib_target() else {
             return Err(eyre!(
-                "Cargo.toml has leptos metadata but is missing a cdylib library target. {}",
-                GRAY.paint(package.manifest_path.as_str())
+                r#"Could not find a cdylib library target for the leptos lib-package "{}" defined in {}"#,
+                package.name,
+                GRAY.paint(package.manifest_path.as_str()),
             ));
         };
 
@@ -78,7 +79,7 @@ impl LibPackage {
                 .join("front")
                 .join("wasm32-unknown-unknown")
                 .join(profile.to_string())
-                .join(target_lib.name.replace('-', "_"))
+                .join(target_lib.name.clone())
                 .with_extension("wasm");
             let site = config
                 .site_pkg_dir

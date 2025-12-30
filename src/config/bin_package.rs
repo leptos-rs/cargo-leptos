@@ -4,7 +4,7 @@ use cargo_metadata::{Metadata, Target};
 use super::{project::ProjectDefinition, Profile, ProjectConfig};
 use crate::{
     config::Opts,
-    ext::{MetadataExt, PackageExt, PathBufExt, PathExt},
+    ext::{MetadataExt, PathBufExt, PathExt},
     internal_prelude::*,
 };
 pub struct BinPackage {
@@ -48,7 +48,7 @@ impl BinPackage {
         let packages = metadata.workspace_packages();
         let package = packages
             .iter()
-            .find(|p| *p.name == name && p.has_bin_target())
+            .find(|p| *p.name == name)
             .ok_or_else(|| eyre!(r#"Could not find the project bin-package "{name}""#,))?;
 
         let package = (*package).clone();
