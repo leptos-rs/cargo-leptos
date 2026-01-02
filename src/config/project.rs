@@ -1,8 +1,7 @@
 use crate::{
     config::{hash_file::HashFile, lib_package::LibPackage},
-    ext::{PackageExt, Paint, PathBufExt, PathExt},
+    ext::{PathBufExt, PathExt},
     internal_prelude::*,
-    logger::GRAY,
     service::site::Site,
 };
 use camino::{Utf8Path, Utf8PathBuf};
@@ -455,17 +454,6 @@ impl ProjectDefinition {
         cargo_metadata: &Metadata,
     ) -> Result<(Self, ProjectConfig)> {
         let conf = ProjectConfig::parse(dir, metadata, cargo_metadata)?;
-
-        ensure!(
-            package.cdylib_target().is_some(),
-            "Cargo.toml has leptos metadata but is missing a cdylib library target. {}",
-            GRAY.paint(package.manifest_path.as_str())
-        );
-        ensure!(
-            package.has_bin_target(),
-            "Cargo.toml has leptos metadata but is missing a bin target. {}",
-            GRAY.paint(package.manifest_path.as_str())
-        );
 
         Ok((
             ProjectDefinition {
