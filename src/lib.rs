@@ -85,7 +85,7 @@ pub async fn run(args: Cli) -> Result<()> {
     match args.command {
         Build(_) => command::build_all(&config).await,
         Serve(_) => command::serve(&config.current_project()?).await,
-        Test(_) => command::test_all(&config).await,
+        Test(opts) => command::test_all(&config, &opts.opts_specific).await,
         EndToEnd(_) => command::end2end_all(&config).await,
         Watch(_) => command::watch(&config.current_project()?).await,
         New(_) => unreachable!(r#""new" command should have already been run"#),

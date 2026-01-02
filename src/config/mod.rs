@@ -16,7 +16,7 @@ mod version;
 
 use std::{fmt::Debug, sync::Arc};
 
-pub use self::cli::{Cli, Commands, Log, Opts};
+pub use self::cli::{Cli, Commands, Log, Opts, TestSpecificOpts};
 use crate::ext::MetadataExt;
 use crate::internal_prelude::*;
 use camino::{Utf8Path, Utf8PathBuf};

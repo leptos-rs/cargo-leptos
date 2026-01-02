@@ -87,6 +87,32 @@ pub struct BinOpts {
     bin_args: Vec<String>,
 }
 
+#[derive(Debug, Clone, Parser, PartialEq, Default)]
+pub struct TestSpecificOpts {
+    /// Do not run the tests, only build them.
+    #[arg(long)]
+    pub no_run: bool,
+}
+
+impl TestSpecificOpts {
+    pub fn to_args(&self) -> Vec<String> {
+        let mut args = Vec::new();
+        if self.no_run {
+            args.push("--no-run".to_string());
+        }
+        args
+    }
+}
+
+#[derive(Debug, Clone, Parser, PartialEq, Default)]
+pub struct TestOpts {
+    #[command(flatten)]
+    opts: Opts,
+
+    #[command(flatten, next_help_heading = "Test-specific Options")]
+    pub opts_specific: TestSpecificOpts,
+}
+
 #[derive(Debug, Parser)]
 #[clap(version)]
 pub struct Cli {
@@ -107,9 +133,8 @@ impl Cli {
         match &self.command {
             Commands::New(_) => None,
             Commands::Serve(bin_opts) | Commands::Watch(bin_opts) => Some(bin_opts.opts.clone()),
-            Commands::Build(opts) | Commands::Test(opts) | Commands::EndToEnd(opts) => {
-                Some(opts.clone())
-            }
+            Commands::Test(test_opts) => Some(test_opts.opts.clone()),
+            Commands::Build(opts) | Commands::EndToEnd(opts) => Some(opts.clone()),
             _ => None,
         }
     }
@@ -118,7 +143,8 @@ impl Cli {
         match &mut self.command {
             Commands::New(_) => None,
             Commands::Serve(bin_opts) | Commands::Watch(bin_opts) => Some(&mut bin_opts.opts),
-            Commands::Build(opts) | Commands::Test(opts) | Commands::EndToEnd(opts) => Some(opts),
+            Commands::Test(test_opts) => Some(&mut test_opts.opts),
+            Commands::Build(opts) | Commands::EndToEnd(opts) => Some(opts),
             _ => None,
         }
     }
@@ -138,7 +164,7 @@ pub enum Commands {
     /// Build the server (feature ssr) and the client (wasm with feature hydrate).
     Build(Opts),
     /// Run the cargo tests for app, client and server.
-    Test(Opts),
+    Test(TestOpts),
     /// Start the server and end-2-end tests.
     EndToEnd(Opts),
     /// Serve. Defaults to hydrate mode.

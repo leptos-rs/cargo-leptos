@@ -26,7 +26,7 @@ pub async fn server(
             return Ok(Outcome::Success(Product::None));
         }
 
-        let (envs, line, process) = server_cargo_process("build", &proj)?;
+        let (envs, line, process) = server_cargo_process("build", &proj, None)?;
         debug!("CARGO SERVER COMMAND: {:?}", process);
         match wait_interruptible("Cargo", process, Interrupt::subscribe_any()).await? {
             CommandResult::Success(_) => {
@@ -52,7 +52,11 @@ pub async fn server(
     })
 }
 
-pub fn server_cargo_process(cmd: &str, proj: &Project) -> Result<(String, String, Child)> {
+pub fn server_cargo_process(
+    cmd: &str,
+    proj: &Project,
+    additional_args: Option<&[String]>,
+) -> Result<(String, String, Child)> {
     let raw_command = proj.bin.cargo_command.as_deref().unwrap_or("cargo");
     let mut command_iter = Shlex::new(raw_command);
 
@@ -68,7 +72,7 @@ pub fn server_cargo_process(cmd: &str, proj: &Project) -> Result<(String, String
     let args: Vec<String> = command_iter.collect();
     command.args(args);
 
-    let (envs, line) = build_cargo_server_cmd(cmd, proj, &mut command);
+    let (envs, line) = build_cargo_server_cmd(cmd, proj, &mut command, additional_args);
     Ok((envs, line, command.spawn()?))
 }
 
@@ -76,6 +80,7 @@ pub fn build_cargo_server_cmd(
     cmd: &str,
     proj: &Project,
     command: &mut Command,
+    additional_args: Option<&[String]>,
 ) -> (String, String) {
     let mut args = vec![
         cmd.to_string(),
@@ -115,6 +120,10 @@ pub fn build_cargo_server_cmd(
         args.extend_from_slice(cargo_args);
     }
     proj.bin.profile.add_to_args(&mut args);
+
+    if let Some(add_args) = additional_args {
+        args.extend_from_slice(add_args);
+    }
 
     let envs = proj.to_envs(false);
 
