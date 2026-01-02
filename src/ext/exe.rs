@@ -456,13 +456,13 @@ impl Command for CommandSass {
             match target_arch {
                 "x86_64" => {
                     format!(
-                        "https://github.com/{}/{}/releases/download/{}/dart-sass-{}-linux-x64.tar.gz",
+                        "https://github.com/{}/{}/releases/download/{}/dart-sass-{}-linux-x64-musl.tar.gz",
                         self.github_owner(), self.github_repo(), version, version
                     )
                 }
                 "aarch64" => {
                     format!(
-                        "https://github.com/{}/{}/releases/download/{}/dart-sass-{}-linux-arm64.tar.gz"
+                        "https://github.com/{}/{}/releases/download/{}/dart-sass-{}-linux-arm64-musl.tar.gz"
                         , self.github_owner(), self.github_repo(), version, version
                     )
                 }
