@@ -13,11 +13,11 @@ impl End2EndConfig {
     pub fn resolve(config: &ProjectConfig) -> Option<Self> {
         let cmd = &config.end2end_cmd.to_owned()?;
 
-        let dir = config.end2end_dir.to_owned().unwrap_or_default();
-
         Some(Self {
             cmd: cmd.clone(),
-            dir,
+            dir: config
+                .config_dir
+                .join(config.end2end_dir.to_owned().unwrap_or_default()),
         })
     }
 }
