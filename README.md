@@ -37,10 +37,7 @@ Build tool for [Leptos](https://crates.io/crates/leptos):
 - `test` command for running tests of the lib and bin packages that makes up the Leptos project.
 - `build` build the server and client.
 - `end-to-end` command for building, running the server and calling a bash shell hook. The hook would typically launch Playwright or similar.
-- `new` command for creating a new project based on templates, using [cargo-generate](https://cargo-generate.github.io/cargo-generate/index.html). Current templates include
-  - [`https://github.com/leptos-rs/start`](https://github.com/leptos-rs/start): An Actix starter
-  - [`https://github.com/leptos-rs/start-axum`](https://github.com/leptos-rs/start-axum): An Axum starter
-  - [`https://github.com/leptos-rs/start-axum-workspace`](https://github.com/leptos-rs/start-axum-workspace): An Axum starter keeping client and server code in separate crates in a workspace
+- `new` command for creating a new project based on templates, using [cargo-generate](https://cargo-generate.github.io/cargo-generate/index.html).
 - 'no_downloads' feature to allow user management of optional dependencies
   <br/>
 
@@ -63,7 +60,12 @@ Help:
 
 > `cargo leptos --help`
 
-For setting up your project, have a look at the [examples](https://github.com/leptos-rs/cargo-leptos/tree/main/examples)
+For setting up your project, have a look at one of the [templates](https://github.com/orgs/leptos-rs/repositories?q=start) or the [examples](https://github.com/leptos-rs/cargo-leptos/tree/main/examples). You can also use the `cargo leptos new` command to create a new project from a template, see `cargo leptos new --help` for more information.
+
+Current templates include but are not limited to:
+  - [`https://github.com/leptos-rs/start-actix`](https://github.com/leptos-rs/start-actix): An Actix starter
+  - [`https://github.com/leptos-rs/start-axum`](https://github.com/leptos-rs/start-axum): An Axum starter
+  - [`https://github.com/leptos-rs/start-axum-workspace`](https://github.com/leptos-rs/start-axum-workspace): An Axum starter keeping client and server code in separate crates in a workspace
 
 <br/>
 
