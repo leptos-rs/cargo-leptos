@@ -7,7 +7,7 @@ use crate::{
     signal::{Interrupt, ReloadSignal},
 };
 use camino::Utf8PathBuf;
-use ignore::gitignore::Gitignore;
+use ignore::gitignore::{Gitignore, GitignoreBuilder};
 use itertools::Itertools;
 use leptos_hot_reload::ViewMacros;
 use notify_debouncer_full::{
@@ -294,13 +294,25 @@ impl GitAwareWatcher {
     fn new_gitignore(gitignore_path: &Path) -> Gitignore {
         info!("Creating ignore list from '.gitignore' file");
 
-        let (gi, err) = Gitignore::new(gitignore_path);
-
+        let glob_dir = match gitignore_path.parent() {
+            Some(dir) => dir,
+            None => {
+                error!("Could not determine parent directory of '.gitignore' file\nThis causes the watcher to work expensively on file changes like changes in the 'target' path.\nCreate a '.gitignore' file and exclude common build and cache paths like 'target'");
+                return Gitignore::empty();
+            }
+        };
+        let mut builder = GitignoreBuilder::new(glob_dir);
+        let err = builder.add(gitignore_path);
         if let Some(err) = err {
             error!("Failed reading '.gitignore' file in the working directory: {err}\nThis causes the watcher to work expensively on file changes like changes in the 'target' path.\nCreate a '.gitignore' file and exclude common build and cache paths like 'target'");
         }
-
-        gi
+        match builder.build() {
+            Ok(gi) => gi,
+            Err(err) => {
+                error!("Failed building gitignore matcher: {err}\nThis causes the watcher to work expensively on file changes like changes in the 'target' path.\nCreate a '.gitignore' file and exclude common build and cache paths like 'target'");
+                Gitignore::empty()
+            }
+        }
     }
 
     fn update_gitignore(&mut self) {
