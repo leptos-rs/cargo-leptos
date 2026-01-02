@@ -107,13 +107,11 @@ async fn process_css(proj: &Project, css: String) -> Result<Product> {
 
     let css: String = match StyleSheet::parse(&css, parse_options) {
         Ok(mut stylesheet) => {
-            if proj.release {
-                let minify_options = MinifyOptions {
+            stylesheet.minify(MinifyOptions {
                     targets,
                     ..Default::default()
-                };
-                stylesheet.minify(minify_options)?;
-            }
+            })?;
+
             let options = PrinterOptions::<'_> {
                 targets,
                 minify: proj.release,
