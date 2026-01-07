@@ -369,30 +369,30 @@ impl ProjectConfig {
         cargo_metadata: &Metadata,
     ) -> Result<Self> {
         let mut conf: ProjectConfig = serde_json::from_value(metadata.clone())?;
-        Self::parse_raw(dir, &mut conf, cargo_metadata)?;
+        conf.parse_raw(dir, cargo_metadata)?;
         Ok(conf)
     }*/
 
-    fn parse_raw(dir: &Utf8Path, conf: &mut Self, cargo_metadata: &Metadata) -> Result<()> {
-        conf.config_dir = dir.to_path_buf();
-        conf.tmp_dir = cargo_metadata.target_directory.join("tmp");
+    fn parse_raw(&mut self, dir: &Utf8Path, cargo_metadata: &Metadata) -> Result<()> {
+        self.config_dir = dir.to_path_buf();
+        self.tmp_dir = cargo_metadata.target_directory.join("tmp");
         let dotenvs = load_dotenvs(dir)?;
-        overlay_env(conf, dotenvs)?;
-        if conf.site_root == "/"
-            || conf.site_root == "."
-            || conf.site_root == CARGO_TARGET_DIR_MARKER
-            || conf.site_root == CARGO_BUILD_TARGET_DIR_MARKER
+        overlay_env(self, dotenvs)?;
+        if self.site_root == "/"
+            || self.site_root == "."
+            || self.site_root == CARGO_TARGET_DIR_MARKER
+            || self.site_root == CARGO_BUILD_TARGET_DIR_MARKER
         {
             bail!(
                 "site-root cannot be '{}'. All the content is erased when building the site.",
-                conf.site_root
+                self.site_root
             );
         }
-        if conf.site_root.starts_with(CARGO_TARGET_DIR_MARKER) {
-            conf.site_root = {
+        if self.site_root.starts_with(CARGO_TARGET_DIR_MARKER) {
+            self.site_root = {
                 let mut path = cargo_metadata.target_directory.clone();
                 // unwrap() should be safe because we just checked
-                let sub = conf
+                let sub = self
                     .site_root
                     .unbase(CARGO_TARGET_DIR_MARKER.into())
                     .unwrap();
@@ -400,11 +400,11 @@ impl ProjectConfig {
                 path
             };
         }
-        if conf.site_root.starts_with(CARGO_BUILD_TARGET_DIR_MARKER) {
-            conf.site_root = {
+        if self.site_root.starts_with(CARGO_BUILD_TARGET_DIR_MARKER) {
+            self.site_root = {
                 let mut path = cargo_metadata.target_directory.clone();
                 // unwrap() should be safe because we just checked
-                let sub = conf
+                let sub = self
                     .site_root
                     .unbase(CARGO_BUILD_TARGET_DIR_MARKER.into())
                     .unwrap();
@@ -412,15 +412,15 @@ impl ProjectConfig {
                 path
             };
         }
-        if conf.site_addr.port() == conf.reload_port {
+        if self.site_addr.port() == self.reload_port {
             bail!(
                 "The site-addr port and reload-port cannot be the same: {}",
-                conf.reload_port
+                self.reload_port
             );
         }
 
         #[allow(deprecated)]
-        if conf.separate_front_target_dir.is_some() {
+        if self.separate_front_target_dir.is_some() {
             warn!("Deprecated: the `separate-front-target-dir` option is deprecated since cargo-leptos 0.2.3");
             warn!("It is now unconditionally enabled; you can remove it from your Cargo.toml")
         }
@@ -481,7 +481,7 @@ impl ProjectDefinition {
             for section in arr {
                 let mut p = LeptosMetadataWorkspaceSection::deserialize(section)?;
                 p.check();
-                ProjectConfig::parse_raw(dir, &mut p.conf, cargo_metadata)?;
+                p.conf.parse_raw(dir, cargo_metadata)?;
                 found.push((p.def, p.conf))
             }
         }
@@ -497,7 +497,7 @@ impl ProjectDefinition {
         let p = LeptosMetadataPackage::deserialize(metadata)?;
         p.check();
         let mut conf = p.conf;
-        ProjectConfig::parse_raw(dir, &mut conf, cargo_metadata)?;
+        conf.parse_raw(dir, cargo_metadata)?;
 
         ensure!(
             package.cdylib_target().is_some(),
