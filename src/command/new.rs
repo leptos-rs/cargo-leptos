@@ -13,11 +13,10 @@ use crate::internal_prelude::*;
 pub struct NewCommand {
     /// Git repository to clone template from. Can be a full URL (like
     /// `https://github.com/leptos-rs/start-actix`), or a shortcut for one of our
-    /// built-in templates:
+    /// built-in templates. Recommended shortcuts are:
     ///
-    /// `leptos-rs/start-trunk`, `leptos-rs/start-actix`, `leptos-rs/start-axum`,
-    /// `leptos-rs/start-axum-workspace`, `leptos-rs/start-aws`, `leptos-rs/start-spin`,
-    /// `leptos-rs/start-csr` or `leptos-rs/start-wasi`.
+    /// `leptos-rs/start-actix`, `leptos-rs/start-axum`,
+    /// `leptos-rs/start-axum-workspace`, `leptos-rs/start-csr`.
     #[clap(short, long, group = "git-arg")]
     pub git: Option<String>,
 
