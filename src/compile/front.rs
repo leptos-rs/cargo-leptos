@@ -42,7 +42,7 @@ pub async fn front(
 
         fs::create_dir_all(&pkg_dir).await?;
 
-        let (envs, line, process) = front_cargo_process("build", true, &proj, None)?;
+        let (envs, line, process) = front_cargo_process("build", true, &proj)?;
 
         debug!("Running {}", GRAY.paint(&line));
         match wait_interruptible("Cargo", process, Interrupt::subscribe_any()).await? {
@@ -72,6 +72,14 @@ pub async fn front(
 }
 
 pub fn front_cargo_process(
+    cmd: &str,
+    wasm: bool,
+    proj: &Project,
+) -> Result<(String, String, Child)> {
+    front_cargo_process_with_args(cmd, wasm, proj, None)
+}
+
+pub fn front_cargo_process_with_args(
     cmd: &str,
     wasm: bool,
     proj: &Project,

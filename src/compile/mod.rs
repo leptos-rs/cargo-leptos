@@ -12,9 +12,9 @@ mod tailwind;
 
 pub use assets::assets;
 pub use change::{Change, ChangeSet};
-pub use front::{front, front_cargo_process};
+pub use front::{front, front_cargo_process, front_cargo_process_with_args};
 pub use hash::add_hashes_to_site;
-pub use server::{server, server_cargo_process};
+pub use server::{server, server_cargo_process, server_cargo_process_with_args};
 pub use style::style;
 
 use itertools::Itertools;

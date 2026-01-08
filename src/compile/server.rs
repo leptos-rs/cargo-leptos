@@ -26,7 +26,7 @@ pub async fn server(
             return Ok(Outcome::Success(Product::None));
         }
 
-        let (envs, line, process) = server_cargo_process("build", &proj, None)?;
+        let (envs, line, process) = server_cargo_process("build", &proj)?;
         debug!("CARGO SERVER COMMAND: {:?}", process);
         match wait_interruptible("Cargo", process, Interrupt::subscribe_any()).await? {
             CommandResult::Success(_) => {
@@ -52,7 +52,11 @@ pub async fn server(
     })
 }
 
-pub fn server_cargo_process(
+pub fn server_cargo_process(cmd: &str, proj: &Project) -> Result<(String, String, Child)> {
+    server_cargo_process_with_args(cmd, proj, None)
+}
+
+pub fn server_cargo_process_with_args(
     cmd: &str,
     proj: &Project,
     additional_args: Option<&[String]>,

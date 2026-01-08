@@ -1,4 +1,4 @@
-use crate::compile::{front_cargo_process, server_cargo_process};
+use crate::compile::{front_cargo_process_with_args, server_cargo_process_with_args};
 use crate::config::{Config, Project, TestSpecificOpts};
 use crate::ext::Paint;
 use crate::internal_prelude::*;
@@ -22,13 +22,15 @@ pub async fn test_all(conf: &Config, test_opts: &TestSpecificOpts) -> Result<()>
 }
 
 pub async fn test_proj(proj: &Project, additional_args: Option<&[String]>) -> Result<bool> {
-    let (envs, line, mut proc) = server_cargo_process("test", proj, additional_args).dot()?;
+    let (envs, line, mut proc) =
+        server_cargo_process_with_args("test", proj, additional_args).dot()?;
 
     let server_exit_status = proc.wait().await.dot()?;
     debug!("Cargo envs: {}", GRAY.paint(envs));
     info!("Cargo server tests finished {}", GRAY.paint(line));
 
-    let (envs, line, mut proc) = front_cargo_process("test", false, proj, additional_args).dot()?;
+    let (envs, line, mut proc) =
+        front_cargo_process_with_args("test", false, proj, additional_args).dot()?;
 
     let front_exit_status = proc.wait().await.dot()?;
     debug!("Cargo envs: {}", GRAY.paint(envs));
