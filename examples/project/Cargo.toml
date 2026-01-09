@@ -113,7 +113,6 @@ lib-features = ["hydrate"]
 #
 # Optional. Defaults to false.
 lib-default-features = false
-env = "dev"
 
 # Enables additional file hashes on outputted css, js, and wasm files
 #

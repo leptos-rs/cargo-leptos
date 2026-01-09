@@ -362,31 +362,36 @@ pub struct ProjectConfig {
 }
 
 impl ProjectConfig {
-    fn parse(
+    /*fn parse(
         dir: &Utf8Path,
         metadata: &serde_json::Value,
         cargo_metadata: &Metadata,
     ) -> Result<Self> {
         let mut conf: ProjectConfig = serde_json::from_value(metadata.clone())?;
-        conf.config_dir = dir.to_path_buf();
-        conf.tmp_dir = cargo_metadata.target_directory.join("tmp");
+        conf.parse_raw(dir, cargo_metadata)?;
+        Ok(conf)
+    }*/
+
+    fn parse_raw(&mut self, dir: &Utf8Path, cargo_metadata: &Metadata) -> Result<()> {
+        self.config_dir = dir.to_path_buf();
+        self.tmp_dir = cargo_metadata.target_directory.join("tmp");
         let dotenvs = load_dotenvs(dir)?;
-        overlay_env(&mut conf, dotenvs)?;
-        if conf.site_root == "/"
-            || conf.site_root == "."
-            || conf.site_root == CARGO_TARGET_DIR_MARKER
-            || conf.site_root == CARGO_BUILD_TARGET_DIR_MARKER
+        overlay_env(self, dotenvs)?;
+        if self.site_root == "/"
+            || self.site_root == "."
+            || self.site_root == CARGO_TARGET_DIR_MARKER
+            || self.site_root == CARGO_BUILD_TARGET_DIR_MARKER
         {
             bail!(
                 "site-root cannot be '{}'. All the content is erased when building the site.",
-                conf.site_root
+                self.site_root
             );
         }
-        if conf.site_root.starts_with(CARGO_TARGET_DIR_MARKER) {
-            conf.site_root = {
+        if self.site_root.starts_with(CARGO_TARGET_DIR_MARKER) {
+            self.site_root = {
                 let mut path = cargo_metadata.target_directory.clone();
                 // unwrap() should be safe because we just checked
-                let sub = conf
+                let sub = self
                     .site_root
                     .unbase(CARGO_TARGET_DIR_MARKER.into())
                     .unwrap();
@@ -394,11 +399,11 @@ impl ProjectConfig {
                 path
             };
         }
-        if conf.site_root.starts_with(CARGO_BUILD_TARGET_DIR_MARKER) {
-            conf.site_root = {
+        if self.site_root.starts_with(CARGO_BUILD_TARGET_DIR_MARKER) {
+            self.site_root = {
                 let mut path = cargo_metadata.target_directory.clone();
                 // unwrap() should be safe because we just checked
-                let sub = conf
+                let sub = self
                     .site_root
                     .unbase(CARGO_BUILD_TARGET_DIR_MARKER.into())
                     .unwrap();
@@ -406,20 +411,54 @@ impl ProjectConfig {
                 path
             };
         }
-        if conf.site_addr.port() == conf.reload_port {
+        if self.site_addr.port() == self.reload_port {
             bail!(
                 "The site-addr port and reload-port cannot be the same: {}",
-                conf.reload_port
+                self.reload_port
             );
         }
 
         #[allow(deprecated)]
-        if conf.separate_front_target_dir.is_some() {
+        if self.separate_front_target_dir.is_some() {
             warn!("Deprecated: the `separate-front-target-dir` option is deprecated since cargo-leptos 0.2.3");
             warn!("It is now unconditionally enabled; you can remove it from your Cargo.toml")
         }
 
-        Ok(conf)
+        Ok(())
+    }
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "kebab-case")]
+struct LeptosMetadataWorkspaceSection {
+    #[serde(flatten)]
+    def: ProjectDefinition,
+    #[serde(flatten)]
+    conf: ProjectConfig,
+    #[serde(flatten)]
+    extra: std::collections::BTreeMap<String, serde::de::IgnoredAny>,
+}
+impl LeptosMetadataWorkspaceSection {
+    fn check(&self) {
+        if !self.extra.is_empty() {
+            unused_metadata_warning(self.extra.keys().collect());
+        }
+    }
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "kebab-case")]
+struct LeptosMetadataPackage {
+    #[serde(flatten)]
+    conf: ProjectConfig,
+    #[serde(flatten)]
+    extra: std::collections::BTreeMap<String, serde::de::IgnoredAny>,
+}
+impl LeptosMetadataPackage {
+    fn check(&self) {
+        if !self.extra.is_empty() {
+            unused_metadata_warning(self.extra.keys().collect());
+        }
     }
 }
 
@@ -439,9 +478,10 @@ impl ProjectDefinition {
         let mut found = Vec::new();
         if let Some(arr) = metadata.as_array() {
             for section in arr {
-                let conf = ProjectConfig::parse(dir, section, cargo_metadata)?;
-                let def: Self = serde_json::from_value(section.clone())?;
-                found.push((def, conf))
+                let mut p = LeptosMetadataWorkspaceSection::deserialize(section)?;
+                p.check();
+                p.conf.parse_raw(dir, cargo_metadata)?;
+                found.push((p.def, p.conf))
             }
         }
         Ok(found)
@@ -453,7 +493,10 @@ impl ProjectDefinition {
         dir: &Utf8Path,
         cargo_metadata: &Metadata,
     ) -> Result<(Self, ProjectConfig)> {
-        let conf = ProjectConfig::parse(dir, metadata, cargo_metadata)?;
+        let p = LeptosMetadataPackage::deserialize(metadata)?;
+        p.check();
+        let mut conf = p.conf;
+        conf.parse_raw(dir, cargo_metadata)?;
 
         Ok((
             ProjectDefinition {
@@ -520,4 +563,11 @@ fn default_hash_files() -> bool {
 
 fn default_js_minify() -> bool {
     true
+}
+
+fn unused_metadata_warning(keys: Vec<&String>) {
+    warn!(
+        "Metadata keys {:?} from metadata.leptos are not recognized and will be ignored",
+        keys
+    );
 }
