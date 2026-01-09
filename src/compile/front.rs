@@ -76,8 +76,17 @@ pub fn front_cargo_process(
     wasm: bool,
     proj: &Project,
 ) -> Result<(String, String, Child)> {
+    front_cargo_process_with_args(cmd, wasm, proj, None)
+}
+
+pub fn front_cargo_process_with_args(
+    cmd: &str,
+    wasm: bool,
+    proj: &Project,
+    additional_args: Option<&[String]>,
+) -> Result<(String, String, Child)> {
     let mut command = Command::new("cargo");
-    let (envs, line) = build_cargo_front_cmd(cmd, wasm, proj, &mut command);
+    let (envs, line) = build_cargo_front_cmd(cmd, wasm, proj, &mut command, additional_args);
     Ok((envs, line, command.spawn()?))
 }
 
@@ -86,6 +95,7 @@ pub fn build_cargo_front_cmd(
     wasm: bool,
     proj: &Project,
     command: &mut Command,
+    additional_args: Option<&[String]>,
 ) -> (String, String) {
     let mut args = vec![
         cmd.to_string(),
@@ -112,6 +122,10 @@ pub fn build_cargo_front_cmd(
     }
 
     proj.lib.profile.add_to_args(&mut args);
+
+    if let Some(add_args) = additional_args {
+        args.extend_from_slice(add_args);
+    }
 
     let envs = proj.to_envs(wasm);
 
@@ -190,9 +204,7 @@ async fn bindgen(proj: &Project, all_wasm_files: &[Utf8PathBuf]) -> Result<Outco
     )
     .await?
     {
-        CommandResult::Interrupted => {
-            Ok(Outcome::Stopped)
-        },
+        CommandResult::Interrupted => Ok(Outcome::Stopped),
         CommandResult::Failure(output) => {
             error!("wasm-bindgen failed with:");
             println!("{}", output.stderr());

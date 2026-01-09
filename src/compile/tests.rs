@@ -2,7 +2,6 @@ use crate::{
     compile::front::build_cargo_front_cmd,
     config::{Config, Opts},
 };
-use insta::assert_snapshot;
 use tokio::process::Command;
 
 use super::server::build_cargo_server_cmd;
@@ -54,7 +53,7 @@ fn test_project_dev() {
     let conf = Config::test_load(cli, "examples", "examples/project/Cargo.toml", true, None);
 
     let mut command = Command::new("cargo");
-    let (envs, cargo) = build_cargo_server_cmd("build", &conf.projects[0], &mut command);
+    let (envs, cargo) = build_cargo_server_cmd("build", &conf.projects[0], &mut command, None);
 
     const ENV_REF: &str = "\
     LEPTOS_OUTPUT_NAME=example \
@@ -74,10 +73,13 @@ fn test_project_dev() {
     RUSTFLAGS=--cfg erase_components";
     assert_eq!(ENV_REF, envs);
 
-    assert_snapshot!(cargo, @"cargo build --package=example --bin=example --no-default-features --features=ssr");
+    assert_eq!(
+        cargo,
+        "cargo build --package=example --bin=example --no-default-features --features=ssr"
+    );
 
     let mut command = Command::new("cargo");
-    let (_, cargo) = build_cargo_front_cmd("build", true, &conf.projects[0], &mut command);
+    let (_, cargo) = build_cargo_front_cmd("build", true, &conf.projects[0], &mut command, None);
 
     assert!(cargo.starts_with("cargo build --package=example --lib --target-dir="));
     // what's in the middle will vary by platform and cwd
@@ -92,12 +94,12 @@ fn test_project_release() {
     let conf = Config::test_load(cli, "examples", "examples/project/Cargo.toml", true, None);
 
     let mut command = Command::new("cargo");
-    let (_, cargo) = build_cargo_server_cmd("build", &conf.projects[0], &mut command);
+    let (_, cargo) = build_cargo_server_cmd("build", &conf.projects[0], &mut command, None);
 
-    assert_snapshot!(cargo, @"cargo build --package=example --bin=example --no-default-features --features=ssr --release");
+    assert_eq!(cargo, "cargo build --package=example --bin=example --no-default-features --features=ssr --release");
 
     let mut command = Command::new("cargo");
-    let (_, cargo) = build_cargo_front_cmd("build", true, &conf.projects[0], &mut command);
+    let (_, cargo) = build_cargo_front_cmd("build", true, &conf.projects[0], &mut command, None);
 
     assert!(cargo.starts_with("cargo build --package=example --lib --target-dir="));
     // what's in the middle will vary by platform and cwd
@@ -146,14 +148,17 @@ fn test_workspace_project1() {
     let conf = Config::test_load(cli, "examples", "examples/workspace/Cargo.toml", true, None);
 
     let mut command = Command::new("cargo");
-    let (envs, cargo) = build_cargo_server_cmd("build", &conf.projects[0], &mut command);
+    let (envs, cargo) = build_cargo_server_cmd("build", &conf.projects[0], &mut command, None);
 
     assert_eq!(ENV_REF, envs);
 
-    assert_snapshot!(cargo, @"cargo build --package=server-package --bin=server-package --no-default-features");
+    assert_eq!(
+        cargo,
+        "cargo build --package=server-package --bin=server-package --no-default-features"
+    );
 
     let mut command = Command::new("cargo");
-    let (envs, cargo) = build_cargo_front_cmd("build", true, &conf.projects[0], &mut command);
+    let (envs, cargo) = build_cargo_front_cmd("build", true, &conf.projects[0], &mut command, None);
 
     assert_eq!(ENV_REF, envs);
 
@@ -168,12 +173,15 @@ fn test_workspace_project2() {
     let conf = Config::test_load(cli, "examples", "examples/workspace/Cargo.toml", true, None);
 
     let mut command = Command::new("cargo");
-    let (_, cargo) = build_cargo_server_cmd("build", &conf.projects[1], &mut command);
+    let (_, cargo) = build_cargo_server_cmd("build", &conf.projects[1], &mut command, None);
 
-    assert_snapshot!(cargo, @"cargo build --package=project2 --bin=project2 --no-default-features --features=ssr");
+    assert_eq!(
+        cargo,
+        "cargo build --package=project2 --bin=project2 --no-default-features --features=ssr"
+    );
 
     let mut command = Command::new("cargo");
-    let (_, cargo) = build_cargo_front_cmd("build", true, &conf.projects[1], &mut command);
+    let (_, cargo) = build_cargo_front_cmd("build", true, &conf.projects[1], &mut command, None);
 
     assert!(cargo.starts_with("cargo build --package=project2 --lib --target-dir="));
     // what's in the middle will vary by platform and cwd
@@ -192,16 +200,53 @@ fn test_extra_cargo_args() {
     let conf = Config::test_load(cli, "examples", "examples/project/Cargo.toml", true, None);
 
     let mut command = Command::new("cargo");
-    let (_, cargo) = build_cargo_server_cmd("build", &conf.projects[0], &mut command);
+    let (_, cargo) = build_cargo_server_cmd("build", &conf.projects[0], &mut command, None);
 
-    assert_snapshot!(cargo, @"cargo build --package=example --bin=example --no-default-features --features=ssr -j 16");
+    assert_eq!(
+        cargo,
+        "cargo build --package=example --bin=example --no-default-features --features=ssr -j 16"
+    );
 
     let mut command = Command::new("cargo");
-    let (_, cargo) = build_cargo_front_cmd("build", true, &conf.projects[0], &mut command);
+    let (_, cargo) = build_cargo_front_cmd("build", true, &conf.projects[0], &mut command, None);
 
     assert!(cargo.starts_with("cargo build --package=example --lib --target-dir="));
     // what's in the middle will vary by platform and cwd
     assert!(cargo.ends_with(
         "--target=wasm32-unknown-unknown --no-default-features --features=hydrate -j 8"
+    ));
+}
+
+#[test]
+fn test_extra_build_args() {
+    let cli = dev_opts();
+    let conf = Config::test_load(cli, "examples", "examples/project/Cargo.toml", true, None);
+
+    let mut command = Command::new("cargo");
+    let additional_args = vec!["--no-run".to_string()];
+    let (_, cargo) = build_cargo_server_cmd(
+        "test",
+        &conf.projects[0],
+        &mut command,
+        Some(&additional_args),
+    );
+
+    assert_eq!(
+        cargo,
+        "cargo test --package=example --no-default-features --features=ssr --no-run"
+    );
+
+    let mut command = Command::new("cargo");
+    let (_, cargo) = build_cargo_front_cmd(
+        "build",
+        true,
+        &conf.projects[0],
+        &mut command,
+        Some(&additional_args),
+    );
+    assert!(cargo.starts_with("cargo build --package=example --lib --target-dir="));
+    // what's in the middle will vary by platform and cwd
+    assert!(cargo.ends_with(
+        "--target=wasm32-unknown-unknown --no-default-features --features=hydrate --no-run"
     ));
 }
