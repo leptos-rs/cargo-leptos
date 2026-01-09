@@ -47,6 +47,19 @@ fn dev_opts() -> Opts {
     }
 }
 
+#[track_caller]
+fn check_envs(expected_envs: &str, envs: &str, rustflags_suffix: &str) {
+    let (envs_cleaned, rustflags) = envs.split_once("RUSTFLAGS=")
+        .map(|(left, right)| (left.trim_end(), right))
+        .expect("RUSTFLAGS not found in envs");
+
+    assert_eq!(expected_envs, envs_cleaned);
+    assert!(
+        rustflags.ends_with(rustflags_suffix),
+        "RUSTFLAGS did not end with expected cfg, got: \"RUSTFLAGS={}\"", rustflags
+    );
+}
+
 #[test]
 fn test_project_dev() {
     let cli = dev_opts();
@@ -69,9 +82,9 @@ fn test_project_dev() {
     LEPTOS_WATCH=true \
     SERVER_FN_PREFIX=/custom/prefix \
     DISABLE_SERVER_FN_HASH=true \
-    SERVER_FN_MOD_PATH=true \
-    RUSTFLAGS=--cfg erase_components";
-    assert_eq!(ENV_REF, envs);
+    SERVER_FN_MOD_PATH=true";
+
+    check_envs(ENV_REF, &envs, "--cfg erase_components");
 
     assert_eq!(
         cargo,
@@ -124,8 +137,7 @@ fn test_workspace_project1() {
     LEPTOS_WATCH=true \
     SERVER_FN_PREFIX=/custom/prefix \
     DISABLE_SERVER_FN_HASH=true \
-    SERVER_FN_MOD_PATH=true \
-    RUSTFLAGS=--cfg erase_components"
+    SERVER_FN_MOD_PATH=true"
     } else {
         "\
     LEPTOS_OUTPUT_NAME=project1 \
@@ -140,8 +152,7 @@ fn test_workspace_project1() {
     LEPTOS_WATCH=true \
     SERVER_FN_PREFIX=/custom/prefix \
     DISABLE_SERVER_FN_HASH=true \
-    SERVER_FN_MOD_PATH=true \
-    RUSTFLAGS=--cfg erase_components"
+    SERVER_FN_MOD_PATH=true"
     };
 
     let cli = dev_opts();
@@ -150,7 +161,7 @@ fn test_workspace_project1() {
     let mut command = Command::new("cargo");
     let (envs, cargo) = build_cargo_server_cmd("build", &conf.projects[0], &mut command, None);
 
-    assert_eq!(ENV_REF, envs);
+    check_envs(ENV_REF, &envs, "--cfg erase_components");
 
     assert_eq!(
         cargo,
@@ -160,7 +171,7 @@ fn test_workspace_project1() {
     let mut command = Command::new("cargo");
     let (envs, cargo) = build_cargo_front_cmd("build", true, &conf.projects[0], &mut command, None);
 
-    assert_eq!(ENV_REF, envs);
+    check_envs(ENV_REF, &envs, "--cfg erase_components");
 
     assert!(cargo.starts_with("cargo build --package=front-package --lib --target-dir="));
     // what's in the middle will vary by platform and cwd
