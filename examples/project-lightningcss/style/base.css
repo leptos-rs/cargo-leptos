@@ -1,0 +1,9 @@
+:root {
+    --color-primary: #3490dc;
+    --color-secondary: #ffed4a;
+}
+
+body {
+    font-family: system-ui, sans-serif;
+    line-height: 1.5;
+}
