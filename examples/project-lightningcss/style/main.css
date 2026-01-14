@@ -1,0 +1,7 @@
+@import "base.css";
+@import "components.css";
+
+.app {
+    max-width: 800px;
+    margin: 0 auto;
+}
