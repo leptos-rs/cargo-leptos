@@ -1,6 +1,5 @@
 ---
 source: src/config/tests.rs
-assertion_line: 41
 expression: conf
 ---
 Config {
@@ -48,6 +47,7 @@ Config {
                 ),
                 browserquery: "defaults",
                 tailwind: None,
+                lightningcss: None,
                 site_file: SiteFile {
                     dest: "target/site/project1/pkg/project1.css",
                     site: "pkg/project1.css",
@@ -130,6 +130,7 @@ Config {
                 ),
                 browserquery: "defaults",
                 tailwind: None,
+                lightningcss: None,
                 site_file: SiteFile {
                     dest: "target/site/project2/pkg/project2.css",
                     site: "pkg/project2.css",

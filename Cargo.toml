@@ -22,7 +22,7 @@ libflate = "2.2"
 tracing = "0.1.44"
 cargo-config2 = "0.1.39"
 target-lexicon = "0.13.4"
-lightningcss = { version = "1.0.0-alpha.68", features = ["browserslist"] }
+lightningcss = { version = "1.0.0-alpha.68", features = ["browserslist", "bundler"] }
 flexi_logger = "0.31.7"
 tokio = { version = "1.48", default-features = false, features = ["full"] }
 axum = { version = "0.8.8", features = ["ws"] }
