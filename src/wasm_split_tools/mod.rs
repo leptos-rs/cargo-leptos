@@ -33,9 +33,9 @@ pub async fn wasm_split(
             .expect("could not serialize manifest file"),
     )
     .await?;
-    return Ok(split_wasm
+    Ok(split_wasm
         .split_modules
         .into_iter()
         .map(|path| path.try_into().unwrap())
-        .collect());
+        .collect())
 }

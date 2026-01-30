@@ -252,6 +252,9 @@ pub struct ProjectConfig {
     pub hash_files: bool,
     pub tailwind_input_file: Option<Utf8PathBuf>,
     pub tailwind_config_file: Option<Utf8PathBuf>,
+    /// Input CSS file for LightningCSS processing. LightningCSS will automatically
+    /// resolve and bundle any `@import` statements in this file.
+    pub lightningcss_input_file: Option<Utf8PathBuf>,
     /// assets dir. content will be copied to the target/site dir
     pub assets_dir: Option<Utf8PathBuf>,
     /// js dir. changes triggers rebuilds.

@@ -102,7 +102,7 @@ fn handle(
                 .paths
                 .iter()
                 .filter_map(|p| {
-                    let mtime = fs::metadata(&p)
+                    let mtime = fs::metadata(p)
                         .and_then(|meta| meta.modified())
                         .unwrap_or(SystemTime::UNIX_EPOCH);
 
@@ -201,6 +201,27 @@ fn handle(
                 || path.as_path() == tailwind.input_file.as_path()
             {
                 debug!("Notify style change {}", GRAY.paint(path.as_str()));
+                changes.add(Change::Style);
+            }
+        }
+
+        // Watch for LightningCSS file changes
+        if let Some(lightningcss) = &proj.style.lightningcss {
+            let is_input_file = path.as_path() == lightningcss.input_file.as_path();
+            let is_css_in_watch_dir =
+                path.starts_with(&lightningcss.watch_dir) && path.is_ext_any(&["css"]);
+
+            if is_input_file {
+                debug!(
+                    "LightningCSS input file changed: {}",
+                    GRAY.paint(path.as_str())
+                );
+                changes.add(Change::Style);
+            } else if is_css_in_watch_dir {
+                debug!(
+                    "LightningCSS dependency changed: {} (triggering rebuild)",
+                    GRAY.paint(path.as_str())
+                );
                 changes.add(Change::Style);
             }
         }
