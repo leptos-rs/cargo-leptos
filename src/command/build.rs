@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use tokio::try_join;
+
 use crate::ext::compress;
 use crate::internal_prelude::*;
 use crate::{
@@ -27,19 +29,13 @@ pub async fn build_all(conf: &Config) -> Result<()> {
 }
 
 async fn build_frontend(proj: &Arc<Project>, changes: &ChangeSet) -> Result<bool> {
-    let mut success = true;
+    let front_hdl = compile::front(proj, changes).await;
+    let assets_hdl = compile::assets(proj, changes).await;
+    let style_hdl = compile::style(proj, changes).await;
 
-    if !compile::front(proj, changes).await.await??.is_success() {
-        success = false;
-    }
-    if !compile::assets(proj, changes).await.await??.is_success() {
-        success = false;
-    }
-    if !compile::style(proj, changes).await.await??.is_success() {
-        success = false;
-    }
+    let (front, assets, style) = try_join!(front_hdl, assets_hdl, style_hdl)?;
 
-    if !success {
+    if !front?.is_success() || !assets?.is_success() || !style?.is_success() {
         return Ok(false);
     }
 
@@ -63,13 +59,33 @@ pub async fn build_proj(proj: &Arc<Project>) -> Result<bool> {
     }
 
     let changes = ChangeSet::all_changes();
+    let needs_frontend = !proj.build_server_only;
+    let needs_server = !proj.build_frontend_only;
+    let can_parallelize = !(proj.hash_files || proj.release && proj.precompress);
 
-    if !proj.build_server_only && !build_frontend(proj, &changes).await? {
-        return Ok(false);
-    }
+    if can_parallelize && needs_frontend && needs_server {
+        let front_hdl = compile::front(proj, &changes).await;
+        let assets_hdl = compile::assets(proj, &changes).await;
+        let style_hdl = compile::style(proj, &changes).await;
+        let server_hdl = compile::server(proj, &changes).await;
 
-    if !proj.build_frontend_only && !compile::server(proj, &changes).await.await??.is_success() {
-        return Ok(false);
+        let (front, assets, style, server) =
+            try_join!(front_hdl, assets_hdl, style_hdl, server_hdl)?;
+
+        if !front?.is_success()
+            || !assets?.is_success()
+            || !style?.is_success()
+            || !server?.is_success()
+        {
+            return Ok(false);
+        }
+    } else {
+        if needs_frontend && !build_frontend(proj, &changes).await? {
+            return Ok(false);
+        }
+        if needs_server && !compile::server(proj, &changes).await.await??.is_success() {
+            return Ok(false);
+        }
     }
 
     Ok(true)
