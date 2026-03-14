@@ -56,6 +56,8 @@ async fn build_frontend(proj: &Arc<Project>, changes: &ChangeSet) -> Result<bool
 pub async fn build_proj(proj: &Arc<Project>) -> Result<bool> {
     if proj.site.root_dir.exists() {
         fs::rm_dir_content(&proj.site.root_dir).await.dot()?;
+    } else {
+        fs::create_dir_all(&proj.site.root_dir).await.dot()?;
     }
 
     let changes = ChangeSet::all_changes();
