@@ -67,6 +67,9 @@ async fn resync(src: &Utf8Path, dest: &Utf8Path, pkg_dir: &Utf8Path) -> Result<(
 }
 
 async fn clean_dest(dest: &Utf8Path, pkg_dir: &Utf8Path) -> Result<()> {
+    if !dest.exists() {
+        return Ok(());
+    }
     let pkg_dir = dest.join(pkg_dir);
     let mut entries = fs::read_dir(dest).await?;
     while let Some(entry) = entries.next_entry().await? {

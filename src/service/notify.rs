@@ -102,7 +102,7 @@ fn handle(
                 .paths
                 .iter()
                 .filter_map(|p| {
-                    let mtime = fs::metadata(&p)
+                    let mtime = fs::metadata(p)
                         .and_then(|meta| meta.modified())
                         .unwrap_or(SystemTime::UNIX_EPOCH);
 
