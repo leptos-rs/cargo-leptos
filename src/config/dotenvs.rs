@@ -41,6 +41,7 @@ fn overlay(conf: &mut ProjectConfig, envs: impl Iterator<Item = (String, String)
             "LEPTOS_SITE_PKG_DIR" => conf.site_pkg_dir = Utf8PathBuf::from(val),
             "LEPTOS_STYLE_FILE" => conf.style_file = Some(Utf8PathBuf::from(val)),
             "LEPTOS_ASSETS_DIR" => conf.assets_dir = Some(Utf8PathBuf::from(val)),
+            "LEPTOS_SITE_BASE" => conf.site_base = Utf8PathBuf::from(val),
             "LEPTOS_SITE_ADDR" => conf.site_addr = val.parse()?,
             "LEPTOS_RELOAD_PORT" => conf.reload_port = val.parse()?,
             "LEPTOS_END2END_CMD" => conf.end2end_cmd = Some(val),

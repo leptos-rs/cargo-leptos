@@ -72,6 +72,7 @@ impl std::fmt::Debug for SiteFile {
 }
 
 pub struct Site {
+    pub base: Utf8PathBuf,
     pub addr: SocketAddr,
     pub reload: SocketAddr,
     pub root_dir: Utf8PathBuf,
@@ -83,6 +84,7 @@ pub struct Site {
 impl fmt::Debug for Site {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Site")
+            .field("base", &self.base)
             .field("addr", &self.addr)
             .field("reload", &self.reload)
             .field("root_dir", &self.root_dir)
@@ -98,6 +100,7 @@ impl Site {
         let mut reload = config.site_addr;
         reload.set_port(config.reload_port);
         Self {
+            base: config.site_base.clone(),
             addr: config.site_addr,
             reload,
             root_dir: config.site_root.clone(),

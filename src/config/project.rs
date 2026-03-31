@@ -171,6 +171,7 @@ impl Project {
             ("LEPTOS_OUTPUT_NAME", self.lib.output_name.to_string()),
             ("LEPTOS_SITE_ROOT", self.site.root_dir.to_string()),
             ("LEPTOS_SITE_PKG_DIR", self.site.pkg_dir.to_string()),
+            ("LEPTOS_SITE_BASE", self.site.base.to_string()),
             ("LEPTOS_SITE_ADDR", self.site.addr.to_string()),
             ("LEPTOS_RELOAD_PORT", self.site.reload.port().to_string()),
             ("LEPTOS_LIB_DIR", self.lib.rel_dir.to_string()),
@@ -238,6 +239,8 @@ impl Project {
 pub struct ProjectConfig {
     #[serde(default)]
     pub output_name: String,
+    #[serde(default)]
+    pub site_base: Utf8PathBuf,
     #[serde(default = "default_site_addr")]
     pub site_addr: SocketAddr,
     #[serde(default = "default_site_root")]
