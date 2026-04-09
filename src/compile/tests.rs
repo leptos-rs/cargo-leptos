@@ -250,3 +250,58 @@ fn test_extra_build_args() {
         "--target=wasm32-unknown-unknown --no-default-features --features=hydrate --no-run"
     ));
 }
+
+#[test]
+fn test_lightningcss_config() {
+    let cli = dev_opts();
+    let conf = Config::test_load(
+        cli,
+        "examples",
+        "examples/project-lightningcss/Cargo.toml",
+        true,
+        None,
+    );
+
+    let proj = &conf.projects[0];
+    assert!(proj.style.lightningcss.is_some());
+
+    let lcss = proj.style.lightningcss.as_ref().unwrap();
+    assert!(lcss.input_file.to_string().ends_with("style/main.css"));
+    assert!(lcss.watch_dir.to_string().ends_with("style"));
+}
+
+#[test]
+fn test_lightningcss_bundling() {
+    use super::lightningcss::bundle_and_process;
+    use lightningcss::targets::Targets;
+    use std::path::Path;
+
+    let entry_path = Path::new("examples/project-lightningcss/style/main.css");
+    let result = bundle_and_process(entry_path, "main.css", Targets::default(), false);
+
+    assert!(result.is_ok());
+    let css = result.unwrap();
+
+    // Verify that imports were resolved and content is bundled
+    assert!(css.contains("--color-primary")); // from base.css
+    assert!(css.contains(".button")); // from components.css
+    assert!(css.contains(".app")); // from main.css
+}
+
+#[test]
+fn test_lightningcss_minification() {
+    use super::lightningcss::bundle_and_process;
+    use lightningcss::targets::Targets;
+    use std::path::Path;
+
+    let entry_path = Path::new("examples/project-lightningcss/style/main.css");
+
+    let unminified = bundle_and_process(entry_path, "main.css", Targets::default(), false).unwrap();
+    let minified = bundle_and_process(entry_path, "main.css", Targets::default(), true).unwrap();
+
+    // Minified should be shorter
+    assert!(minified.len() < unminified.len());
+
+    // Minified should have less whitespace
+    assert!(minified.matches('\n').count() < unminified.matches('\n').count());
+}

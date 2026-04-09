@@ -1,0 +1,30 @@
+[workspace]
+
+[package]
+name = "example-lightningcss"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+leptos = { version = "0.7.7", default-features = false }
+
+[features]
+default = ["ssr"]
+hydrate = ["leptos/hydrate"]
+ssr = ["leptos/ssr"]
+
+[package.metadata.leptos]
+output-name = "example-lightningcss"
+site-root = "target/site"
+site-pkg-dir = "pkg"
+lightningcss-input-file = "style/main.css"
+site-addr = "127.0.0.1:3000"
+reload-port = 3001
+browserquery = "defaults"
+bin-features = ["ssr"]
+bin-default-features = false
+lib-features = ["hydrate"]
+lib-default-features = false

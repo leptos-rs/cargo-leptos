@@ -1,4 +1,4 @@
-use super::{ProjectConfig, TailwindConfig};
+use super::{LightningCssConfig, ProjectConfig, TailwindConfig};
 use crate::{
     ext::eyre::reexports::Result,
     service::site::{SiteFile, SourcedSiteFile},
@@ -9,6 +9,7 @@ pub struct StyleConfig {
     pub file: Option<SourcedSiteFile>,
     pub browserquery: String,
     pub tailwind: Option<TailwindConfig>,
+    pub lightningcss: Option<LightningCssConfig>,
     pub site_file: SiteFile,
 }
 
@@ -37,6 +38,7 @@ impl StyleConfig {
             file: style_file,
             browserquery: config.browserquery.clone(),
             tailwind: TailwindConfig::new(config)?,
+            lightningcss: LightningCssConfig::new(config)?,
             site_file,
         })
     }
