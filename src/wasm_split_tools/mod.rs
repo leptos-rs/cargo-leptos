@@ -13,7 +13,7 @@ pub async fn wasm_split(
     let dest_file = &proj.lib.wasm_file.dest;
     let dest_dir = dest_file.parent().expect("no destination directory");
     let source_file = &proj.lib.wasm_file.source;
-    let main_module = &format!("/pkg/{}.js", proj.lib.output_name);
+    let main_module = &format!("/{}/{}.js", proj.site.pkg_dir, proj.lib.output_name);
 
     let mut main_out_file = source_file.clone();
     main_out_file.set_file_name(format!("{}_split.wasm", source_file.file_stem().unwrap()));
