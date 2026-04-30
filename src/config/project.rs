@@ -53,6 +53,7 @@ pub struct Project {
     pub build_frontend_only: bool,
     pub build_server_only: bool,
     pub clear_terminal_on_rebuild: bool,
+    pub target: Option<String>,
 }
 
 impl Debug for Project {
@@ -149,6 +150,7 @@ impl Project {
                 wasm_opt_features: config.wasm_opt_features,
                 build_frontend_only: cli.frontend_only,
                 build_server_only: cli.server_only,
+                target: cli.target.clone().or_else(|| config.bin_target_triple.clone()),
             };
             resolved.push(Arc::new(proj));
         }

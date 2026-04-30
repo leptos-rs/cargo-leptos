@@ -76,6 +76,10 @@ pub struct Opts {
     /// Only build the server.
     #[arg(long, conflicts_with = "frontend_only")]
     pub server_only: bool,
+
+    /// Target triple for the server binary (e.g. x86_64-unknown-linux-gnu). Overrides bin-target-triple in Cargo.toml.
+    #[arg(long)]
+    pub target: Option<String>,
 }
 
 #[derive(Debug, Clone, Parser, PartialEq, Default)]
@@ -176,4 +180,5 @@ pub enum Commands {
 
     /// Generate shell for `cargo-leptos`
     Completions { shell: Shell },
+
 }

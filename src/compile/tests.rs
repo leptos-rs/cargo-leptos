@@ -24,6 +24,7 @@ fn release_opts() -> Opts {
         frontend_only: false,
         server_only: false,
         clear: false,
+        target: None,
     }
 }
 fn dev_opts() -> Opts {
@@ -44,6 +45,7 @@ fn dev_opts() -> Opts {
         frontend_only: false,
         server_only: false,
         clear: false,
+        target: None,
     }
 }
 

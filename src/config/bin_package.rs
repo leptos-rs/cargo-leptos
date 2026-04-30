@@ -80,16 +80,15 @@ impl BinPackage {
             &config.bin_profile_release,
             &config.bin_profile_dev,
         );
+        let target_triple = cli.target.clone().or_else(|| config.bin_target_triple.clone());
         let exe_file = {
-            let file_ext = if config
-                .bin_target_triple
+            let file_ext = if target_triple
                 .as_ref()
                 .map_or(cfg!(target_os = "windows"), |triple| {
                     triple.contains("-pc-windows-")
                 }) {
                 "exe"
-            } else if config
-                .bin_target_triple
+            } else if target_triple
                 .as_ref()
                 .is_some_and(|target| target.starts_with("wasm32-"))
             {
@@ -104,7 +103,7 @@ impl BinPackage {
                 .map(|dir| dir.into())
                 // Can't use absolute path because the path gets stored in snapshot testing, and it differs between developers
                 .unwrap_or_else(|| metadata.rel_target_dir());
-            if let Some(triple) = &config.bin_target_triple {
+            if let Some(triple) = &target_triple {
                 file = file.join(triple)
             };
             let name = if let Some(name) = &config.bin_exe_name {
@@ -140,7 +139,7 @@ impl BinPackage {
             default_features: config.bin_default_features,
             src_paths,
             profile,
-            target_triple: config.bin_target_triple.clone(),
+            target_triple,
             target_dir: config.bin_target_dir.clone(),
             cargo_command: config.bin_cargo_command.clone(),
             cargo_args,
