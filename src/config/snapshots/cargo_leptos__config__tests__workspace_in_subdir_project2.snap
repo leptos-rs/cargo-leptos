@@ -1,6 +1,6 @@
 ---
 source: src/config/tests.rs
-assertion_line: 74
+assertion_line: 75
 expression: conf
 ---
 Config {
@@ -103,6 +103,7 @@ Config {
         split: false,
         frontend_only: false,
         server_only: false,
+        target: None,
     },
     watch: true,
     ..
