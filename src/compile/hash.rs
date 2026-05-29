@@ -1,6 +1,6 @@
 use crate::{
     config::Project,
-    ext::{eyre::CustomWrapErr, PathBufExt},
+    ext::eyre::CustomWrapErr,
     internal_prelude::*,
 };
 use base64ct::{Base64UrlUnpadded, Encoding};
@@ -11,33 +11,27 @@ use std::{collections::HashMap, fs};
 
 ///Adds hashes to the filenames of the css, js, and wasm files in the output
 pub fn add_hashes_to_site(proj: &Project) -> Result<()> {
-    let files_to_hashes = compute_front_file_hashes(proj).dot()?;
+    let mut files_to_hashes = compute_front_file_hashes(proj).dot()?;
+    let pkg_dir = proj.site.root_relative_pkg_dir();
+
+    let old_wasm_split = pkg_dir.join(crate::wasm_split_tools::WASM_SPLIT_LOADER_PLACEHOLDER);
+
+    if proj.split {
+        // Finalized separately: its hash depends on the chunk names rename_files produces.
+        files_to_hashes.remove(&old_wasm_split);
+    }
 
     debug!("Hash computed: {files_to_hashes:?}");
 
-    let renamed_files = rename_files(&files_to_hashes).dot()?;
-    let pkg_dir = proj.site.root_relative_pkg_dir();
-
-    replace_in_file(
-        &renamed_files[&proj.lib.js_file.dest],
-        &renamed_files,
-        &pkg_dir,
-        false,
-    );
+    let mut renamed_files = rename_files(&files_to_hashes).dot()?;
 
     let wasm_split_hash = if proj.split {
-        let old_wasm_split = proj
-            .lib
-            .js_file
-            .dest
-            .clone()
-            .without_last()
-            .join("__wasm_split.______________________.js");
-        let new_wasm_split = &renamed_files[&old_wasm_split];
-        replace_in_file(new_wasm_split, &renamed_files, &pkg_dir, false);
+        let (final_wasm_split, final_hash) =
+            finalize_wasm_split_loader(&old_wasm_split, &renamed_files, &pkg_dir)?;
+        renamed_files.insert(old_wasm_split.clone(), final_wasm_split.clone());
 
         let old_wasm_split_filename = old_wasm_split.file_name().unwrap();
-        let new_wasm_split_filename = new_wasm_split.file_name().unwrap();
+        let final_wasm_split_filename = final_wasm_split.file_name().unwrap();
 
         for entry in fs::read_dir(&pkg_dir)? {
             let entry = entry?;
@@ -48,7 +42,7 @@ pub fn add_hashes_to_site(proj: &Project) -> Result<()> {
                         replace_in_binary_file(
                             &Utf8PathBuf::try_from(path).unwrap(),
                             old_wasm_split_filename,
-                            new_wasm_split_filename,
+                            final_wasm_split_filename,
                         );
                     } else if filename.starts_with("__wasm_split_manifest") {
                         replace_in_file(
@@ -68,10 +62,19 @@ pub fn add_hashes_to_site(proj: &Project) -> Result<()> {
                 }
             }
         }
-        Some(&files_to_hashes[&old_wasm_split])
+
+        Some(final_hash)
     } else {
         None
     };
+
+    // Rewritten last, so renamed_files already holds the loader's final name.
+    replace_in_file(
+        &renamed_files[&proj.lib.js_file.dest],
+        &renamed_files,
+        &pkg_dir,
+        false,
+    );
 
     let manifest_file = files_to_hashes
         .iter()
@@ -150,9 +153,7 @@ fn compute_front_file_hashes(proj: &Project) -> Result<HashMap<Utf8PathBuf, Stri
                         }
                     }
 
-                    let hash = Base64UrlUnpadded::encode_string(
-                        &Md5::new().chain_update(fs::read(&path)?).finalize(),
-                    );
+                    let hash = content_hash(&path)?;
 
                     if path
                         .file_stem()
@@ -174,6 +175,13 @@ fn compute_front_file_hashes(proj: &Project) -> Result<HashMap<Utf8PathBuf, Stri
     }
 
     Ok(files_to_hashes)
+}
+
+/// Content hash used for cache-busting filenames (base64url-unpadded MD5).
+fn content_hash(path: impl AsRef<std::path::Path>) -> Result<String> {
+    Ok(Base64UrlUnpadded::encode_string(
+        &Md5::new().chain_update(fs::read(path)?).finalize(),
+    ))
 }
 
 fn rename_files(
@@ -243,6 +251,19 @@ fn replace_in_file(
     fs::write(path, contents).expect("could not write file");
 }
 
+// Rewrites the loader's chunk references, then hashes and renames it to its
+// content-addressed name. Returns (final_path, final_hash).
+fn finalize_wasm_split_loader(
+    old_path: &Utf8PathBuf,
+    renamed_files: &HashMap<Utf8PathBuf, Utf8PathBuf>,
+    pkg_dir: &Utf8PathBuf,
+) -> Result<(Utf8PathBuf, String)> {
+    replace_in_file(old_path, renamed_files, pkg_dir, false);
+    let hash = content_hash(old_path)?;
+    let renamed = rename_files(&HashMap::from([(old_path.clone(), hash.clone())]))?;
+    Ok((renamed[old_path].clone(), hash))
+}
+
 fn replace_in_binary_file(path: &Utf8PathBuf, old_wasm_split: &str, new_wasm_split: &str) {
     let mut contents =
         fs::read(path).unwrap_or_else(|e| panic!("error {e}: could not read file {path}"));
@@ -257,4 +278,53 @@ fn replace_in_binary_file(path: &Utf8PathBuf, old_wasm_split: &str, new_wasm_spl
     }
 
     fs::write(path, contents).expect("could not write file");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use temp_dir::TempDir;
+
+    fn run_in_dir(pkg_dir: &Utf8PathBuf, chunk0: &[u8], chunk1: &[u8]) -> String {
+        let loader = b"import('./chunk_0.wasm');\nimport('./chunk_1.wasm');\n";
+        fs::write(pkg_dir.join("chunk_0.wasm"), chunk0).unwrap();
+        fs::write(pkg_dir.join("chunk_1.wasm"), chunk1).unwrap();
+        let old_wasm_split = pkg_dir.join(crate::wasm_split_tools::WASM_SPLIT_LOADER_PLACEHOLDER);
+        fs::write(&old_wasm_split, loader).unwrap();
+
+        // Only the chunks go in the map; finalize_wasm_split_loader hashes the
+        // loader itself, after its chunk references have been rewritten.
+        let mut files_to_hashes = HashMap::new();
+        for name in ["chunk_0.wasm", "chunk_1.wasm"] {
+            let path = pkg_dir.join(name);
+            let hash = content_hash(&path).unwrap();
+            files_to_hashes.insert(path, hash);
+        }
+
+        let renamed = rename_files(&files_to_hashes).unwrap();
+        let (final_path, _) =
+            finalize_wasm_split_loader(&old_wasm_split, &renamed, pkg_dir).unwrap();
+        final_path.file_name().unwrap().to_string()
+    }
+
+    #[test]
+    fn wasm_split_loader_filename_reflects_post_rewrite_content() {
+        // Two builds share identical pre-rewrite loader content but differ in
+        // chunk content, so after chunk hashes are substituted into the loader
+        // the two loaders differ and must therefore have different filenames.
+        let dir_a = TempDir::new().unwrap();
+        let pkg_a = Utf8PathBuf::from_path_buf(dir_a.path().to_path_buf()).unwrap();
+
+        let dir_b = TempDir::new().unwrap();
+        let pkg_b = Utf8PathBuf::from_path_buf(dir_b.path().to_path_buf()).unwrap();
+
+        let name_a = run_in_dir(&pkg_a, b"chunk0_build_a", b"chunk1_build_a");
+        let name_b = run_in_dir(&pkg_b, b"chunk0_build_b", b"chunk1_build_b");
+
+        assert_ne!(
+            name_a, name_b,
+            "builds with different chunk content must produce different wasm_split loader \
+             filenames; got {name_a} for both"
+        );
+    }
 }

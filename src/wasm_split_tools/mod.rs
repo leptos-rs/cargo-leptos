@@ -5,6 +5,10 @@
 use crate::{config::Project, internal_prelude::*};
 use camino::Utf8PathBuf;
 
+/// Filename of the wasm-split loader JS. The hash placeholder is substituted with
+/// the loader's content hash by the hashing pass in [`crate::compile::hash`].
+pub const WASM_SPLIT_LOADER_PLACEHOLDER: &str = "__wasm_split.______________________.js";
+
 pub async fn wasm_split(
     input_wasm: &[u8],
     verbose: bool,
@@ -14,6 +18,7 @@ pub async fn wasm_split(
     let dest_dir = dest_file.parent().expect("no destination directory");
     let source_file = &proj.lib.wasm_file.source;
     let main_module = &format!("/{}/{}.js", proj.site.pkg_dir, proj.lib.output_name);
+    let link_name = &format!("./{WASM_SPLIT_LOADER_PLACEHOLDER}");
 
     let mut main_out_file = source_file.clone();
     main_out_file.set_file_name(format!("{}_split.wasm", source_file.file_stem().unwrap()));
@@ -23,7 +28,7 @@ pub async fn wasm_split(
         opts.output_dir = dest_dir.as_std_path();
         opts.main_out_path = main_out_file.as_std_path();
         opts.main_module = main_module;
-        opts.link_name = "./__wasm_split.______________________.js";
+        opts.link_name = link_name;
         opts.verbose = verbose;
         opts
     })?;
