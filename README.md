@@ -298,6 +298,11 @@ tailwind-input-file = "style/tailwind.css"
 # is generated for you
 tailwind-config-file = "tailwind.config.js"
 
+# The LightningCSS input file.
+#
+# Optional, activates LightningCSS bundler.
+lightningcss-input-file = "style/main.css"
+
 # The browserlist https://browsersl.ist query used for optimizing the CSS.
 #
 # Optional, defaults to "defaults". Env: LEPTOS_BROWSERQUERY.

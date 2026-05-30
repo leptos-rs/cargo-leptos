@@ -1,0 +1,12 @@
+.button {
+    padding: 0.5rem 1rem;
+    border-radius: 0.25rem;
+    background-color: var(--color-primary);
+    color: white;
+}
+
+.card {
+    padding: 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+}
