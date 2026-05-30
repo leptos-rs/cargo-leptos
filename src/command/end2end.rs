@@ -51,7 +51,20 @@ async fn try_run(cmd: &str, dir: &Utf8Path) -> Result<()> {
     let mut int = Interrupt::subscribe_any();
 
     tokio::select! {
-          _ = int.recv() => Ok(()),
+          _ = int.recv() => {
+            match process.try_wait() {
+                Ok(None) | Err(_) => {
+                    trace!("End2End child process still alive; attempting to kill...");
+                    match process.kill().await {
+                        Err(e) => warn!("Could not kill End2End child process: {}", e),
+                        Ok(_) => trace!("Successfully killed End2End child process"),
+                    }
+                }
+                Ok(Some(status)) => trace!("End2End child process already exited with {status}"),
+            }
+            
+            Ok(())
+        },
           result = process.wait() => {
             let status = result?;
             if !status.success() {
