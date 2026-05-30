@@ -14,9 +14,11 @@ use axum::{
 use serde::Serialize;
 use std::sync::LazyLock;
 use std::{fmt::Display, net::SocketAddr, sync::Arc};
+use std::time::Duration;
 use tokio::{
     net::{TcpListener, TcpStream},
     select,
+    time::timeout,
     sync::RwLock,
     task::JoinHandle,
 };
@@ -46,7 +48,7 @@ pub async fn spawn(proj: &Arc<Project>) -> JoinHandle<()> {
 
         let reload_addr = proj.site.reload;
 
-        if TcpStream::connect(&reload_addr).await.is_ok() {
+        if timeout(Duration::from_millis(100), TcpStream::connect(&reload_addr)).await.map(|r| r.is_ok()).unwrap_or(false) {
             error!(
                     "Reload TCP port {reload_addr} already in use. You can set the port in the server integration's RenderOptions reload_port"
                 );
