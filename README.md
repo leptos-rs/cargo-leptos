@@ -220,6 +220,13 @@ lib-profile-dev = "my-debug-profile"
 # Optional. Defaults to false prior to 0.2.3, unconditionally enabled (with the setting becoming deprecated) since 0.2.3 and #216
 separate-front-target-dir = true
 
+# Cargo target directory to use for frontend WASM builds. Relative paths are
+# resolved from the workspace root. Use CARGO_TARGET_DIR to share Cargo's normal
+# target directory, or CARGO_TARGET_DIR/front to spell out the default behavior.
+#
+# Optional. Defaults to CARGO_TARGET_DIR/front.
+front-target-dir = "CARGO_TARGET_DIR/front"
+
 # Pass additional parameters to the cargo process compiling to WASM
 #
 # Optional. No default
