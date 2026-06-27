@@ -145,7 +145,7 @@ fn compute_front_file_hashes(proj: &Project) -> Result<HashMap<Utf8PathBuf, Stri
                     // in the snippets folder as the webassembly will look for
                     // unhashed versions of the .js files. The folder though can be hashed.
                     if let Some(path_str) = path.to_str() {
-                        if path_str.contains("snippets") && path.is_file(){
+                        if path_str.contains("snippets") && path.is_file() {
                             continue;
                         }
                     }
