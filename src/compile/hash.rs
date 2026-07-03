@@ -33,42 +33,52 @@ pub fn add_hashes_to_site(proj: &Project) -> Result<()> {
             .clone()
             .without_last()
             .join("__wasm_split.______________________.js");
-        let new_wasm_split = &renamed_files[&old_wasm_split];
-        replace_in_file(new_wasm_split, &renamed_files, &pkg_dir, false);
+        let new_wasm_split = renamed_files[&old_wasm_split].clone();
+        replace_in_file(&new_wasm_split, &renamed_files, &pkg_dir, false);
 
-        let old_wasm_split_filename = old_wasm_split.file_name().unwrap();
-        let new_wasm_split_filename = new_wasm_split.file_name().unwrap();
+        let old_wasm_split_filename = old_wasm_split.file_name().unwrap().to_string();
+        let new_wasm_split_filename = new_wasm_split.file_name().unwrap().to_string();
 
-        for entry in fs::read_dir(&pkg_dir)? {
-            let entry = entry?;
-            let path = entry.path();
-            if path.is_file() {
-                if let Some(filename) = path.file_name().and_then(|f| f.to_str()) {
-                    if filename.ends_with(".wasm") {
-                        replace_in_binary_file(
-                            &Utf8PathBuf::try_from(path).unwrap(),
-                            old_wasm_split_filename,
-                            new_wasm_split_filename,
-                        );
-                    } else if filename.starts_with("__wasm_split_manifest") {
-                        replace_in_file(
-                            &Utf8PathBuf::try_from(path).unwrap(),
-                            &renamed_files,
-                            &pkg_dir,
-                            true,
-                        );
-                    } else if filename.starts_with("__wasm_split") {
-                        replace_in_file(
-                            &Utf8PathBuf::try_from(path).unwrap(),
-                            &renamed_files,
-                            &pkg_dir,
-                            false,
-                        );
-                    }
-                }
-            }
+        replace_wasm_split_references(
+            &pkg_dir,
+            &old_wasm_split_filename,
+            &new_wasm_split_filename,
+            &renamed_files,
+        )?;
+
+        // we've just rewritten the contents of `new_wasm_split` to use the
+        // new, hashed names, so its own hash is stale; recalculate it and propagate
+        // the new filename to consumers
+        let new_hash = Base64UrlUnpadded::encode_string(
+            &Md5::new()
+                .chain_update(fs::read(&new_wasm_split)?)
+                .finalize(),
+        );
+
+        if new_hash != files_to_hashes[&old_wasm_split] {
+            let rehashed_filename = format!("__wasm_split.{new_hash}.js");
+            let mut rehashed_path = new_wasm_split.clone();
+            rehashed_path.set_file_name(&rehashed_filename);
+            fs::rename(&new_wasm_split, &rehashed_path).wrap_err_with(|| {
+                format!("Failed to rename {new_wasm_split} to {rehashed_path}")
+            })?;
+
+            let rehash_path_map = HashMap::from([(new_wasm_split.clone(), rehashed_path.clone())]);
+            replace_wasm_split_references(
+                &pkg_dir,
+                &new_wasm_split_filename,
+                &rehashed_filename,
+                &rehash_path_map,
+            )?;
+            replace_in_file(
+                &renamed_files[&proj.lib.js_file.dest],
+                &rehash_path_map,
+                &pkg_dir,
+                false,
+            );
         }
-        Some(&files_to_hashes[&old_wasm_split])
+
+        Some(new_hash)
     } else {
         None
     };
@@ -145,7 +155,7 @@ fn compute_front_file_hashes(proj: &Project) -> Result<HashMap<Utf8PathBuf, Stri
                     // in the snippets folder as the webassembly will look for
                     // unhashed versions of the .js files. The folder though can be hashed.
                     if let Some(path_str) = path.to_str() {
-                        if path_str.contains("snippets") && path.is_file(){
+                        if path_str.contains("snippets") && path.is_file() {
                             continue;
                         }
                     }
@@ -257,4 +267,47 @@ fn replace_in_binary_file(path: &Utf8PathBuf, old_wasm_split: &str, new_wasm_spl
     }
 
     fs::write(path, contents).expect("could not write file");
+}
+
+/// Replaces every reference to the `__wasm_split` loader's filename
+/// (`old_wasm_split_filename`) with its new filename (`new_wasm_split_filename`)
+/// across the chunk wasm binaries, the manifest, and any other
+/// `__wasm_split`-prefixed files in the pkg dir.
+fn replace_wasm_split_references(
+    pkg_dir: &Utf8PathBuf,
+    old_wasm_split_filename: &str,
+    new_wasm_split_filename: &str,
+    renamed_files: &HashMap<Utf8PathBuf, Utf8PathBuf>,
+) -> Result<()> {
+    for entry in fs::read_dir(pkg_dir)? {
+        let entry = entry?;
+        let path = entry.path();
+        if path.is_file() {
+            if let Some(filename) = path.file_name().and_then(|f| f.to_str()) {
+                if filename.ends_with(".wasm") {
+                    replace_in_binary_file(
+                        &Utf8PathBuf::try_from(path).unwrap(),
+                        old_wasm_split_filename,
+                        new_wasm_split_filename,
+                    );
+                } else if filename.starts_with("__wasm_split_manifest") {
+                    replace_in_file(
+                        &Utf8PathBuf::try_from(path).unwrap(),
+                        renamed_files,
+                        pkg_dir,
+                        true,
+                    );
+                } else if filename.starts_with("__wasm_split") {
+                    replace_in_file(
+                        &Utf8PathBuf::try_from(path).unwrap(),
+                        renamed_files,
+                        pkg_dir,
+                        false,
+                    );
+                }
+            }
+        }
+    }
+
+    Ok(())
 }
