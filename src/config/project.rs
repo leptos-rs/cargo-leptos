@@ -19,9 +19,9 @@ use super::{
 };
 
 /// If the site root path starts with this marker, the marker should be replaced with the Cargo target directory
-const CARGO_TARGET_DIR_MARKER: &str = "CARGO_TARGET_DIR";
+pub(super) const CARGO_TARGET_DIR_MARKER: &str = "CARGO_TARGET_DIR";
 /// If the site root path starts with this marker, the marker should be replaced with the Cargo target directory
-const CARGO_BUILD_TARGET_DIR_MARKER: &str = "CARGO_BUILD_TARGET_DIR";
+pub(super) const CARGO_BUILD_TARGET_DIR_MARKER: &str = "CARGO_BUILD_TARGET_DIR";
 
 const DEFAULT_GRACEFUL_SHUTDOWN: bool = true;
 const DEFAULT_GRACEFUL_SHUTDOWN_TIMEOUT_SECS: u64 = 10;
@@ -401,6 +401,12 @@ pub struct ProjectConfig {
     pub config_dir: Utf8PathBuf,
     #[serde(skip)]
     pub tmp_dir: Utf8PathBuf,
+
+    /// The Cargo target directory to use when building the WASM frontend.
+    ///
+    /// Defaults to `CARGO_TARGET_DIR/front`, preserving the default dedicated
+    /// frontend target root.
+    pub front_target_dir: Option<Utf8PathBuf>,
 
     /// Deprecated. Keeping this here to warn users to remove it in case they have it in their config.
     #[deprecated = "This option is deprecated since cargo-leptos 0.2.3 (when it became unconditionally enabled). You may remove it from your config."]
