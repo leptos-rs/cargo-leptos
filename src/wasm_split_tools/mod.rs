@@ -13,8 +13,10 @@ pub async fn wasm_split(
     let dest_file = &proj.lib.wasm_file.dest;
     let dest_dir = dest_file.parent().expect("no destination directory");
     let source_file = &proj.lib.wasm_file.source;
-    // split chunks are written relative to main JS file
-    let main_module = &format!("./{}.js", proj.lib.output_name);
+    // The split loader re-imports the main module by URL on the client, so this
+    // must be the public pkg URL path, never the (possibly absolute) on-disk
+    // `site-pkg-dir`.
+    let main_module = &format!("/{}/{}.js", proj.site.pkg_url_path(), proj.lib.output_name);
 
     let mut main_out_file = source_file.clone();
     main_out_file.set_file_name(format!("{}_split.wasm", source_file.file_stem().unwrap()));

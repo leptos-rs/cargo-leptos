@@ -65,6 +65,7 @@ fn test_project_dev() {
     LEPTOS_OUTPUT_NAME=example \
     LEPTOS_SITE_ROOT=target/site \
     LEPTOS_SITE_PKG_DIR=pkg \
+    LEPTOS_SITE_PKG_URL=pkg \
     LEPTOS_SITE_ADDR=127.0.0.1:3000 \
     LEPTOS_RELOAD_PORT=3001 \
     LEPTOS_LIB_DIR=. \
@@ -121,6 +122,7 @@ fn test_workspace_project1() {
     LEPTOS_OUTPUT_NAME=project1 \
     LEPTOS_SITE_ROOT=target/site/project1 \
     LEPTOS_SITE_PKG_DIR=pkg \
+    LEPTOS_SITE_PKG_URL=pkg \
     LEPTOS_SITE_ADDR=127.0.0.1:3000 \
     LEPTOS_RELOAD_PORT=3001 \
     LEPTOS_LIB_DIR=project1\\front \
@@ -137,6 +139,7 @@ fn test_workspace_project1() {
     LEPTOS_OUTPUT_NAME=project1 \
     LEPTOS_SITE_ROOT=target/site/project1 \
     LEPTOS_SITE_PKG_DIR=pkg \
+    LEPTOS_SITE_PKG_URL=pkg \
     LEPTOS_SITE_ADDR=127.0.0.1:3000 \
     LEPTOS_RELOAD_PORT=3001 \
     LEPTOS_LIB_DIR=project1/front \
