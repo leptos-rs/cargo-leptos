@@ -84,10 +84,8 @@ impl Interrupt {
 #[cfg(unix)]
 async fn wait_for_shutdown_signal() -> &'static str {
     use tokio::signal::unix::{signal, SignalKind};
-    let mut sigint =
-        signal(SignalKind::interrupt()).expect("failed to install SIGINT handler");
-    let mut sigterm =
-        signal(SignalKind::terminate()).expect("failed to install SIGTERM handler");
+    let mut sigint = signal(SignalKind::interrupt()).expect("failed to install SIGINT handler");
+    let mut sigterm = signal(SignalKind::terminate()).expect("failed to install SIGTERM handler");
     tokio::select! {
         _ = sigint.recv() => "SIGINT",
         _ = sigterm.recv() => "SIGTERM",

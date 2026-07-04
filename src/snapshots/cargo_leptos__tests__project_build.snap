@@ -1,0 +1,16 @@
+---
+source: src/tests.rs
+expression: site_dir.ls_ascii(0).unwrap_or_default()
+---
+site:
+  favicon.ico
+  pkg:
+    example.GoXEnccFyKY6BrVe2Ys1OQ.wasm
+    example.d.MqLNbywLXW7LThC7agh_Bw.ts
+    example.svlcNSGQoH2SNN0s9Oeu9w.css
+    example.wEBVcVpfxUs40wtYym6A2Q.js
+    example_bg.wasm.d.K1vGtXUJP7bl6g3Qu3mR_A.ts
+    snippets:
+      example-aa1bad4016d14fe4:
+        js:
+          foo.js
