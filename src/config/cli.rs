@@ -50,6 +50,18 @@ pub struct Opts {
     #[arg(long)]
     pub bin_cargo_args: Option<Vec<String>>,
 
+    /// Pass --locked to cargo which instructs it to assert that `Cargo.lock` will remain unchanged (see cargo help for more information)
+    #[arg(long)]
+    pub cargo_locked: bool,
+
+    /// Pass --offline to cargo which instructs it to run without accessing the network (see cargo help for more information)
+    #[arg(long)]
+    pub cargo_offline: bool,
+
+    /// Pass --frozen to cargo wich is equivalent to specifying both --cargo-locked and --cargo-offline (see cargo help for more information)
+    #[arg(long)]
+    pub cargo_frozen: bool,
+
     /// Include debug information in Wasm output. Includes source maps and DWARF debug info.
     #[arg(long)]
     pub wasm_debug: bool,

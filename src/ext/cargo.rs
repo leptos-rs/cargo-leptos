@@ -56,7 +56,7 @@ impl PackageExt for Package {
 }
 
 pub trait MetadataExt {
-    fn load_cleaned(manifest_path: &Utf8Path) -> Result<Metadata>;
+    fn load_cleaned(manifest_path: &Utf8Path, common_cargo_args: Vec<String>) -> Result<Metadata>;
     fn rel_target_dir(&self) -> Utf8PathBuf;
     fn package_for(&self, id: &PackageId) -> Option<&Package>;
     fn path_dependencies(&self, id: &PackageId) -> Vec<Utf8PathBuf>;
@@ -64,8 +64,11 @@ pub trait MetadataExt {
 }
 
 impl MetadataExt for Metadata {
-    fn load_cleaned(manifest_path: &Utf8Path) -> Result<Metadata> {
-        let mut metadata = MetadataCommand::new().manifest_path(manifest_path).exec()?;
+    fn load_cleaned(manifest_path: &Utf8Path, common_cargo_args: Vec<String>) -> Result<Metadata> {
+        let mut metadata = MetadataCommand::new()
+            .manifest_path(manifest_path)
+            .other_options(common_cargo_args)
+            .exec()?;
         metadata.workspace_root.clean_windows_path();
         metadata.target_directory.clean_windows_path();
         for package in &mut metadata.packages {

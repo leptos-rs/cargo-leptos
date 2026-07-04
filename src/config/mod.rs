@@ -55,7 +55,7 @@ impl Config {
         watch: bool,
         bin_args: Option<&[String]>,
     ) -> Result<Self> {
-        let metadata = Metadata::load_cleaned(manifest_path)?;
+        let metadata = Metadata::load_cleaned(manifest_path, common_cargo_args(&cli))?;
 
         let mut projects = Project::resolve(&cli, cwd, &metadata, watch, bin_args).dot()?;
 
@@ -115,4 +115,44 @@ fn names(projects: &[Arc<Project>]) -> String {
         .map(|p| p.name.clone())
         .collect::<Vec<_>>()
         .join(", ")
+}
+
+fn common_cargo_args(opts: &Opts) -> Vec<String> {
+    let mut args = Vec::new();
+    if opts.cargo_locked {
+        args.push("--locked".to_string());
+    }
+    if opts.cargo_offline {
+        args.push("--offline".to_string());
+    }
+    if opts.cargo_frozen {
+        args.push("--frozen".to_string());
+    }
+    args
+}
+
+fn bin_cargo_args(opts: &Opts, project_config: &ProjectConfig) -> Vec<String> {
+    let mut cargo_opts = common_cargo_args(opts);
+    cargo_opts.extend(
+        opts.bin_cargo_args
+            .as_ref()
+            .or(project_config.bin_cargo_args.as_ref())
+            .into_iter()
+            .flatten()
+            .map(|arg| arg.clone()),
+    );
+    cargo_opts
+}
+
+fn lib_cargo_args(opts: &Opts, project_config: &ProjectConfig) -> Vec<String> {
+    let mut cargo_opts = common_cargo_args(opts);
+    cargo_opts.extend(
+        opts.lib_cargo_args
+            .as_ref()
+            .or(project_config.lib_cargo_args.as_ref())
+            .into_iter()
+            .flatten()
+            .map(|arg| arg.clone()),
+    );
+    cargo_opts
 }

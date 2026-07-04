@@ -1,0 +1,12 @@
+[package]
+name = "project-with-outdated-lock"
+version = "0.0.0"
+edition = "2024"
+
+[package.metadata.leptos]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+leptos = "0.8.20"

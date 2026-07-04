@@ -3,7 +3,7 @@ use cargo_metadata::{Metadata, Target};
 
 use super::{project::ProjectDefinition, Profile, ProjectConfig};
 use crate::{
-    config::Opts,
+    config::{bin_cargo_args, Opts},
     ext::{MetadataExt, PathBufExt, PathExt},
     internal_prelude::*,
 };
@@ -21,7 +21,7 @@ pub struct BinPackage {
     pub target_triple: Option<String>,
     pub target_dir: Option<String>,
     pub cargo_command: Option<String>,
-    pub cargo_args: Option<Vec<String>>,
+    pub cargo_args: Vec<String>,
     pub bin_args: Option<Vec<String>>,
 }
 
@@ -124,10 +124,7 @@ impl BinPackage {
             src_paths.push(rel_dir.join("src"));
         }
 
-        let cargo_args = cli
-            .bin_cargo_args
-            .clone()
-            .or_else(|| config.bin_cargo_args.clone());
+        let cargo_args = bin_cargo_args(cli, config);
 
         debug!("BEFORE BIN {:?}", config.bin_cargo_command);
         Ok(Self {

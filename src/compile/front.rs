@@ -117,9 +117,7 @@ pub fn build_cargo_front_cmd(
     }
 
     // Add cargo flags to cargo command
-    if let Some(cargo_args) = &proj.lib.cargo_args {
-        args.extend_from_slice(cargo_args);
-    }
+    args.extend_from_slice(&proj.lib.cargo_args);
 
     proj.lib.profile.add_to_args(&mut args);
 
