@@ -24,8 +24,38 @@ pub fn os_arch() -> Result<(&'static str, &'static str)> {
     Ok((target_os, target_arch))
 }
 
+/// Whether the *host* uses linux and musl libc. Best-effort detection at runtime, but
+/// falls back to compile time if it fails.
 pub fn is_linux_musl_env() -> bool {
-    cfg!(target_os = "linux") && cfg!(target_env = "musl")
+    #[cfg(not(target_os = "linux"))]
+    {
+        false
+    }
+    #[cfg(target_os = "linux")]
+    {
+        use std::sync::OnceLock;
+
+        static IS_MUSL: OnceLock<bool> = OnceLock::new();
+        *IS_MUSL.get_or_init(|| detect_host_libc_is_musl().unwrap_or(cfg!(target_env = "musl")))
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn detect_host_libc_is_musl() -> Option<bool> {
+    use regex::Regex;
+    use std::process::Command;
+    use std::sync::LazyLock;
+
+    static LIBC_RE: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r"(?i)(musl)|glibc|gnu libc|gnu c library").unwrap());
+
+    let detect = |stream: &[u8]| {
+        let text = String::from_utf8_lossy(stream);
+        LIBC_RE.captures(&text).map(|caps| caps.get(1).is_some()) // 'musl' capture group
+    };
+
+    let output = Command::new("ldd").arg("--version").output().ok()?;
+    detect(&output.stdout).or_else(|| detect(&output.stderr))
 }
 
 pub trait StrAdditions {
