@@ -1,5 +1,5 @@
 use crate::{
-    config::Opts,
+    config::{lib_cargo_args, Opts},
     ext::{MetadataExt, PackageExt, PathBufExt, PathExt},
     internal_prelude::*,
     logger::GRAY,
@@ -82,7 +82,7 @@ pub struct LibPackage {
     pub src_paths: Vec<Utf8PathBuf>,
     pub front_target_path: Utf8PathBuf,
     pub profile: Profile,
-    pub cargo_args: Option<Vec<String>>,
+    pub cargo_args: Vec<String>,
 }
 
 impl LibPackage {
@@ -166,10 +166,7 @@ impl LibPackage {
         }
 
         let front_target_path = front_target_paths.abs;
-        let cargo_args = cli
-            .lib_cargo_args
-            .clone()
-            .or_else(|| config.lib_cargo_args.clone());
+        let cargo_args = lib_cargo_args(cli, config);
 
         Ok(Self {
             name,

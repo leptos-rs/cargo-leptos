@@ -120,9 +120,7 @@ pub fn build_cargo_server_cmd(
 
     debug!("BIN CARGO ARGS: {:?}", &proj.bin.cargo_args);
     // Add cargo flags to cargo command
-    if let Some(cargo_args) = &proj.bin.cargo_args {
-        args.extend_from_slice(cargo_args);
-    }
+    args.extend_from_slice(&proj.bin.cargo_args);
     proj.bin.profile.add_to_args(&mut args);
 
     if let Some(add_args) = additional_args {
