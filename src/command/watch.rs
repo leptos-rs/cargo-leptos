@@ -8,9 +8,9 @@ use crate::{
 };
 use leptos_hot_reload::ViewMacros;
 use std::sync::Arc;
+use tokio::join;
 use tokio::sync::broadcast::error::RecvError;
 use tokio::task::JoinHandle;
-use tokio::{join, try_join};
 
 pub async fn watch(proj: &Arc<Project>) -> Result<()> {
     // even if the build fails, we continue
@@ -95,14 +95,38 @@ pub async fn runner(proj: &Arc<Project>) -> Result<()> {
         clearscreen::clear()?;
     }
 
-    let server_hdl = compile::server(proj, &changes).await;
-    let front_hdl = compile::front(proj, &changes).await;
-    let assets_hdl = compile::assets(proj, &changes).await;
-    let style_hdl = compile::style(proj, &changes).await;
+    // Honor `--frontend-only` / `--server-only` on rebuilds the same way the
+    // initial `build_proj` does, so the flags apply uniformly (see issue #670).
+    let needs_frontend = !proj.build_server_only;
+    let needs_server = !proj.build_frontend_only;
 
-    let (server, front, assets, style) = try_join!(server_hdl, front_hdl, assets_hdl, style_hdl)?;
+    // Spawn all enabled compiles up front so they run concurrently, then join them.
+    let mut server_hdl = None;
+    if needs_server {
+        server_hdl = Some(compile::server(proj, &changes).await);
+    }
+    let mut front_hdl = None;
+    let mut assets_hdl = None;
+    let mut style_hdl = None;
+    if needs_frontend {
+        front_hdl = Some(compile::front(proj, &changes).await);
+        assets_hdl = Some(compile::assets(proj, &changes).await);
+        style_hdl = Some(compile::style(proj, &changes).await);
+    }
 
-    let outcomes = vec![server?, front?, assets?, style?];
+    let mut outcomes = Vec::new();
+    if let Some(hdl) = server_hdl {
+        outcomes.push(hdl.await??);
+    }
+    if let Some(hdl) = front_hdl {
+        outcomes.push(hdl.await??);
+    }
+    if let Some(hdl) = assets_hdl {
+        outcomes.push(hdl.await??);
+    }
+    if let Some(hdl) = style_hdl {
+        outcomes.push(hdl.await??);
+    }
 
     let interrupted = outcomes.contains(&Outcome::Stopped);
     if interrupted {
