@@ -297,17 +297,100 @@ fn replace_wasm_split_references(
                         pkg_dir,
                         true,
                     );
-                } else if filename.starts_with("__wasm_split") {
-                    replace_in_file(
-                        &Utf8PathBuf::try_from(path).unwrap(),
-                        renamed_files,
-                        pkg_dir,
-                        false,
-                    );
                 }
             }
         }
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+
+    #[test]
+    fn does_not_repatch_the_wasm_split_loader_it_already_patched_1() {
+        let pkg_dir = Utf8PathBuf::from_path_buf(
+            std::env::temp_dir().join("cargo_leptos_hash_rs_wasm_split_repatch_test_1"),
+        )
+        .unwrap();
+        let _ = fs::remove_dir_all(&pkg_dir);
+        fs::create_dir_all(&pkg_dir).unwrap();
+
+        let old_wasm_split_filename = "__wasm_split.______________________.js";
+        let new_wasm_split_filename = "__wasm_split.NEWSPLITHASH12345678901.js";
+        let main_js_file = "website.js";
+        let main_js_file_hashed = "website.ABCDEFGHIJKLMNOPQRSTUVW.js";
+        let loader_path = pkg_dir.join(new_wasm_split_filename);
+
+        // `already_patched` is the state after `add_hashes_to_site`'s explicit `replace_in_file` call
+        // which will have patched the loader's own reference to the hashed main JS file.
+        let already_patched = format!("import {{ initSync }} from \"/pkg/{main_js_file_hashed}\";");
+        fs::write(&loader_path, &already_patched).unwrap();
+
+        let renamed_files = HashMap::from([(
+            pkg_dir.join(main_js_file),
+            pkg_dir.join(main_js_file_hashed),
+        )]);
+
+        replace_wasm_split_references(
+            &pkg_dir,
+            old_wasm_split_filename,
+            new_wasm_split_filename,
+            &renamed_files,
+        )
+        .unwrap();
+
+        let contents = fs::read_to_string(&loader_path).unwrap();
+        fs::remove_dir_all(&pkg_dir).unwrap();
+
+        assert_eq!(
+            contents, already_patched,
+            "loader file was patched a second time, corrupting its own reference"
+        );
+    }
+
+    #[test]
+    fn does_not_repatch_the_wasm_split_loader_it_already_patched_2() {
+        let pkg_dir = Utf8PathBuf::from_path_buf(
+            std::env::temp_dir().join("cargo_leptos_hash_rs_wasm_split_repatch_test_2"),
+        )
+        .unwrap();
+        let _ = fs::remove_dir_all(&pkg_dir);
+        fs::create_dir_all(&pkg_dir).unwrap();
+
+        let old_wasm_split_filename = "__wasm_split.______________________.js";
+        let new_wasm_split_filename = "__wasm_split.NEWSPLITHASH12345678901.js";
+        let main_js_file = "website.js";
+        let main_js_file_hashed = "website.jsABCDEFGHIJKLMNOPQRSTU.js";
+        let loader_path = pkg_dir.join(new_wasm_split_filename);
+
+        // `already_patched` is the state after `add_hashes_to_site`'s explicit `replace_in_file` call
+        // which will have patched the loader's own reference to the hashed main JS file.
+        let already_patched = format!("import {{ initSync }} from \"/pkg/{main_js_file_hashed}\";");
+        fs::write(&loader_path, &already_patched).unwrap();
+
+        let renamed_files = HashMap::from([(
+            pkg_dir.join(main_js_file),
+            pkg_dir.join(main_js_file_hashed),
+        )]);
+
+        replace_wasm_split_references(
+            &pkg_dir,
+            old_wasm_split_filename,
+            new_wasm_split_filename,
+            &renamed_files,
+        )
+        .unwrap();
+
+        let contents = fs::read_to_string(&loader_path).unwrap();
+        fs::remove_dir_all(&pkg_dir).unwrap();
+
+        assert_eq!(
+            contents, already_patched,
+            "loader file was patched a second time, corrupting its own reference"
+        );
+    }
 }
