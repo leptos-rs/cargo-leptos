@@ -47,6 +47,7 @@ Config {
                 ),
                 browserquery: "defaults",
                 tailwind: None,
+                lightningcss: None,
                 site_file: SiteFile {
                     dest: "target/site/project1/pkg/project1.css",
                     site: "pkg/project1.css",

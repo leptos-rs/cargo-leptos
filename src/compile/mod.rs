@@ -5,6 +5,7 @@ mod assets;
 mod change;
 mod front;
 mod hash;
+mod lightningcss;
 mod sass;
 mod server;
 mod style;

@@ -30,11 +30,19 @@ pub async fn spawn(proj: &Arc<Project>) -> JoinHandle<()> {
 
     let mut site_addr = SITE_ADDR.write().await;
     *site_addr = proj.site.addr;
-    if let Some(file) = &proj.style.file {
+
+    let css_site_path = if let Some(file) = &proj.style.file {
+        Some(&file.site)
+    } else if proj.style.tailwind.is_some() || proj.style.lightningcss.is_some() {
+        Some(&proj.style.site_file.site)
+    } else {
+        None
+    };
+
+    if let Some(site_path) = css_site_path {
         let mut css_link = CSS_LINK.write().await;
         // Always use `/` as separator in links
-        *css_link = file
-            .site
+        *css_link = site_path
             .components()
             .map(|c| c.as_str())
             .collect::<Vec<_>>()

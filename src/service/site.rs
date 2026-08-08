@@ -157,11 +157,75 @@ impl Site {
         let new_hash = seahash::hash(data);
         let cur_hash = self.current_hash(&file.site, &file.dest).await?;
 
+        debug!(
+            "Site updated_with: {} bytes to {}, new_hash={}, cur_hash={:?}",
+            data.len(),
+            file.dest,
+            new_hash,
+            cur_hash
+        );
+
         if Some(new_hash) == cur_hash {
+            debug!("Site updated_with: hash unchanged, skipping write");
             return Ok(false);
         }
 
+        info!(
+            "Site updated_with: WRITING {} bytes to {}",
+            data.len(),
+            file.dest
+        );
+
+        // Check file state BEFORE write
+        let before_size = match tokio::fs::metadata(&file.dest).await {
+            Ok(meta) => Some(meta.len()),
+            Err(_) => None,
+        };
+        debug!(
+            "Site updated_with: file size BEFORE write: {:?}",
+            before_size
+        );
+
         fs::write(&file.dest, &data).await?;
+
+        // Verify the write IMMEDIATELY
+        let after_size = match tokio::fs::metadata(&file.dest).await {
+            Ok(meta) => meta.len(),
+            Err(e) => {
+                error!("Site updated_with: failed to get metadata after write: {e}");
+                0
+            }
+        };
+
+        if after_size != data.len() as u64 {
+            error!(
+                "Site updated_with: SIZE MISMATCH! Wrote {} bytes but file is {} bytes: {}",
+                data.len(),
+                after_size,
+                file.dest
+            );
+        } else {
+            info!(
+                "Site updated_with: VERIFIED {} bytes written to {}",
+                after_size, file.dest
+            );
+        }
+
+        // Double-check by reading the file back
+        match tokio::fs::read(&file.dest).await {
+            Ok(contents) => {
+                if contents.len() != data.len() {
+                    error!(
+                        "Site updated_with: READ-BACK MISMATCH! Expected {} bytes, got {} bytes",
+                        data.len(),
+                        contents.len()
+                    );
+                }
+            }
+            Err(e) => {
+                error!("Site updated_with: failed to read back file: {e}");
+            }
+        }
 
         let mut reg = self.file_reg.write().await;
         reg.insert(file.site.to_string(), new_hash);
