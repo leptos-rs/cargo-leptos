@@ -1,4 +1,4 @@
-use super::ChangeSet;
+use super::{Change, ChangeSet};
 use crate::{
     config::Project,
     ext::{
@@ -13,7 +13,8 @@ use crate::{
     wasm_split_tools,
 };
 use camino::{Utf8Path, Utf8PathBuf};
-use std::sync::Arc;
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex, OnceLock, PoisonError};
 use swc::{
     config::{IsModule, JsMinifyOptions},
     try_with_handler, BoolOrDataConfig, JsMinifyExtras,
@@ -53,11 +54,29 @@ pub async fn front(
         debug!("Cargo envs: {}", GRAY.paint(envs));
         info!("Cargo finished {}", GRAY.paint(line));
 
+        let previous_wasm_hash = take_front_wasm_hash(&proj);
+
+        let input_wasm = tokio::fs::read(&proj.lib.wasm_file.source).await?;
+        let wasm_hash = seahash::hash(&input_wasm);
+        if front_wasm_unchanged(&proj, previous_wasm_hash, wasm_hash) {
+            // Re-insert the entry taken above: the output it describes is
+            // untouched.
+            record_front_wasm(&proj, wasm_hash);
+            info!("Finished generating JS/WASM for front (wasm unchanged; reusing previous output)");
+            // A watched additional file can influence the running app without
+            // changing the wasm (that is why it is watched): keep the browser
+            // reload the full pipeline used to cause for those changes.
+            let product = if changes.contains(&Change::Additional) {
+                Product::Assets
+            } else {
+                Product::None
+            };
+            return Ok(Outcome::Success(product));
+        }
+
         if proj.split {
             info!("Front splitting out lazy-loaded WASM files");
             let start_time = tokio::time::Instant::now();
-
-            let input_wasm = tokio::fs::read(&proj.lib.wasm_file.source).await?;
 
             let split_files = wasm_split_tools::wasm_split(&input_wasm, false, &proj).await?;
             files.extend(split_files);
@@ -67,8 +86,60 @@ pub async fn front(
             info!("Finished WASM splitting in {:?}", end_time - start_time);
         }
 
-        bindgen(&proj, &files).await.dot()
+        // The module can be gigabytes; release it before wasm-bindgen loads
+        // its own copy.
+        drop(input_wasm);
+
+        let outcome = bindgen(&proj, &files).await.dot();
+        if let Ok(Outcome::Success(_)) = &outcome {
+            record_front_wasm(&proj, wasm_hash);
+        }
+        outcome
     })
+}
+
+fn front_wasm_registry() -> &'static Mutex<HashMap<String, u64>> {
+    static REGISTRY: OnceLock<Mutex<HashMap<String, u64>>> = OnceLock::new();
+    REGISTRY.get_or_init(Default::default)
+}
+
+/// Removes and returns the hash of the wasm consumed by the last successful
+/// split/bindgen run in this process. Taken rather than read so the entry
+/// only exists while the output it describes is intact: the caller re-inserts
+/// it once this run ends with the output known good, and a failed or
+/// interrupted run leaves it absent.
+fn take_front_wasm_hash(proj: &Project) -> Option<u64> {
+    front_wasm_registry()
+        .lock()
+        .unwrap_or_else(PoisonError::into_inner)
+        .remove(proj.lib.wasm_file.source.as_str())
+}
+
+/// Reports whether the front wasm artifact (hashed into `hash`) is
+/// byte-identical to the input of the last successful split/bindgen run in
+/// this process (`previous_hash`, taken from the registry by the caller).
+///
+/// A rebuild caused by a change that only affects the server binary (or a
+/// watched non-Rust file) does not alter the wasm: splitting and wasm-bindgen
+/// would reproduce identical output, so the caller can skip them and keep the
+/// previous output. A content hash rather than mtime, because a relink from
+/// unchanged inputs rewrites the file without changing its bytes. The first
+/// build in a process always reports "changed" (the site directory is
+/// repopulated at startup), and so does a missing bindgen output.
+fn front_wasm_unchanged(proj: &Project, previous_hash: Option<u64>, hash: u64) -> bool {
+    previous_hash == Some(hash) && proj.lib.js_file.dest.exists()
+}
+
+/// Records the hash of the wasm the current site output was generated from,
+/// so the next build can skip the pipeline when the wasm is unchanged.
+/// Reached only with that output known good -- after a successful pipeline
+/// run, or on a skip that left it untouched; after a failed or interrupted
+/// run the entry stays absent and the pipeline runs again.
+fn record_front_wasm(proj: &Project, hash: u64) {
+    front_wasm_registry()
+        .lock()
+        .unwrap_or_else(PoisonError::into_inner)
+        .insert(proj.lib.wasm_file.source.to_string(), hash);
 }
 
 pub fn front_cargo_process(
