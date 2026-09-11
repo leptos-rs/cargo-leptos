@@ -1,0 +1,47 @@
+diff --git a/src/compile/front.rs b/src/compile/front.rs
+index e85ea09..5381328 100644
+--- a/src/compile/front.rs
++++ b/src/compile/front.rs
+@@ -54,9 +54,12 @@ pub async fn front(
+         debug!("Cargo envs: {}", GRAY.paint(envs));
+         info!("Cargo finished {}", GRAY.paint(line));
+ 
+-        let wasm_hash = front_wasm_hash(&proj).await;
++        let input_wasm = tokio::fs::read(&proj.lib.wasm_file.source).await?;
++        let wasm_hash = Some(seahash::hash(&input_wasm));
+         if front_wasm_unchanged(&proj, wasm_hash) {
+-            info!("Finished generating JS/WASM for front (wasm unchanged; reusing previous output)");
++            info!(
++                "Finished generating JS/WASM for front (wasm unchanged; reusing previous output)"
++            );
+             // A watched additional file can influence the running app without
+             // changing the wasm (that is why it is watched): keep the browser
+             // reload the full pipeline used to cause for those changes.
+@@ -72,8 +75,6 @@ pub async fn front(
+             info!("Front splitting out lazy-loaded WASM files");
+             let start_time = tokio::time::Instant::now();
+ 
+-            let input_wasm = tokio::fs::read(&proj.lib.wasm_file.source).await?;
+-
+             let split_files = wasm_split_tools::wasm_split(&input_wasm, false, &proj).await?;
+             files.extend(split_files);
+ 
+@@ -90,18 +91,6 @@ pub async fn front(
+     })
+ }
+ 
+-/// Content hash of the cargo-emitted front wasm artifact, observed between
+-/// the cargo build and the split/bindgen pipeline. `None` when the artifact
+-/// cannot be read. The artifact was just written by cargo, so the read is
+-/// served from the page cache and costs a fraction of a second even on
+-/// gigabyte modules.
+-async fn front_wasm_hash(proj: &Project) -> Option<u64> {
+-    let data = tokio::fs::read(proj.lib.wasm_file.source.as_std_path())
+-        .await
+-        .ok()?;
+-    Some(seahash::hash(&data))
+-}
+-
+ fn front_wasm_registry() -> &'static Mutex<HashMap<String, u64>> {
+     static REGISTRY: OnceLock<Mutex<HashMap<String, u64>>> = OnceLock::new();
+     REGISTRY.get_or_init(Default::default)
