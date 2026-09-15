@@ -22,7 +22,6 @@ pub fn add_hashes_to_site(proj: &Project) -> Result<()> {
         &renamed_files[&proj.lib.js_file.dest],
         &renamed_files,
         &pkg_dir,
-        false,
     );
 
     let wasm_split_hash = if proj.split {
@@ -34,7 +33,7 @@ pub fn add_hashes_to_site(proj: &Project) -> Result<()> {
             .without_last()
             .join("__wasm_split.______________________.js");
         let new_wasm_split = renamed_files[&old_wasm_split].clone();
-        replace_in_file(&new_wasm_split, &renamed_files, &pkg_dir, false);
+        replace_in_file(&new_wasm_split, &renamed_files, &pkg_dir);
 
         let old_wasm_split_filename = old_wasm_split.file_name().unwrap().to_string();
         let new_wasm_split_filename = new_wasm_split.file_name().unwrap().to_string();
@@ -74,7 +73,6 @@ pub fn add_hashes_to_site(proj: &Project) -> Result<()> {
                 &renamed_files[&proj.lib.js_file.dest],
                 &rehash_path_map,
                 &pkg_dir,
-                false,
             );
         }
 
@@ -228,7 +226,6 @@ fn replace_in_file(
     path: &Utf8PathBuf,
     old_to_new_paths: &HashMap<Utf8PathBuf, Utf8PathBuf>,
     root_dir: &Utf8PathBuf,
-    omit_extension: bool,
 ) {
     let mut contents = fs::read_to_string(path)
         .unwrap_or_else(|e| panic!("error {e}: could not read file {path}"));
@@ -241,16 +238,60 @@ fn replace_in_file(
             .strip_prefix(root_dir)
             .expect("could not strip root path");
 
-        if omit_extension {
-            let old_path = old_path.as_str().trim_end_matches(".wasm");
-            let new_path = new_path.as_str().trim_end_matches(".wasm");
-            contents = contents.replace(old_path, new_path);
-        } else {
-            contents = contents.replace(old_path.as_str(), new_path.as_str());
-        }
+        contents = contents.replace(old_path.as_str(), new_path.as_str());
     }
 
     fs::write(path, contents).expect("could not write file");
+}
+
+fn rewrite_manifest(
+    path: &Utf8PathBuf,
+    renamed_files: &HashMap<Utf8PathBuf, Utf8PathBuf>,
+    pkg_dir: &Utf8PathBuf,
+) -> Result<()> {
+    let contents =
+        fs::read_to_string(path).wrap_err_with(|| format!("Failed to read manifest {path}"))?;
+
+    let mut manifest: serde_json::Value = serde_json::from_str(&contents)
+        .wrap_err_with(|| format!("Failed to parse manifest {path}"))?;
+
+    let stem_map: HashMap<&str, &str> = renamed_files
+        .iter()
+        .filter_map(|(old_path, new_path)| {
+            let old_rel = old_path.strip_prefix(pkg_dir).ok()?;
+            let new_rel = new_path.strip_prefix(pkg_dir).ok()?;
+            let old_stem = old_rel.as_str().strip_suffix(".wasm")?;
+            let new_stem = new_rel.as_str().strip_suffix(".wasm")?;
+            Some((old_stem, new_stem))
+        })
+        .collect();
+
+    fn replace_in_value(value: &mut serde_json::Value, map: &HashMap<&str, &str>) {
+        match value {
+            serde_json::Value::Array(arr) => {
+                for item in arr {
+                    replace_in_value(item, map);
+                }
+            }
+            serde_json::Value::String(s) => {
+                if let Some(new) = map.get(s.as_str()) {
+                    *s = new.to_string();
+                }
+            }
+            serde_json::Value::Object(obj) => {
+                for (_, v) in obj.iter_mut() {
+                    replace_in_value(v, map);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    replace_in_value(&mut manifest, &stem_map);
+
+    let new_contents = serde_json::to_string(&manifest)
+        .wrap_err_with(|| format!("Failed to serialize manifest {path}"))?;
+    fs::write(path, new_contents).wrap_err_with(|| format!("Failed to write manifest {path}"))
 }
 
 fn replace_in_binary_file(path: &Utf8PathBuf, old_wasm_split: &str, new_wasm_split: &str) {
@@ -291,12 +332,11 @@ fn replace_wasm_split_references(
                         new_wasm_split_filename,
                     );
                 } else if filename.starts_with("__wasm_split_manifest") {
-                    replace_in_file(
+                    rewrite_manifest(
                         &Utf8PathBuf::try_from(path).unwrap(),
                         renamed_files,
                         pkg_dir,
-                        true,
-                    );
+                    )?;
                 }
             }
         }
@@ -392,5 +432,59 @@ mod tests {
             contents, already_patched,
             "loader file was patched a second time, corrupting its own reference"
         );
+    }
+
+    #[test]
+    fn manifest_rewrite_matches_whole_chunk_names() {
+        let pkg_dir = Utf8PathBuf::from_path_buf(
+            std::env::temp_dir().join("cargo_leptos_hash_rs_manifest_prefix_test"),
+        )
+        .unwrap();
+        let _ = fs::remove_dir_all(&pkg_dir);
+        fs::create_dir_all(&pkg_dir).unwrap();
+
+        let manifest = pkg_dir.join("__wasm_split_manifest.json");
+        fs::write(
+            &manifest,
+            r#"{"load_a": ["chunk_1", "chunk_10", "chunk_100"], "load_b": ["chunk_10"]}"#,
+        )
+        .unwrap();
+
+        let renamed_files = HashMap::from([
+            (
+                pkg_dir.join("chunk_1.wasm"),
+                pkg_dir.join("chunk_1.AAAAAAAAAAAAAAAAAAAAAA.wasm"),
+            ),
+            (
+                pkg_dir.join("chunk_10.wasm"),
+                pkg_dir.join("chunk_10.BBBBBBBBBBBBBBBBBBBBBB.wasm"),
+            ),
+            (
+                pkg_dir.join("chunk_100.wasm"),
+                pkg_dir.join("chunk_100.CCCCCCCCCCCCCCCCCCCCCC.wasm"),
+            ),
+        ]);
+
+        replace_wasm_split_references(
+            &pkg_dir,
+            "__wasm_split.______________________.js",
+            "__wasm_split.NEWSPLITHASH12345678901.js",
+            &renamed_files,
+        )
+        .unwrap();
+
+        let rewritten: HashMap<String, Vec<String>> =
+            serde_json::from_str(&fs::read_to_string(&manifest).unwrap()).unwrap();
+        fs::remove_dir_all(&pkg_dir).unwrap();
+
+        assert_eq!(
+            rewritten["load_a"],
+            [
+                "chunk_1.AAAAAAAAAAAAAAAAAAAAAA",
+                "chunk_10.BBBBBBBBBBBBBBBBBBBBBB",
+                "chunk_100.CCCCCCCCCCCCCCCCCCCCCC",
+            ]
+        );
+        assert_eq!(rewritten["load_b"], ["chunk_10.BBBBBBBBBBBBBBBBBBBBBB"]);
     }
 }
