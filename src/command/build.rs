@@ -54,15 +54,18 @@ async fn build_frontend(proj: &Arc<Project>, changes: &ChangeSet) -> Result<bool
 
 /// Build the project. Returns true if the build was successful
 pub async fn build_proj(proj: &Arc<Project>) -> Result<bool> {
-    if proj.site.root_dir.exists() {
-        fs::rm_dir_content(&proj.site.root_dir).await.dot()?;
-    } else {
-        fs::create_dir_all(&proj.site.root_dir).await.dot()?;
-    }
-
     let changes = ChangeSet::all_changes();
     let needs_frontend = !proj.build_server_only;
     let needs_server = !proj.build_frontend_only;
+
+    if !proj.site.root_dir.exists() {
+        fs::create_dir_all(&proj.site.root_dir).await.dot()?;
+    } else if needs_frontend {
+        // only delete the existing frontend build content if we're rebuilding it, not for a
+        // server-only build
+        fs::rm_dir_content(&proj.site.root_dir).await.dot()?;
+    }
+
     let can_parallelize = !(proj.hash_files || proj.release && proj.precompress);
 
     if can_parallelize && needs_frontend && needs_server {
