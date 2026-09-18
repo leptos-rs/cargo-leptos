@@ -64,6 +64,7 @@ clap_complete = "4.5.66"
 wasm_split_cli_support = "0.2.3"
 clearscreen = "4.0.5"
 tokio-process-tools = "0.11.0"
+futures = "0.3"
 
 [dev-dependencies]
 insta = { version = "1.46", features = ["yaml"] }
