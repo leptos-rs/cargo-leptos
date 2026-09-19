@@ -76,6 +76,7 @@ pub struct Site {
     pub reload: SocketAddr,
     pub root_dir: Utf8PathBuf,
     pub pkg_dir: Utf8PathBuf,
+    pub pkg_url: Utf8PathBuf,
     file_reg: RwLock<HashMap<String, u64>>,
     ext_file_reg: RwLock<HashMap<String, u64>>,
 }
@@ -87,6 +88,7 @@ impl fmt::Debug for Site {
             .field("reload", &self.reload)
             .field("root_dir", &self.root_dir)
             .field("pkg_dir", &self.pkg_dir)
+            .field("pkg_url", &self.pkg_url)
             .field("file_reg", &self.file_reg.blocking_read())
             .field("ext_file_reg", &self.ext_file_reg.blocking_read())
             .finish()
@@ -102,6 +104,7 @@ impl Site {
             reload,
             root_dir: config.site_root.clone(),
             pkg_dir: config.site_pkg_dir.clone(),
+            pkg_url: config.site_pkg_url.clone(),
             file_reg: Default::default(),
             ext_file_reg: Default::default(),
         }
@@ -109,6 +112,16 @@ impl Site {
 
     pub fn root_relative_pkg_dir(&self) -> Utf8PathBuf {
         self.root_dir.join(&self.pkg_dir)
+    }
+
+    /// The URL path segment the pkg assets are served under on the client.
+    ///
+    /// Mirrors `LeptosOptions::pkg_url_path` in `leptos_config`: this is the
+    /// public `site-pkg-url` (default `pkg`), decoupled from the on-disk
+    /// `site-pkg-dir`, so an absolute `site-pkg-dir` is never exposed to the
+    /// client.
+    pub fn pkg_url_path(&self) -> &str {
+        self.pkg_url.as_str().trim_matches('/')
     }
     /// check if the file changed
     pub async fn did_external_file_change(&self, to: &Utf8Path) -> Result<bool> {
