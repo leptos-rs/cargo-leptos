@@ -12,8 +12,10 @@ use crate::{
     signal::{Interrupt, Outcome, Product},
     wasm_split_tools,
 };
-use camino::{Utf8Path, Utf8PathBuf};
+use camino::Utf8PathBuf;
+use futures::{stream, StreamExt, TryStreamExt};
 use std::collections::HashMap;
+use std::path::Path;
 use std::sync::{Arc, Mutex, OnceLock, PoisonError};
 use swc::{
     config::{IsModule, JsMinifyOptions},
@@ -62,7 +64,9 @@ pub async fn front(
             // Re-insert the entry taken above: the output it describes is
             // untouched.
             record_front_wasm(&proj, wasm_hash);
-            info!("Finished generating JS/WASM for front (wasm unchanged; reusing previous output)");
+            info!(
+                "Finished generating JS/WASM for front (wasm unchanged; reusing previous output)"
+            );
             // A watched additional file can influence the running app without
             // changing the wasm (that is why it is watched): keep the browser
             // reload the full pipeline used to cause for those changes.
@@ -90,7 +94,7 @@ pub async fn front(
         // its own copy.
         drop(input_wasm);
 
-        let outcome = bindgen(&proj, &files).await.dot();
+        let outcome = bindgen(proj.clone(), files).await.dot();
         if let Ok(Outcome::Success(_)) = &outcome {
             record_front_wasm(&proj, wasm_hash);
         }
@@ -211,7 +215,7 @@ pub fn build_cargo_front_cmd(
     (envs_str, line)
 }
 
-async fn bindgen(proj: &Project, all_wasm_files: &[Utf8PathBuf]) -> Result<Outcome<Product>> {
+async fn bindgen(proj: Arc<Project>, all_wasm_files: Vec<Utf8PathBuf>) -> Result<Outcome<Product>> {
     let wasm_file = &proj.lib.wasm_file;
 
     info!("Front generating JS/WASM with wasm-bindgen");
@@ -300,9 +304,17 @@ async fn bindgen(proj: &Project, all_wasm_files: &[Utf8PathBuf]) -> Result<Outco
             .dot()?;
 
             if proj.release {
-                for file in all_wasm_files {
-                    optimize(proj, file).await?;
-                }
+                let parallelism = std::thread::available_parallelism()
+                    .map(std::num::NonZero::get)
+                    .unwrap_or(1);
+
+                let wasm_opt = Exe::WasmOpt.get().await.dot()?;
+
+                stream::iter(all_wasm_files)
+                    .map(|file| optimize(&proj, file, &wasm_opt))
+                    .buffer_unordered(parallelism)
+                    .try_collect::<()>()
+                    .await?;
             }
 
             let wasm_optimize_end_time = tokio::time::Instant::now();
@@ -341,9 +353,7 @@ async fn bindgen(proj: &Project, all_wasm_files: &[Utf8PathBuf]) -> Result<Outco
     }
 }
 
-async fn optimize(proj: &Project, file: &Utf8Path) -> Result<()> {
-    let wasm_opt = Exe::WasmOpt.get().await.dot()?;
-
+async fn optimize(proj: &Project, file: Utf8PathBuf, wasm_opt: &Path) -> Result<()> {
     let mut args: Vec<&str> = if let Some(features) = &proj.wasm_opt_features {
         features.iter().map(|f| f.as_str()).collect()
     } else {
