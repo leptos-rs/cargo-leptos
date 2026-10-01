@@ -297,7 +297,7 @@ async fn bindgen(proj: Arc<Project>, all_wasm_files: Vec<Utf8PathBuf>) -> Result
                     .dest
                     .clone()
                     .without_last()
-                    .join(format!("{}_bg.wasm", &proj.lib.output_name)),
+                    .join(format!("{}_bg.wasm", proj.lib.output_name)),
                 &wasm_file.dest,
             )
             .await
@@ -328,7 +328,7 @@ async fn bindgen(proj: Arc<Project>, all_wasm_files: Vec<Utf8PathBuf>) -> Result
                     .dest
                     .clone()
                     .without_last()
-                    .join(format!("{}.js", &proj.lib.output_name));
+                    .join(format!("{}.js", proj.lib.output_name));
                 let js = fs::read_to_string(&js_file_name).await?;
                 proj.site
                     .updated_with(&proj.lib.js_file, minify(&js)?.as_bytes())

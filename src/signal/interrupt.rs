@@ -49,7 +49,7 @@ impl Interrupt {
     pub fn send(changes: &[Change]) {
         let mut ch = SOURCE_CHANGES.blocking_write();
         for change in changes {
-            ch.add(change.clone());
+            ch.add(*change);
         }
         drop(ch);
 
