@@ -41,7 +41,7 @@ impl ExeMeta {
     }
 
     fn get_name(&self) -> String {
-        format!("{}-{}", &self.name, &self.version)
+        format!("{}-{}", self.name, self.version)
     }
 
     async fn cached(&self) -> Result<PathBuf> {

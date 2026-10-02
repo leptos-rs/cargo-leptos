@@ -139,7 +139,7 @@ fn bin_cargo_args(opts: &Opts, project_config: &ProjectConfig) -> Vec<String> {
             .or(project_config.bin_cargo_args.as_ref())
             .into_iter()
             .flatten()
-            .map(|arg| arg.clone()),
+            .cloned(),
     );
     cargo_opts
 }
@@ -152,7 +152,7 @@ fn lib_cargo_args(opts: &Opts, project_config: &ProjectConfig) -> Vec<String> {
             .or(project_config.lib_cargo_args.as_ref())
             .into_iter()
             .flatten()
-            .map(|arg| arg.clone()),
+            .cloned(),
     );
     cargo_opts
 }
