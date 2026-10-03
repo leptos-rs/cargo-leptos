@@ -11,7 +11,7 @@ use axum::{
     routing::get,
     Router,
 };
-use camino::Utf8Path;
+use camino::{Utf8Component, Utf8Path};
 use serde::Serialize;
 use std::sync::LazyLock;
 use std::{fmt::Display, net::SocketAddr, sync::Arc};
@@ -87,8 +87,10 @@ fn css_link_path(site: &Utf8Path, pkg_url: Option<&Utf8Path>) -> String {
         }
         None => site.to_owned(),
     };
-    // Always use `/` as separator in links
+    // Always use `/` as separator in links, and drop the root of an absolute
+    // site-pkg-dir as leptos does
     site.components()
+        .filter(|c| !matches!(c, Utf8Component::Prefix(_) | Utf8Component::RootDir))
         .map(|c| c.as_str())
         .collect::<Vec<_>>()
         .join("/")
@@ -209,6 +211,11 @@ mod tests {
         assert_eq!(
             css_link_path(Utf8Path::new("pkg/app.css"), None),
             "pkg/app.css"
+        );
+        // leptos trims the leading `/` of an absolute site-pkg-dir in the url
+        assert_eq!(
+            css_link_path(Utf8Path::new("/srv/site/pkg/app.css"), None),
+            "srv/site/pkg/app.css"
         );
     }
 
