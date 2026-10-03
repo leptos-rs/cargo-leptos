@@ -11,6 +11,7 @@ use axum::{
     routing::get,
     Router,
 };
+use camino::Utf8Path;
 use serde::Serialize;
 use std::sync::LazyLock;
 use std::{fmt::Display, net::SocketAddr, sync::Arc};
@@ -32,13 +33,7 @@ pub async fn spawn(proj: &Arc<Project>) -> JoinHandle<()> {
     *site_addr = proj.site.addr;
     if let Some(file) = &proj.style.file {
         let mut css_link = CSS_LINK.write().await;
-        // Always use `/` as separator in links
-        *css_link = file
-            .site
-            .components()
-            .map(|c| c.as_str())
-            .collect::<Vec<_>>()
-            .join("/");
+        *css_link = css_link_path(&file.site, proj.site.pkg_url.as_deref());
     }
 
     tokio::spawn(async move {
@@ -82,6 +77,21 @@ pub async fn spawn(proj: &Arc<Project>) -> JoinHandle<()> {
             },
         }
     })
+}
+
+/// The browser looks the stylesheet up by its URL, which is under `site-pkg-url` when set
+fn css_link_path(site: &Utf8Path, pkg_url: Option<&Utf8Path>) -> String {
+    let site = match pkg_url {
+        Some(url) => {
+            Utf8Path::new(url.as_str().trim_matches('/')).join(site.file_name().unwrap_or_default())
+        }
+        None => site.to_owned(),
+    };
+    // Always use `/` as separator in links
+    site.components()
+        .map(|c| c.as_str())
+        .collect::<Vec<_>>()
+        .join("/")
 }
 
 async fn websocket_handler(ws: WebSocketUpgrade) -> impl IntoResponse {
@@ -187,5 +197,39 @@ impl Display for BrowserMessage {
         } else {
             write!(f, "reload all")
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn css_link_path_defaults_to_site_pkg_dir() {
+        assert_eq!(
+            css_link_path(Utf8Path::new("pkg/app.css"), None),
+            "pkg/app.css"
+        );
+    }
+
+    #[test]
+    fn css_link_path_uses_site_pkg_url() {
+        let site = Utf8Path::new("pkg/app.css");
+        assert_eq!(
+            css_link_path(site, Some(Utf8Path::new("assets"))),
+            "assets/app.css"
+        );
+        assert_eq!(
+            css_link_path(site, Some(Utf8Path::new("/static/assets/"))),
+            "static/assets/app.css"
+        );
+        // an absolute site-pkg-dir is never exposed
+        assert_eq!(
+            css_link_path(
+                Utf8Path::new("/srv/site/pkg/app.css"),
+                Some(Utf8Path::new("pkg"))
+            ),
+            "pkg/app.css"
+        );
     }
 }
