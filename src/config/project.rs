@@ -206,7 +206,6 @@ impl Project {
             ("LEPTOS_OUTPUT_NAME", self.lib.output_name.to_string()),
             ("LEPTOS_SITE_ROOT", self.site.root_dir.to_string()),
             ("LEPTOS_SITE_PKG_DIR", self.site.pkg_dir.to_string()),
-            ("LEPTOS_SITE_PKG_URL", self.site.pkg_url.to_string()),
             ("LEPTOS_SITE_ADDR", self.site.addr.to_string()),
             ("LEPTOS_RELOAD_PORT", self.site.reload.port().to_string()),
             ("LEPTOS_LIB_DIR", self.lib.rel_dir.to_string()),
@@ -214,6 +213,9 @@ impl Project {
             ("LEPTOS_JS_MINIFY", self.js_minify.to_string()),
             ("LEPTOS_HASH_FILES", self.hash_files.to_string()),
         ];
+        if let Some(pkg_url) = self.site.pkg_url.as_ref() {
+            vec.push(("LEPTOS_SITE_PKG_URL", pkg_url.to_string()));
+        }
         if self.hash_files {
             vec.push(("LEPTOS_HASH_FILE_NAME", self.hash_file.rel.to_string()));
         }
@@ -280,11 +282,7 @@ pub struct ProjectConfig {
     pub site_root: Utf8PathBuf,
     #[serde(default = "default_pkg_dir")]
     pub site_pkg_dir: Utf8PathBuf,
-    /// The public URL path under which the pkg assets are served to the client.
-    /// Decoupled from `site_pkg_dir` (the on-disk location) so an absolute
-    /// `site_pkg_dir` is never exposed in client URLs. Defaults to `pkg`.
-    #[serde(default = "default_pkg_dir")]
-    pub site_pkg_url: Utf8PathBuf,
+    pub site_pkg_url: Option<Utf8PathBuf>,
     pub style_file: Option<Utf8PathBuf>,
     /// text file where the hashes of the frontend files are stored
     pub hash_file_name: Option<Utf8PathBuf>,
