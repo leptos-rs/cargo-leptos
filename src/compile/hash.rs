@@ -7,6 +7,7 @@ use base64ct::{Base64UrlUnpadded, Encoding};
 use camino::Utf8PathBuf;
 use eyre::{ContextCompat, Result};
 use md5::{Digest, Md5};
+use memchr::memmem;
 use std::{collections::HashMap, fs};
 
 ///Adds hashes to the filenames of the css, js, and wasm files in the output
@@ -301,10 +302,14 @@ fn replace_in_binary_file(path: &Utf8PathBuf, old_wasm_split: &str, new_wasm_spl
     let old_path = old_wasm_split.as_bytes();
     let new_path = new_wasm_split.as_bytes();
 
-    for i in 0..=contents.len() - old_path.len() {
-        if contents[i..].starts_with(old_path) {
-            contents[i..(i + old_path.len())].clone_from_slice(new_path);
-        }
+    let needles = memmem::find_iter(&contents, old_wasm_split).collect::<Vec<_>>();
+
+    if needles.is_empty() {
+        return;
+    }
+
+    for i in needles {
+        contents[i..(i + old_path.len())].clone_from_slice(new_path);
     }
 
     fs::write(path, contents).expect("could not write file");
@@ -349,6 +354,57 @@ fn replace_wasm_split_references(
 mod tests {
     use super::*;
     use std::fs;
+
+    #[test]
+    fn replace_in_binary_file_passes_with_smaller_file_name() {
+        let pkg_dir = Utf8PathBuf::from_path_buf(
+            std::env::temp_dir().join("cargo_leptos_binary_file_replace_1"),
+        )
+        .unwrap();
+        let _ = fs::remove_dir_all(&pkg_dir);
+        fs::create_dir_all(&pkg_dir).unwrap();
+
+        let old_wasm_split_filename = "__wasm_split.______________________.js";
+        let new_wasm_split_filename = "__wasm_split.NEWSPLITHASH1234567891.js";
+
+        assert_eq!(old_wasm_split_filename.len(), new_wasm_split_filename.len());
+
+        let chunk_1 = pkg_dir.join("chunk_1.wasm");
+        fs::write(
+            &chunk_1,
+            format!("\0asm-{old_wasm_split_filename}--{old_wasm_split_filename}"),
+        )
+        .unwrap();
+
+        let chunk_2 = pkg_dir.join("chunk_2.wasm");
+        fs::write(&chunk_2, b"\0asm").unwrap();
+
+        let chunk_3 = pkg_dir.join("chunk_3.wasm");
+        fs::write(&chunk_3, b"\0asm--smth-else-entirely").unwrap();
+        let chunk_3_modified_timestamp = chunk_3.metadata().unwrap().modified().unwrap();
+
+        replace_in_binary_file(&chunk_1, old_wasm_split_filename, new_wasm_split_filename);
+        replace_in_binary_file(&chunk_2, old_wasm_split_filename, new_wasm_split_filename);
+        replace_in_binary_file(&chunk_3, old_wasm_split_filename, new_wasm_split_filename);
+
+        assert_eq!(
+            fs::read(&chunk_1).unwrap(),
+            format!("\0asm-{new_wasm_split_filename}--{new_wasm_split_filename}").into_bytes()
+        );
+
+        assert_eq!(fs::read(&chunk_2).unwrap(), "\0asm".as_bytes());
+        assert_eq!(
+            fs::read(&chunk_3).unwrap(),
+            "\0asm--smth-else-entirely".as_bytes()
+        );
+
+        // This file shouldn't be modified - not a match for the old file name
+        let chunk_3_modified_timestamp_v2 = chunk_3.metadata().unwrap().modified().unwrap();
+
+        assert_eq!(chunk_3_modified_timestamp, chunk_3_modified_timestamp_v2);
+
+        fs::remove_dir_all(&pkg_dir).unwrap();
+    }
 
     #[test]
     fn does_not_repatch_the_wasm_split_loader_it_already_patched_1() {

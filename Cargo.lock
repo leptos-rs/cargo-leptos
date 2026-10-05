@@ -658,6 +658,7 @@ dependencies = [
  "libflate",
  "lightningcss",
  "md-5",
+ "memchr",
  "notify-debouncer-full",
  "pathdiff",
  "regex",
