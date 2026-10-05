@@ -99,9 +99,12 @@ impl MetadataExt for Metadata {
         let mut set = HashSet::new();
         resolve.deps_for(id, &mut set);
 
+        let mut seen = HashSet::new();
+
         for pck in &self.packages {
             if set.contains(&pck.id) {
-                found.extend(pck.path_dependencies())
+                let deps = pck.path_dependencies();
+                found.extend(deps.into_iter().filter(|path| seen.insert(path.clone())))
             }
         }
 
