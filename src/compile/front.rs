@@ -308,10 +308,16 @@ async fn bindgen(proj: Arc<Project>, all_wasm_files: Vec<Utf8PathBuf>) -> Result
                     .map(std::num::NonZero::get)
                     .unwrap_or(1);
 
+                let chunks = all_wasm_files.len().saturating_sub(1);
+                let cores_per_chunk = parallelism / chunks.clamp(1, parallelism);
+
                 let wasm_opt = Exe::WasmOpt.get().await.dot()?;
 
                 stream::iter(all_wasm_files)
-                    .map(|file| optimize(&proj, file, &wasm_opt))
+                    .map(|file| {
+                        let cores = (file != wasm_file.dest).then_some(cores_per_chunk);
+                        optimize(&proj, file, &wasm_opt, cores)
+                    })
                     .buffer_unordered(parallelism)
                     .try_collect::<()>()
                     .await?;
@@ -353,7 +359,12 @@ async fn bindgen(proj: Arc<Project>, all_wasm_files: Vec<Utf8PathBuf>) -> Result
     }
 }
 
-async fn optimize(proj: &Project, file: Utf8PathBuf, wasm_opt: &Path) -> Result<()> {
+async fn optimize(
+    proj: &Project,
+    file: Utf8PathBuf,
+    wasm_opt: &Path,
+    cores: Option<usize>,
+) -> Result<()> {
     let mut args: Vec<&str> = if let Some(features) = &proj.wasm_opt_features {
         features.iter().map(|f| f.as_str()).collect()
     } else {
@@ -367,6 +378,9 @@ async fn optimize(proj: &Project, file: Utf8PathBuf, wasm_opt: &Path) -> Result<
 
     let mut cmd = Command::new(wasm_opt);
     cmd.args(args.clone());
+    if let Some(cores) = cores {
+        cmd.env("BINARYEN_CORES", cores.to_string());
+    }
 
     trace!("WASM running wasm-opt {}", args.join(" "));
 
