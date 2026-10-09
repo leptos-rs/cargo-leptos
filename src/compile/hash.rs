@@ -607,6 +607,13 @@ mod tests {
     }
 
     #[test]
+    fn chunk_smaller_than_loader_name_is_left_alone() {
+        // regression test for https://github.com/leptos-rs/cargo-leptos/issues/686
+        let files = hash_split_build("tiny_chunk", "");
+        assert_eq!(files["chunk_1.wasm"].1, b"\0asm\x01\0\0\0");
+    }
+
+    #[test]
     fn single_pass_rewrite_does_not_repatch_new_names() {
         let rewritten = rewrite(
             Rewrite::Text,
