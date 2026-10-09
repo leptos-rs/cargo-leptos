@@ -4,91 +4,75 @@ use crate::{
     internal_prelude::*,
 };
 use base64ct::{Base64UrlUnpadded, Encoding};
-use camino::Utf8PathBuf;
+use camino::{Utf8Path, Utf8PathBuf};
 use eyre::{ContextCompat, Result};
 use md5::{Digest, Md5};
-use std::{collections::HashMap, fs};
+use regex::bytes::{Captures, Regex};
+use std::{
+    cmp,
+    collections::{HashMap, HashSet},
+    fs,
+};
+
+const HASH_PLACEHOLDER: &str = "______________________";
+
+/// How to rewrite references to hashed files inside a file.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Rewrite {
+    /// Left as is
+    None,
+    /// JS: the pkg-relative path of any hashed file is replaced.
+    Text,
+    /// WASM: only names that contain the hash placeholder are replaced.
+    /// Changing the length of the name would corrupt the binary.
+    Binary,
+    /// Chunk names that appear as JSON strings are replaced.
+    Manifest,
+}
+
+struct HashedFile {
+    path: Utf8PathBuf,
+    hash: String,
+}
 
 ///Adds hashes to the filenames of the css, js, and wasm files in the output
 pub fn add_hashes_to_site(proj: &Project) -> Result<()> {
-    let files_to_hashes = compute_front_file_hashes(proj).dot()?;
-
-    debug!("Hash computed: {files_to_hashes:?}");
-
-    let renamed_files = rename_files(&files_to_hashes).dot()?;
     let pkg_dir = proj.site.root_relative_pkg_dir();
-
-    replace_in_file(
-        &renamed_files[&proj.lib.js_file.dest],
-        &renamed_files,
-        &pkg_dir,
-    );
-
-    let wasm_split_hash = if proj.split {
-        let old_wasm_split = proj
-            .lib
-            .js_file
-            .dest
+    let main_js = &proj.lib.js_file.dest;
+    let wasm_split = proj.split.then(|| {
+        main_js
             .clone()
             .without_last()
-            .join("__wasm_split.______________________.js");
-        let new_wasm_split = renamed_files[&old_wasm_split].clone();
-        replace_in_file(&new_wasm_split, &renamed_files, &pkg_dir);
+            .join(format!("__wasm_split.{HASH_PLACEHOLDER}.js"))
+    });
 
-        let old_wasm_split_filename = old_wasm_split.file_name().unwrap().to_string();
-        let new_wasm_split_filename = new_wasm_split.file_name().unwrap().to_string();
+    let files = front_files(proj).dot()?;
+    let hashed = hash_files(&pkg_dir, &files, |path| {
+        rewrite_kind(path, &pkg_dir, main_js, wasm_split.as_deref())
+    })
+    .dot()?;
 
-        replace_wasm_split_references(
-            &pkg_dir,
-            &old_wasm_split_filename,
-            &new_wasm_split_filename,
-            &renamed_files,
-        )?;
+    for (old, new) in &hashed {
+        debug!("Hashed {old} to {}", new.path);
+    }
 
-        // we've just rewritten the contents of `new_wasm_split` to use the
-        // new, hashed names, so its own hash is stale; recalculate it and propagate
-        // the new filename to consumers
-        let new_hash = Base64UrlUnpadded::encode_string(
-            &Md5::new()
-                .chain_update(fs::read(&new_wasm_split)?)
-                .finalize(),
-        );
-
-        if new_hash != files_to_hashes[&old_wasm_split] {
-            let rehashed_filename = format!("__wasm_split.{new_hash}.js");
-            let mut rehashed_path = new_wasm_split.clone();
-            rehashed_path.set_file_name(&rehashed_filename);
-            fs::rename(&new_wasm_split, &rehashed_path).wrap_err_with(|| {
-                format!("Failed to rename {new_wasm_split} to {rehashed_path}")
-            })?;
-
-            let rehash_path_map = HashMap::from([(new_wasm_split.clone(), rehashed_path.clone())]);
-            replace_wasm_split_references(
-                &pkg_dir,
-                &new_wasm_split_filename,
-                &rehashed_filename,
-                &rehash_path_map,
-            )?;
-            replace_in_file(
-                &renamed_files[&proj.lib.js_file.dest],
-                &rehash_path_map,
-                &pkg_dir,
-            );
-        }
-
-        Some(new_hash)
-    } else {
-        None
+    let hash_of = |path: &Utf8PathBuf| {
+        hashed
+            .get(path)
+            .map(|f| f.hash.as_str())
+            .wrap_err_with(|| format!("{path} was not hashed"))
     };
 
-    let manifest_file = files_to_hashes
+    let manifest_file = hashed
         .iter()
-        .find_map(|(f, h)| (f.ends_with("__wasm_split_manifest.json")).then_some(h));
+        .find_map(|(f, h)| (f.ends_with("__wasm_split_manifest.json")).then_some(&h.hash));
     let manifest_file = manifest_file
         .map(|f| format!("manifest: {f}\n"))
         .unwrap_or_default();
-    let wasm_split_file = wasm_split_hash
-        .map(|f| format!("split: {f}\n"))
+    let wasm_split_file = wasm_split
+        .as_ref()
+        .map(|f| hash_of(f).map(|h| format!("split: {h}\n")))
+        .transpose()?
         .unwrap_or_default();
 
     fs::create_dir_all(
@@ -103,24 +87,20 @@ pub fn add_hashes_to_site(proj: &Project) -> Result<()> {
         &proj.hash_file.abs,
         format!(
             "{}: {}\n{}: {}\n{}: {}\n{}{}",
-            proj.lib
-                .js_file
-                .dest
-                .extension()
-                .ok_or(eyre!("no extension"))?,
-            files_to_hashes[&proj.lib.js_file.dest],
+            main_js.extension().ok_or(eyre!("no extension"))?,
+            hash_of(main_js)?,
             proj.lib
                 .wasm_file
                 .dest
                 .extension()
                 .ok_or(eyre!("no extension"))?,
-            files_to_hashes[&proj.lib.wasm_file.dest],
+            hash_of(&proj.lib.wasm_file.dest)?,
             proj.style
                 .site_file
                 .dest
                 .extension()
                 .ok_or(eyre!("no extension"))?,
-            files_to_hashes[&proj.style.site_file.dest],
+            hash_of(&proj.style.site_file.dest)?,
             manifest_file,
             wasm_split_file
         ),
@@ -132,8 +112,32 @@ pub fn add_hashes_to_site(proj: &Project) -> Result<()> {
     Ok(())
 }
 
-fn compute_front_file_hashes(proj: &Project) -> Result<HashMap<Utf8PathBuf, String>> {
-    let mut files_to_hashes = HashMap::new();
+fn rewrite_kind(
+    path: &Utf8Path,
+    pkg_dir: &Utf8Path,
+    main_js: &Utf8Path,
+    wasm_split: Option<&Utf8Path>,
+) -> Rewrite {
+    if path == main_js || Some(path) == wasm_split {
+        return Rewrite::Text;
+    }
+    // wasm-split output is in the pkg dir
+    if wasm_split.is_none() || path.parent() != Some(pkg_dir) {
+        return Rewrite::None;
+    }
+    let file_name = path.file_name().unwrap_or_default();
+    if path.extension() == Some("wasm") {
+        Rewrite::Binary
+    } else if file_name.starts_with("__wasm_split_manifest") {
+        Rewrite::Manifest
+    } else {
+        Rewrite::None
+    }
+}
+
+/// A sorted list of files in the pkg dir that get hashed.
+fn front_files(proj: &Project) -> Result<Vec<Utf8PathBuf>> {
+    let mut files = Vec::new();
 
     let mut stack = vec![proj.site.root_relative_pkg_dir().into_std_path_buf()];
 
@@ -158,9 +162,7 @@ fn compute_front_file_hashes(proj: &Project) -> Result<HashMap<Utf8PathBuf, Stri
                         }
                     }
 
-                    let hash = Base64UrlUnpadded::encode_string(
-                        &Md5::new().chain_update(fs::read(&path)?).finalize(),
-                    );
+                    let hash = md5_hash(&fs::read(&path)?);
 
                     if path
                         .file_stem()
@@ -170,10 +172,7 @@ fn compute_front_file_hashes(proj: &Project) -> Result<HashMap<Utf8PathBuf, Stri
                         continue;
                     }
 
-                    files_to_hashes.insert(
-                        Utf8PathBuf::from_path_buf(path).expect("invalid path"),
-                        hash,
-                    );
+                    files.push(Utf8PathBuf::from_path_buf(path).expect("invalid path"));
                 } else if path.is_dir() {
                     stack.push(path);
                 }
@@ -181,301 +180,473 @@ fn compute_front_file_hashes(proj: &Project) -> Result<HashMap<Utf8PathBuf, Stri
         }
     }
 
-    Ok(files_to_hashes)
+    files.sort();
+    Ok(files)
 }
 
-fn rename_files(
-    files_to_hashes: &HashMap<Utf8PathBuf, String>,
-) -> Result<HashMap<Utf8PathBuf, Utf8PathBuf>> {
-    const HASH_PLACEHOLDER: &str = "______________________";
-    let mut old_to_new_paths = HashMap::new();
+/// Hashes `files`, rewriting any references one file contains to another file's
+/// path into the hashed version of that file's path.
+///
+/// Ensures that files are hashed after the files they refer to have already
+/// had their own references rewritten.
+///
+/// For files in cycles (like the main JS file and `__wasm_split` loader),
+/// create one hash of all original contents, then rewrite them at once.
+fn hash_files(
+    pkg_dir: &Utf8Path,
+    files: &[Utf8PathBuf],
+    rewrite_kind: impl Fn(&Utf8Path) -> Rewrite,
+) -> Result<HashMap<Utf8PathBuf, HashedFile>> {
+    let rels = files
+        .iter()
+        .map(|f| {
+            f.strip_prefix(pkg_dir)
+                .map(|rel| rel.to_string())
+                .wrap_err_with(|| format!("{f} is not in {pkg_dir}"))
+        })
+        .collect::<Result<Vec<_>>>()?;
+    let kinds = files.iter().map(|f| rewrite_kind(f)).collect::<Vec<_>>();
+    let mut contents = files
+        .iter()
+        .map(|f| fs::read(f).wrap_err_with(|| format!("Failed to read {f}")))
+        .collect::<Result<Vec<_>>>()?;
+    let refs = (0..files.len())
+        .map(|i| references(kinds[i], &contents[i], &rels).wrap_err_with(|| files[i].to_string()))
+        .collect::<Result<Vec<_>>>()?;
 
-    for (path, hash) in files_to_hashes {
-        let mut new_path = path.clone();
+    let mut hashes: Vec<Option<String>> = vec![None; files.len()];
+    let mut new_rels: Vec<Option<String>> = vec![None; files.len()];
 
-        let file_name = new_path.file_name().unwrap_or_default();
-
-        let new_file_name = if file_name.contains(HASH_PLACEHOLDER) {
-            if hash.len() != HASH_PLACEHOLDER.len() {
-                return Err(anyhow!(
-                    "File hash length did not match placeholder hash length."
-                ));
+    // dependencies come before the files that refer to them
+    for group in strongly_connected_components(&refs) {
+        let is_cycle = group.len() > 1 || refs[group[0]].contains(&group[0]);
+        if is_cycle {
+            let mut group_hash = Md5::new();
+            for &i in &group {
+                group_hash.update(rels[i].as_bytes());
+                group_hash.update([0]);
+                group_hash.update((contents[i].len() as u64).to_le_bytes());
+                group_hash.update(&contents[i]);
+                for &r in refs[i].iter().filter(|r| !group.contains(r)) {
+                    group_hash.update(rels[r].as_bytes());
+                    group_hash.update([0]);
+                    group_hash.update(hashes[r].as_ref().unwrap().as_bytes());
+                }
             }
-            file_name.replace(HASH_PLACEHOLDER, hash)
+            let group_hash = group_hash.finalize();
+            for &i in &group {
+                let hash = Base64UrlUnpadded::encode_string(
+                    &Md5::new()
+                        .chain_update(&contents[i])
+                        .chain_update(group_hash)
+                        .finalize(),
+                );
+                new_rels[i] = Some(hashed_name(&rels[i], &hash)?);
+                hashes[i] = Some(hash);
+            }
+            for &i in &group {
+                contents[i] =
+                    rewrite(kinds[i], &contents[i], &renames(&refs[i], &rels, &new_rels))?;
+            }
         } else {
-            format!(
-                "{}.{}.{}",
-                path.file_stem().ok_or(eyre!("no file stem"))?,
-                hash,
-                path.extension().ok_or(eyre!("no extension"))?,
-            )
-        };
+            let i = group[0];
+            contents[i] = rewrite(kinds[i], &contents[i], &renames(&refs[i], &rels, &new_rels))?;
+            let hash = md5_hash(&contents[i]);
+            new_rels[i] = Some(hashed_name(&rels[i], &hash)?);
+            hashes[i] = Some(hash);
+        }
+    }
 
-        new_path.set_file_name(new_file_name);
-
+    let mut hashed = HashMap::new();
+    for (i, path) in files.iter().enumerate() {
+        if !refs[i].is_empty() {
+            fs::write(path, &contents[i]).wrap_err_with(|| format!("Failed to write {path}"))?;
+        }
+        let new_path = pkg_dir.join(new_rels[i].take().unwrap());
         fs::rename(path, &new_path)
             .wrap_err_with(|| format!("Failed to rename {path} to {new_path}"))?;
-
-        old_to_new_paths.insert(path.clone(), new_path);
+        hashed.insert(
+            path.clone(),
+            HashedFile {
+                path: new_path,
+                hash: hashes[i].take().unwrap(),
+            },
+        );
     }
 
-    Ok(old_to_new_paths)
+    Ok(hashed)
 }
 
-fn replace_in_file(
-    path: &Utf8PathBuf,
-    old_to_new_paths: &HashMap<Utf8PathBuf, Utf8PathBuf>,
-    root_dir: &Utf8PathBuf,
-) {
-    let mut contents = fs::read_to_string(path)
-        .unwrap_or_else(|e| panic!("error {e}: could not read file {path}"));
-
-    for (old_path, new_path) in old_to_new_paths {
-        let old_path = old_path
-            .strip_prefix(root_dir)
-            .expect("could not strip root path");
-        let new_path = new_path
-            .strip_prefix(root_dir)
-            .expect("could not strip root path");
-
-        contents = contents.replace(old_path.as_str(), new_path.as_str());
-    }
-
-    fs::write(path, contents).expect("could not write file");
+fn md5_hash(contents: &[u8]) -> String {
+    Base64UrlUnpadded::encode_string(&Md5::new().chain_update(contents).finalize())
 }
 
-fn rewrite_manifest(
-    path: &Utf8PathBuf,
-    renamed_files: &HashMap<Utf8PathBuf, Utf8PathBuf>,
-    pkg_dir: &Utf8PathBuf,
-) -> Result<()> {
-    let contents =
-        fs::read_to_string(path).wrap_err_with(|| format!("Failed to read manifest {path}"))?;
+fn hashed_name(rel: &str, hash: &str) -> Result<String> {
+    let mut path = Utf8PathBuf::from(rel);
+    let file_name = path.file_name().unwrap_or_default();
 
-    let mut manifest: serde_json::Value = serde_json::from_str(&contents)
-        .wrap_err_with(|| format!("Failed to parse manifest {path}"))?;
-
-    let stem_map: HashMap<&str, &str> = renamed_files
-        .iter()
-        .filter_map(|(old_path, new_path)| {
-            let old_rel = old_path.strip_prefix(pkg_dir).ok()?;
-            let new_rel = new_path.strip_prefix(pkg_dir).ok()?;
-            let old_stem = old_rel.as_str().strip_suffix(".wasm")?;
-            let new_stem = new_rel.as_str().strip_suffix(".wasm")?;
-            Some((old_stem, new_stem))
-        })
-        .collect();
-
-    fn replace_in_value(value: &mut serde_json::Value, map: &HashMap<&str, &str>) {
-        match value {
-            serde_json::Value::Array(arr) => {
-                for item in arr {
-                    replace_in_value(item, map);
-                }
-            }
-            serde_json::Value::String(s) => {
-                if let Some(new) = map.get(s.as_str()) {
-                    *s = new.to_string();
-                }
-            }
-            serde_json::Value::Object(obj) => {
-                for (_, v) in obj.iter_mut() {
-                    replace_in_value(v, map);
-                }
-            }
-            _ => {}
+    let new_file_name = if file_name.contains(HASH_PLACEHOLDER) {
+        if hash.len() != HASH_PLACEHOLDER.len() {
+            return Err(anyhow!(
+                "File hash length did not match placeholder hash length."
+            ));
         }
-    }
+        file_name.replace(HASH_PLACEHOLDER, hash)
+    } else {
+        format!(
+            "{}.{}.{}",
+            path.file_stem().ok_or(eyre!("no file stem"))?,
+            hash,
+            path.extension().ok_or(eyre!("no extension"))?,
+        )
+    };
 
-    replace_in_value(&mut manifest, &stem_map);
-
-    let new_contents = serde_json::to_string(&manifest)
-        .wrap_err_with(|| format!("Failed to serialize manifest {path}"))?;
-    fs::write(path, new_contents).wrap_err_with(|| format!("Failed to write manifest {path}"))
+    path.set_file_name(new_file_name);
+    Ok(path.into_string())
 }
 
-fn replace_in_binary_file(path: &Utf8PathBuf, old_wasm_split: &str, new_wasm_split: &str) {
-    let mut contents =
-        fs::read(path).unwrap_or_else(|e| panic!("error {e}: could not read file {path}"));
+fn renames<'a>(
+    refs: &[usize],
+    rels: &'a [String],
+    new_rels: &'a [Option<String>],
+) -> Vec<(&'a str, &'a str)> {
+    refs.iter()
+        .map(|&r| (rels[r].as_str(), new_rels[r].as_deref().unwrap()))
+        .collect()
+}
 
-    let old_path = old_wasm_split.as_bytes();
-    let new_path = new_wasm_split.as_bytes();
-
-    for i in 0..=contents.len() - old_path.len() {
-        if contents[i..].starts_with(old_path) {
-            contents[i..(i + old_path.len())].clone_from_slice(new_path);
+fn references(kind: Rewrite, contents: &[u8], rels: &[String]) -> Result<Vec<usize>> {
+    let contains = |rel: &str| {
+        contents
+            .windows(rel.len())
+            .any(|window| window == rel.as_bytes())
+    };
+    Ok(match kind {
+        Rewrite::None => Vec::new(),
+        Rewrite::Text => (0..rels.len()).filter(|&i| contains(&rels[i])).collect(),
+        Rewrite::Binary => (0..rels.len())
+            .filter(|&i| rels[i].contains(HASH_PLACEHOLDER) && contains(&rels[i]))
+            .collect(),
+        Rewrite::Manifest => {
+            let manifest: serde_json::Value =
+                serde_json::from_slice(contents).wrap_err("Failed to parse manifest")?;
+            let mut strings = HashSet::new();
+            collect_strings(&manifest, &mut strings);
+            (0..rels.len())
+                .filter(|&i| {
+                    rels[i]
+                        .strip_suffix(".wasm")
+                        .is_some_and(|stem| strings.contains(stem))
+                })
+                .collect()
         }
-    }
-
-    fs::write(path, contents).expect("could not write file");
+    })
 }
 
-/// Replaces every reference to the `__wasm_split` loader's filename
-/// (`old_wasm_split_filename`) with its new filename (`new_wasm_split_filename`)
-/// across the chunk wasm binaries, the manifest, and any other
-/// `__wasm_split`-prefixed files in the pkg dir.
-fn replace_wasm_split_references(
-    pkg_dir: &Utf8PathBuf,
-    old_wasm_split_filename: &str,
-    new_wasm_split_filename: &str,
-    renamed_files: &HashMap<Utf8PathBuf, Utf8PathBuf>,
-) -> Result<()> {
-    for entry in fs::read_dir(pkg_dir)? {
-        let entry = entry?;
-        let path = entry.path();
-        if path.is_file() {
-            if let Some(filename) = path.file_name().and_then(|f| f.to_str()) {
-                if filename.ends_with(".wasm") {
-                    replace_in_binary_file(
-                        &Utf8PathBuf::try_from(path).unwrap(),
-                        old_wasm_split_filename,
-                        new_wasm_split_filename,
+fn rewrite(kind: Rewrite, contents: &[u8], renames: &[(&str, &str)]) -> Result<Vec<u8>> {
+    if renames.is_empty() {
+        return Ok(contents.to_vec());
+    }
+    match kind {
+        Rewrite::None => Ok(contents.to_vec()),
+        Rewrite::Text | Rewrite::Binary => {
+            if kind == Rewrite::Binary {
+                for (old, new) in renames {
+                    eyre::ensure!(
+                        old.len() == new.len(),
+                        "can't replace {old} with {new} in a binary file"
                     );
-                } else if filename.starts_with("__wasm_split_manifest") {
-                    rewrite_manifest(
-                        &Utf8PathBuf::try_from(path).unwrap(),
-                        renamed_files,
-                        pkg_dir,
-                    )?;
                 }
             }
+
+            let mut renames = renames.to_vec();
+            renames.sort_by_key(|(old, _)| cmp::Reverse(old.len()));
+            let names: HashMap<&[u8], &[u8]> = renames
+                .iter()
+                .map(|(old, new)| (old.as_bytes(), new.as_bytes()))
+                .collect();
+            let pattern = renames
+                .iter()
+                .map(|(old, _)| regex::escape(old))
+                .collect::<Vec<_>>()
+                .join("|");
+            let regex = Regex::new(&pattern)?;
+            Ok(regex
+                .replace_all(contents, |caps: &Captures| names[&caps[0]].to_vec())
+                .into_owned())
+        }
+        Rewrite::Manifest => {
+            let stems: HashMap<&str, &str> = renames
+                .iter()
+                .filter_map(|(old, new)| {
+                    Some((old.strip_suffix(".wasm")?, new.strip_suffix(".wasm")?))
+                })
+                .collect();
+            let mut manifest: serde_json::Value =
+                serde_json::from_slice(contents).wrap_err("Failed to parse manifest")?;
+            replace_strings(&mut manifest, &stems);
+            Ok(serde_json::to_vec(&manifest).wrap_err("Failed to serialize manifest")?)
+        }
+    }
+}
+
+fn collect_strings<'a>(value: &'a serde_json::Value, strings: &mut HashSet<&'a str>) {
+    match value {
+        serde_json::Value::Array(arr) => arr.iter().for_each(|v| collect_strings(v, strings)),
+        serde_json::Value::Object(obj) => obj.values().for_each(|v| collect_strings(v, strings)),
+        serde_json::Value::String(s) => {
+            strings.insert(s);
+        }
+        _ => {}
+    }
+}
+
+fn replace_strings(value: &mut serde_json::Value, map: &HashMap<&str, &str>) {
+    match value {
+        serde_json::Value::Array(arr) => arr.iter_mut().for_each(|v| replace_strings(v, map)),
+        serde_json::Value::Object(obj) => obj.values_mut().for_each(|v| replace_strings(v, map)),
+        serde_json::Value::String(s) => {
+            if let Some(new) = map.get(s.as_str()) {
+                *s = new.to_string();
+            }
+        }
+        _ => {}
+    }
+}
+
+fn strongly_connected_components(edges: &[Vec<usize>]) -> Vec<Vec<usize>> {
+    struct State<'a> {
+        edges: &'a [Vec<usize>],
+        index: Vec<Option<usize>>,
+        low: Vec<usize>,
+        on_stack: Vec<bool>,
+        stack: Vec<usize>,
+        next: usize,
+        components: Vec<Vec<usize>>,
+    }
+
+    fn visit(s: &mut State, v: usize) {
+        s.index[v] = Some(s.next);
+        s.low[v] = s.next;
+        s.next += 1;
+        s.stack.push(v);
+        s.on_stack[v] = true;
+
+        let edges = s.edges;
+        for &w in &edges[v] {
+            match s.index[w] {
+                None => {
+                    visit(s, w);
+                    s.low[v] = s.low[v].min(s.low[w]);
+                }
+                Some(index) if s.on_stack[w] => s.low[v] = s.low[v].min(index),
+                Some(_) => {}
+            }
+        }
+
+        if s.index[v] == Some(s.low[v]) {
+            let mut component = Vec::new();
+            loop {
+                let w = s.stack.pop().unwrap();
+                s.on_stack[w] = false;
+                component.push(w);
+                if w == v {
+                    break;
+                }
+            }
+            component.sort();
+            s.components.push(component);
         }
     }
 
-    Ok(())
+    let n = edges.len();
+    let mut state = State {
+        edges,
+        index: vec![None; n],
+        low: vec![0; n],
+        on_stack: vec![false; n],
+        stack: Vec::new(),
+        next: 0,
+        components: Vec::new(),
+    };
+    for v in 0..n {
+        if state.index[v].is_none() {
+            visit(&mut state, v);
+        }
+    }
+    state.components
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs;
 
-    #[test]
-    fn does_not_repatch_the_wasm_split_loader_it_already_patched_1() {
+    const LOADER: &str = "__wasm_split.______________________.js";
+
+    fn hash_split_build(name: &str, chunk: &str) -> HashMap<String, (String, Vec<u8>)> {
         let pkg_dir = Utf8PathBuf::from_path_buf(
-            std::env::temp_dir().join("cargo_leptos_hash_rs_wasm_split_repatch_test_1"),
+            std::env::temp_dir().join(format!("cargo_leptos_hash_rs_{name}")),
         )
         .unwrap();
         let _ = fs::remove_dir_all(&pkg_dir);
         fs::create_dir_all(&pkg_dir).unwrap();
 
-        let old_wasm_split_filename = "__wasm_split.______________________.js";
-        let new_wasm_split_filename = "__wasm_split.NEWSPLITHASH12345678901.js";
-        let main_js_file = "website.js";
-        let main_js_file_hashed = "website.ABCDEFGHIJKLMNOPQRSTUVW.js";
-        let loader_path = pkg_dir.join(new_wasm_split_filename);
+        let files = [
+            (
+                "website.js",
+                format!(r#"import * as split from "./{LOADER}"; fetch("website.wasm");"#),
+            ),
+            (
+                "website.wasm",
+                format!("\0asm\u{1}\0\0\0\u{2c}./{LOADER}\u{5}chunk"),
+            ),
+            (
+                LOADER,
+                r#"import { initSync } from "./website.js"; fetch(new URL("./chunk_1.wasm", import.meta.url));"#
+                    .to_string(),
+            ),
+            ("chunk_1.wasm", format!("\0asm\u{1}\0\0\0{chunk}")),
+            ("__wasm_split_manifest.json", r#"{"load":["chunk_1"]}"#.to_string()),
+            ("website.css", "body { color: red; }".to_string()),
+        ];
+        let mut paths = Vec::new();
+        for (file, contents) in &files {
+            fs::write(pkg_dir.join(file), contents).unwrap();
+            paths.push(pkg_dir.join(file));
+        }
+        paths.sort();
 
-        // `already_patched` is the state after `add_hashes_to_site`'s explicit `replace_in_file` call
-        // which will have patched the loader's own reference to the hashed main JS file.
-        let already_patched = format!("import {{ initSync }} from \"/pkg/{main_js_file_hashed}\";");
-        fs::write(&loader_path, &already_patched).unwrap();
-
-        let renamed_files = HashMap::from([(
-            pkg_dir.join(main_js_file),
-            pkg_dir.join(main_js_file_hashed),
-        )]);
-
-        replace_wasm_split_references(
-            &pkg_dir,
-            old_wasm_split_filename,
-            new_wasm_split_filename,
-            &renamed_files,
-        )
+        let main_js = pkg_dir.join("website.js");
+        let loader = pkg_dir.join(LOADER);
+        let hashed = hash_files(&pkg_dir, &paths, |path| {
+            rewrite_kind(path, &pkg_dir, &main_js, Some(&loader))
+        })
         .unwrap();
 
-        let contents = fs::read_to_string(&loader_path).unwrap();
+        let result = files
+            .iter()
+            .map(|(file, _)| {
+                let new_path = &hashed[&pkg_dir.join(file)].path;
+                let name = new_path.file_name().unwrap().to_string();
+                (file.to_string(), (name, fs::read(new_path).unwrap()))
+            })
+            .collect();
         fs::remove_dir_all(&pkg_dir).unwrap();
+        result
+    }
 
+    fn contains(haystack: &[u8], needle: &str) -> bool {
+        haystack
+            .windows(needle.len())
+            .any(|window| window == needle.as_bytes())
+    }
+
+    #[test]
+    fn rewritten_files_get_new_hashes() {
+        let before = hash_split_build("rehash_before", "v1");
+        let after = hash_split_build("rehash_after", "v2");
+
+        for (file, (name, contents)) in &before {
+            let (new_name, new_contents) = &after[file];
+            if contents != new_contents {
+                assert_ne!(name, new_name, "{file} changed but kept its name");
+            }
+        }
+        // the chunk changed => the loader is new => the main files also need to change
+        assert_ne!(before["website.js"].0, after["website.js"].0);
+        assert_ne!(before["website.wasm"].0, after["website.wasm"].0);
+        assert_eq!(before["website.css"], after["website.css"]);
+    }
+
+    #[test]
+    fn hashing_is_deterministic() {
         assert_eq!(
-            contents, already_patched,
-            "loader file was patched a second time, corrupting its own reference"
+            hash_split_build("deterministic_1", "v1"),
+            hash_split_build("deterministic_2", "v1")
         );
     }
 
     #[test]
-    fn does_not_repatch_the_wasm_split_loader_it_already_patched_2() {
-        let pkg_dir = Utf8PathBuf::from_path_buf(
-            std::env::temp_dir().join("cargo_leptos_hash_rs_wasm_split_repatch_test_2"),
-        )
-        .unwrap();
-        let _ = fs::remove_dir_all(&pkg_dir);
-        fs::create_dir_all(&pkg_dir).unwrap();
+    fn references_point_to_hashed_names() {
+        let files = hash_split_build("references", "v1");
+        let name = |file: &str| files[file].0.as_str();
+        let contents = |file: &str| files[file].1.as_slice();
 
-        let old_wasm_split_filename = "__wasm_split.______________________.js";
-        let new_wasm_split_filename = "__wasm_split.NEWSPLITHASH12345678901.js";
-        let main_js_file = "website.js";
-        let main_js_file_hashed = "website.jsABCDEFGHIJKLMNOPQRSTU.js";
-        let loader_path = pkg_dir.join(new_wasm_split_filename);
-
-        // `already_patched` is the state after `add_hashes_to_site`'s explicit `replace_in_file` call
-        // which will have patched the loader's own reference to the hashed main JS file.
-        let already_patched = format!("import {{ initSync }} from \"/pkg/{main_js_file_hashed}\";");
-        fs::write(&loader_path, &already_patched).unwrap();
-
-        let renamed_files = HashMap::from([(
-            pkg_dir.join(main_js_file),
-            pkg_dir.join(main_js_file_hashed),
-        )]);
-
-        replace_wasm_split_references(
-            &pkg_dir,
-            old_wasm_split_filename,
-            new_wasm_split_filename,
-            &renamed_files,
-        )
-        .unwrap();
-
-        let contents = fs::read_to_string(&loader_path).unwrap();
-        fs::remove_dir_all(&pkg_dir).unwrap();
-
+        assert!(contains(
+            contents(LOADER),
+            &format!(r#"import {{ initSync }} from "./{}";"#, name("website.js"))
+        ));
+        assert!(contains(
+            contents(LOADER),
+            &format!(r#"new URL("./{}""#, name("chunk_1.wasm"))
+        ));
+        assert!(contains(
+            contents("website.js"),
+            &format!(r#"from "./{}";"#, name(LOADER))
+        ));
+        assert!(contains(
+            contents("website.js"),
+            &format!(r#"fetch("{}")"#, name("website.wasm"))
+        ));
+        assert!(contains(contents("website.wasm"), name(LOADER)));
         assert_eq!(
-            contents, already_patched,
-            "loader file was patched a second time, corrupting its own reference"
+            contents("website.wasm").len(),
+            format!("\0asm\u{1}\0\0\0\u{2c}./{LOADER}\u{5}chunk").len()
+        );
+        let chunk = name("chunk_1.wasm").strip_suffix(".wasm").unwrap();
+        assert_eq!(
+            contents("__wasm_split_manifest.json"),
+            format!(r#"{{"load":["{chunk}"]}}"#).as_bytes()
+        );
+        for (file, (_, contents)) in &files {
+            assert!(
+                !contains(contents, HASH_PLACEHOLDER),
+                "{file} still refers to an unhashed name"
+            );
+        }
+    }
+
+    #[test]
+    fn single_pass_rewrite_does_not_repatch_new_names() {
+        let rewritten = rewrite(
+            Rewrite::Text,
+            br#"import { initSync } from "/pkg/website.js";"#,
+            &[("website.js", "website.jsABCDEFGHIJKLMNOPQRSTU.js")],
+        )
+        .unwrap();
+        assert_eq!(
+            rewritten,
+            br#"import { initSync } from "/pkg/website.jsABCDEFGHIJKLMNOPQRSTU.js";"#
         );
     }
 
     #[test]
     fn manifest_rewrite_matches_whole_chunk_names() {
-        let pkg_dir = Utf8PathBuf::from_path_buf(
-            std::env::temp_dir().join("cargo_leptos_hash_rs_manifest_prefix_test"),
+        let manifest =
+            br#"{"load_a": ["chunk_1", "chunk_10", "chunk_100"], "load_b": ["chunk_10"]}"#;
+        let rels = [
+            "chunk_1.wasm",
+            "chunk_10.wasm",
+            "chunk_100.wasm",
+            "chunk_1000.wasm",
+        ]
+        .map(String::from);
+        assert_eq!(
+            references(Rewrite::Manifest, manifest, &rels).unwrap(),
+            [0, 1, 2]
+        );
+
+        let rewritten = rewrite(
+            Rewrite::Manifest,
+            manifest,
+            &[
+                ("chunk_1.wasm", "chunk_1.AAAAAAAAAAAAAAAAAAAAAA.wasm"),
+                ("chunk_10.wasm", "chunk_10.BBBBBBBBBBBBBBBBBBBBBB.wasm"),
+                ("chunk_100.wasm", "chunk_100.CCCCCCCCCCCCCCCCCCCCCC.wasm"),
+            ],
         )
         .unwrap();
-        let _ = fs::remove_dir_all(&pkg_dir);
-        fs::create_dir_all(&pkg_dir).unwrap();
-
-        let manifest = pkg_dir.join("__wasm_split_manifest.json");
-        fs::write(
-            &manifest,
-            r#"{"load_a": ["chunk_1", "chunk_10", "chunk_100"], "load_b": ["chunk_10"]}"#,
-        )
-        .unwrap();
-
-        let renamed_files = HashMap::from([
-            (
-                pkg_dir.join("chunk_1.wasm"),
-                pkg_dir.join("chunk_1.AAAAAAAAAAAAAAAAAAAAAA.wasm"),
-            ),
-            (
-                pkg_dir.join("chunk_10.wasm"),
-                pkg_dir.join("chunk_10.BBBBBBBBBBBBBBBBBBBBBB.wasm"),
-            ),
-            (
-                pkg_dir.join("chunk_100.wasm"),
-                pkg_dir.join("chunk_100.CCCCCCCCCCCCCCCCCCCCCC.wasm"),
-            ),
-        ]);
-
-        replace_wasm_split_references(
-            &pkg_dir,
-            "__wasm_split.______________________.js",
-            "__wasm_split.NEWSPLITHASH12345678901.js",
-            &renamed_files,
-        )
-        .unwrap();
-
-        let rewritten: HashMap<String, Vec<String>> =
-            serde_json::from_str(&fs::read_to_string(&manifest).unwrap()).unwrap();
-        fs::remove_dir_all(&pkg_dir).unwrap();
+        let rewritten: HashMap<String, Vec<String>> = serde_json::from_slice(&rewritten).unwrap();
 
         assert_eq!(
             rewritten["load_a"],
@@ -486,5 +657,12 @@ mod tests {
             ]
         );
         assert_eq!(rewritten["load_b"], ["chunk_10.BBBBBBBBBBBBBBBBBBBBBB"]);
+    }
+
+    #[test]
+    fn components_come_after_their_dependencies() {
+        // 0 -> 1 <-> 2 -> 3
+        let components = strongly_connected_components(&[vec![1], vec![2], vec![1, 3], vec![]]);
+        assert_eq!(components, [vec![3], vec![1, 2], vec![0]]);
     }
 }
