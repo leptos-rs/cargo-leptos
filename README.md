@@ -288,6 +288,12 @@ site-root = "target/site"
 # Optional, defaults to "pkg". Env: LEPTOS_SITE_PKG_DIR.
 site-pkg-dir = "pkg"
 
+# The URL path under which the compiled output (JS, WASM and CSS) is served, if it differs
+# from site-pkg-dir. Useful with an absolute site-pkg-dir, so its server path is not exposed.
+#
+# Optional, defaults to site-pkg-dir. Env: LEPTOS_SITE_PKG_URL.
+site-pkg-url = "pkg"
+
 # The source style file. If it ends with _.sass_ or _.scss_ then it will be compiled by `dart-sass`
 # into CSS and processed by lightning css. When release is set, then it will also be minified.
 #
@@ -431,6 +437,7 @@ Echoed from the Leptos config:
 - LEPTOS_OUTPUT_NAME
 - LEPTOS_SITE_ROOT
 - LEPTOS_SITE_PKG_DIR
+- LEPTOS_SITE_PKG_URL: Only when `site-pkg-url` is set
 - LEPTOS_SITE_ADDR
 - LEPTOS_RELOAD_PORT
 
@@ -463,6 +470,7 @@ passthrough = [
     "LEPTOS_OUTPUT_NAME",
     "LEPTOS_SITE_ROOT",
     "LEPTOS_SITE_PKG_DIR",
+    "LEPTOS_SITE_PKG_URL",
     "LEPTOS_SITE_ADDR",
     "LEPTOS_RELOAD_PORT",
     "LEPTOS_LIB_DIR",
