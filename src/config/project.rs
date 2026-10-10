@@ -244,6 +244,9 @@ impl Project {
             ("LEPTOS_JS_MINIFY", self.js_minify.to_string()),
             ("LEPTOS_HASH_FILES", self.hash_files.to_string()),
         ];
+        if let Some(pkg_url) = self.site.pkg_url.as_ref() {
+            vec.push(("LEPTOS_SITE_PKG_URL", pkg_url.to_string()));
+        }
         if self.hash_files {
             vec.push(("LEPTOS_HASH_FILE_NAME", self.hash_file.rel.to_string()));
         }
@@ -319,6 +322,7 @@ pub struct ProjectConfig {
     pub site_root: Utf8PathBuf,
     #[serde(default = "default_pkg_dir")]
     pub site_pkg_dir: Utf8PathBuf,
+    pub site_pkg_url: Option<Utf8PathBuf>,
     pub style_file: Option<Utf8PathBuf>,
     /// whether to bundle CSS files using Lightning CSS
     #[serde(default)]

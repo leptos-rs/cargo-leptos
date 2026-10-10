@@ -76,6 +76,7 @@ pub struct Site {
     pub reload: SocketAddr,
     pub root_dir: Utf8PathBuf,
     pub pkg_dir: Utf8PathBuf,
+    pub pkg_url: Option<Utf8PathBuf>,
     file_reg: RwLock<HashMap<String, u64>>,
     ext_file_reg: RwLock<HashMap<String, u64>>,
 }
@@ -87,6 +88,7 @@ impl fmt::Debug for Site {
             .field("reload", &self.reload)
             .field("root_dir", &self.root_dir)
             .field("pkg_dir", &self.pkg_dir)
+            .field("pkg_url", &self.pkg_url)
             .field("file_reg", &self.file_reg.blocking_read())
             .field("ext_file_reg", &self.ext_file_reg.blocking_read())
             .finish()
@@ -102,6 +104,7 @@ impl Site {
             reload,
             root_dir: config.site_root.clone(),
             pkg_dir: config.site_pkg_dir.clone(),
+            pkg_url: config.site_pkg_url.clone(),
             file_reg: Default::default(),
             ext_file_reg: Default::default(),
         }
