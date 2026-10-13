@@ -4,7 +4,10 @@ use crate::{
     ext::{
         eyre::AnyhowCompatWrapErr,
         fs,
-        sync::{wait_interruptible, wait_piped_interruptible, CommandResult, OutputExt},
+        sync::{
+            spawn_process_group, wait_interruptible, wait_piped_interruptible, CommandResult,
+            OutputExt,
+        },
         Exe, PathBufExt,
     },
     internal_prelude::*,
@@ -162,7 +165,7 @@ pub fn front_cargo_process_with_args(
 ) -> Result<(String, String, Child)> {
     let mut command = Command::new("cargo");
     let (envs, line) = build_cargo_front_cmd(cmd, wasm, proj, &mut command, additional_args);
-    Ok((envs, line, command.spawn()?))
+    Ok((envs, line, spawn_process_group(&mut command)?))
 }
 
 pub fn build_cargo_front_cmd(
