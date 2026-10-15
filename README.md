@@ -276,22 +276,32 @@ any parent directory.
 # Optional, defaults to the lib package name or, in a workspace, the project name. Env: LEPTOS_OUTPUT_NAME.
 output-name = "myproj"
 
-# The site root folder is where cargo-leptos generate all output.
+# The site root dir is where cargo-leptos generates the site. With leptos 0.9 or newer,
+# the compiled output can go to a site-pkg-dir outside it.
 # NOTE: It is relative to the workspace root when running in a workspace.
 # WARNING: all content of this folder will be erased on a rebuild!
 #
 # Optional, defaults to "/site" in the Cargo target directory. Env: LEPTOS_SITE_ROOT.
 site-root = "target/site"
 
-# The site-root relative folder where all compiled output (JS, WASM and CSS) is written.
+# The URL path under which the site-root files are served. Needs leptos 0.9 or newer.
+#
+# Optional, defaults to "/". Env: LEPTOS_SITE_ROOT_URL.
+site-root-url = "/"
+
+# The dir where all compiled output (JS, WASM and CSS) is written, relative to site-root
+# or absolute. With leptos 0.9 or newer, it can be outside site-root (for example "../pkg"),
+# but it must not be site-root or contain it.
 #
 # Optional, defaults to "pkg". Env: LEPTOS_SITE_PKG_DIR.
 site-pkg-dir = "pkg"
 
-# The URL path under which the compiled output (JS, WASM and CSS) is served, if it differs
-# from site-pkg-dir. Useful with an absolute site-pkg-dir, so its server path is not exposed.
+# The URL path under which the compiled output (JS, WASM and CSS) is served. With leptos 0.9
+# or newer, it defaults to the path of a site-pkg-dir inside site-root under site-root-url;
+# with another path, the site root does not serve that dir. A site-pkg-dir outside
+# site-root needs this. It must differ from site-root-url.
 #
-# Optional, defaults to site-pkg-dir. Env: LEPTOS_SITE_PKG_URL.
+# Optional, defaults to the path of site-pkg-dir. Env: LEPTOS_SITE_PKG_URL.
 site-pkg-url = "pkg"
 
 # The source style file. If it ends with _.sass_ or _.scss_ then it will be compiled by `dart-sass`
@@ -457,7 +467,8 @@ Echoed from the Leptos config:
 - LEPTOS_OUTPUT_NAME
 - LEPTOS_SITE_ROOT
 - LEPTOS_SITE_PKG_DIR
-- LEPTOS_SITE_PKG_URL: Only when `site-pkg-url` is set
+- LEPTOS_SITE_PKG_URL: When `site-pkg-url` is set, and always with leptos 0.9 or newer
+- LEPTOS_SITE_ROOT_URL: When `site-root-url` is set, with leptos 0.9 or newer
 - LEPTOS_SITE_ADDR
 - LEPTOS_RELOAD_PORT
 
@@ -491,6 +502,7 @@ passthrough = [
     "LEPTOS_SITE_ROOT",
     "LEPTOS_SITE_PKG_DIR",
     "LEPTOS_SITE_PKG_URL",
+    "LEPTOS_SITE_ROOT_URL",
     "LEPTOS_SITE_ADDR",
     "LEPTOS_RELOAD_PORT",
     "LEPTOS_LIB_DIR",

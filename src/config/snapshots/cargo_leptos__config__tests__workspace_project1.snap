@@ -65,6 +65,7 @@ Config {
                 root_dir: "target/site/project1",
                 pkg_dir: "pkg",
                 pkg_url: None,
+                root_url: None,
                 file_reg: {},
                 ext_file_reg: {},
             },
