@@ -655,6 +655,7 @@ dependencies = [
  "insta",
  "itertools 0.15.0",
  "leptos_hot_reload",
+ "libc",
  "libflate",
  "lightningcss",
  "md-5",

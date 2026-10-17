@@ -3,7 +3,7 @@ use std::sync::Arc;
 use super::ChangeSet;
 use crate::{
     config::Project,
-    ext::sync::{wait_interruptible, CommandResult},
+    ext::sync::{spawn_process_group, wait_interruptible, CommandResult},
     internal_prelude::*,
     logger::GRAY,
     signal::{Interrupt, Outcome, Product},
@@ -77,7 +77,7 @@ pub fn server_cargo_process_with_args(
     command.args(args);
 
     let (envs, line) = build_cargo_server_cmd(cmd, proj, &mut command, additional_args);
-    Ok((envs, line, command.spawn()?))
+    Ok((envs, line, spawn_process_group(&mut command)?))
 }
 
 pub fn build_cargo_server_cmd(
