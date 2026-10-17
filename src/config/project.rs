@@ -171,6 +171,17 @@ impl Project {
                 false => HashFile::new(None, &bin, config.hash_file_name.as_ref()),
             };
 
+            let mut site = Site::new(&config);
+            if super::site_url::uses_site_root_url(
+                metadata,
+                &project.lib_package,
+                &project.bin_package,
+            ) {
+                site.pkg_url =
+                    Some(super::site_url::pkg_url(&config, &metadata.workspace_root)?.into());
+                site.root_url = config.site_root_url.clone();
+            }
+
             let proj = Project {
                 working_dir: metadata.workspace_root.clone(),
                 name: project.name.clone(),
@@ -183,7 +194,7 @@ impl Project {
                 hot_reload: cli.hot_reload,
                 wasm_debug: cli.wasm_debug,
                 clear_terminal_on_rebuild: cli.clear,
-                site: Arc::new(Site::new(&config)),
+                site: Arc::new(site),
                 end2end: End2EndConfig::resolve(&config),
                 assets: AssetsConfig::resolve(&config),
                 js_dir,
@@ -246,6 +257,9 @@ impl Project {
         ];
         if let Some(pkg_url) = self.site.pkg_url.as_ref() {
             vec.push(("LEPTOS_SITE_PKG_URL", pkg_url.to_string()));
+        }
+        if let Some(root_url) = self.site.root_url.as_ref() {
+            vec.push(("LEPTOS_SITE_ROOT_URL", root_url.clone()));
         }
         if self.hash_files {
             vec.push(("LEPTOS_HASH_FILE_NAME", self.hash_file.rel.to_string()));
@@ -323,6 +337,7 @@ pub struct ProjectConfig {
     #[serde(default = "default_pkg_dir")]
     pub site_pkg_dir: Utf8PathBuf,
     pub site_pkg_url: Option<Utf8PathBuf>,
+    pub site_root_url: Option<String>,
     pub style_file: Option<Utf8PathBuf>,
     /// whether to bundle CSS files using Lightning CSS
     #[serde(default)]
