@@ -8,6 +8,7 @@ use crate::{
 };
 use leptos_hot_reload::ViewMacros;
 use std::sync::Arc;
+use std::time::Instant;
 use tokio::join;
 use tokio::sync::broadcast::error::RecvError;
 use tokio::task::JoinHandle;
@@ -25,26 +26,39 @@ pub async fn watch(proj: &Arc<Project>) -> Result<()> {
         log::warn!("warning: Hot reloading does not currently work in --release mode.");
     }
 
-    let view_macros = if proj.hot_reload {
-        // build initial set of view macros for patching
-        let view_macros = ViewMacros::new();
-        view_macros
-            .update_from_paths(&proj.lib.src_paths)
-            .wrap_anyhow_err("Couldn't update view-macro watch")?;
-        Some(view_macros)
-    } else {
-        None
-    };
+    let view_macros = proj.hot_reload.then(ViewMacros::new);
 
-    service::notify::spawn(proj, view_macros).await?;
+    service::notify::spawn(proj, view_macros.clone()).await?;
     let serve_service_jh = service::serve::spawn(proj).await;
     let reload_service_jh = service::reload::spawn(proj).await;
+
+    if let Some(view_macros) = view_macros {
+        spawn_view_macro_scan(proj, view_macros);
+    }
 
     let res = run_loop(proj, serve_service_jh, reload_service_jh).await;
     if res.is_err() {
         Interrupt::request_shutdown().await;
     }
     res
+}
+
+fn spawn_view_macro_scan(proj: &Arc<Project>, view_macros: ViewMacros) {
+    let src_paths = proj.lib.src_paths.clone();
+    tokio::task::spawn_blocking(move || {
+        info!("Hot reload: scanning view macros");
+        let started = Instant::now();
+        match view_macros
+            .update_from_paths(&src_paths)
+            .wrap_anyhow_err("Couldn't update view-macro watch")
+        {
+            Ok(()) => info!("Hot reload: view macros ready in {:?}", started.elapsed()),
+            Err(err) => {
+                error!("{err:?}");
+                tokio::runtime::Handle::current().block_on(Interrupt::request_shutdown());
+            }
+        }
+    });
 }
 
 pub async fn run_loop(
