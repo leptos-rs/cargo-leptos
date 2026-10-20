@@ -55,8 +55,8 @@ async fn build_frontend(proj: &Arc<Project>, changes: &ChangeSet) -> Result<bool
 /// Build the project. Returns true if the build was successful
 pub async fn build_proj(proj: &Arc<Project>) -> Result<bool> {
     let changes = ChangeSet::all_changes();
-    let needs_frontend = !proj.build_server_only;
-    let needs_server = !proj.build_frontend_only;
+    let needs_frontend = !proj.server_only;
+    let needs_server = !proj.frontend_only;
 
     if !proj.site.root_dir.exists() {
         fs::create_dir_all(&proj.site.root_dir).await.dot()?;
