@@ -11,6 +11,7 @@ mod lib_package;
 mod profile;
 mod project;
 mod shutdown;
+mod site_url;
 mod style;
 mod tailwind;
 mod version;
