@@ -111,8 +111,8 @@ pub async fn runner(proj: &Arc<Project>) -> Result<()> {
 
     // Honor `--frontend-only` / `--server-only` on rebuilds the same way the
     // initial `build_proj` does, so the flags apply uniformly (see issue #670).
-    let needs_frontend = !proj.build_server_only;
-    let needs_server = !proj.build_frontend_only;
+    let needs_frontend = !proj.server_only;
+    let needs_server = !proj.frontend_only;
 
     // Spawn all enabled compiles up front so they run concurrently, then join them.
     let mut server_hdl = None;
