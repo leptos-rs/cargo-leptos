@@ -40,7 +40,8 @@ async fn build_frontend(proj: &Arc<Project>, changes: &ChangeSet) -> Result<bool
     }
 
     if proj.hash_files {
-        compile::add_hashes_to_site(proj)?;
+        let proj = proj.clone();
+        tokio::task::spawn_blocking(move || compile::add_hashes_to_site(&proj)).await??;
     }
 
     // it is important to do the precompression of the static files before building the
@@ -55,8 +56,8 @@ async fn build_frontend(proj: &Arc<Project>, changes: &ChangeSet) -> Result<bool
 /// Build the project. Returns true if the build was successful
 pub async fn build_proj(proj: &Arc<Project>) -> Result<bool> {
     let changes = ChangeSet::all_changes();
-    let needs_frontend = !proj.build_server_only;
-    let needs_server = !proj.build_frontend_only;
+    let needs_frontend = !proj.server_only;
+    let needs_server = !proj.frontend_only;
 
     if !proj.site.root_dir.exists() {
         fs::create_dir_all(&proj.site.root_dir).await.dot()?;
@@ -66,22 +67,16 @@ pub async fn build_proj(proj: &Arc<Project>) -> Result<bool> {
         fs::rm_dir_content(&proj.site.root_dir).await.dot()?;
     }
 
-    let can_parallelize = !(proj.hash_files || proj.release && proj.precompress);
+    // The server reads the hash file at runtime, but may embed precompressed assets.
+    let can_parallelize = !(proj.release && proj.precompress);
 
     if can_parallelize && needs_frontend && needs_server {
-        let front_hdl = compile::front(proj, &changes).await;
-        let assets_hdl = compile::assets(proj, &changes).await;
-        let style_hdl = compile::style(proj, &changes).await;
         let server_hdl = compile::server(proj, &changes).await;
+        let server = async { server_hdl.await.map_err(Error::from) };
 
-        let (front, assets, style, server) =
-            try_join!(front_hdl, assets_hdl, style_hdl, server_hdl)?;
+        let (frontend_ok, server) = try_join!(build_frontend(proj, &changes), server)?;
 
-        if !front?.is_success()
-            || !assets?.is_success()
-            || !style?.is_success()
-            || !server?.is_success()
-        {
+        if !frontend_ok || !server?.is_success() {
             return Ok(false);
         }
     } else {

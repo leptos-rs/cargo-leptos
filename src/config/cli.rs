@@ -82,11 +82,11 @@ pub struct Opts {
     #[arg(long)]
     pub split: bool,
 
-    /// Only build the frontend.
+    /// Only build or test the frontend.
     #[arg(long)]
     pub frontend_only: bool,
 
-    /// Only build the server.
+    /// Only build or test the server.
     #[arg(long, conflicts_with = "frontend_only")]
     pub server_only: bool,
 

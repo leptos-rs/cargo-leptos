@@ -25,20 +25,28 @@ pub async fn test_all(conf: &Config, test_opts: &TestSpecificOpts) -> Result<()>
 }
 
 pub async fn test_proj(proj: &Project, additional_args: Option<&[String]>) -> Result<bool> {
+    let server_status = proj.frontend_only || test_server(proj, additional_args).await?;
+    let frontend_status = proj.server_only || test_frontend(proj, additional_args).await?;
+    Ok(server_status && frontend_status)
+}
+
+pub async fn test_server(proj: &Project, additional_args: Option<&[String]>) -> Result<bool> {
     let (envs, line, proc) = server_cargo_process_with_args("test", proj, additional_args).dot()?;
 
     let server_success = wait_for_tests("Cargo server tests", proc).await?;
     debug!("Cargo envs: {}", GRAY.paint(envs));
     info!("Cargo server tests finished {}", GRAY.paint(line));
+    Ok(server_success)
+}
 
+pub async fn test_frontend(proj: &Project, additional_args: Option<&[String]>) -> Result<bool> {
     let (envs, line, proc) =
         front_cargo_process_with_args("test", false, proj, additional_args).dot()?;
 
-    let front_success = wait_for_tests("Cargo front tests", proc).await?;
+    let frontend_success = wait_for_tests("Cargo frontend tests", proc).await?;
     debug!("Cargo envs: {}", GRAY.paint(envs));
-    info!("Cargo front tests finished {}", GRAY.paint(line));
-
-    Ok(server_success && front_success)
+    info!("Cargo frontend tests finished {}", GRAY.paint(line));
+    Ok(frontend_success)
 }
 
 /// Cargo runs in its own process group, which a Ctrl-C in the terminal does not
